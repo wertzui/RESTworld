@@ -63,8 +63,8 @@ namespace RESTworld.AspNetCore.Controller
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Delete))]
         public virtual async Task<IActionResult> DeleteAsync(
             long id,
-            [FromQuery] string timestamp,
-            [FromHeader(Name = "If-Match")] byte[] timestampFromHeader)
+            [FromQuery] string? timestamp,
+            [FromHeader(Name = "If-Match")] byte[]? timestampFromHeader)
         {
             var timestampBytes = timestampFromHeader;
 
@@ -126,8 +126,8 @@ namespace RESTworld.AspNetCore.Controller
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
         public virtual async Task<ActionResult<Resource>> GetListAsync(
             [SwaggerIgnore] ODataQueryOptions<TEntity> options,
-            [FromQuery(Name = "$filter")] string filter = default,
-            [FromQuery(Name = "$orderby")] string orderby = default,
+            [FromQuery(Name = "$filter")] string? filter = default,
+            [FromQuery(Name = "$orderby")] string? orderby = default,
             [FromQuery(Name = "$top")] long? top = default,
             [FromQuery(Name = "$skip")] long? skip = default)
         {

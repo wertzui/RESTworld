@@ -102,8 +102,7 @@ namespace MyApi
             // With custom service
             services.AddRestPipelineWithCustomService<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TService>();
 
-            // With custom controller
-            services.AddRestPipelineWithCustomController<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TController>();
+            // Custom controllers will automatically be picked up by the pipeline so there is no need to register them.
 
             base.ConfigureServices(services);
         }
