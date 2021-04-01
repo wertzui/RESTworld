@@ -15,7 +15,7 @@ namespace RESTworld.AspNetCore.Controller
     {
         public void Apply(ControllerModel controller)
         {
-            if (!controller.ControllerType.IsGenericTypeDefinition ||
+            if (!controller.ControllerType.IsGenericType ||
                 controller.ControllerType.GetGenericTypeDefinition() != typeof(CrudController<,,,,>))
             {
                 // Not a CrudControllerBase, ignore.
