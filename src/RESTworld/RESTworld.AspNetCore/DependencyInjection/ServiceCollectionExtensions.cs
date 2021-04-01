@@ -52,7 +52,6 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             services.AddScoped<ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>>();
             CrudControllerFeatureProvider.AddController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
-            //ODataApiExplorerConventionBuilder.AddCrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
 
             return services;
         }
@@ -67,22 +66,6 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             services.AddScoped<ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, TService>();
             CrudControllerFeatureProvider.AddController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
-            //ODataApiExplorerConventionBuilder.AddCrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
-
-            return services;
-        }
-
-        public static IServiceCollection AddRestPipelineWithCustomController<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TController>(this IServiceCollection services)
-            where TContext : DbContextBase
-            where TEntity : EntityBase
-            where TGetListDto : DtoBase
-            where TGetFullDto : DtoBase
-            where TUpdateDto : DtoBase
-            where TController : CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
-        {
-            services.AddScoped<ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>>();
-            CrudControllerFeatureProvider.AddCustomController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TController>();
-            //ODataApiExplorerConventionBuilder.AddCrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
 
             return services;
         }

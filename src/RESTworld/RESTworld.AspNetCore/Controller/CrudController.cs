@@ -182,7 +182,7 @@ namespace RESTworld.AspNetCore.Controller
 
         [HttpPut("{id:long}")]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Put))]
-        public async Task<ActionResult<Resource<TUpdateDto>>> PutAsync(long id, [FromBody] TUpdateDto dto)
+        public virtual async Task<ActionResult<Resource<TUpdateDto>>> PutAsync(long id, [FromBody] TUpdateDto dto)
         {
             if (dto == null)
                 return BadRequest();
@@ -203,7 +203,7 @@ namespace RESTworld.AspNetCore.Controller
 
         protected virtual TCreateDto CreateEmpty() => default;
 
-        private void AddDeleteLink<TDto>(Resource<TDto> result)
+        protected void AddDeleteLink<TDto>(Resource<TDto> result)
             where TDto : DtoBase
         {
             if (result.State?.Timestamp is null)
@@ -220,14 +220,14 @@ namespace RESTworld.AspNetCore.Controller
                 });
         }
 
-        private void AddSaveAndDeleteLinks<TDto>(Resource<TDto> result)
+        protected void AddSaveAndDeleteLinks<TDto>(Resource<TDto> result)
             where TDto : DtoBase
         {
             AddSaveLink(result);
             AddDeleteLink(result);
         }
 
-        private void AddSaveLink<TDto>(Resource<TDto> result)
+        protected void AddSaveLink<TDto>(Resource<TDto> result)
             where TDto : DtoBase
         {
             if (result.State is null)
@@ -242,7 +242,7 @@ namespace RESTworld.AspNetCore.Controller
                 });
         }
 
-        private ObjectResult CreateError<T>(ServiceResponse<T> response)
+        protected ObjectResult CreateError<T>(ServiceResponse<T> response)
         {
             var resource =
                 _resourceFactory.Create(new ProblemDetails { Status = (int)response.Status, Detail = response.ProblemDetails });
