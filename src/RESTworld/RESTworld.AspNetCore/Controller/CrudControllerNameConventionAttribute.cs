@@ -23,13 +23,22 @@ namespace RESTworld.AspNetCore.Controller
             }
 
             var readDtoType = controller.ControllerType.GenericTypeArguments[2];
-            controller.ControllerName = readDtoType.Name;
+            controller.ControllerName = CreateNameFromType(readDtoType);
+        }
 
-            if (controller.ControllerName.StartsWith("tbl", StringComparison.OrdinalIgnoreCase))
-                controller.ControllerName = controller.ControllerName[3..];
+        public static string CreateNameFromType<TReadDto>() => CreateNameFromType(typeof(TReadDto));
 
-            if (controller.ControllerName.EndsWith("dto", StringComparison.OrdinalIgnoreCase))
-                controller.ControllerName = controller.ControllerName[..^3];
+        public static string CreateNameFromType(Type readDtoType)
+        {
+            var name = readDtoType.Name;
+
+            if (name.StartsWith("tbl", StringComparison.OrdinalIgnoreCase))
+                name = name[3..];
+
+            if (name.EndsWith("dto", StringComparison.OrdinalIgnoreCase))
+                name = name[..^3];
+
+            return name;
         }
     }
 }

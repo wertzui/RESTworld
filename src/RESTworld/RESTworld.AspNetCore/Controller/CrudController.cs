@@ -1,6 +1,7 @@
 ﻿using HAL.AspNetCore.OData.Abstractions;
 using HAL.Common;
 using Microsoft.AspNet.OData.Query;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;

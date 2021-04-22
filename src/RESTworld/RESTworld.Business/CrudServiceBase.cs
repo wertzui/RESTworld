@@ -23,29 +23,58 @@ namespace RESTworld.Business
         protected readonly IDbContextFactory<TContext> _contextFactory;
         protected readonly ILogger<CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> _logger;
         protected readonly IMapper _mapper;
+        protected readonly IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> _authorizationHandlers;
 
-        public CrudServiceBase(IDbContextFactory<TContext> contextFactory, IMapper mapper,
+        public CrudServiceBase(
+            IDbContextFactory<TContext> contextFactory,
+            IMapper mapper,
+            IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> authorizationHandlers,
             ILogger<CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> logger)
         {
             _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+            _authorizationHandlers = authorizationHandlers ?? throw new ArgumentNullException(nameof(authorizationHandlers));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+            if (System.Linq.Enumerable.Any(_authorizationHandlers))
+                _logger.LogWarning($"No {nameof(ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}> is configured. No authorization will be performed for any methods of {nameof(CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}>.");
         }
 
         public Task<ServiceResponse<TGetFullDto>> CreateAsync(TCreateDto dto)
-            => TryExecuteAsync(() => CreateInternalAsync(dto));
+            => TryExecuteWithAuthorizationAsync(
+                dto,
+                param1 => CreateInternalAsync(param1),
+                (result, handler) => handler.HandleCreateRequestAsync(result),
+                (response, handler) => handler.HandleCreateResponseAsync(response));
 
         public Task<ServiceResponse<object>> DeleteAsync(long id, byte[] timestamp)
-            => TryExecuteAsync(() => DeleteInternalAsync(id, timestamp));
+            => TryExecuteWithAuthorizationAsync(
+                id,
+                timestamp,
+                (param1, param2) => DeleteInternalAsync(param1, param2),
+                (result, handler) => handler.HandleDeleteRequestAsync(result),
+                (response, handler) => handler.HandleDeleteResponseAsync(response));
 
         public Task<ServiceResponse<IReadOnlyCollection<TGetListDto>>> GetListAsync(Func<System.Linq.IQueryable<TEntity>, System.Linq.IQueryable<TEntity>> filter)
-            => TryExecuteAsync(() => GetListInternalAsync(filter));
+            => TryExecuteWithAuthorizationAsync(
+                filter,
+                param1 => GetListInternalAsync(param1),
+                (result, handler) => handler.HandleGetListRequestAsync(result),
+                (response, handler) => handler.HandleGetListResponseAsync(response));
 
         public Task<ServiceResponse<TGetFullDto>> GetSingleAsync(long id)
-            => TryExecuteAsync(() => GetSingleInternalAsync(id));
+            => TryExecuteWithAuthorizationAsync(
+                id,
+                param1 => GetSingleInternalAsync(param1),
+                (result, handler) => handler.HandleGetSingleRequestAsync(result),
+                (response, handler) => handler.HandleGetSingleResponseAsync(response));
 
         public Task<ServiceResponse<TGetFullDto>> UpdateAsync(TUpdateDto dto)
-            => TryExecuteAsync(() => UpdateInternalAsync(dto));
+            => TryExecuteWithAuthorizationAsync(
+                dto,
+                param1 => UpdateInternalAsync(param1),
+                (result, handler) => handler.HandleUpdateRequestAsync(result),
+                (response, handler) => handler.HandleUpdateResponseAsync(response));
 
         protected virtual async Task<ServiceResponse<TGetFullDto>> CreateInternalAsync(TCreateDto dto)
         {
@@ -105,7 +134,7 @@ namespace RESTworld.Business
             return ServiceResponse.FromResult(dto);
         }
 
-        protected async Task<ServiceResponse<T>> TryExecuteAsync<T>(Func<Task<ServiceResponse<T>>> function)
+        protected virtual async Task<ServiceResponse<T>> TryExecuteAsync<T>(Func<Task<ServiceResponse<T>>> function)
         {
             try
             {
@@ -121,6 +150,21 @@ namespace RESTworld.Business
                 return ServiceResponse.FromException<T>(e);
             }
         }
+
+        protected virtual Task<ServiceResponse<TResponse>> TryExecuteWithAuthorizationAsync<T1, TResponse>(
+            T1 param1,
+            Func<T1, Task<ServiceResponse<TResponse>>> function,
+            Func<AuthorizationResult<TEntity, T1>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<AuthorizationResult<TEntity, T1>>> authorizeRequest,
+            Func<ServiceResponse<TResponse>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<ServiceResponse<TResponse>>> authorizeResult)
+            => TryExecuteAsync(() => WithAuthorizationAsync(param1, function, authorizeRequest, authorizeResult));
+
+        protected virtual Task<ServiceResponse<TResponse>> TryExecuteWithAuthorizationAsync<T1, T2, TResponse>(
+            T1 param1,
+            T2 param2,
+            Func<T1, T2, Task<ServiceResponse<TResponse>>> function,
+            Func<AuthorizationResult<TEntity, T1, T2>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<AuthorizationResult<TEntity, T1, T2>>> authorizeRequest,
+            Func<ServiceResponse<TResponse>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<ServiceResponse<TResponse>>> authorizeResult)
+            => TryExecuteAsync(() => WithAuthorizationAsync(param1, param2, function, authorizeRequest, authorizeResult));
 
         protected virtual async Task<ServiceResponse<TGetFullDto>> UpdateInternalAsync(TUpdateDto dto)
         {
@@ -140,6 +184,89 @@ namespace RESTworld.Business
             var resultDto = _mapper.Map<TGetFullDto>(entity);
 
             return ServiceResponse.FromResult(resultDto);
+        }
+
+        protected virtual async Task<ServiceResponse<TResponse>> WithAuthorizationAsync<T1, TResponse>(
+            T1 param1,
+            Func<T1, Task<ServiceResponse<TResponse>>> function,
+            Func<AuthorizationResult<TEntity, T1>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<AuthorizationResult<TEntity, T1>>> authorizeRequest,
+            Func<ServiceResponse<TResponse>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<ServiceResponse<TResponse>>> authorizeResult)
+        {
+
+            var requestAuthResult = await AuthorizeRequestAsync(param1, authorizeRequest);
+
+            if (requestAuthResult.Status != HttpStatusCode.OK)
+                return ServiceResponse.FromStatus<TResponse>(requestAuthResult.Status);
+
+            var serviceCallResponse = await function(requestAuthResult.Value1);
+
+            var resultAuthResponse = await AuthorizeResultAsync(serviceCallResponse, authorizeResult);
+
+            return resultAuthResponse;
+        }
+
+        protected virtual async Task<ServiceResponse<TResponse>> WithAuthorizationAsync<T1, T2, TResponse>(
+            T1 param1,
+            T2 param2,
+            Func<T1, T2, Task<ServiceResponse<TResponse>>> function,
+            Func<AuthorizationResult<TEntity, T1, T2>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<AuthorizationResult<TEntity, T1, T2>>> authorizeRequest,
+            Func<ServiceResponse<TResponse>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<ServiceResponse<TResponse>>> authorizeResult)
+        {
+
+            var requestAuthResult = await AuthorizeRequestAsync(param1, param2, authorizeRequest);
+
+            if (requestAuthResult.Status != HttpStatusCode.OK)
+                return ServiceResponse.FromStatus<TResponse>(requestAuthResult.Status);
+
+            var serviceCallResponse = await function(requestAuthResult.Value1, requestAuthResult.Value2);
+
+            var resultAuthResponse = await AuthorizeResultAsync(serviceCallResponse, authorizeResult);
+
+            return resultAuthResponse;
+        }
+
+        protected virtual async Task<AuthorizationResult<TEntity, T1>> AuthorizeRequestAsync<T1>(
+            T1 value1,
+            Func<AuthorizationResult<TEntity, T1>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<AuthorizationResult<TEntity, T1>>> authorizeRequest)
+        {
+            var result = AuthorizationResult.Ok<TEntity, T1>(value1);
+
+            foreach (var handler in _authorizationHandlers)
+            {
+                result = await authorizeRequest(result, handler);
+            }
+
+            return result;
+        }
+
+        protected virtual async Task<AuthorizationResult<TEntity, T1, T2>> AuthorizeRequestAsync<T1, T2>(
+            T1 value1,
+            T2 value2,
+            Func<AuthorizationResult<TEntity, T1, T2>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<AuthorizationResult<TEntity, T1, T2>>> authorizeRequest)
+        {
+            var result = AuthorizationResult.Ok<TEntity, T1, T2>(value1, value2);
+
+            foreach (var handler in _authorizationHandlers)
+            {
+                result = await authorizeRequest(result, handler);
+            }
+
+            return result;
+        }
+
+        protected virtual async Task<ServiceResponse<TResponse>> AuthorizeResultAsync<TResponse>(
+            ServiceResponse<TResponse> response,
+            Func<ServiceResponse<TResponse>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<ServiceResponse<TResponse>>> authorizeResult)
+        {
+            var result = response;
+
+            foreach (var handler in _authorizationHandlers)
+            {
+                result = await authorizeResult(response, handler);
+            }
+
+            return result;
+
         }
     }
 }

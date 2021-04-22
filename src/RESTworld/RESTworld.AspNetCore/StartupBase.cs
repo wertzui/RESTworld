@@ -2,6 +2,7 @@
 using Microsoft.AspNet.OData.Builder;
 using Microsoft.AspNet.OData.Extensions;
 using Microsoft.AspNet.OData.Formatter;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,7 @@ using Microsoft.OpenApi.Models;
 using RESTworld.AspNetCore.Controller;
 using RESTworld.AspNetCore.DependencyInjection;
 using RESTworld.AspNetCore.Swagger;
+using RESTworld.Business.Abstractions;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
@@ -47,6 +49,9 @@ namespace RESTworld.AspNetCore
             });
 
             app.UseCors();
+
+            app.UseAuthentication();
+            app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
@@ -97,6 +102,12 @@ namespace RESTworld.AspNetCore
             });
 
             services.AddAutoMapper(ConfigureAutomapper);
+
+            services.AddAuthentication();
+            services.AddAuthorization();
+
+            services.AddHttpContextAccessor();
+            services.AddUserAccessor();
         }
 
         /// <summary>

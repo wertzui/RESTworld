@@ -8,6 +8,7 @@ RESTworld is a framework which utilizes other common frameworks and patterns all
 - HAL for providing hyperlinks between resources
 - OData for query support on list endpoints
 - AutoMapper for mapping between Entities and DTOs
+- Resource based authorization
 
 ## Pipeline
 The most basic pipeline has the following data flow for a request on a list endpoint:
@@ -16,11 +17,13 @@ The most basic pipeline has the following data flow for a request on a list endp
 2. Controller selection through ASP.Net Core
 3. Query parsing through OData
 4. Controller method calls business service method
-5. Service gets the data through Entity Framework Core
-6. Entity Framework Core translates the query into SQL and gets the data from the database
-7. Business service translates Entities into DTOs through Automapper
-8. Controller wraps the result in a HAL response
-9. Result
+5. Authorization validates and modifies the request (both optional)
+6. Service gets the data through Entity Framework Core
+7. Entity Framework Core translates the query into SQL and gets the data from the database
+8. Business service translates Entities into DTOs through Automapper
+9. Authorization validates and modifies the response (both optional)
+10. Controller wraps the result in a HAL response
+11. Result
 
 ## Usage
 ### Solution structure
@@ -113,6 +116,7 @@ namespace MyApi
 }
 ```
 
+### Automapper
 Add an AutoMapperConfiguration to your MyApi.Business project
 ```
 using AutoMapper;
@@ -133,6 +137,30 @@ namespace MyApi.Business
     }
 }
 ```
+
+### Authorization
+If you want to use the inbuilt authorization logic, you must implement the interface `ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>` in a class to handle your own authorization logic. You can then register it in the `ConfigureServices` method in your startup class.
+```
+// Concrete implementation for one service
+services.AddAuthorizationHandler<MyAuthorizationHandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
+
+// Generic implementation which can be used for all services
+services.AddAuthorizationHandler<MyGenericAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
+
+// Register a pipeline together with concrete authorization handler
+services.AddRestPipelineWithAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, MyAuthorizationHandler>();
+
+// Register a pipeline together with generic authorization handler
+services.AddRestPipelineWithAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, MyGenericAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>>();
+
+// With a custom service implementation and concrete authorization handler
+services.AddRestPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TService, MyAuthorizationHandler>();
+
+// With a custom service implementation and generic authorization handler
+services.AddRestPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TService, MyGenericAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>>();
+```
+
+To get the current user, an `IUserAccessor` is provided, which you may want to inject into your authorization handler implementation. It is automatically populated from the `HttpContext`. However no method is provided to read the user from a token, a cookie, or something else as libraries for that are already existing. In addition no login functionality is provided, as RESTworld is meant to be a framework for APIs and the API itself should relay the login functionality to any login service (like an OAuth service or something else).
 
 That's it. Now you can start your API and use a HAL browser like https://chatty42.herokuapp.com/hal-explorer/index.html#uri=https://localhost:5001 to browse your API.
 If you are using a `launchSettings.json`, I suggest to use this as your `"launchUrl"`.

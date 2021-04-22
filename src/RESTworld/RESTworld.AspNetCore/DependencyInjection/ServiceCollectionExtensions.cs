@@ -10,6 +10,7 @@ using RESTworld.EntityFrameworkCore.Models;
 using RESTworld.Common.Dtos;
 using System.Linq;
 using System.Reflection;
+using RESTworld.AspNetCore.Authorization;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -36,7 +37,8 @@ namespace Microsoft.Extensions.DependencyInjection
                         {
                             optionsBuilder.EnableRetryOnFailure();
                         })
-                    .EnableDetailedErrors());
+                    .EnableDetailedErrors()
+                    .EnableSensitiveDataLogging());
 
             services.AddHealthChecks().AddDbContextCheck<TContext>();
 
@@ -70,6 +72,35 @@ namespace Microsoft.Extensions.DependencyInjection
             return services;
         }
 
+        public static IServiceCollection AddRestPipelineWithAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TAuthorizationhandler>(this IServiceCollection services)
+            where TContext : DbContextBase
+            where TEntity : EntityBase
+            where TGetListDto : DtoBase
+            where TGetFullDto : DtoBase
+            where TUpdateDto : DtoBase
+            where TAuthorizationhandler : class, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
+        {
+            services.AddRestPipeline<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
+            services.AddAuthorizationHandler<TAuthorizationhandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
+
+            return services;
+        }
+
+        public static IServiceCollection AddRestPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TService, TAuthorizationhandler>(this IServiceCollection services)
+            where TContext : DbContextBase
+            where TEntity : EntityBase
+            where TGetListDto : DtoBase
+            where TGetFullDto : DtoBase
+            where TUpdateDto : DtoBase
+            where TService : class, ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
+            where TAuthorizationhandler : class, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
+        {
+            services.AddRestPipelineWithCustomService<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TService>();
+            services.AddAuthorizationHandler<TAuthorizationhandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
+
+            return services;
+        }
+
         public static IServiceCollection AddODataModelForDbContext<TContext>(this IServiceCollection services)
         {
             var dbSetType = typeof(DbSet<>);
@@ -85,5 +116,19 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return services;
         }
+
+        public static IServiceCollection AddAuthorizationHandler<TAuthorizationhandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(this IServiceCollection services)
+            where TAuthorizationhandler : class, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
+            where TEntity : EntityBase
+            where TGetListDto : DtoBase
+            where TGetFullDto : DtoBase
+            where TUpdateDto : DtoBase
+        {
+            services.AddScoped<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, TAuthorizationhandler>();
+
+            return services;
+        }
+
+        public static IServiceCollection AddUserAccessor(this IServiceCollection services) => services.AddScoped<IUserAccessor, UserAccessor>();
     }
 }
