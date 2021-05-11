@@ -18,12 +18,13 @@ The most basic pipeline has the following data flow for a request on a list endp
 3. Query parsing through OData
 4. Controller method calls business service method
 5. Authorization validates and modifies the request (both optional)
-6. Service gets the data through Entity Framework Core
-7. Entity Framework Core translates the query into SQL and gets the data from the database
-8. Business service translates Entities into DTOs through Automapper
-9. Authorization validates and modifies the response (both optional)
-10. Controller wraps the result in a HAL response
-11. Result
+6. Service validates that all migrations have been applied to the database, to protect from locks during migration.
+7. Service gets the data through Entity Framework Core
+8. Entity Framework Core translates the query into SQL and gets the data from the database
+9. Business service translates Entities into DTOs through Automapper
+10. Authorization validates and modifies the response (both optional)
+11. Controller wraps the result in a HAL response
+12. Result
 
 ## Usage
 ### Solution structure
@@ -63,7 +64,7 @@ namespace MyApi
 }
 ```
 
-Change or add your Startup class
+Change or add to your Startup class
 ```
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -87,9 +88,6 @@ namespace MyApi
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             base.Configure(app, env);
-
-            // Optionally migrate your database to the latest version during startup
-            MigrateDatabase<TDbContext>(app);
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -98,6 +96,9 @@ namespace MyApi
             // Database
             services.AddDbContextFactoryWithDefaults<MyDatabase>(Configuration);
             services.AddODataModelForDbContext<MyDatabase>();
+
+            // Optionally migrate your database to the latest version during startup
+            services.MigrateDatabaseDuringStartup<TDbContext>();
             
             // Default pipeline
             services.AddRestPipeline<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
@@ -161,6 +162,21 @@ services.AddRestPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TCr
 ```
 
 To get the current user, an `IUserAccessor` is provided, which you may want to inject into your authorization handler implementation. It is automatically populated from the `HttpContext`. However no method is provided to read the user from a token, a cookie, or something else as libraries for that are already existing. In addition no login functionality is provided, as RESTworld is meant to be a framework for APIs and the API itself should relay the login functionality to any login service (like an OAuth service or something else).
+
+### Health checks
+Three endpoints for health checks are provided:
+1. `/health/startup`
+   1. This one reports healthy once every database which you have added through `services.AddDbContextFactoryWithDefaults<TContext>(Configuration)` has migrated to the latest version.
+2. `/health/live`
+   1. This one reports healthy as soon as the application has started. It has no checks configured upfront.
+3. `/health/ready`
+   1. This one reports healthy if a connection to every database which you have added through `services.AddDbContextFactoryWithDefaults<TContext>(Configuration)` can be established.
+
+These three endpoints have been choosen to play nicely with the three Kubernetes probes `startupProbe`, `livenessProbe` and `readinessProbe`. For more information have a look at the Kubernetes documentation https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes.
+
+You can add your own health checks to these endpoints by tagging them with either `"startup"`, `"live"` or `"ready"`.
+
+### Done
 
 That's it. Now you can start your API and use a HAL browser like https://chatty42.herokuapp.com/hal-explorer/index.html#uri=https://localhost:5001 to browse your API.
 If you are using a `launchSettings.json`, I suggest to use this as your `"launchUrl"`.

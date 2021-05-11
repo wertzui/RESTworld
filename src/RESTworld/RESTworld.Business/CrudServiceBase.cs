@@ -24,6 +24,7 @@ namespace RESTworld.Business
         protected readonly ILogger<CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> _logger;
         protected readonly IMapper _mapper;
         protected readonly IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> _authorizationHandlers;
+        protected static bool _databaseIsMigratedToLatestVersion;
 
         public CrudServiceBase(
             IDbContextFactory<TContext> contextFactory,
@@ -138,6 +139,14 @@ namespace RESTworld.Business
         {
             try
             {
+                if(!_databaseIsMigratedToLatestVersion)
+                {
+                    var pendingMigrations = await GetPendingMigrationsAsync();
+                    _databaseIsMigratedToLatestVersion = !System.Linq.Enumerable.Any(pendingMigrations);
+                    if (!_databaseIsMigratedToLatestVersion)
+                        return ServiceResponse.FromProblem<T>(HttpStatusCode.ServiceUnavailable ,$"The following migrations are still pending for {typeof(TContext).Name}:{Environment.NewLine}{string.Join(Environment.NewLine, pendingMigrations)}");
+                }
+
                 return await function();
             }
             catch (DbUpdateConcurrencyException e)
@@ -149,6 +158,13 @@ namespace RESTworld.Business
                 _logger.LogError(e, "Error while executing a service call");
                 return ServiceResponse.FromException<T>(e);
             }
+        }
+
+        protected virtual async Task<IEnumerable<string>> GetPendingMigrationsAsync()
+        {
+            await using var context = _contextFactory.CreateDbContext();
+            var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+            return pendingMigrations;
         }
 
         protected virtual Task<ServiceResponse<TResponse>> TryExecuteWithAuthorizationAsync<T1, TResponse>(

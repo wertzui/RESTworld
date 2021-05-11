@@ -1,24 +1,28 @@
 ﻿using AutoMapper;
+using HAL.AspNetCore.Abstractions;
+using HAL.AspNetCore.OData.Abstractions;
 using Microsoft.AspNet.OData.Builder;
 using Microsoft.AspNet.OData.Extensions;
 using Microsoft.AspNet.OData.Formatter;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Net.Http.Headers;
-using Microsoft.OpenApi.Models;
 using RESTworld.AspNetCore.Controller;
 using RESTworld.AspNetCore.DependencyInjection;
+using RESTworld.AspNetCore.Health;
+using RESTworld.AspNetCore.HostedServices;
 using RESTworld.AspNetCore.Swagger;
-using RESTworld.Business.Abstractions;
-using System.Linq;
+using System;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
 namespace RESTworld.AspNetCore
 {
@@ -58,6 +62,10 @@ namespace RESTworld.AspNetCore
                 endpoints.MapControllers();
                 endpoints.EnableDependencyInjection();
             });
+
+            app.UseHealthChecks("/health/startup", new HealthCheckOptions { Predicate = r => r.Tags.Contains("startup"), ResponseWriter = HealthCheckHALResponseWriter.WriteResponseAsync });
+            app.UseHealthChecks("/health/live", new HealthCheckOptions { Predicate = r => r.Tags.Contains("live"), ResponseWriter = HealthCheckHALResponseWriter.WriteResponseAsync });
+            app.UseHealthChecks("/health/ready", new HealthCheckOptions { Predicate = r => r.Tags.Contains("ready"), ResponseWriter = HealthCheckHALResponseWriter.WriteResponseAsync });
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -108,21 +116,8 @@ namespace RESTworld.AspNetCore
 
             services.AddHttpContextAccessor();
             services.AddUserAccessor();
-        }
 
-        /// <summary>
-        /// Migrates the specified database to the latest version.
-        /// Call this inside your <see cref="Configure(IApplicationBuilder, IWebHostEnvironment)"/> method.
-        /// </summary>
-        /// <typeparam name="TDbContext">The type of the database context.</typeparam>
-        /// <param name="app">The application builder.</param>
-        protected static void MigrateDatabase<TDbContext>(IApplicationBuilder app)
-            where TDbContext : DbContext
-        {
-            var factory = app.ApplicationServices.GetRequiredService<IDbContextFactory<TDbContext>>();
-
-            using var context = factory.CreateDbContext();
-            context.Database.Migrate();
+            services.AddHealthChecks();
         }
 
         /// <summary>
