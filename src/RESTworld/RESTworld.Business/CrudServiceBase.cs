@@ -2,9 +2,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RESTworld.Business.Abstractions;
+using RESTworld.Common.Dtos;
 using RESTworld.EntityFrameworkCore;
 using RESTworld.EntityFrameworkCore.Models;
-using RESTworld.Common.Dtos;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -56,9 +56,9 @@ namespace RESTworld.Business
                 (result, handler) => handler.HandleDeleteRequestAsync(result),
                 (response, handler) => handler.HandleDeleteResponseAsync(response));
 
-        public Task<ServiceResponse<IReadOnlyCollection<TGetListDto>>> GetListAsync(Func<System.Linq.IQueryable<TEntity>, System.Linq.IQueryable<TEntity>> filter)
+        public Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListAsync(IGetListRequest<TEntity> request)
             => TryExecuteWithAuthorizationAsync(
-                filter,
+                request,
                 param1 => GetListInternalAsync(param1),
                 (result, handler) => handler.HandleGetListRequestAsync(result),
                 (response, handler) => handler.HandleGetListResponseAsync(response));
@@ -109,18 +109,45 @@ namespace RESTworld.Business
             return ServiceResponse.FromStatus<object>(HttpStatusCode.OK);
         }
 
-        protected virtual async Task<ServiceResponse<IReadOnlyCollection<TGetListDto>>> GetListInternalAsync(Func<System.Linq.IQueryable<TEntity>, System.Linq.IQueryable<TEntity>> filter)
+        protected virtual async Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListInternalAsync(IGetListRequest<TEntity> request)
         {
-            var set = _contextFactory.Set<TEntity>();
+            var setForEntities = _contextFactory.Set<TEntity>();
 
-            if (filter is not null)
-                set = filter(set);
+            Task<long> totalPagesTask = null;
+            long? totalCount = null;
 
-            var entities = await set.ToListAsync();
+            var tasks = new List<Task>(2);
 
-            var dtos = _mapper.Map<IReadOnlyCollection<TGetListDto>>(entities);
+            if (request is not null)
+            {
+                if (request.Filter is not null)
+                    setForEntities = request.Filter(setForEntities);
 
-            return ServiceResponse.FromResult(dtos);
+                if (request.CalculateTotalCount)
+                {
+                    if (request.FilterForTotalCount is null)
+                        throw new ArgumentException($"If {nameof(request)}.{nameof(request.CalculateTotalCount)} is true, {nameof(request)}.{nameof(request.FilterForTotalCount)} must not be null.", nameof(request));
+
+                    var totalPagesSet = _contextFactory.Set<TEntity>();
+                    totalPagesSet = request.FilterForTotalCount(totalPagesSet);
+                    totalPagesTask = totalPagesSet.LongCountAsync();
+                    tasks.Add(totalPagesTask);
+                }
+            }
+
+            var entitiesTask = setForEntities.ToListAsync();
+            tasks.Add(entitiesTask);
+
+            await Task.WhenAll(tasks);
+
+            var dtos = _mapper.Map<IReadOnlyCollection<TGetListDto>>(entitiesTask.Result);
+
+            if (request.CalculateTotalCount)
+                totalCount = totalPagesTask.Result;
+
+            IReadOnlyPagedCollection<TGetListDto> pagedCollection = new ReadOnlyPagedCollection<TGetListDto>(dtos, totalCount);
+
+            return ServiceResponse.FromResult(pagedCollection);
         }
 
         protected virtual async Task<ServiceResponse<TGetFullDto>> GetSingleInternalAsync(long id)
@@ -139,12 +166,12 @@ namespace RESTworld.Business
         {
             try
             {
-                if(!_databaseIsMigratedToLatestVersion)
+                if (!_databaseIsMigratedToLatestVersion)
                 {
                     var pendingMigrations = await GetPendingMigrationsAsync();
                     _databaseIsMigratedToLatestVersion = !System.Linq.Enumerable.Any(pendingMigrations);
                     if (!_databaseIsMigratedToLatestVersion)
-                        return ServiceResponse.FromProblem<T>(HttpStatusCode.ServiceUnavailable ,$"The following migrations are still pending for {typeof(TContext).Name}:{Environment.NewLine}{string.Join(Environment.NewLine, pendingMigrations)}");
+                        return ServiceResponse.FromProblem<T>(HttpStatusCode.ServiceUnavailable, $"The following migrations are still pending for {typeof(TContext).Name}:{Environment.NewLine}{string.Join(Environment.NewLine, pendingMigrations)}");
                 }
 
                 return await function();

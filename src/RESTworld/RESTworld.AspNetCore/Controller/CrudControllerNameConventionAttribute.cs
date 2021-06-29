@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using System;
+using System.Text.RegularExpressions;
 
 namespace RESTworld.AspNetCore.Controller
 {
@@ -22,7 +23,7 @@ namespace RESTworld.AspNetCore.Controller
                 return;
             }
 
-            var readDtoType = controller.ControllerType.GenericTypeArguments[2];
+            var readDtoType = controller.ControllerType.GenericTypeArguments[3];
             controller.ControllerName = CreateNameFromType(readDtoType);
         }
 
@@ -32,11 +33,7 @@ namespace RESTworld.AspNetCore.Controller
         {
             var name = readDtoType.Name;
 
-            if (name.StartsWith("tbl", StringComparison.OrdinalIgnoreCase))
-                name = name[3..];
-
-            if (name.EndsWith("dto", StringComparison.OrdinalIgnoreCase))
-                name = name[..^3];
+            name = Regex.Match(name, "^(tbl)?(?<name>.*?)(get)?(full)?(dto)?$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture).Groups["name"].Value;
 
             return name;
         }

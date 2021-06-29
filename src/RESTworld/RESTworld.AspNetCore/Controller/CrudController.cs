@@ -1,7 +1,8 @@
-﻿using HAL.AspNetCore.OData.Abstractions;
+﻿using HAL.AspNetCore.Controllers;
+using HAL.AspNetCore.OData.Abstractions;
 using HAL.Common;
 using Microsoft.AspNet.OData.Query;
-using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
@@ -15,16 +16,20 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace RESTworld.AspNetCore.Controller
 {
-    [ApiController]
     [Route("[controller]")]
     [CrudControllerNameConvention]
-    public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> : ControllerBase
+    [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status503ServiceUnavailable)]
+    [ProducesErrorResponseType(typeof(Resource<ProblemDetails>))]
+    public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> : HalControllerBase
         where TEntity : EntityBase
         where TGetListDto : DtoBase
         where TGetFullDto : DtoBase
@@ -32,20 +37,24 @@ namespace RESTworld.AspNetCore.Controller
     {
         /// <summary>
         /// These serializer options are used to create a json template for creating a new resource.
-        /// We use <c>DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull</c> to keep value type properties like
-        /// <c>bool</c> and <c>int</c> but omit properties with <c>null</c> values.
-        /// Other properties that should be included in the json have to be set to a non <c>null</c> value.
+        /// We use <c>DefaultIgnoreCondition = JsonIgnoreCondition.Never</c> to keep all values.
         /// </summary>
-        private static readonly JsonSerializerOptions _createNewResourceJsonSettings =
-            new()
-            {
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
+        private static readonly JsonSerializerOptions _createNewResourceJsonSettings;
 
         private readonly RestWorldOptions _options;
         private readonly IODataResourceFactory _resourceFactory;
         private readonly ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> _service;
+
+        static CrudController()
+        {
+            _createNewResourceJsonSettings =
+            new()
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.Never,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+            _createNewResourceJsonSettings.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+        }
 
         public CrudController(
             ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> service,
@@ -62,6 +71,9 @@ namespace RESTworld.AspNetCore.Controller
 
         [HttpDelete("{id:long}")]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Delete))]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status409Conflict)]
         public virtual async Task<IActionResult> DeleteAsync(
             long id,
             [FromQuery] string? timestamp,
@@ -109,6 +121,7 @@ namespace RESTworld.AspNetCore.Controller
 
         [HttpGet("{id:long}")]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
+        [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
         public virtual async Task<ActionResult<Resource<TGetFullDto>>> GetAsync(long id)
         {
             var response = await _service.GetSingleAsync(id);
@@ -132,12 +145,18 @@ namespace RESTworld.AspNetCore.Controller
             [FromQuery(Name = "$top")] long? top = default,
             [FromQuery(Name = "$skip")] long? skip = default)
         {
-            var response = await _service.GetListAsync(set => options.ApplyTo(set).Cast<TEntity>().Take(_options.MaxNumberForListEndpoint));
+            //if (options.Top is null)
+            //    options = new ODataQueryOptions<TEntity>(options.Context, options.Request);
+
+            options.Context.DefaultQuerySettings.MaxTop = _options.MaxNumberForListEndpoint;
+            var getListrequest = options.ToListRequest(_options.CalculateTotalCountForListEndpoint);
+
+            var response = await _service.GetListAsync(getListrequest);
 
             if (!response.Succeeded)
                 return CreateError(response);
 
-            var result = _resourceFactory.CreateForOdataListEndpointUsingSkipTopPaging(response.ResponseObject, m => m.Id, options, _options.MaxNumberForListEndpoint);
+            var result = _resourceFactory.CreateForOdataListEndpointUsingSkipTopPaging(response.ResponseObject.Items, _ => "items", m => m.Id, options, options.Context.DefaultQuerySettings.MaxTop.Value, response.ResponseObject.TotalCount);
 
             if (result.Embedded is not null)
             {
@@ -165,6 +184,7 @@ namespace RESTworld.AspNetCore.Controller
 
         [HttpPost]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Post))]
+        [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status409Conflict)]
         public virtual async Task<ActionResult<Resource<TUpdateDto>>> PostAsync([FromBody] TCreateDto dto)
         {
             if (dto == null)
@@ -183,6 +203,8 @@ namespace RESTworld.AspNetCore.Controller
 
         [HttpPut("{id:long}")]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Put))]
+        [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status409Conflict)]
         public virtual async Task<ActionResult<Resource<TUpdateDto>>> PutAsync(long id, [FromBody] TUpdateDto dto)
         {
             if (dto == null)
@@ -202,7 +224,28 @@ namespace RESTworld.AspNetCore.Controller
             return Ok(resource);
         }
 
-        protected virtual TCreateDto CreateEmpty() => default;
+        protected virtual TCreateDto CreateEmpty()
+        {
+            var type = typeof(TCreateDto);
+            var constructor = type.GetConstructor(Type.EmptyTypes);
+
+            if (constructor is not null)
+            {
+                var dto = (TCreateDto)constructor.Invoke(Array.Empty<object>());
+                var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty);
+                foreach (var property in properties)
+                {
+                    if (property.PropertyType == typeof(string))
+                    {
+                        property.SetValue(dto, "");
+                    }
+                }
+
+                return dto;
+            }
+
+            return default;
+        }
 
         protected void AddDeleteLink<TDto>(Resource<TDto> result)
             where TDto : DtoBase

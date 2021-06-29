@@ -1,30 +1,46 @@
 ﻿using HAL.AspNetCore.Abstractions;
+using HAL.AspNetCore.Controllers;
 using HAL.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
+using RESTworld.AspNetCore.DependencyInjection;
 using System;
+using System.Linq;
+using System.Reflection;
 
 namespace guenstiger.Table.Controller
 {
-    [ApiController]
     [Route("")]
-    public class HomeController : ControllerBase
+    public class HomeController : HalControllerBase
     {
+        private readonly string _curieName;
         private readonly IResourceFactory _resourceFactory;
         private readonly ILinkFactory _linkFactory;
 
-        public HomeController(IResourceFactory resourceFactory, ILinkFactory linkFactory)
+        public HomeController(IResourceFactory resourceFactory, ILinkFactory linkFactory, IOptions<RestWorldOptions> options)
         {
+            if (options is null)
+                throw new ArgumentNullException(nameof(options));
+            _curieName = GetCurieNameOrDefault(options.Value.CurieName);
+
             _resourceFactory = resourceFactory ?? throw new ArgumentNullException(nameof(resourceFactory));
             _linkFactory = linkFactory ?? throw new ArgumentNullException(nameof(linkFactory));
         }
 
+        private string GetCurieNameOrDefault(string curieName)
+        {
+            if (!string.IsNullOrWhiteSpace(curieName))
+                return curieName;
+
+            return string.Concat(Assembly.GetEntryAssembly().GetName().Name.Where(c => char.IsUpper(c))).ToLowerInvariant();
+        }
+
         [HttpGet]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Resource), StatusCodes.Status200OK)]
         public virtual IActionResult Index()
         {
-            var resource = _resourceFactory.CreateForHomeEndpointWithSwaggerUi("gt");
+            var resource = _resourceFactory.CreateForHomeEndpointWithSwaggerUi(_curieName);
 
             var startup = _linkFactory.Create(name: "startup");
             startup.Href += "health/startup";

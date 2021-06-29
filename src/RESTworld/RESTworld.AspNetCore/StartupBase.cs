@@ -1,28 +1,20 @@
 ﻿using AutoMapper;
-using HAL.AspNetCore.Abstractions;
-using HAL.AspNetCore.OData.Abstractions;
 using Microsoft.AspNet.OData.Builder;
 using Microsoft.AspNet.OData.Extensions;
 using Microsoft.AspNet.OData.Formatter;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using RESTworld.AspNetCore.Controller;
 using RESTworld.AspNetCore.DependencyInjection;
 using RESTworld.AspNetCore.Health;
-using RESTworld.AspNetCore.HostedServices;
 using RESTworld.AspNetCore.Swagger;
-using System;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace RESTworld.AspNetCore
 {
