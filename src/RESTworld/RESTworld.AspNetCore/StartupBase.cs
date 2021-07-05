@@ -18,17 +18,33 @@ using System.Text.Json.Serialization;
 
 namespace RESTworld.AspNetCore
 {
+    /// <summary>
+    /// A base class for your Startup implementation.
+    /// It will automatically add everything which is needed for a REST pipeline to work.
+    /// </summary>
     public abstract class StartupBase
     {
+        /// <summary>
+        /// Creates a new instance of the <see cref="StartupBase"/> class.
+        /// </summary>
+        /// <param name="configuration">The <see cref="IConfiguration"/> instance.</param>
         public StartupBase(IConfiguration configuration)
         {
             Configuration = configuration;
         }
 
+        /// <summary>
+        /// The <see cref="IConfiguration"/> instance.
+        /// </summary>
         public IConfiguration Configuration { get; }
+
         internal static ODataConventionModelBuilder ODataModelBuilder { get; } = new ODataConventionModelBuilder();
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        /// <summary>
+        /// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        /// </summary>
+        /// <param name="app">The <see cref="IApplicationBuilder"/> instance.</param>
+        /// <param name="env">The <see cref="IWebHostBuilder"/> instance.</param>
         public virtual void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
@@ -60,7 +76,10 @@ namespace RESTworld.AspNetCore
             app.UseHealthChecks("/health/ready", new HealthCheckOptions { Predicate = r => r.Tags.Contains("ready"), ResponseWriter = HealthCheckHALResponseWriter.WriteResponseAsync });
         }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
+        /// <summary>
+        /// This method gets called by the runtime. Use this method to add services to the container.
+        /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection"/> instance.</param>
         public virtual void ConfigureServices(IServiceCollection services)
         {
             services.AddOData();

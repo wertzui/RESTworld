@@ -22,7 +22,7 @@ namespace guenstiger.Table.Controller
         {
             if (options is null)
                 throw new ArgumentNullException(nameof(options));
-            _curieName = GetCurieNameOrDefault(options.Value.CurieName);
+            _curieName = GetCurieNameOrDefault(options.Value.Curie);
 
             _resourceFactory = resourceFactory ?? throw new ArgumentNullException(nameof(resourceFactory));
             _linkFactory = linkFactory ?? throw new ArgumentNullException(nameof(linkFactory));

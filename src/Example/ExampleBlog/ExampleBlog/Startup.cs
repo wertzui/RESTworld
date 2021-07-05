@@ -37,7 +37,8 @@ namespace ExampleBlog
             services.AddRestPipeline<BlogDatabase, Author, AuthorDto, AuthorDto, AuthorDto, AuthorDto>();
 
             // We are using dedicated DTOs here to give the consumer a much better experience.
-            services.AddRestPipeline<BlogDatabase, Post, PostCreateDto, PostListDto, PostGetFullDto, PostUpdateDto>();
+            // We add our custom authorization too. Get Post 42, or ony post with a valid HTTP status code as id to test it!
+            services.AddRestPipelineWithAuthorization<BlogDatabase, Post, PostCreateDto, PostListDto, PostGetFullDto, PostUpdateDto, BlogpostAuthorizationHandler>(Configuration);
 
             base.ConfigureServices(services);
         }

@@ -5,9 +5,18 @@ using System;
 
 namespace RESTworld.AspNetCore
 {
+    /// <summary>
+    /// The base class for your program.
+    /// It will automatically add logging and configure your web host using the <typeparamref name="TStartup"/> class.
+    /// </summary>
+    /// <typeparam name="TStartup">YOur implementation of a startup class. Normally this will override <see cref="StartupBase"/>.</typeparam>
     public static class Program<TStartup>
         where TStartup : class
     {
+        /// <summary>
+        /// The main entry point for the program.
+        /// </summary>
+        /// <param name="args">Command line arguments which are added to the configuration.</param>
         public static void Main(string[] args)
         {
             Log.Logger = new LoggerConfiguration()

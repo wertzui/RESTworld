@@ -23,6 +23,14 @@ using System.Threading.Tasks;
 
 namespace RESTworld.AspNetCore.Controller
 {
+    /// <summary>
+    /// A basic crud controller offering operations for Create (also New for getting an empty instance), Read(List), Update and Delete.
+    /// </summary>
+    /// <typeparam name="TEntity">The type of the entity.</typeparam>
+    /// <typeparam name="TCreateDto">The type of the DTO for a Create operation.</typeparam>
+    /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
+    /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
+    /// <typeparam name="TUpdateDto">The type of the DTO for an Update operation.</typeparam>
     [Route("[controller]")]
     [CrudControllerNameConvention]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status401Unauthorized)]
@@ -56,6 +64,12 @@ namespace RESTworld.AspNetCore.Controller
             _createNewResourceJsonSettings.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
         }
 
+        /// <summary>
+        /// Creates a new instance of the <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> class.
+        /// </summary>
+        /// <param name="service">The service which handles the business operations.</param>
+        /// <param name="resourceFactory">The resource factory which creates HAL resources out of the service responses.</param>
+        /// <param name="options">The options which are used to determine the max number of entries for the List endpoint.</param>
         public CrudController(
             ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> service,
             IODataResourceFactory resourceFactory,
@@ -69,6 +83,13 @@ namespace RESTworld.AspNetCore.Controller
             _resourceFactory = resourceFactory ?? throw new ArgumentNullException(nameof(resourceFactory));
         }
 
+        /// <summary>
+        /// Deletes the resource with the given ID and timestamp.
+        /// </summary>
+        /// <param name="id">The ID of the resource.</param>
+        /// <param name="timestamp">The current timestamp of the resource. If the "If-Match" header is not present, this will be used for the timestamp.</param>
+        /// <param name="timestampFromHeader">The current timestamp of the resource. This comes from the "If-Match" header. If that header is present, it will be used for the timestamp.</param>
+        /// <returns>An empty response.</returns>
         [HttpDelete("{id:long}")]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Delete))]
         [ProducesResponseType(200)]
@@ -119,6 +140,11 @@ namespace RESTworld.AspNetCore.Controller
             }
         }
 
+        /// <summary>
+        /// Gets a full representation of the resource with the given ID.
+        /// </summary>
+        /// <param name="id">The ID of the resource.</param>
+        /// <returns>The full representation fo the requested resource.</returns>
         [HttpGet("{id:long}")]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
         [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
@@ -136,6 +162,15 @@ namespace RESTworld.AspNetCore.Controller
             return Ok(result);
         }
 
+        /// <summary>
+        /// Gets a paged list of resources matching the filter criteria.
+        /// </summary>
+        /// <param name="options">The OData options used to filter, order an page the list.</param>
+        /// <param name="filter">The filter to filter resources by.</param>
+        /// <param name="orderby">The order of the resources. If none is given, the resources are returned as they appear in the database.</param>
+        /// <param name="top">The maximum number of resources to return. THis is used for paging.</param>
+        /// <param name="skip">The number of resources to skip. This is used for paging.</param>
+        /// <returns></returns>
         [HttpGet]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
         public virtual async Task<ActionResult<Resource>> GetListAsync(
@@ -145,9 +180,6 @@ namespace RESTworld.AspNetCore.Controller
             [FromQuery(Name = "$top")] long? top = default,
             [FromQuery(Name = "$skip")] long? skip = default)
         {
-            //if (options.Top is null)
-            //    options = new ODataQueryOptions<TEntity>(options.Context, options.Request);
-
             options.Context.DefaultQuerySettings.MaxTop = _options.MaxNumberForListEndpoint;
             var getListrequest = options.ToListRequest(_options.CalculateTotalCountForListEndpoint);
 
@@ -171,6 +203,10 @@ namespace RESTworld.AspNetCore.Controller
             return Ok(result);
         }
 
+        /// <summary>
+        /// Returns an empty resource which can be used as a template when creating a new resource.
+        /// </summary>
+        /// <returns>An empty resource.</returns>
         [HttpGet("new")]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
         public virtual Task<ActionResult<Resource<TCreateDto>>> NewAsync()
@@ -182,6 +218,11 @@ namespace RESTworld.AspNetCore.Controller
             return Task.FromResult<ActionResult<Resource<TCreateDto>>>(new JsonResult(result, _createNewResourceJsonSettings));
         }
 
+        /// <summary>
+        /// Creates the given new resource.
+        /// </summary>
+        /// <param name="dto">The resource to create.</param>
+        /// <returns>The full resource as it was stored in the database.</returns>
         [HttpPost]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Post))]
         [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status409Conflict)]
@@ -201,6 +242,12 @@ namespace RESTworld.AspNetCore.Controller
             return Created(Url.ActionLink(values: new { id = response.ResponseObject!.Id }), resource);
         }
 
+        /// <summary>
+        /// Updates the given resource with new values.
+        /// </summary>
+        /// <param name="id">The ID of the resource to update. It must match the ID of the DTO.</param>
+        /// <param name="dto">Updated values fro the resource.</param>
+        /// <returns>The full resource as it was stored in the database.</returns>
         [HttpPut("{id:long}")]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Put))]
         [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
@@ -224,6 +271,11 @@ namespace RESTworld.AspNetCore.Controller
             return Ok(resource);
         }
 
+        /// <summary>
+        /// This method is called by the <see cref="NewAsync"/> operation to create a template resource to return.
+        /// The default implementation just calls the empty constructor and sets all strings to an empty string if they are not set initially.
+        /// </summary>
+        /// <returns></returns>
         protected virtual TCreateDto CreateEmpty()
         {
             var type = typeof(TCreateDto);
@@ -235,7 +287,7 @@ namespace RESTworld.AspNetCore.Controller
                 var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty);
                 foreach (var property in properties)
                 {
-                    if (property.PropertyType == typeof(string))
+                    if (property.PropertyType == typeof(string) && property.GetValue(dto) != default)
                     {
                         property.SetValue(dto, "");
                     }
@@ -247,6 +299,11 @@ namespace RESTworld.AspNetCore.Controller
             return default;
         }
 
+        /// <summary>
+        /// Adds a delete link to the given resource.
+        /// </summary>
+        /// <typeparam name="TDto">The type of the resource.</typeparam>
+        /// <param name="result">The resource to add the link to.</param>
         protected void AddDeleteLink<TDto>(Resource<TDto> result)
             where TDto : DtoBase
         {
@@ -264,6 +321,11 @@ namespace RESTworld.AspNetCore.Controller
                 });
         }
 
+        /// <summary>
+        /// Adds a save and a delete link to the given resource.
+        /// </summary>
+        /// <typeparam name="TDto">The type of the resource.</typeparam>
+        /// <param name="result">The resource to add the links to.</param>
         protected void AddSaveAndDeleteLinks<TDto>(Resource<TDto> result)
             where TDto : DtoBase
         {
@@ -271,6 +333,11 @@ namespace RESTworld.AspNetCore.Controller
             AddDeleteLink(result);
         }
 
+        /// <summary>
+        /// Adds a save link to the given resource.
+        /// </summary>
+        /// <typeparam name="TDto">The type of the resource.</typeparam>
+        /// <param name="result">The resource to add the link to.</param>
         protected void AddSaveLink<TDto>(Resource<TDto> result)
             where TDto : DtoBase
         {
@@ -286,6 +353,12 @@ namespace RESTworld.AspNetCore.Controller
                 });
         }
 
+        /// <summary>
+        /// Creates an error to return out of the given <see cref="ServiceResponse{T}"/>s status and problem details.
+        /// </summary>
+        /// <typeparam name="T">The type of the service response.</typeparam>
+        /// <param name="response">The service response holding a status and problem details.</param>
+        /// <returns>A result with the problem details and the given status code.</returns>
         protected ObjectResult CreateError<T>(ServiceResponse<T> response)
         {
             var resource =

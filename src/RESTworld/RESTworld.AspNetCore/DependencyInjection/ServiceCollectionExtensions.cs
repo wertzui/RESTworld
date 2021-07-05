@@ -1,7 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using RESTworld.AspNetCore;
 using RESTworld.AspNetCore.Authorization;
 using RESTworld.AspNetCore.Controller;
@@ -18,20 +16,44 @@ using System.Reflection;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
+    /// <summary>
+    /// Contains extension methods for <see cref="IServiceCollection"/>.
+    /// </summary>
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddAuthorizationHandler<TAuthorizationhandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(this IServiceCollection services)
+        /// <summary>
+        /// Adds an <see cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> which will automatically be called by any <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>.
+        /// </summary>
+        /// <typeparam name="TAuthorizationhandler">The type of the authorization handler.</typeparam>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        /// <typeparam name="TCreateDto">The type of the DTO for a Create operation.</typeparam>
+        /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
+        /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
+        /// <typeparam name="TUpdateDto">The type of the DTO for an Update operation.</typeparam>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+        /// <param name="configuration">The configuration instance which holds the RESTWorld configuration.</param>
+        /// <returns>A reference to this instance after the operation has completed.</returns>
+        public static IServiceCollection AddAuthorizationHandler<TAuthorizationhandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(this IServiceCollection services, IConfiguration configuration)
             where TAuthorizationhandler : class, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
             where TEntity : EntityBase
             where TGetListDto : DtoBase
             where TGetFullDto : DtoBase
             where TUpdateDto : DtoBase
         {
-            services.AddScoped<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, TAuthorizationhandler>();
+            if (!configuration.GetValue<bool>($"{nameof(RESTworld)}:{nameof(RestWorldOptions.DisableAuthorization)}"))
+                services.AddScoped<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, TAuthorizationhandler>();
 
             return services;
         }
 
+        /// <summary>
+        /// Adds a pooled <see cref="IDbContextFactory{TContext}"/> to the service collection.
+        /// The connectionstring comes from the configuration section "ConnectionStrings" with the name of the context type.
+        /// </summary>
+        /// <typeparam name="TContext">The type of the <see cref="DbContext"/>.</typeparam>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+        /// <param name="configuration">The <see cref="IConfiguration"/> instance which holds the RESTWorld configuration.</param>
+        /// <returns>A reference to this instance after the operation has completed.</returns>
         public static IServiceCollection AddDbContextFactoryWithDefaults<TContext>(this IServiceCollection services, IConfiguration configuration)
                     where TContext : DbContext
         {
@@ -48,7 +70,7 @@ namespace Microsoft.Extensions.DependencyInjection
             var contextType = typeof(TContext);
             var contextName = contextType.Name;
 
-            services.AddDbContextFactory<TContext>(builder =>
+            services.AddPooledDbContextFactory<TContext>(builder =>
                 builder
                     .UseSqlServer(
                         configuration.GetConnectionString(contextName),
@@ -64,7 +86,12 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return services;
         }
-
+        /// <summary>
+        /// Adds an ODataModel for a <see cref="DbContext"/>. This is required for List operations to work.
+        /// </summary>
+        /// <typeparam name="TContext">The type of the <see cref="DbContext"/>.</typeparam>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+        /// <returns>A reference to this instance after the operation has completed.</returns>
         public static IServiceCollection AddODataModelForDbContext<TContext>(this IServiceCollection services)
         {
             var dbSetType = typeof(DbSet<>);
@@ -81,6 +108,17 @@ namespace Microsoft.Extensions.DependencyInjection
             return services;
         }
 
+        /// <summary>
+        /// Adds a complete REST pipeline without authorization, using the <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> and the <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>.
+        /// </summary>
+        /// <typeparam name="TContext">The type of the <see cref="DbContext"/>.</typeparam>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        /// <typeparam name="TCreateDto">The type of the DTO for a Create operation.</typeparam>
+        /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
+        /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
+        /// <typeparam name="TUpdateDto">The type of the DTO for an Update operation.</typeparam>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+        /// <returns>A reference to this instance after the operation has completed.</returns>
         public static IServiceCollection AddRestPipeline<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(this IServiceCollection services)
                     where TContext : DbContextBase
             where TEntity : EntityBase
@@ -94,7 +132,20 @@ namespace Microsoft.Extensions.DependencyInjection
             return services;
         }
 
-        public static IServiceCollection AddRestPipelineWithAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TAuthorizationhandler>(this IServiceCollection services)
+        /// <summary>
+        /// Adds a complete REST pipeline with authorization, using the <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>, the <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> and the <typeparamref name="TAuthorizationhandler"/>.
+        /// </summary>
+        /// <typeparam name="TContext">The type of the <see cref="DbContext"/>.</typeparam>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        /// <typeparam name="TCreateDto">The type of the DTO for a Create operation.</typeparam>
+        /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
+        /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
+        /// <typeparam name="TUpdateDto">The type of the DTO for an Update operation.</typeparam>
+        /// <typeparam name="TAuthorizationhandler">The type of the <see cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>.</typeparam>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+        /// <param name="configuration">The <see cref="IConfiguration"/> instance which holds the RESTWorld configuration.</param>
+        /// <returns>A reference to this instance after the operation has completed.</returns>
+        public static IServiceCollection AddRestPipelineWithAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TAuthorizationhandler>(this IServiceCollection services, IConfiguration configuration)
             where TContext : DbContextBase
             where TEntity : EntityBase
             where TGetListDto : DtoBase
@@ -103,13 +154,25 @@ namespace Microsoft.Extensions.DependencyInjection
             where TAuthorizationhandler : class, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
         {
             services.AddRestPipeline<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
-            services.AddAuthorizationHandler<TAuthorizationhandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
+            services.AddAuthorizationHandler<TAuthorizationhandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(configuration);
 
             return services;
         }
 
+        /// <summary>
+        /// Adds a complete REST pipeline without authorization, using the <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> and a custom <typeparamref name="TService"/>.
+        /// </summary>
+        /// <typeparam name="TContext">The type of the <see cref="DbContext"/>.</typeparam>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        /// <typeparam name="TCreateDto">The type of the DTO for a Create operation.</typeparam>
+        /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
+        /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
+        /// <typeparam name="TUpdateDto">The type of the DTO for an Update operation.</typeparam>
+        /// <typeparam name="TService">The type of the custom <see cref="ICrudServiceBase{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> implementation.</typeparam>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+        /// <returns>A reference to this instance after the operation has completed.</returns>
         public static IServiceCollection AddRestPipelineWithCustomService<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TService>(this IServiceCollection services)
-                    where TContext : DbContextBase
+            where TContext : DbContextBase
             where TEntity : EntityBase
             where TGetListDto : DtoBase
             where TGetFullDto : DtoBase
@@ -122,7 +185,21 @@ namespace Microsoft.Extensions.DependencyInjection
             return services;
         }
 
-        public static IServiceCollection AddRestPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TService, TAuthorizationhandler>(this IServiceCollection services)
+        /// <summary>
+        /// Adds a complete REST pipeline with authorization, using the <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>, a custom <typeparamref name="TService"/> and the <typeparamref name="TAuthorizationhandler"/>.
+        /// </summary>
+        /// <typeparam name="TContext">The type of the <see cref="DbContext"/>.</typeparam>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        /// <typeparam name="TCreateDto">The type of the DTO for a Create operation.</typeparam>
+        /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
+        /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
+        /// <typeparam name="TUpdateDto">The type of the DTO for an Update operation.</typeparam>
+        /// <typeparam name="TService">The type of the custom <see cref="ICrudServiceBase{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> implementation.</typeparam>
+        /// <typeparam name="TAuthorizationhandler">The type of the <see cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>.</typeparam>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+        /// <param name="configuration">The <see cref="IConfiguration"/> instance which holds the RESTWorld configuration.</param>
+        /// <returns>A reference to this instance after the operation has completed.</returns>
+        public static IServiceCollection AddRestPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TService, TAuthorizationhandler>(this IServiceCollection services, IConfiguration configuration)
             where TContext : DbContextBase
             where TEntity : EntityBase
             where TGetListDto : DtoBase
@@ -132,11 +209,16 @@ namespace Microsoft.Extensions.DependencyInjection
             where TAuthorizationhandler : class, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
         {
             services.AddRestPipelineWithCustomService<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TService>();
-            services.AddAuthorizationHandler<TAuthorizationhandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
+            services.AddAuthorizationHandler<TAuthorizationhandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(configuration);
 
             return services;
         }
 
+        /// <summary>
+        /// Adds and <see cref="IUserAccessor"/> to the services which can be used to retrieve the current user from the HttpContext.
+        /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+        /// <returns>A reference to this instance after the operation has completed.</returns>
         public static IServiceCollection AddUserAccessor(this IServiceCollection services) => services.AddScoped<IUserAccessor, UserAccessor>();
 
         /// <summary>
