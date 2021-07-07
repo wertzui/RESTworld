@@ -14,6 +14,7 @@ namespace RESTworld.AspNetCore.Controller
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
     public sealed class CrudControllerNameConventionAttribute : Attribute, IControllerModelConvention
     {
+        /// <inheritdoc/>
         public void Apply(ControllerModel controller)
         {
             if (!controller.ControllerType.IsGenericType ||
@@ -27,8 +28,22 @@ namespace RESTworld.AspNetCore.Controller
             controller.ControllerName = CreateNameFromType(readDtoType);
         }
 
+        /// <summary>
+        /// Creates the controller name out of the given type.
+        /// Normally you want to use the type that is used on a normal GET operation.
+        /// It will try to strip all pre- and postfixes from the type.
+        /// </summary>
+        /// <typeparam name="TReadDto">The type of the DTO.</typeparam>
+        /// <returns>The name of the type without any pre- or postfixes so it can be used as a controller name.</returns>
         public static string CreateNameFromType<TReadDto>() => CreateNameFromType(typeof(TReadDto));
 
+        /// <summary>
+        /// Creates the controller name out of the given type.
+        /// Normally you want to use the type that is used on a normal GET operation.
+        /// It will try to strip all pre- and postfixes from the type.
+        /// </summary>
+        /// <param name="readDtoType">The type of the DTO.</param>
+        /// <returns>The name of the type without any pre- or postfixes so it can be used as a controller name.</returns>
         public static string CreateNameFromType(Type readDtoType)
         {
             var name = readDtoType.Name;

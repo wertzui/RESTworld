@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace RESTworld.Business.Abstractions
 {
@@ -24,12 +25,28 @@ namespace RESTworld.Business.Abstractions
         Task<AuthorizationResult<TEntity, TCreateDto>> HandleCreateRequestAsync(AuthorizationResult<TEntity, TCreateDto> previousResult);
 
         /// <summary>
+        /// This method is called before the CREATE request is executed on the database.
+        /// Use it if you want to modify the query BEFORE it is executed.
+        /// </summary>
+        /// <param name="previousResult">The result from the handler which was executed before this one, or an initial unmodified result.</param>
+        /// <returns>A result which might be modified depending on its internal authorization logic.</returns>
+        Task<AuthorizationResult<TEntity, IReadOnlyCollection<TCreateDto>>> HandleCreateRequestAsync(AuthorizationResult<TEntity, IReadOnlyCollection<TCreateDto>> previousResult);
+
+        /// <summary>
         /// This method is called AFTER the CREATE request is executed on the database.
         /// Use it if you want to modify the result AFTER it has been retrieved from the database.
         /// </summary>
         /// <param name="previousResponse">The response from the handler which was executed before this one, or an initial unmodified response.</param>
         /// <returns>A response which might be modified depending on its internal authorization logic.</returns>
         Task<ServiceResponse<TGetFullDto>> HandleCreateResponseAsync(ServiceResponse<TGetFullDto> previousResponse);
+
+        /// <summary>
+        /// This method is called AFTER the CREATE request is executed on the database.
+        /// Use it if you want to modify the result AFTER it has been retrieved from the database.
+        /// </summary>
+        /// <param name="previousResponse">The response from the handler which was executed before this one, or an initial unmodified response.</param>
+        /// <returns>A response which might be modified depending on its internal authorization logic.</returns>
+        Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> HandleCreateResponseAsync(ServiceResponse<IReadOnlyCollection<TGetFullDto>> previousResponse);
 
         /// <summary>
         /// This method is called BEFORE the DELETE request is executed on the database.
@@ -88,11 +105,27 @@ namespace RESTworld.Business.Abstractions
         Task<AuthorizationResult<TEntity, TUpdateDto>> HandleUpdateRequestAsync(AuthorizationResult<TEntity, TUpdateDto> previousResult);
 
         /// <summary>
-        /// This method is called aAFTERfter the UPDATE request is executed on the database.
+        /// This method is called BEFORE the UPDATE request is executed on the database.
+        /// Use it if you want to modify the query BEFORE it is executed.
+        /// </summary>
+        /// <param name="previousResult">The result from the handler which was executed before this one, or an initial unmodified result.</param>
+        /// <returns>A result which might be modified depending on its internal authorization logic.</returns>
+        Task<AuthorizationResult<TEntity, IUpdateMultipleRequest<TUpdateDto, TEntity>>> HandleUpdateRequestAsync(AuthorizationResult<TEntity, IUpdateMultipleRequest<TUpdateDto, TEntity>> previousResult);
+
+        /// <summary>
+        /// This method is called AFTER the UPDATE request is executed on the database.
         /// Use it if you want to modify the result AFTER it has been retrieved from the database.
         /// </summary>
         /// <param name="previousResponse">The response from the handler which was executed before this one, or an initial unmodified response.</param>
         /// <returns>A response which might be modified depending on its internal authorization logic.</returns>
         Task<ServiceResponse<TGetFullDto>> HandleUpdateResponseAsync(ServiceResponse<TGetFullDto> previousResponse);
+
+        /// <summary>
+        /// This method is called AFTER the UPDATE request is executed on the database.
+        /// Use it if you want to modify the result AFTER it has been retrieved from the database.
+        /// </summary>
+        /// <param name="previousResponse">The response from the handler which was executed before this one, or an initial unmodified response.</param>
+        /// <returns>A response which might be modified depending on its internal authorization logic.</returns>
+        Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> HandleUpdateResponseAsync(ServiceResponse<IReadOnlyCollection<TGetFullDto>> previousResponse);
     }
 }

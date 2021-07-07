@@ -1,8 +1,6 @@
-﻿using HAL.AspNetCore.Abstractions;
-using HAL.Common;
+﻿using HAL.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System;
 using System.Text.Json;
@@ -11,6 +9,9 @@ using System.Threading.Tasks;
 
 namespace RESTworld.AspNetCore.Health
 {
+    /// <summary>
+    /// Writes health check responses as valid HAL resources.
+    /// </summary>
     public static class HealthCheckHALResponseWriter
     {
         private static readonly JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
@@ -24,6 +25,9 @@ namespace RESTworld.AspNetCore.Health
             _jsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         }
 
+        /// <summary>
+        /// Writes the health check response as a HAL resources.
+        /// </summary>
         public static Task WriteResponseAsync(HttpContext context, HealthReport report)
         {
             var resource = new Resource<HealthReport> { State = report }.AddSelfLink(context.Request.GetEncodedUrl());

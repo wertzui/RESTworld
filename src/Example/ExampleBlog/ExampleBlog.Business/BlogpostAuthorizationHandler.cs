@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using RESTworld.Business;
 using RESTworld.Business.Abstractions;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -22,7 +23,11 @@ namespace ExampleBlog.Business
 
         public Task<AuthorizationResult<Post, PostCreateDto>> HandleCreateRequestAsync(AuthorizationResult<Post, PostCreateDto> previousResult) => Task.FromResult(previousResult);
 
+        public Task<AuthorizationResult<Post, IReadOnlyCollection<PostCreateDto>>> HandleCreateRequestAsync(AuthorizationResult<Post, IReadOnlyCollection<PostCreateDto>> previousResult) => Task.FromResult(previousResult);
+
         public Task<ServiceResponse<PostGetFullDto>> HandleCreateResponseAsync(ServiceResponse<PostGetFullDto> previousResponse) => Task.FromResult(previousResponse);
+
+        public Task<ServiceResponse<IReadOnlyCollection<PostGetFullDto>>> HandleCreateResponseAsync(ServiceResponse<IReadOnlyCollection<PostGetFullDto>> previousResponse) => Task.FromResult(previousResponse);
 
         public Task<AuthorizationResult<Post, long, byte[]>> HandleDeleteRequestAsync(AuthorizationResult<Post, long, byte[]> previousResult) => Task.FromResult(previousResult);
 
@@ -64,6 +69,10 @@ namespace ExampleBlog.Business
 
         public Task<AuthorizationResult<Post, PostUpdateDto>> HandleUpdateRequestAsync(AuthorizationResult<Post, PostUpdateDto> previousResult) => Task.FromResult(previousResult);
 
+        public Task<AuthorizationResult<Post, IUpdateMultipleRequest<PostUpdateDto, Post>>> HandleUpdateRequestAsync(AuthorizationResult<Post, IUpdateMultipleRequest<PostUpdateDto, Post>> previousResult) => Task.FromResult(previousResult);
+
         public Task<ServiceResponse<PostGetFullDto>> HandleUpdateResponseAsync(ServiceResponse<PostGetFullDto> previousResponse) => Task.FromResult(previousResponse);
+
+        public Task<ServiceResponse<IReadOnlyCollection<PostGetFullDto>>> HandleUpdateResponseAsync(ServiceResponse<IReadOnlyCollection<PostGetFullDto>> previousResponse) => Task.FromResult(previousResponse);
     }
 }

@@ -11,6 +11,10 @@ using System.Reflection;
 
 namespace guenstiger.Table.Controller
 {
+    /// <summary>
+    /// The HomeController is the one that is used for the root of you application.
+    /// It will output links to all endpoints of all controllers.
+    /// </summary>
     [Route("")]
     public class HomeController : HalControllerBase
     {
@@ -18,6 +22,12 @@ namespace guenstiger.Table.Controller
         private readonly IResourceFactory _resourceFactory;
         private readonly ILinkFactory _linkFactory;
 
+        /// <summary>
+        /// Creates a new instance of the <see cref="HomeController"/> class.
+        /// </summary>
+        /// <param name="resourceFactory">The factory used to create resources.</param>
+        /// <param name="linkFactory">The factory used to create links.</param>
+        /// <param name="options">Options which contain the curie.</param>
         public HomeController(IResourceFactory resourceFactory, ILinkFactory linkFactory, IOptions<RestWorldOptions> options)
         {
             if (options is null)
@@ -36,6 +46,10 @@ namespace guenstiger.Table.Controller
             return string.Concat(Assembly.GetEntryAssembly().GetName().Name.Where(c => char.IsUpper(c))).ToLowerInvariant();
         }
 
+        /// <summary>
+        /// Returns a list of links to all controller endpoints.
+        /// </summary>
+        /// <returns>A list of links to all controller endpoints.</returns>
         [HttpGet]
         [ProducesResponseType(typeof(Resource), StatusCodes.Status200OK)]
         public virtual IActionResult Index()

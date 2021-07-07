@@ -11,6 +11,7 @@ using Microsoft.Extensions.Hosting;
 using RESTworld.AspNetCore.Controller;
 using RESTworld.AspNetCore.DependencyInjection;
 using RESTworld.AspNetCore.Health;
+using RESTworld.AspNetCore.Serialization;
 using RESTworld.AspNetCore.Swagger;
 using System.Reflection;
 using System.Text.Json;
@@ -103,6 +104,7 @@ namespace RESTworld.AspNetCore
                 {
                     o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
                     o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+                    o.JsonSerializerOptions.Converters.Add(new SingleObjectOrCollectionJsonConverterFactory());
                 });
 
             services.AddCors(options =>

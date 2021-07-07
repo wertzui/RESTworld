@@ -6,18 +6,27 @@ using System.Threading.Tasks;
 
 namespace RESTworld.AspNetCore.Health
 {
+    /// <summary>
+    /// Checks if a connection to the database can be established.
+    /// </summary>
+    /// <typeparam name="TContext"></typeparam>
     public class DbContextFactoryConnectionHealthCheck<TContext> : IHealthCheck
         where TContext : DbContext
     {
         private readonly string _contextName;
         private readonly IDbContextFactory<TContext> _factory;
 
+        /// <summary>
+        /// Creates a new instance of the <see cref="DbContextFactoryConnectionHealthCheck{TContext}"/> class.
+        /// </summary>
+        /// <param name="factory">The factory which is used to create the <see cref="DbContext"/>.</param>
         public DbContextFactoryConnectionHealthCheck(IDbContextFactory<TContext> factory)
         {
             _factory = factory ?? throw new ArgumentNullException(nameof(factory));
             _contextName = typeof(TContext).Name;
         }
 
+        /// <inheritdoc/>
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
         {
             await using var dbContext = _factory.CreateDbContext();

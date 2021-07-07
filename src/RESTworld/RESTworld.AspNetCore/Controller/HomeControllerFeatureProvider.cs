@@ -8,8 +8,12 @@ using System.Reflection;
 
 namespace RESTworld.AspNetCore.Controller
 {
+    /// <summary>
+    /// This feature provide is responsible for adding the <see cref="HomeController"/> to the controller list.
+    /// </summary>
     public class HomeControllerFeatureProvider : IApplicationFeatureProvider<ControllerFeature>
     {
+        /// <inheritdoc/>
         public void PopulateFeature(IEnumerable<ApplicationPart> parts, ControllerFeature feature)
         {
             // Resolve controller name to avoid duplicates.

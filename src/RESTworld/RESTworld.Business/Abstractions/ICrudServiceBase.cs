@@ -1,5 +1,6 @@
 ﻿using RESTworld.Common.Dtos;
 using RESTworld.EntityFrameworkCore.Models;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace RESTworld.Business.Abstractions
@@ -26,6 +27,13 @@ namespace RESTworld.Business.Abstractions
         /// <param name="dto">The type of the DTO.</param>
         /// <returns>The DTO as it is stored in the database.</returns>
         Task<ServiceResponse<TGetFullDto>> CreateAsync(TCreateDto dto);
+
+        /// <summary>
+        /// Creates the given DTOs as an entities in the database.
+        /// </summary>
+        /// <param name="dtos">The type of the DTOs.</param>
+        /// <returns>The DTOs as they are stored in the database.</returns>
+        Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> CreateAsync(IReadOnlyCollection<TCreateDto> dtos);
 
         /// <summary>
         /// Deletes the entity with the given <paramref name="id"/> and <paramref name="timestamp"/> from the database.
@@ -56,5 +64,12 @@ namespace RESTworld.Business.Abstractions
         /// <param name="dto">The new properties which are used to update the existing entity in the database.</param>
         /// <returns>The DTO as it is stored in the database.</returns>
         Task<ServiceResponse<TGetFullDto>> UpdateAsync(TUpdateDto dto);
+
+        /// <summary>
+        /// Updates the entities with new properties as defined in the given DTOs.
+        /// </summary>
+        /// <param name="request">Specifies the DTOs to update and optional filtering.</param>
+        /// <returns>The DTOs as they are stored in the database.</returns>
+        Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> UpdateAsync(IUpdateMultipleRequest<TUpdateDto, TEntity> request);
     }
 }

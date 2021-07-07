@@ -1,5 +1,8 @@
 ﻿namespace RESTworld.AspNetCore.DependencyInjection
 {
+    /// <summary>
+    /// Options to configure the behavior of RESTWorld.
+    /// </summary>
     public class RestWorldOptions
     {
         /// <summary>

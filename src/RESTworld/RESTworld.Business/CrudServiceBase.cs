@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 
 namespace RESTworld.Business
 {
+    /// <inheritdoc/>
     public class CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
         : ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
         where TContext : DbContextBase
@@ -26,6 +27,13 @@ namespace RESTworld.Business
         protected readonly IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> _authorizationHandlers;
         protected static bool _databaseIsMigratedToLatestVersion;
 
+        /// <summary>
+        /// Creates a new instance of the <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> class.
+        /// </summary>
+        /// <param name="contextFactory">The factory used to create a <see cref="DbContext"/>.</param>
+        /// <param name="mapper">The AutoMapper instance which maps between DTOs and entities.</param>
+        /// <param name="authorizationHandlers">All AuthorizationHandlers which will be called during authorization.</param>
+        /// <param name="logger">The logger.</param>
         public CrudServiceBase(
             IDbContextFactory<TContext> contextFactory,
             IMapper mapper,
@@ -41,6 +49,7 @@ namespace RESTworld.Business
                 _logger.LogWarning($"No {nameof(ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}> is configured. No authorization will be performed for any methods of {nameof(CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}>.");
         }
 
+        /// <inheritdoc/>
         public Task<ServiceResponse<TGetFullDto>> CreateAsync(TCreateDto dto)
             => TryExecuteWithAuthorizationAsync(
                 dto,
@@ -48,6 +57,15 @@ namespace RESTworld.Business
                 (result, handler) => handler.HandleCreateRequestAsync(result),
                 (response, handler) => handler.HandleCreateResponseAsync(response));
 
+        /// <inheritdoc/>
+        public Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> CreateAsync(IReadOnlyCollection<TCreateDto> dtos)
+            => TryExecuteWithAuthorizationAsync(
+                dtos,
+                param1 => CreateInternalAsync(param1),
+                (result, handler) => handler.HandleCreateRequestAsync(result),
+                (response, handler) => handler.HandleCreateResponseAsync(response));
+
+        /// <inheritdoc/>
         public Task<ServiceResponse<object>> DeleteAsync(long id, byte[] timestamp)
             => TryExecuteWithAuthorizationAsync(
                 id,
@@ -56,6 +74,7 @@ namespace RESTworld.Business
                 (result, handler) => handler.HandleDeleteRequestAsync(result),
                 (response, handler) => handler.HandleDeleteResponseAsync(response));
 
+        /// <inheritdoc/>
         public Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListAsync(IGetListRequest<TEntity> request)
             => TryExecuteWithAuthorizationAsync(
                 request,
@@ -63,6 +82,7 @@ namespace RESTworld.Business
                 (result, handler) => handler.HandleGetListRequestAsync(result),
                 (response, handler) => handler.HandleGetListResponseAsync(response));
 
+        /// <inheritdoc/>
         public Task<ServiceResponse<TGetFullDto>> GetSingleAsync(long id)
             => TryExecuteWithAuthorizationAsync(
                 id,
@@ -70,9 +90,18 @@ namespace RESTworld.Business
                 (result, handler) => handler.HandleGetSingleRequestAsync(result),
                 (response, handler) => handler.HandleGetSingleResponseAsync(response));
 
+        /// <inheritdoc/>
         public Task<ServiceResponse<TGetFullDto>> UpdateAsync(TUpdateDto dto)
             => TryExecuteWithAuthorizationAsync(
                 dto,
+                param1 => UpdateInternalAsync(param1),
+                (result, handler) => handler.HandleUpdateRequestAsync(result),
+                (response, handler) => handler.HandleUpdateResponseAsync(response));
+
+        /// <inheritdoc/>
+        public Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> UpdateAsync(IUpdateMultipleRequest<TUpdateDto, TEntity> request)
+            => TryExecuteWithAuthorizationAsync(
+                request,
                 param1 => UpdateInternalAsync(param1),
                 (result, handler) => handler.HandleUpdateRequestAsync(result),
                 (response, handler) => handler.HandleUpdateResponseAsync(response));
@@ -82,10 +111,23 @@ namespace RESTworld.Business
             var entity = _mapper.Map<TEntity>(dto);
 
             await using var context = _contextFactory.CreateDbContext();
-            await context.AddAsync(entity);
+            context.Add(entity);
             await context.SaveChangesAsync();
 
             var resultDto = _mapper.Map<TGetFullDto>(entity);
+
+            return ServiceResponse.FromResult(resultDto);
+        }
+
+        protected virtual async Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> CreateInternalAsync(IReadOnlyCollection<TCreateDto> dtos)
+        {
+            var entities = _mapper.Map<IReadOnlyCollection<TEntity>>(dtos);
+
+            await using var context = _contextFactory.CreateDbContext();
+            context.AddRange(entities);
+            await context.SaveChangesAsync();
+
+            var resultDto = _mapper.Map<IReadOnlyCollection<TGetFullDto>>(entities);
 
             return ServiceResponse.FromResult(resultDto);
         }
@@ -190,8 +232,14 @@ namespace RESTworld.Business
         protected virtual async Task<IEnumerable<string>> GetPendingMigrationsAsync()
         {
             await using var context = _contextFactory.CreateDbContext();
-            var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
-            return pendingMigrations;
+
+            if (context.Database.IsRelational())
+            {
+                var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+                return pendingMigrations;
+            }
+
+            return Array.Empty<string>();
         }
 
         protected virtual Task<ServiceResponse<TResponse>> TryExecuteWithAuthorizationAsync<T1, TResponse>(
@@ -213,7 +261,7 @@ namespace RESTworld.Business
         {
             await using var context = _contextFactory.CreateDbContext();
 
-            var entity = await context.Set<TEntity>().FirstOrDefaultAsync(x => x.Id == dto.Id);
+            var entity = await context.Set<TEntity>().FirstOrDefaultAsync(e => e.Id == dto.Id);
 
             if (entity is null)
                 return ServiceResponse.FromStatus<TGetFullDto>(HttpStatusCode.NotFound);
@@ -225,6 +273,33 @@ namespace RESTworld.Business
             await context.SaveChangesAsync();
 
             var resultDto = _mapper.Map<TGetFullDto>(entity);
+
+            return ServiceResponse.FromResult(resultDto);
+        }
+
+        protected virtual async Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> UpdateInternalAsync(IUpdateMultipleRequest<TUpdateDto, TEntity> request)
+        {
+            var dtos = request.Dtos;
+
+            var ids = System.Linq.Enumerable.ToHashSet(System.Linq.Enumerable.Select(dtos, d => d.Id));
+            await using var context = _contextFactory.CreateDbContext();
+
+            var entities = await request.Filter(System.Linq.Queryable.Where(context.Set<TEntity>(), e => ids.Contains(e.Id)))
+                .ToDictionaryAsync(e => e.Id);
+
+            if (entities.Count != dtos.Count)
+                return ServiceResponse.FromStatus<IReadOnlyCollection<TGetFullDto>>(HttpStatusCode.NotFound);
+
+            foreach (var dto in dtos)
+            {
+                var entity = entities[dto.Id];
+                context.Entry(entity).Property(nameof(EntityBase.Timestamp)).OriginalValue = dto.Timestamp;
+                _mapper.Map(dto, entity);
+            }
+
+            await context.SaveChangesAsync();
+
+            var resultDto = _mapper.Map<IReadOnlyCollection<TGetFullDto>>(entities.Values);
 
             return ServiceResponse.FromResult(resultDto);
         }
