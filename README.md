@@ -9,12 +9,13 @@ RESTworld is a framework which utilizes other common frameworks and patterns all
 - OData for query support on list endpoints
 - AutoMapper for mapping between Entities and DTOs
 - Resource based authorization
+- API Versioning through media types
 
 ## Pipeline
 The most basic pipeline has the following data flow for a request on a list endpoint:
 
 1. Request
-2. Controller selection through ASP.Net Core
+2. Controller selection through ASP.Net Core (optionally with versioning)
 3. Query parsing through OData
 4. Controller method calls business service method
 5. Authorization validates and modifies the request (both optional)
@@ -26,7 +27,10 @@ The most basic pipeline has the following data flow for a request on a list endp
 11. Controller wraps the result in a HAL response
 12. Result
 
-## Usage
+## Usage as API developer
+### Example
+You can find a complete example which leverages all the features offered by RESTworld at https://github.com/wertzui/RESTworld/tree/main/src/Example/ExampleBlog.
+
 ### Solution structure
 If your API gets the name MyApi, structure your Solution with the following Projects:
 - MyApi (ASP.Net Core Web API)
@@ -45,9 +49,17 @@ If your API gets the name MyApi, structure your Solution with the following Proj
 ### Startup configuration
 Add the following to your appsettings.json
 ```
-"RESTworld": {
-  "MaxNumberForListEndpoint": <whatever is an appropriate number of resources for one page>
-}
+  "RESTworld": {
+    "MaxNumberForListEndpoint": 10, // The maximum returned on a list endpoint
+    "Curie": "MyEx", // The curie used to reference all your actions
+    "CalculateTotalCountForListEndpoint": true, // If you set this to true, your clients may be able to get all pages faster as they can do more parallel requests by calculating everything themself
+    "DisableAuthorization": false, // For testing purposes you can set this to false
+    "Versioning": { // Add this is you want to opt into versioning
+      "AllowQueryParameterVersioning": false, // This will allow legacy clients who cannot version through the media-type to version through a query parameter. This is not considered REST, but here to also support such clients.
+      "DefaultVersion": "2.0", // Can either be a version or "latest"
+      "ParameterName":  "v" // The name of the parameter in the media-type headers and the query "Accept: application/hal+json; v=2.0" or "http://localhost/Author/42?v=2.0"
+    }
+  }
 ```
 
 Change your Program.cs to the following
@@ -103,6 +115,10 @@ namespace MyApi
             // Default pipeline
             services.AddRestPipeline<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
 
+            // Optionally you can also add versioned pipelines
+            services.AddRestPipeline<TContext, TEntity, TCreateDtoV1, TGetListDtoV1, TGetFullDtoV1, TUpdateDtoV1>(new ApiVersion(1, 0), true);
+            services.AddRestPipeline<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(new ApiVersion(2, 0));
+
             // With custom service
             services.AddRestPipelineWithCustomService<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TService>();
 
@@ -131,7 +147,22 @@ namespace MyApi.Business
     {
         public void ConfigureAutomapper(IMapperConfigurationExpression config)
         {
-            config.CreateMap<TEntity, TDto>();
+            // A simple mapping
+            config
+                .CreateMap<TEntity, TDto>()
+                .ReverseMap();
+
+            // If you are using versioning, you probably need to add different mappings for different DTO versions here
+            config
+                .CreateMap<MyEntity, MyDto>()
+                .ReverseMap();
+
+            config
+                .CreateMap<MyEntity, MyDtoV1>()
+                .ForMember(dst => dst.Name, opt => opt.MapFrom(src => src.FirstName + " " + src.LastName))
+                .ReverseMap()
+                .ForMember(dst => dst.FirstName, opt => opt.MapFrom(src => src.Name.Split(new[] { ' ' }, 2)[0]))
+                .ForMember(dst => dst.LastName, opt => opt.MapFrom(src => src.Name.Split(new[] { ' ' }, 2)[1]));
 
             // Add more mappings
         }
@@ -163,6 +194,13 @@ services.AddRestPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TCr
 
 To get the current user, an `IUserAccessor` is provided, which you may want to inject into your authorization handler implementation. It is automatically populated from the `HttpContext`. However no method is provided to read the user from a token, a cookie, or something else as libraries for that are already existing. In addition no login functionality is provided, as RESTworld is meant to be a framework for APIs and the API itself should relay the login functionality to any login service (like an OAuth service or something else).
 
+### Versioning
+If you want or need to version your API, this is done through the media-type headers `Accept` and `Content-Type`. The API will parse the version from the `Accept` header and always return the used version in the `Content-Type` header. It will also advertise supported versions in the `api-supported-versions` header and advertise deprecated versions in the `api-deprecated-versions` header. So if you implement a client for the API, you should always look at the `api-deprecated-versions` header and give a warning to the user of the client if a deprecated version is used.
+
+You can configure versioning in your appsettings as shown above. If possible, I suggest that you handle versioning in your `AutomapperConfiguration` as this is the easiest place and does not require special service implementations. 
+
+However if you cannot do this, there is also the possibility to use a REST pipeline with a custom service. That way you will need to provide one service for each version, but can also do more complex logic and database access to support multiple versions.
+
 ### Health checks
 Three endpoints for health checks are provided:
 1. `/health/startup`
@@ -180,3 +218,24 @@ You can add your own health checks to these endpoints by tagging them with eithe
 
 That's it. Now you can start your API and use a HAL browser like https://chatty42.herokuapp.com/hal-explorer/index.html#uri=https://localhost:5001 to browse your API.
 If you are using a `launchSettings.json`, I suggest to use this as your `"launchUrl"`.
+
+## Usage as client developer
+This project does not provide a client implementation (as of now), but here are some guidelines when developing a client:
+
+### Make use of HAL
+Write your client in such a way that it will always connect to the home-endpoint (`/`) first to discover all the other endpoints. You can cache the routes to the controller enpoints for quite some time (maybe a day or for the duration of a session), but do not hardcode them! There are also a couple of libraries for different programming languages out there which support HAL. The specification can be found at https://stateless.group/hal_specification.html.
+
+### Link templating
+Link templating is defined in the IETF RFC 6570 at https://datatracker.ietf.org/doc/html/rfc6570 and there are also libraries for that. Use it together with HAL.
+
+### OData queries for list endpoints
+To filter data on the List-endpoint, you can use the OData syntax. It is very powerfull and you can find a basic tutorial on the sytax at https://www.odata.org/getting-started/basic-tutorial/#queryData.
+
+### Use the /new endpoint to get sensible default data
+If you want you client to be able to create new objects, you might want to query the `/new ` endpoint and present that data to your user so he is guided a little bit.
+
+### Batch operations for POST and PUT
+The POST (Create) and PUT (Update) endpoints both accept either a single object or an array of objects. If you need to create or modify a huge number of objects, you should send them as an array as this will ensure the atomicity of such an operation and might also give you a huge performance gain as it will save a lot of roundtrips.
+
+### Versioning
+Always send your supported version(s) in the `Accept` header to ensure you always get a  response that you can handle and watch for the `api-deprecated-versions` header to quickly get notified if you need to change your client before it breaks. The format of the `Accept` header should always be `application/hal+json; v=42` (or whatever version you need and is offered by the server).

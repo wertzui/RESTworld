@@ -244,6 +244,13 @@ namespace RESTworld.AspNetCore.Controller
                 return await PostSingleAsync(dto.SingleObject);
         }
 
+
+        /// <summary>
+        /// Creates the given new resource.
+        /// This method is called when <see cref="PostAsync(SingleObjectOrCollection{TCreateDto})"/> is called with a single object.
+        /// </summary>
+        /// <param name="dto">The resource to create.</param>
+        /// <returns>The full resource as stored in the database.</returns>
         protected virtual async Task<ActionResult<Resource<TUpdateDto>>> PostSingleAsync(TCreateDto dto)
         {
             var response = await _service.CreateAsync(dto);
@@ -257,6 +264,12 @@ namespace RESTworld.AspNetCore.Controller
             return Created(Url.ActionLink(values: new { id = response.ResponseObject!.Id }), resource);
         }
 
+        /// <summary>
+        /// Creates the given new resources.
+        /// This method is called when <see cref="PostAsync(SingleObjectOrCollection{TCreateDto})"/> is called with a collection.
+        /// </summary>
+        /// <param name="dtos">The resources to create.</param>
+        /// <returns>The full resources as stored in the database.</returns>
         protected virtual async Task<ActionResult<Resource<TUpdateDto>>> PostMultipleAsync(IReadOnlyCollection<TCreateDto> dtos)
         {
             var response = await _service.CreateAsync(dtos);

@@ -46,11 +46,14 @@ namespace RESTworld.AspNetCore.Controller
         /// <returns>The name of the type without any pre- or postfixes so it can be used as a controller name.</returns>
         public static string CreateNameFromType(Type readDtoType)
         {
-            var name = readDtoType.Name;
+            var dtoName = readDtoType.Name;
 
-            name = Regex.Match(name, "^(tbl)?(?<name>.*?)(get)?(full)?(dto)?$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture).Groups["name"].Value;
+            var match = Regex.Match(dtoName, "^(?<tbl>tbl)?(?<name>.*?)(?<get>get)?(?<full>full)?(?<dto>dto)?(?<version>v(er(sion)?)?\\d+)?$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+            var groups = match.Groups;
 
-            return name;
+            var controllerName = groups["name"].Value;
+
+            return controllerName;
         }
     }
 }

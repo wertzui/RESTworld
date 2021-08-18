@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Versioning;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using RESTworld.AspNetCore;
 using RESTworld.AspNetCore.Authorization;
@@ -109,17 +111,21 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Adds a complete REST pipeline without authorization, using the <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> and the <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>.
+        /// Adds a complete REST pipeline without authorization, using the <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}" /> and the <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}" />.
         /// </summary>
-        /// <typeparam name="TContext">The type of the <see cref="DbContext"/>.</typeparam>
+        /// <typeparam name="TContext">The type of the <see cref="DbContext" />.</typeparam>
         /// <typeparam name="TEntity">The type of the entity.</typeparam>
         /// <typeparam name="TCreateDto">The type of the DTO for a Create operation.</typeparam>
         /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
         /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
         /// <typeparam name="TUpdateDto">The type of the DTO for an Update operation.</typeparam>
-        /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
-        /// <returns>A reference to this instance after the operation has completed.</returns>
-        public static IServiceCollection AddRestPipeline<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(this IServiceCollection services)
+        /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
+        /// <param name="apiVersion">An optional API version.</param>
+        /// <param name="isDeprecated">if set to <c>true</c> the pipeline with this version is trated as deprecated.</param>
+        /// <returns>
+        /// A reference to this instance after the operation has completed.
+        /// </returns>
+        public static IServiceCollection AddRestPipeline<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(this IServiceCollection services, ApiVersion apiVersion = null, bool isDeprecated = false)
                     where TContext : DbContextBase
             where TEntity : EntityBase
             where TGetListDto : DtoBase
@@ -128,6 +134,21 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             services.AddScoped<ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>>();
             CrudControllerFeatureProvider.AddController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
+            services.Configure<ApiVersioningOptions>(options =>
+            {
+                var controllerConvention = options.Conventions.Controller<CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>>();
+                if (apiVersion is null)
+                {
+                    controllerConvention.IsApiVersionNeutral();
+                }
+                else
+                {
+                    if (isDeprecated)
+                        controllerConvention.HasDeprecatedApiVersion(apiVersion);
+                    else
+                        controllerConvention.HasApiVersion(apiVersion);
+                }
+            });
 
             return services;
         }
@@ -144,8 +165,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparam name="TAuthorizationhandler">The type of the <see cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
         /// <param name="configuration">The <see cref="IConfiguration"/> instance which holds the RESTWorld configuration.</param>
+        /// <param name="apiVersion">An optional API version.</param>
+        /// <param name="isDeprecated">if set to <c>true</c> the pipeline with this version is trated as deprecated.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
-        public static IServiceCollection AddRestPipelineWithAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TAuthorizationhandler>(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddRestPipelineWithAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TAuthorizationhandler>(this IServiceCollection services, IConfiguration configuration, ApiVersion apiVersion = null, bool isDeprecated = false)
             where TContext : DbContextBase
             where TEntity : EntityBase
             where TGetListDto : DtoBase
@@ -153,7 +176,7 @@ namespace Microsoft.Extensions.DependencyInjection
             where TUpdateDto : DtoBase
             where TAuthorizationhandler : class, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
         {
-            services.AddRestPipeline<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
+            services.AddRestPipeline<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(apiVersion, isDeprecated);
             services.AddAuthorizationHandler<TAuthorizationhandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(configuration);
 
             return services;

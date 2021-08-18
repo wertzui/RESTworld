@@ -6,8 +6,19 @@ using System.Threading.Tasks;
 
 namespace RESTworld.EntityFrameworkCore
 {
+    /// <summary>
+    /// A base class for all your DbCOntext classes.
+    /// It automatically adds timestamp concurrency detection for all <see cref="EntityBase"/> entities and
+    /// Automatically modifies the LastChangedAt and LastChangedBy properties of <see cref="ChangeTrackingEntityBase"/> entities.
+    /// It also removes the timeout during migrations so long running migrations won't fail.
+    /// </summary>
+    /// <seealso cref="Microsoft.EntityFrameworkCore.DbContext" />
     public class DbContextBase : DbContext
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DbContextBase"/> class.
+        /// </summary>
+        /// <param name="options">The options for this context.</param>
         public DbContextBase(DbContextOptions options) : base(options)
         {
         }

@@ -31,8 +31,8 @@ namespace ExampleBlog.Data
             modelBuilder.Entity<Author>(entity =>
             {
                 entity.HasData(
-                    new Author { Id = 1, Name = "Jon Doe", Email = "jondoe@example.com" }.AddDefaults(),
-                    new Author { Id = 2, Name = "Jane Doe", Email = "janedoe@example.com" }.AddDefaults());
+                    new Author { Id = 1, FirstName = "Jon", LastName = "Doe", Email = "jondoe@example.com" }.AddDefaults(),
+                    new Author { Id = 2, FirstName = "Jane", LastName = "Doe", Email = "janedoe@example.com" }.AddDefaults());
             });
 
             modelBuilder.Entity<Post>(entity =>

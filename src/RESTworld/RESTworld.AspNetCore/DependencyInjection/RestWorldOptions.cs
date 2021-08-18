@@ -26,5 +26,13 @@
         /// You should never set this in a production environment!
         /// </summary>
         public bool DisableAuthorization { get; set; }
+
+        /// <summary>
+        /// Gets or sets the versioning options.
+        /// </summary>
+        /// <value>
+        /// The versioning options.
+        /// </value>
+        public VersioningOptions Versioning { get; set; }
     }
 }

@@ -5,14 +5,21 @@ using Microsoft.AspNet.OData.Formatter;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using RESTworld.AspNetCore.Controller;
 using RESTworld.AspNetCore.DependencyInjection;
 using RESTworld.AspNetCore.Health;
 using RESTworld.AspNetCore.Serialization;
 using RESTworld.AspNetCore.Swagger;
+using RESTworld.AspNetCore.Versioning;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using System;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -46,7 +53,8 @@ namespace RESTworld.AspNetCore
         /// </summary>
         /// <param name="app">The <see cref="IApplicationBuilder"/> instance.</param>
         /// <param name="env">The <see cref="IWebHostBuilder"/> instance.</param>
-        public virtual void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        /// <param name="provider"></param>
+        public virtual void Configure(IApplicationBuilder app, IWebHostEnvironment env, IApiVersionDescriptionProvider provider)
         {
             if (env.IsDevelopment())
                 app.UseDeveloperExceptionPage();
@@ -55,10 +63,15 @@ namespace RESTworld.AspNetCore
 
             app.UseSwagger();
 
-            app.UseSwaggerUI(c =>
+            app.UseSwaggerUI(options =>
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", Assembly.GetEntryAssembly().GetName().Name);
-                c.ConfigObject.DeepLinking = true;
+                foreach (var description in provider.ApiVersionDescriptions)
+                {
+                    options.SwaggerEndpoint(
+                        $"/swagger/{description.GroupName}/swagger.json",
+                        description.GroupName.ToUpperInvariant());
+                }
+                options.ConfigObject.DeepLinking = true;
             });
 
             app.UseCors();
@@ -83,6 +96,40 @@ namespace RESTworld.AspNetCore
         /// <param name="services">The <see cref="IServiceCollection"/> instance.</param>
         public virtual void ConfigureServices(IServiceCollection services)
         {
+            services.AddApiVersioning(options =>
+            {
+                options.AssumeDefaultVersionWhenUnspecified = true;
+                options.ReportApiVersions = true;
+
+                // Default version
+                var defaultVersion = Configuration.GetValue("RESTworld:Versioning:DefaultVersion", "*");
+                if(defaultVersion == "*")
+                {
+                    options.ApiVersionSelector = new LatestApiVersionSelector();
+                }
+                else
+                {
+                    if (!ApiVersion.TryParse(defaultVersion, out var parsedVersion))
+                        throw new ArgumentOutOfRangeException("RESTworld:Versioning:DefaultVersion", defaultVersion, "The setting for \"RESTworld:Versioning:DefaultVersion\" was neither \"*\" nor a valid API version.");
+
+                    options.DefaultApiVersion = parsedVersion;
+                }
+
+                // Version parameter
+                var parameterName = Configuration.GetValue("RESTworld:Versioning:ParameterName", "v");
+                var allowQueryStringVersioning = Configuration.GetValue("RESTworld:Versioning:AllowQueryParameterVersioning", false);
+                if (allowQueryStringVersioning)
+                {
+                    options.ApiVersionReader = ApiVersionReader.Combine(
+                        new MediaTypeApiVersionReader(parameterName),
+                        new QueryStringApiVersionReader(parameterName));
+                }
+                else
+                {
+                    options.ApiVersionReader = new MediaTypeApiVersionReader(parameterName);
+                }
+            });
+
             services.AddOData();
             services.AddSingleton(_ => ODataModelBuilder.GetEdmModel());
 
@@ -117,9 +164,24 @@ namespace RESTworld.AspNetCore
                         .AllowCredentials()); // allow credentials
             });
 
-            services.AddSwaggerGen(c =>
+            services.AddVersionedApiExplorer(options =>
             {
-                c.OperationFilter<SwaggerIgnoreOperationFilter>();
+                options.GroupNameFormat = "'v'VVV";
+
+                // Do not advertise versioning through query parameter as this is only intended for legacy clients and should not be visible as it is not considered RESTfull.
+                if(options.ApiVersionParameterSource is not MediaTypeApiVersionReader)
+                {
+                    var parameterName = Configuration.GetValue("RESTworld:Versioning:ParameterName", "v");
+                    options.ApiVersionParameterSource = new MediaTypeApiVersionReader(parameterName);
+                }
+            });
+            services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureVersioningWithSwaggerOptions>();
+            services.AddSwaggerGen(options =>
+            {
+                options.OperationFilter<SwaggerIgnoreOperationFilter>();
+
+                var parameterName = Configuration.GetValue("RESTworld:Versioning:ParameterName", "v");
+                options.OperationFilter<SwaggerVersioningOperationFilter>(parameterName);
             });
 
             services.AddAutoMapper(ConfigureAutomapper);

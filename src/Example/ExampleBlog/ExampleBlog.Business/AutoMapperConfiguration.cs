@@ -15,6 +15,12 @@ namespace ExampleBlog.Business
             config
                 .CreateMap<Author, AuthorDto>()
                 .ReverseMap();
+            config
+                .CreateMap<Author, AuthorDtoV1>()
+                .ForMember(dst => dst.Name, opt => opt.MapFrom(src => src.FirstName + " " + src.LastName))
+                .ReverseMap()
+                .ForMember(dst => dst.FirstName, opt => opt.MapFrom(src => src.Name.Split(new[] { ' ' }, 2)[0]))
+                .ForMember(dst => dst.LastName, opt => opt.MapFrom(src => src.Name.Split(new[] { ' ' }, 2)[1]));
 
             config
                 .CreateMap<PostCreateDto, Post>();

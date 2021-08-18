@@ -4,14 +4,16 @@ using ExampleBlog.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace ExampleBlog.Data.Migrations
 {
     [DbContext(typeof(BlogDatabase))]
-    partial class BlogDatabaseModelSnapshot : ModelSnapshot
+    [Migration("20210812103426_AuthorV2")]
+    partial class AuthorV2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

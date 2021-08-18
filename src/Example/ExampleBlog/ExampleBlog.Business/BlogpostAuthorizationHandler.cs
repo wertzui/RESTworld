@@ -37,7 +37,7 @@ namespace ExampleBlog.Business
 
         public Task<ServiceResponse<IReadOnlyPagedCollection<PostListDto>>> HandleGetListResponseAsync(ServiceResponse<IReadOnlyPagedCollection<PostListDto>> previousResponse) => Task.FromResult(previousResponse);
 
-        public async Task<AuthorizationResult<Post, long>> HandleGetSingleRequestAsync(AuthorizationResult<Post, long> previousResult)
+        public Task<AuthorizationResult<Post, long>> HandleGetSingleRequestAsync(AuthorizationResult<Post, long> previousResult)
         {
             // This is just to illustrate how authorization handlers work.
             // In a normal environment you would use the _userAccessor and do some real authorization.
@@ -46,13 +46,13 @@ namespace ExampleBlog.Business
             if (Enum.IsDefined(typeof(HttpStatusCode), (int)requestedPostId))
             {
                 _logger.LogInformation($"{nameof(BlogpostAuthorizationHandler)}.{nameof(HandleGetSingleRequestAsync)} was called with a valid HTTP status code.");
-                return AuthorizationResult.FromStatus<Post, long>((HttpStatusCode)requestedPostId, requestedPostId);
+                return Task.FromResult(AuthorizationResult.FromStatus<Post, long>((HttpStatusCode)requestedPostId, requestedPostId));
             }
 
-            return previousResult;
+            return Task.FromResult(previousResult);
         }
 
-        public async Task<ServiceResponse<PostGetFullDto>> HandleGetSingleResponseAsync(ServiceResponse<PostGetFullDto> previousResponse)
+        public Task<ServiceResponse<PostGetFullDto>> HandleGetSingleResponseAsync(ServiceResponse<PostGetFullDto> previousResponse)
         {
             // This is just to illustrate how authorization handlers work.
             // In a normal environment you would use the _userAccessor and do some real authorization.
@@ -61,10 +61,10 @@ namespace ExampleBlog.Business
             if (requestedPostId == 42)
             {
                 _logger.LogInformation($"{nameof(BlogpostAuthorizationHandler)}.{nameof(HandleGetSingleResponseAsync)} was called with a post which has the ID 42.");
-                return ServiceResponse.FromProblem<PostGetFullDto>((HttpStatusCode)42, "This is the answer!");
+                return Task.FromResult(ServiceResponse.FromProblem<PostGetFullDto>((HttpStatusCode)42, "This is the answer!"));
             }
 
-            return previousResponse;
+            return Task.FromResult(previousResponse);
         }
 
         public Task<AuthorizationResult<Post, PostUpdateDto>> HandleUpdateRequestAsync(AuthorizationResult<Post, PostUpdateDto> previousResult) => Task.FromResult(previousResult);

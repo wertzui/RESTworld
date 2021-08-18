@@ -21,11 +21,14 @@ namespace RESTworld.Business
         where TGetFullDto : DtoBase
         where TUpdateDto : DtoBase
     {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         protected readonly IDbContextFactory<TContext> _contextFactory;
         protected readonly ILogger<CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> _logger;
         protected readonly IMapper _mapper;
         protected readonly IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> _authorizationHandlers;
+        protected readonly IUserAccessor _userAccessor;
         protected static bool _databaseIsMigratedToLatestVersion;
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
         /// <summary>
         /// Creates a new instance of the <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> class.
@@ -33,16 +36,19 @@ namespace RESTworld.Business
         /// <param name="contextFactory">The factory used to create a <see cref="DbContext"/>.</param>
         /// <param name="mapper">The AutoMapper instance which maps between DTOs and entities.</param>
         /// <param name="authorizationHandlers">All AuthorizationHandlers which will be called during authorization.</param>
+        /// <param name="userAccessor">The user accessor which gets the user of the current request.</param>
         /// <param name="logger">The logger.</param>
         public CrudServiceBase(
             IDbContextFactory<TContext> contextFactory,
             IMapper mapper,
             IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> authorizationHandlers,
+            IUserAccessor userAccessor,
             ILogger<CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> logger)
         {
             _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
             _authorizationHandlers = authorizationHandlers ?? throw new ArgumentNullException(nameof(authorizationHandlers));
+            _userAccessor = userAccessor;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             if (System.Linq.Enumerable.Any(_authorizationHandlers))
@@ -106,32 +112,51 @@ namespace RESTworld.Business
                 (result, handler) => handler.HandleUpdateRequestAsync(result),
                 (response, handler) => handler.HandleUpdateResponseAsync(response));
 
+        /// <summary>
+        /// The method contains the business logic for the CREATE operation.
+        /// It will insert the given DTO into the database.
+        /// </summary>
+        /// <param name="dto">The DTO to insert into the database.</param>
+        /// <returns>A response containing the DTO as it is in the database.</returns>
         protected virtual async Task<ServiceResponse<TGetFullDto>> CreateInternalAsync(TCreateDto dto)
         {
             var entity = _mapper.Map<TEntity>(dto);
 
             await using var context = _contextFactory.CreateDbContext();
             context.Add(entity);
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(GetCurrentUsersName());
 
             var resultDto = _mapper.Map<TGetFullDto>(entity);
 
             return ServiceResponse.FromResult(resultDto);
         }
 
+        /// <summary>
+        /// The method contains the business logic for the CREATE operation.
+        /// It will insert the given DTOs into the database.
+        /// </summary>
+        /// <param name="dtos">The DTOs to insert into the database.</param>
+        /// <returns>A response containing the DTOs as it is in the database.</returns>
         protected virtual async Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> CreateInternalAsync(IReadOnlyCollection<TCreateDto> dtos)
         {
             var entities = _mapper.Map<IReadOnlyCollection<TEntity>>(dtos);
 
             await using var context = _contextFactory.CreateDbContext();
             context.AddRange(entities);
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(GetCurrentUsersName());
 
             var resultDto = _mapper.Map<IReadOnlyCollection<TGetFullDto>>(entities);
 
             return ServiceResponse.FromResult(resultDto);
         }
 
+        /// <summary>
+        /// The method contains the business logic for the DELETE operation.
+        /// It will delete the entity with the given ID and timestamp from the database.
+        /// </summary>
+        /// <param name="id">The identifier.</param>
+        /// <param name="timestamp">The timestamp.</param>
+        /// <returns>An empty 200 (Ok) response, or a problem response with either 404 (Not found) if the ID does not exist or 409 (Conflict) if the timestamp does not match.</returns>
         protected virtual async Task<ServiceResponse<object>> DeleteInternalAsync(long id, byte[] timestamp)
         {
             await using var context = _contextFactory.CreateDbContext();
@@ -146,11 +171,18 @@ namespace RESTworld.Business
 
             context.Remove(entity);
 
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(GetCurrentUsersName());
 
             return ServiceResponse.FromStatus<object>(HttpStatusCode.OK);
         }
 
+        /// <summary>
+        /// The method contains the business logic for the READ-List operation.
+        /// It will return the items from the database as specified in the request.
+        /// </summary>
+        /// <param name="request">The request which contains a filter on which items to return. The filter is normally mapped from the OData parameters that where passed into the controller ($filter, $orderby, $top, $skip).</param>
+        /// <returns>All items as specified in the request with paging options if specified.</returns>
+        /// <exception cref="ArgumentException">If request.CalculateTotalCount is true, request.FilterForTotalCount must not be null.</exception>
         protected virtual async Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListInternalAsync(IGetListRequest<TEntity> request)
         {
             var setForEntities = _contextFactory.Set<TEntity>();
@@ -192,6 +224,12 @@ namespace RESTworld.Business
             return ServiceResponse.FromResult(pagedCollection);
         }
 
+        /// <summary>
+        /// The method contains the business logic for the READ-Single operation.
+        /// It will return the item with the specified ID from the database.
+        /// </summary>
+        /// <param name="id">The identifier of the item.</param>
+        /// <returns>The item with the specified ID, or 404 (Not Found).</returns>
         protected virtual async Task<ServiceResponse<TGetFullDto>> GetSingleInternalAsync(long id)
         {
             var entity = await _contextFactory.Set<TEntity>().FirstOrDefaultAsync(e => e.Id == id);
@@ -204,6 +242,15 @@ namespace RESTworld.Business
             return ServiceResponse.FromResult(dto);
         }
 
+        /// <summary>
+        /// Tries to execute the given function while checking for errors and wrapping any exceptions into a problem ServiceResponse.
+        /// It will first check for any pending database migrations. If there are any, a 503 (Service unavailable) is returned.
+        /// If a <see cref="DbUpdateConcurrencyException"/> occurs during the execution, this will be wrapped into a 409 (Conflict) ServiceResponse.
+        /// If any other exception occurs, this will be wrapped into a 500 (Internal server error) ServiceResponse.
+        /// </summary>
+        /// <typeparam name="T">The type of the result.</typeparam>
+        /// <param name="function">The function to execute.</param>
+        /// <returns>Either the result of the call or a ServiceResponse describing the problem.</returns>
         protected virtual async Task<ServiceResponse<T>> TryExecuteAsync<T>(Func<Task<ServiceResponse<T>>> function)
         {
             try
@@ -229,6 +276,11 @@ namespace RESTworld.Business
             }
         }
 
+        /// <summary>
+        /// Gets all pending migrations if the database is relational.
+        /// You may want to override this method if you do not want to execute migrations during application startup, but still want to access the database.
+        /// </summary>
+        /// <returns>All pending migrations.</returns>
         protected virtual async Task<IEnumerable<string>> GetPendingMigrationsAsync()
         {
             await using var context = _contextFactory.CreateDbContext();
@@ -242,6 +294,21 @@ namespace RESTworld.Business
             return Array.Empty<string>();
         }
 
+        /// <summary>
+        /// Tries to execute a <paramref name="function" /> which accepts one parameter while performing <paramref name="authorizeRequest" /> before and <paramref name="authorizeResult" /> after the main invocation.
+        /// This method combines <see cref="TryExecuteAsync{T}(Func{Task{ServiceResponse{T}}})"/> with <see cref="WithAuthorizationAsync{T1, TResponse}(T1, Func{T1, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResult{TEntity, T1}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{AuthorizationResult{TEntity, T1}}}, Func{ServiceResponse{TResponse}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{ServiceResponse{TResponse}}})"/>.
+        /// </summary>
+        /// <typeparam name="T1">The type of the parameter.</typeparam>
+        /// <typeparam name="TResponse">The type of the response.</typeparam>
+        /// <param name="param1">The first parameter.</param>
+        /// <param name="function">The main function to execute.</param>
+        /// <param name="authorizeRequest">The authorization request function which is executed before the main function.</param>
+        /// <param name="authorizeResult">The authorization result function which is executed after the main function.</param>
+        /// <returns>
+        /// The result of the function or a <see cref="ServiceResponse{T}" /> containing a problem description.
+        /// </returns>
+        /// <seealso cref="TryExecuteAsync{T}(Func{Task{ServiceResponse{T}}})" />
+        /// <seealso cref="WithAuthorizationAsync{T1, TResponse}(T1, Func{T1, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResult{TEntity, T1}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{AuthorizationResult{TEntity, T1}}}, Func{ServiceResponse{TResponse}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{ServiceResponse{TResponse}}})"/>
         protected virtual Task<ServiceResponse<TResponse>> TryExecuteWithAuthorizationAsync<T1, TResponse>(
             T1 param1,
             Func<T1, Task<ServiceResponse<TResponse>>> function,
@@ -249,6 +316,24 @@ namespace RESTworld.Business
             Func<ServiceResponse<TResponse>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<ServiceResponse<TResponse>>> authorizeResult)
             => TryExecuteAsync(() => WithAuthorizationAsync(param1, function, authorizeRequest, authorizeResult));
 
+
+        /// <summary>
+        /// Tries to execute a <paramref name="function" /> which accepts two parameters while performing <paramref name="authorizeRequest" /> before and <paramref name="authorizeResult" /> after the main invocation.
+        /// This method combines <see cref="TryExecuteAsync{T}(Func{Task{ServiceResponse{T}}})"/> with <see cref="WithAuthorizationAsync{T1, T2, TResponse}(T1, T2, Func{T1, T2, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResult{TEntity, T1, T2}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{AuthorizationResult{TEntity, T1, T2}}}, Func{ServiceResponse{TResponse}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{ServiceResponse{TResponse}}})"/>.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="TResponse">The type of the response.</typeparam>
+        /// <param name="param1">The first parameter.</param>
+        /// <param name="param2">The second parameter.</param>
+        /// <param name="function">The main function to execute.</param>
+        /// <param name="authorizeRequest">The authorization request function which is executed before the main function.</param>
+        /// <param name="authorizeResult">The authorization result function which is executed after the main function.</param>
+        /// <returns>
+        /// The result of the function or a <see cref="ServiceResponse{T}" /> containing a problem description.
+        /// </returns>
+        /// <seealso cref="TryExecuteAsync{T}(Func{Task{ServiceResponse{T}}})" />
+        /// <seealso cref="WithAuthorizationAsync{T1, T2, TResponse}(T1, T2, Func{T1, T2, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResult{TEntity, T1, T2}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{AuthorizationResult{TEntity, T1, T2}}}, Func{ServiceResponse{TResponse}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{ServiceResponse{TResponse}}})"/>
         protected virtual Task<ServiceResponse<TResponse>> TryExecuteWithAuthorizationAsync<T1, T2, TResponse>(
             T1 param1,
             T2 param2,
@@ -257,6 +342,12 @@ namespace RESTworld.Business
             Func<ServiceResponse<TResponse>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<ServiceResponse<TResponse>>> authorizeResult)
             => TryExecuteAsync(() => WithAuthorizationAsync(param1, param2, function, authorizeRequest, authorizeResult));
 
+        /// <summary>
+        /// The method contains the business logic for the UPDATE-Single operation.
+        /// It will update the entity in the database with the given DTO.
+        /// </summary>
+        /// <param name="dto">The DTO which contains updated values.</param>
+        /// <returns>The item as it is stored in the database after the update operation.</returns>
         protected virtual async Task<ServiceResponse<TGetFullDto>> UpdateInternalAsync(TUpdateDto dto)
         {
             await using var context = _contextFactory.CreateDbContext();
@@ -270,13 +361,19 @@ namespace RESTworld.Business
 
             _mapper.Map(dto, entity);
 
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(GetCurrentUsersName());
 
             var resultDto = _mapper.Map<TGetFullDto>(entity);
 
             return ServiceResponse.FromResult(resultDto);
         }
 
+        /// <summary>
+        /// The method contains the business logic for the UPDATE-Multiple operation.
+        /// It will update the entities in the database with the given DTOs.
+        /// </summary>
+        /// <param name="request">The DTOs which contain updated values.</param>
+        /// <returns>The items as stored in the database after the update operation.</returns>
         protected virtual async Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> UpdateInternalAsync(IUpdateMultipleRequest<TUpdateDto, TEntity> request)
         {
             var dtos = request.Dtos;
@@ -297,13 +394,25 @@ namespace RESTworld.Business
                 _mapper.Map(dto, entity);
             }
 
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(GetCurrentUsersName());
 
             var resultDto = _mapper.Map<IReadOnlyCollection<TGetFullDto>>(entities.Values);
 
             return ServiceResponse.FromResult(resultDto);
         }
 
+        /// <summary>
+        /// Executes a <paramref name="function" /> which accepts one parameter while performing <paramref name="authorizeRequest" /> before and <paramref name="authorizeResult" /> after the main invocation.
+        /// </summary>
+        /// <typeparam name="T1">The type of the parameter.</typeparam>
+        /// <typeparam name="TResponse">The type of the response.</typeparam>
+        /// <param name="param1">The first parameter.</param>
+        /// <param name="function">The main function to execute.</param>
+        /// <param name="authorizeRequest">The authorization request function which is executed before the main function.</param>
+        /// <param name="authorizeResult">The authorization result function which is executed after the main function.</param>
+        /// <returns>
+        /// The result of the function or a <see cref="ServiceResponse{T}" /> containing a problem description.
+        /// </returns>
         protected virtual async Task<ServiceResponse<TResponse>> WithAuthorizationAsync<T1, TResponse>(
             T1 param1,
             Func<T1, Task<ServiceResponse<TResponse>>> function,
@@ -323,6 +432,20 @@ namespace RESTworld.Business
             return resultAuthResponse;
         }
 
+        /// <summary>
+        /// Executes a <paramref name="function" /> which accepts two parameters while performing <paramref name="authorizeRequest" /> before and <paramref name="authorizeResult" /> after the main invocation.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <typeparam name="TResponse">The type of the response.</typeparam>
+        /// <param name="param1">The first parameter.</param>
+        /// <param name="param2">The second parameter.</param>
+        /// <param name="function">The main function to execute.</param>
+        /// <param name="authorizeRequest">The authorization request function which is executed before the main function.</param>
+        /// <param name="authorizeResult">The authorization result function which is executed after the main function.</param>
+        /// <returns>
+        /// The result of the function or a <see cref="ServiceResponse{T}" /> containing a problem description.
+        /// </returns>
         protected virtual async Task<ServiceResponse<TResponse>> WithAuthorizationAsync<T1, T2, TResponse>(
             T1 param1,
             T2 param2,
@@ -343,11 +466,18 @@ namespace RESTworld.Business
             return resultAuthResponse;
         }
 
+        /// <summary>
+        /// Calls the Handle...RequestAsync for all <see cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>s with one parameter.
+        /// </summary>
+        /// <typeparam name="T1">The type of the parameter.</typeparam>
+        /// <param name="param1">The parameter.</param>
+        /// <param name="authorizeRequest">Defines which Handle...RequestAsync method to call.</param>
+        /// <returns>The result of the authorization. May contain a failed authorization or a modified parameter.</returns>
         protected virtual async Task<AuthorizationResult<TEntity, T1>> AuthorizeRequestAsync<T1>(
-            T1 value1,
+            T1 param1,
             Func<AuthorizationResult<TEntity, T1>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<AuthorizationResult<TEntity, T1>>> authorizeRequest)
         {
-            var result = AuthorizationResult.Ok<TEntity, T1>(value1);
+            var result = AuthorizationResult.Ok<TEntity, T1>(param1);
 
             foreach (var handler in _authorizationHandlers)
             {
@@ -357,12 +487,24 @@ namespace RESTworld.Business
             return result;
         }
 
+
+        /// <summary>
+        /// Calls the Handle...RequestAsync for all <see cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}" />s with two parameters.
+        /// </summary>
+        /// <typeparam name="T1">The type of the first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the second parameter.</typeparam>
+        /// <param name="param1">The first parameter.</param>
+        /// <param name="param2">The second parameter.</param>
+        /// <param name="authorizeRequest">Defines which Handle...RequestAsync method to call.</param>
+        /// <returns>
+        /// The result of the authorization. May contain a failed authorization or modified parameters.
+        /// </returns>
         protected virtual async Task<AuthorizationResult<TEntity, T1, T2>> AuthorizeRequestAsync<T1, T2>(
-            T1 value1,
-            T2 value2,
+            T1 param1,
+            T2 param2,
             Func<AuthorizationResult<TEntity, T1, T2>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<AuthorizationResult<TEntity, T1, T2>>> authorizeRequest)
         {
-            var result = AuthorizationResult.Ok<TEntity, T1, T2>(value1, value2);
+            var result = AuthorizationResult.Ok<TEntity, T1, T2>(param1, param2);
 
             foreach (var handler in _authorizationHandlers)
             {
@@ -372,6 +514,15 @@ namespace RESTworld.Business
             return result;
         }
 
+        /// <summary>
+        /// Calls the Handle...ResultAsync for all <see cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}" />s.
+        /// </summary>
+        /// <typeparam name="TResponse">The type of the response.</typeparam>
+        /// <param name="response">The response.</param>
+        /// <param name="authorizeResult">Defines which Handle...ResultAsync method to call.</param>
+        /// <returns>
+        /// The result of the authorization. May contain a failed authorization or a modified result.
+        /// </returns>
         protected virtual async Task<ServiceResponse<TResponse>> AuthorizeResultAsync<TResponse>(
             ServiceResponse<TResponse> response,
             Func<ServiceResponse<TResponse>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<ServiceResponse<TResponse>>> authorizeResult)
@@ -386,5 +537,12 @@ namespace RESTworld.Business
             return result;
 
         }
+
+        /// <summary>
+        /// Gets the name of the current user which is used when calling <see cref="DbContextBase.SaveChangesAsync(string, System.Threading.CancellationToken)"/>.
+        /// This is the user name which gets stored in the <see cref="ChangeTrackingEntityBase.CreatedBy"/> and <see cref="ChangeTrackingEntityBase.LastChangedBy"/> properties.
+        /// </summary>
+        /// <returns>The name of the current user as defined by the <see cref="IUserAccessor.User"/></returns>
+        protected virtual string GetCurrentUsersName() => _userAccessor?.User?.Identity?.Name;
     }
 }

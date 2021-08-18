@@ -10,6 +10,30 @@ namespace RESTworld.Business
     public static class AuthorizationResult
     {
         /// <summary>
+        /// Creates a forbidden AuthorizationResult.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        /// <returns>A forbidden AuthorizationResult.</returns>
+        public static AuthorizationResult<TEntity> Forbidden<TEntity>() => FromStatus<TEntity>(HttpStatusCode.Forbidden);
+
+        /// <summary>
+        /// Creates a forbidden AuthorizationResult.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        /// <typeparam name="T1">The type of the additional first parameter.</typeparam>
+        /// <returns>A forbidden AuthorizationResult.</returns>
+        public static AuthorizationResult<TEntity, T1> Forbidden<TEntity, T1>(T1 value1) => FromStatus<TEntity, T1>(HttpStatusCode.Forbidden, value1);
+
+        /// <summary>
+        /// Creates a forbidden AuthorizationResult.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        /// <typeparam name="T1">The type of the additional first parameter.</typeparam>
+        /// <typeparam name="T2">The type of the additional second parameter.</typeparam>
+        /// <returns>A forbidden AuthorizationResult.</returns>
+        public static AuthorizationResult<TEntity, T1, T2> Forbidden<TEntity, T1, T2>(T1 value1, T2 value2) => FromStatus<TEntity, T1, T2>(HttpStatusCode.Forbidden, value1, value2);
+
+        /// <summary>
         /// Creates an AuthorizationResult from a status.
         /// </summary>
         /// <typeparam name="TEntity">The type of the entity.</typeparam>
@@ -23,7 +47,10 @@ namespace RESTworld.Business
         /// <typeparam name="TEntity">The type of the entity.</typeparam>
         /// <typeparam name="T1">The type of the additional first parameter.</typeparam>
         /// <param name="status">The HTTP status code.</param>
-        /// <returns>An AuthorizationResult from the status.</returns>
+        /// <param name="value1">The first parameter of the service method.</param>
+        /// <returns>
+        /// An AuthorizationResult from the status.
+        /// </returns>
         public static AuthorizationResult<TEntity, T1> FromStatus<TEntity, T1>(HttpStatusCode status, T1 value1) => new AuthorizationResult<TEntity, T1>(status, value1);
 
         /// <summary>
@@ -33,7 +60,11 @@ namespace RESTworld.Business
         /// <typeparam name="T1">The type of the additional first parameter.</typeparam>
         /// <typeparam name="T2">The type of the additional second parameter.</typeparam>
         /// <param name="status">The HTTP status code.</param>
-        /// <returns>An AuthorizationResult from the status.</returns>
+        /// <param name="value1">The first parameter of the service method.</param>
+        /// <param name="value2">The second parameter of the service method.</param>
+        /// <returns>
+        /// An AuthorizationResult from the status.
+        /// </returns>
         public static AuthorizationResult<TEntity, T1, T2> FromStatus<TEntity, T1, T2>(HttpStatusCode status, T1 value1, T2 value2) => new AuthorizationResult<TEntity, T1, T2>(status, value1, value2);
 
         /// <summary>
@@ -59,30 +90,6 @@ namespace RESTworld.Business
         /// <typeparam name="T2">The type of the additional second parameter.</typeparam>
         /// <returns>A successfull AuthorizationResult.</returns>
         public static AuthorizationResult<TEntity, T1, T2> Ok<TEntity, T1, T2>(T1 value1, T2 value2) => FromStatus<TEntity, T1, T2>(HttpStatusCode.OK, value1, value2);
-
-        /// <summary>
-        /// Creates a forbidden AuthorizationResult.
-        /// </summary>
-        /// <typeparam name="TEntity">The type of the entity.</typeparam>
-        /// <returns>A forbidden AuthorizationResult.</returns>
-        public static AuthorizationResult<TEntity> Forbidden<TEntity>() => FromStatus<TEntity>(HttpStatusCode.Forbidden);
-
-        /// <summary>
-        /// Creates a forbidden AuthorizationResult.
-        /// </summary>
-        /// <typeparam name="TEntity">The type of the entity.</typeparam>
-        /// <typeparam name="T1">The type of the additional first parameter.</typeparam>
-        /// <returns>A forbidden AuthorizationResult.</returns>
-        public static AuthorizationResult<TEntity, T1> Forbidden<TEntity, T1>(T1 value1) => FromStatus<TEntity, T1>(HttpStatusCode.Forbidden, value1);
-
-        /// <summary>
-        /// Creates a forbidden AuthorizationResult.
-        /// </summary>
-        /// <typeparam name="TEntity">The type of the entity.</typeparam>
-        /// <typeparam name="T1">The type of the additional first parameter.</typeparam>
-        /// <typeparam name="T2">The type of the additional second parameter.</typeparam>
-        /// <returns>A forbidden AuthorizationResult.</returns>
-        public static AuthorizationResult<TEntity, T1, T2> Forbidden<TEntity, T1, T2>(T1 value1, T2 value2) => FromStatus<TEntity, T1, T2>(HttpStatusCode.Forbidden, value1, value2);
 
         /// <summary>
         /// Creates an unauthorized AuthorizationResult.
@@ -115,7 +122,7 @@ namespace RESTworld.Business
     /// <typeparam name="TEntity">The type of the entity.</typeparam>
     public class AuthorizationResult<TEntity>
     {
-        private static Func<IQueryable<TEntity>, IQueryable<TEntity>> _defaultFilter = source => source;
+        private static readonly Func<IQueryable<TEntity>, IQueryable<TEntity>> _defaultFilter = source => source;
 
         /// <summary>
         /// Creates a new instance of the <see cref="AuthorizationResult{TEntity}"/> class
@@ -131,6 +138,7 @@ namespace RESTworld.Business
             else
                 Filter = filter;
         }
+
         /// <summary>
         /// An optional filter to alter the request to the database.
         /// </summary>
