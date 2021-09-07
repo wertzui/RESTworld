@@ -23,7 +23,6 @@ namespace ExampleBlog
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env, IApiVersionDescriptionProvider provider)
         {
             base.Configure(app, env, provider);
-
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.

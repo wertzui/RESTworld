@@ -20,7 +20,6 @@ using RESTworld.AspNetCore.Swagger;
 using RESTworld.AspNetCore.Versioning;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
-using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -103,7 +102,7 @@ namespace RESTworld.AspNetCore
 
                 // Default version
                 var defaultVersion = Configuration.GetValue("RESTworld:Versioning:DefaultVersion", "*");
-                if(defaultVersion == "*")
+                if (defaultVersion == "*")
                 {
                     options.ApiVersionSelector = new LatestApiVersionSelector();
                 }
@@ -169,7 +168,7 @@ namespace RESTworld.AspNetCore
                 options.GroupNameFormat = "'v'VVV";
 
                 // Do not advertise versioning through query parameter as this is only intended for legacy clients and should not be visible as it is not considered RESTfull.
-                if(options.ApiVersionParameterSource is not MediaTypeApiVersionReader)
+                if (options.ApiVersionParameterSource is not MediaTypeApiVersionReader)
                 {
                     var parameterName = Configuration.GetValue("RESTworld:Versioning:ParameterName", "v");
                     options.ApiVersionParameterSource = new MediaTypeApiVersionReader(parameterName);
@@ -182,6 +181,7 @@ namespace RESTworld.AspNetCore
 
                 var parameterName = Configuration.GetValue("RESTworld:Versioning:ParameterName", "v");
                 options.OperationFilter<SwaggerVersioningOperationFilter>(parameterName);
+                options.OperationFilter<SwaggerExampleOperationFilter>();
             });
 
             services.AddAutoMapper(ConfigureAutomapper);

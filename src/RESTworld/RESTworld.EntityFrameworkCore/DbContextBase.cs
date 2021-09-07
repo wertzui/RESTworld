@@ -23,6 +23,20 @@ namespace RESTworld.EntityFrameworkCore
         {
         }
 
+        /// <summary>
+        /// Migrates the database to the latest version.
+        /// </summary>
+        public virtual void Migrate()
+        {
+            // Temporarily increase command timeout to prevent timeouts during migration.
+            var oldTimeout = Database.GetCommandTimeout();
+            Database.SetCommandTimeout(int.MaxValue);
+
+            Database.Migrate();
+
+            Database.SetCommandTimeout(oldTimeout);
+        }
+
         /// <inheritdoc/>
         public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
         {
@@ -83,21 +97,6 @@ namespace RESTworld.EntityFrameworkCore
         {
             AddChangedFields(currentUser);
             return SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
-        }
-
-
-        /// <summary>
-        /// Migrates the database to the latest version.
-        /// </summary>
-        public virtual void Migrate()
-        {
-            // Temporarily increase command timeout to prevent timeouts during migration.
-            var oldTimeout = Database.GetCommandTimeout();
-            Database.SetCommandTimeout(int.MaxValue);
-
-            Database.Migrate();
-
-            Database.SetCommandTimeout(oldTimeout);
         }
 
         private void AddChangedFields(string currentUser = null)

@@ -1,10 +1,22 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
+using System;
 
 namespace ExampleBlog.Data.Migrations
 {
     public partial class Initial : Migration
     {
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropTable(
+                name: "Posts");
+
+            migrationBuilder.DropTable(
+                name: "Authors");
+
+            migrationBuilder.DropTable(
+                name: "Blogs");
+        }
+
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
@@ -400,18 +412,6 @@ namespace ExampleBlog.Data.Migrations
                 name: "IX_Posts_BlogId",
                 table: "Posts",
                 column: "BlogId");
-        }
-
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropTable(
-                name: "Posts");
-
-            migrationBuilder.DropTable(
-                name: "Authors");
-
-            migrationBuilder.DropTable(
-                name: "Blogs");
         }
     }
 }

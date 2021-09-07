@@ -13,7 +13,7 @@ namespace RESTworld.AspNetCore.Swagger
     /// <seealso cref="IConfigureOptions{SwaggerGenOptions}" />
     public class ConfigureVersioningWithSwaggerOptions : IConfigureOptions<SwaggerGenOptions>
     {
-        readonly IApiVersionDescriptionProvider provider;
+        private readonly IApiVersionDescriptionProvider provider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConfigureVersioningWithSwaggerOptions"/> class.

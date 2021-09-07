@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNet.OData.Builder;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -88,6 +89,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return services;
         }
+
         /// <summary>
         /// Adds an ODataModel for a <see cref="DbContext"/>. This is required for List operations to work.
         /// </summary>
@@ -104,7 +106,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             foreach (var entityType in entityTypes)
             {
-                StartupBase.ODataModelBuilder.AddEntitySet(entityType.Name, new AspNet.OData.Builder.EntityTypeConfiguration(StartupBase.ODataModelBuilder, entityType));
+                StartupBase.ODataModelBuilder.AddEntitySet(entityType.Name, new EntityTypeConfiguration(StartupBase.ODataModelBuilder, entityType));
             }
 
             return services;

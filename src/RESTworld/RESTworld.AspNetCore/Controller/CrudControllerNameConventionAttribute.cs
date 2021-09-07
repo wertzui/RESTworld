@@ -14,20 +14,6 @@ namespace RESTworld.AspNetCore.Controller
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
     public sealed class CrudControllerNameConventionAttribute : Attribute, IControllerModelConvention
     {
-        /// <inheritdoc/>
-        public void Apply(ControllerModel controller)
-        {
-            if (!controller.ControllerType.IsGenericType ||
-                controller.ControllerType.GetGenericTypeDefinition() != typeof(CrudController<,,,,>))
-            {
-                // Not a CrudControllerBase, ignore.
-                return;
-            }
-
-            var readDtoType = controller.ControllerType.GenericTypeArguments[3];
-            controller.ControllerName = CreateNameFromType(readDtoType);
-        }
-
         /// <summary>
         /// Creates the controller name out of the given type.
         /// Normally you want to use the type that is used on a normal GET operation.
@@ -54,6 +40,20 @@ namespace RESTworld.AspNetCore.Controller
             var controllerName = groups["name"].Value;
 
             return controllerName;
+        }
+
+        /// <inheritdoc/>
+        public void Apply(ControllerModel controller)
+        {
+            if (!controller.ControllerType.IsGenericType ||
+                controller.ControllerType.GetGenericTypeDefinition() != typeof(CrudController<,,,,>))
+            {
+                // Not a CrudControllerBase, ignore.
+                return;
+            }
+
+            var readDtoType = controller.ControllerType.GenericTypeArguments[3];
+            controller.ControllerName = CreateNameFromType(readDtoType);
         }
     }
 }

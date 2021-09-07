@@ -6,8 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using RESTworld.AspNetCore.DependencyInjection;
 using System;
-using System.Linq;
-using System.Reflection;
 
 namespace guenstiger.Table.Controller
 {
@@ -19,8 +17,8 @@ namespace guenstiger.Table.Controller
     public class HomeController : HalControllerBase
     {
         private readonly string _curieName;
-        private readonly IResourceFactory _resourceFactory;
         private readonly ILinkFactory _linkFactory;
+        private readonly IResourceFactory _resourceFactory;
 
         /// <summary>
         /// Creates a new instance of the <see cref="HomeController"/> class.
@@ -32,18 +30,10 @@ namespace guenstiger.Table.Controller
         {
             if (options is null)
                 throw new ArgumentNullException(nameof(options));
-            _curieName = GetCurieNameOrDefault(options.Value.Curie);
+            _curieName = options.Value.GetCurieOrDefault();
 
             _resourceFactory = resourceFactory ?? throw new ArgumentNullException(nameof(resourceFactory));
             _linkFactory = linkFactory ?? throw new ArgumentNullException(nameof(linkFactory));
-        }
-
-        private string GetCurieNameOrDefault(string curieName)
-        {
-            if (!string.IsNullOrWhiteSpace(curieName))
-                return curieName;
-
-            return string.Concat(Assembly.GetEntryAssembly().GetName().Name.Where(c => char.IsUpper(c))).ToLowerInvariant();
         }
 
         /// <summary>

@@ -30,7 +30,6 @@ namespace RESTworld.AspNetCore.Health
         /// <inheritdoc/>
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
         {
-
             try
             {
                 await using var dbContext = _factory.CreateDbContext();

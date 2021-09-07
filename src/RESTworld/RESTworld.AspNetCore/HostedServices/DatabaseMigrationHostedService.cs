@@ -15,9 +15,9 @@ namespace RESTworld.AspNetCore.HostedServices
     public class DatabaseMigrationHostedService<TDbContext> : BackgroundService
         where TDbContext : DbContext
     {
+        private const int MIGRATION_TIMEOUT = int.MaxValue;
         private readonly IDbContextFactory<TDbContext> _factory;
         private readonly ILogger<DatabaseMigrationHostedService<TDbContext>> _logger;
-        private const int MIGRATION_TIMEOUT = int.MaxValue;
 
         /// <summary>
         /// Creates a new instance of the <see cref="DatabaseMigrationHostedService{TDbContext}"/> class.

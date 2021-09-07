@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Net;
+using System.Runtime.CompilerServices;
 
 namespace RESTworld.Business
 {
@@ -114,6 +115,91 @@ namespace RESTworld.Business
         /// <typeparam name="T2">The type of the additional second parameter.</typeparam>
         /// <returns>An unauthorized AuthorizationResult.</returns>
         public static AuthorizationResult<TEntity, T1, T2> Unauthorized<TEntity, T1, T2>(T1 value1, T2 value2) => FromStatus<TEntity, T1, T2>(HttpStatusCode.Unauthorized, value1, value2);
+
+
+
+        /// <summary>
+        /// Returns a new authorization result with the same filter, but the new status.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        /// <param name="previousResult">The previous result.</param>
+        /// <param name="status">The status.</param>
+        /// <returns></returns>
+        public static AuthorizationResult<TEntity> WithStatus<TEntity>(this AuthorizationResult<TEntity> previousResult, HttpStatusCode status)
+            => new AuthorizationResult<TEntity>(status, previousResult.Filter);
+
+        /// <summary>
+        /// Returns a new authorization result with the same filter and value, but the new status.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        /// <typeparam name="T1">The type of the 1.</typeparam>
+        /// <param name="previousResult">The previous result.</param>
+        /// <param name="status">The status.</param>
+        /// <returns></returns>
+        public static AuthorizationResult<TEntity, T1> WithStatus<TEntity, T1>(this AuthorizationResult<TEntity, T1> previousResult, HttpStatusCode status)
+            => new AuthorizationResult<TEntity, T1>(status, previousResult.Value1, previousResult.Filter);
+
+        /// <summary>
+        /// Returns a new authorization result with the same filter and values, but the new status.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        /// <typeparam name="T1">The type of the 1.</typeparam>
+        /// <typeparam name="T2">The type of the 2.</typeparam>
+        /// <param name="previousResult">The previous result.</param>
+        /// <param name="status">The status.</param>
+        /// <returns></returns>
+        public static AuthorizationResult<TEntity, T1, T2> WithStatus<TEntity, T1, T2>(this AuthorizationResult<TEntity, T1, T2> previousResult, HttpStatusCode status)
+            => new AuthorizationResult<TEntity, T1, T2>(status, previousResult.Value1, previousResult.Value2, previousResult.Filter);
+
+        /// <summary>
+        /// Returns a new authorization result with the same filter, but the new status.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        /// <param name="previousResult">The previous result.</param>
+        /// <param name="filter">The filter.</param>
+        /// <returns></returns>
+        public static AuthorizationResult<TEntity> WithFilter<TEntity>(this AuthorizationResult<TEntity> previousResult, Func<IQueryable<TEntity>, IQueryable<TEntity>> filter)
+            => new AuthorizationResult<TEntity>(previousResult.Status, filter);
+
+        /// <summary>
+        /// Returns a new authorization result with the same filter and value, but the new status.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        /// <typeparam name="T1">The type of the 1.</typeparam>
+        /// <param name="previousResult">The previous result.</param>
+        /// <param name="filter">The filter.</param>
+        /// <returns></returns>
+        public static AuthorizationResult<TEntity, T1> WithFilter<TEntity, T1>(this AuthorizationResult<TEntity, T1> previousResult, Func<IQueryable<TEntity>, IQueryable<TEntity>> filter)
+            => new AuthorizationResult<TEntity, T1>(previousResult.Status, previousResult.Value1, filter);
+
+        /// <summary>
+        /// Returns a new authorization result with the same filter and values, but the new status.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        /// <typeparam name="T1">The type of the 1.</typeparam>
+        /// <typeparam name="T2">The type of the 2.</typeparam>
+        /// <param name="previousResult">The previous result.</param>
+        /// <param name="filter">The filter.</param>
+        /// <returns></returns>
+        public static AuthorizationResult<TEntity, T1, T2> WithFilter<TEntity, T1, T2>(this AuthorizationResult<TEntity, T1, T2> previousResult, Func<IQueryable<TEntity>, IQueryable<TEntity>> filter)
+            => new AuthorizationResult<TEntity, T1, T2>(previousResult.Status, previousResult.Value1, previousResult.Value2, filter);
+
+        /// <summary>
+        /// Adds the <see cref="AuthorizationResult{TEntity}.Filter"/> to the given query.
+        /// If the filter is null, the query will be returned without modificaiton.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        /// <param name="source">The source query.</param>
+        /// <param name="authorizationResult">The authorization result.</param>
+        /// <returns></returns>
+        public static IQueryable<TEntity> WithAuthorizationFilter<TEntity>(this IQueryable<TEntity> source, AuthorizationResult<TEntity> authorizationResult)
+        {
+            var filter = authorizationResult.Filter;
+            if (filter is not null)
+                return filter(source);
+
+            return source;
+        }
     }
 
     /// <summary>

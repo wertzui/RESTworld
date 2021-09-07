@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace RESTworld.AspNetCore.Serialization
 {
@@ -6,6 +7,7 @@ namespace RESTworld.AspNetCore.Serialization
     /// Holds either a single object or a collection.
     /// </summary>
     /// <typeparam name="T"></typeparam>
+    [JsonConverter(typeof(SingleObjectOrCollectionJsonConverterFactory))]
     public record SingleObjectOrCollection<T>
     {
         /// <summary>

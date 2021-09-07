@@ -59,7 +59,7 @@ namespace RESTworld.Business
         public Task<ServiceResponse<TGetFullDto>> CreateAsync(TCreateDto dto)
             => TryExecuteWithAuthorizationAsync(
                 dto,
-                param1 => CreateInternalAsync(param1),
+                result => CreateInternalAsync(result),
                 (result, handler) => handler.HandleCreateRequestAsync(result),
                 (response, handler) => handler.HandleCreateResponseAsync(response));
 
@@ -67,7 +67,7 @@ namespace RESTworld.Business
         public Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> CreateAsync(IReadOnlyCollection<TCreateDto> dtos)
             => TryExecuteWithAuthorizationAsync(
                 dtos,
-                param1 => CreateInternalAsync(param1),
+                result => CreateInternalAsync(result),
                 (result, handler) => handler.HandleCreateRequestAsync(result),
                 (response, handler) => handler.HandleCreateResponseAsync(response));
 
@@ -76,7 +76,7 @@ namespace RESTworld.Business
             => TryExecuteWithAuthorizationAsync(
                 id,
                 timestamp,
-                (param1, param2) => DeleteInternalAsync(param1, param2),
+                result => DeleteInternalAsync(result),
                 (result, handler) => handler.HandleDeleteRequestAsync(result),
                 (response, handler) => handler.HandleDeleteResponseAsync(response));
 
@@ -84,7 +84,7 @@ namespace RESTworld.Business
         public Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListAsync(IGetListRequest<TEntity> request)
             => TryExecuteWithAuthorizationAsync(
                 request,
-                param1 => GetListInternalAsync(param1),
+                result => GetListInternalAsync(result),
                 (result, handler) => handler.HandleGetListRequestAsync(result),
                 (response, handler) => handler.HandleGetListResponseAsync(response));
 
@@ -92,7 +92,7 @@ namespace RESTworld.Business
         public Task<ServiceResponse<TGetFullDto>> GetSingleAsync(long id)
             => TryExecuteWithAuthorizationAsync(
                 id,
-                param1 => GetSingleInternalAsync(param1),
+                result => GetSingleInternalAsync(result),
                 (result, handler) => handler.HandleGetSingleRequestAsync(result),
                 (response, handler) => handler.HandleGetSingleResponseAsync(response));
 
@@ -100,7 +100,7 @@ namespace RESTworld.Business
         public Task<ServiceResponse<TGetFullDto>> UpdateAsync(TUpdateDto dto)
             => TryExecuteWithAuthorizationAsync(
                 dto,
-                param1 => UpdateInternalAsync(param1),
+                result => UpdateInternalAsync(result),
                 (result, handler) => handler.HandleUpdateRequestAsync(result),
                 (response, handler) => handler.HandleUpdateResponseAsync(response));
 
@@ -108,7 +108,7 @@ namespace RESTworld.Business
         public Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> UpdateAsync(IUpdateMultipleRequest<TUpdateDto, TEntity> request)
             => TryExecuteWithAuthorizationAsync(
                 request,
-                param1 => UpdateInternalAsync(param1),
+                result => UpdateInternalAsync(result),
                 (result, handler) => handler.HandleUpdateRequestAsync(result),
                 (response, handler) => handler.HandleUpdateResponseAsync(response));
 
@@ -116,10 +116,12 @@ namespace RESTworld.Business
         /// The method contains the business logic for the CREATE operation.
         /// It will insert the given DTO into the database.
         /// </summary>
-        /// <param name="dto">The DTO to insert into the database.</param>
+        /// <param name="authorizationResult">The result of the authorization which contains the DTO to insert into the database.</param>
         /// <returns>A response containing the DTO as it is in the database.</returns>
-        protected virtual async Task<ServiceResponse<TGetFullDto>> CreateInternalAsync(TCreateDto dto)
+        protected virtual async Task<ServiceResponse<TGetFullDto>> CreateInternalAsync(AuthorizationResult<TEntity, TCreateDto> authorizationResult)
         {
+            var dto = authorizationResult.Value1;
+
             var entity = _mapper.Map<TEntity>(dto);
 
             await using var context = _contextFactory.CreateDbContext();
@@ -135,10 +137,12 @@ namespace RESTworld.Business
         /// The method contains the business logic for the CREATE operation.
         /// It will insert the given DTOs into the database.
         /// </summary>
-        /// <param name="dtos">The DTOs to insert into the database.</param>
+        /// <param name="authorizationResult">The result of the authorization which contains the DTOs to insert into the database.</param>
         /// <returns>A response containing the DTOs as it is in the database.</returns>
-        protected virtual async Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> CreateInternalAsync(IReadOnlyCollection<TCreateDto> dtos)
+        protected virtual async Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> CreateInternalAsync(AuthorizationResult<TEntity, IReadOnlyCollection<TCreateDto>> authorizationResult)
         {
+            var dtos = authorizationResult.Value1;
+
             var entities = _mapper.Map<IReadOnlyCollection<TEntity>>(dtos);
 
             await using var context = _contextFactory.CreateDbContext();
@@ -154,14 +158,16 @@ namespace RESTworld.Business
         /// The method contains the business logic for the DELETE operation.
         /// It will delete the entity with the given ID and timestamp from the database.
         /// </summary>
-        /// <param name="id">The identifier.</param>
-        /// <param name="timestamp">The timestamp.</param>
+        /// <param name="authorizationResult">The result of the authorization which contains the identifier and the timestamp.</param>
         /// <returns>An empty 200 (Ok) response, or a problem response with either 404 (Not found) if the ID does not exist or 409 (Conflict) if the timestamp does not match.</returns>
-        protected virtual async Task<ServiceResponse<object>> DeleteInternalAsync(long id, byte[] timestamp)
+        protected virtual async Task<ServiceResponse<object>> DeleteInternalAsync(AuthorizationResult<TEntity, long, byte[]> authorizationResult)
         {
+            var id = authorizationResult.Value1;
+            var timestamp = authorizationResult.Value2;
+
             await using var context = _contextFactory.CreateDbContext();
 
-            var entity = await context.Set<TEntity>().FirstOrDefaultAsync(e => e.Id == id);
+            var entity = await context.Set<TEntity>().WithAuthorizationFilter(authorizationResult).FirstOrDefaultAsync(e => e.Id == id);
 
             if (entity is null)
                 return ServiceResponse.FromStatus<object>(HttpStatusCode.NotFound);
@@ -180,12 +186,14 @@ namespace RESTworld.Business
         /// The method contains the business logic for the READ-List operation.
         /// It will return the items from the database as specified in the request.
         /// </summary>
-        /// <param name="request">The request which contains a filter on which items to return. The filter is normally mapped from the OData parameters that where passed into the controller ($filter, $orderby, $top, $skip).</param>
+        /// <param name="authorizationResult">The result of the authorization which contains the request which contains a filter on which items to return. The filter is normally mapped from the OData parameters that where passed into the controller ($filter, $orderby, $top, $skip).</param>
         /// <returns>All items as specified in the request with paging options if specified.</returns>
         /// <exception cref="ArgumentException">If request.CalculateTotalCount is true, request.FilterForTotalCount must not be null.</exception>
-        protected virtual async Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListInternalAsync(IGetListRequest<TEntity> request)
+        protected virtual async Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListInternalAsync(AuthorizationResult<TEntity, IGetListRequest<TEntity>> authorizationResult)
         {
-            var setForEntities = _contextFactory.Set<TEntity>();
+            var request = authorizationResult.Value1;
+
+            var setForEntities = _contextFactory.Set<TEntity>().WithAuthorizationFilter(authorizationResult);
 
             Task<long> totalPagesTask = null;
             long? totalCount = null;
@@ -202,7 +210,7 @@ namespace RESTworld.Business
                     if (request.FilterForTotalCount is null)
                         throw new ArgumentException($"If {nameof(request)}.{nameof(request.CalculateTotalCount)} is true, {nameof(request)}.{nameof(request.FilterForTotalCount)} must not be null.", nameof(request));
 
-                    var totalPagesSet = _contextFactory.Set<TEntity>();
+                    var totalPagesSet = _contextFactory.Set<TEntity>().WithAuthorizationFilter(authorizationResult);
                     totalPagesSet = request.FilterForTotalCount(totalPagesSet);
                     totalPagesTask = totalPagesSet.LongCountAsync();
                     tasks.Add(totalPagesTask);
@@ -228,11 +236,13 @@ namespace RESTworld.Business
         /// The method contains the business logic for the READ-Single operation.
         /// It will return the item with the specified ID from the database.
         /// </summary>
-        /// <param name="id">The identifier of the item.</param>
+        /// <param name="authorizationResult">TThe result of the authorization which contains thehe identifier of the item.</param>
         /// <returns>The item with the specified ID, or 404 (Not Found).</returns>
-        protected virtual async Task<ServiceResponse<TGetFullDto>> GetSingleInternalAsync(long id)
+        protected virtual async Task<ServiceResponse<TGetFullDto>> GetSingleInternalAsync(AuthorizationResult<TEntity, long> authorizationResult)
         {
-            var entity = await _contextFactory.Set<TEntity>().FirstOrDefaultAsync(e => e.Id == id);
+            var id = authorizationResult.Value1;
+
+            var entity = await _contextFactory.Set<TEntity>().WithAuthorizationFilter(authorizationResult).FirstOrDefaultAsync(e => e.Id == id);
 
             if (entity is null)
                 return ServiceResponse.FromStatus<TGetFullDto>(HttpStatusCode.NotFound);
@@ -296,7 +306,7 @@ namespace RESTworld.Business
 
         /// <summary>
         /// Tries to execute a <paramref name="function" /> which accepts one parameter while performing <paramref name="authorizeRequest" /> before and <paramref name="authorizeResult" /> after the main invocation.
-        /// This method combines <see cref="TryExecuteAsync{T}(Func{Task{ServiceResponse{T}}})"/> with <see cref="WithAuthorizationAsync{T1, TResponse}(T1, Func{T1, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResult{TEntity, T1}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{AuthorizationResult{TEntity, T1}}}, Func{ServiceResponse{TResponse}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{ServiceResponse{TResponse}}})"/>.
+        /// This method combines <see cref="TryExecuteAsync{T}(Func{Task{ServiceResponse{T}}})"/> with <see cref="WithAuthorizationAsync{T1, TResponse}(T1, Func{AuthorizationResult{TEntity, T1}, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResult{TEntity, T1}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{AuthorizationResult{TEntity, T1}}}, Func{ServiceResponse{TResponse}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{ServiceResponse{TResponse}}})"/>.
         /// </summary>
         /// <typeparam name="T1">The type of the parameter.</typeparam>
         /// <typeparam name="TResponse">The type of the response.</typeparam>
@@ -308,18 +318,17 @@ namespace RESTworld.Business
         /// The result of the function or a <see cref="ServiceResponse{T}" /> containing a problem description.
         /// </returns>
         /// <seealso cref="TryExecuteAsync{T}(Func{Task{ServiceResponse{T}}})" />
-        /// <seealso cref="WithAuthorizationAsync{T1, TResponse}(T1, Func{T1, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResult{TEntity, T1}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{AuthorizationResult{TEntity, T1}}}, Func{ServiceResponse{TResponse}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{ServiceResponse{TResponse}}})"/>
+        /// <seealso cref="WithAuthorizationAsync{T1, TResponse}(T1, Func{AuthorizationResult{TEntity, T1}, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResult{TEntity, T1}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{AuthorizationResult{TEntity, T1}}}, Func{ServiceResponse{TResponse}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{ServiceResponse{TResponse}}})"/>
         protected virtual Task<ServiceResponse<TResponse>> TryExecuteWithAuthorizationAsync<T1, TResponse>(
             T1 param1,
-            Func<T1, Task<ServiceResponse<TResponse>>> function,
+            Func<AuthorizationResult<TEntity, T1>, Task<ServiceResponse<TResponse>>> function,
             Func<AuthorizationResult<TEntity, T1>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<AuthorizationResult<TEntity, T1>>> authorizeRequest,
             Func<ServiceResponse<TResponse>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<ServiceResponse<TResponse>>> authorizeResult)
             => TryExecuteAsync(() => WithAuthorizationAsync(param1, function, authorizeRequest, authorizeResult));
 
-
         /// <summary>
         /// Tries to execute a <paramref name="function" /> which accepts two parameters while performing <paramref name="authorizeRequest" /> before and <paramref name="authorizeResult" /> after the main invocation.
-        /// This method combines <see cref="TryExecuteAsync{T}(Func{Task{ServiceResponse{T}}})"/> with <see cref="WithAuthorizationAsync{T1, T2, TResponse}(T1, T2, Func{T1, T2, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResult{TEntity, T1, T2}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{AuthorizationResult{TEntity, T1, T2}}}, Func{ServiceResponse{TResponse}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{ServiceResponse{TResponse}}})"/>.
+        /// This method combines <see cref="TryExecuteAsync{T}(Func{Task{ServiceResponse{T}}})"/> with <see cref="WithAuthorizationAsync{T1, T2, TResponse}(T1, T2, Func{AuthorizationResult{TEntity, T1, T2}, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResult{TEntity, T1, T2}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{AuthorizationResult{TEntity, T1, T2}}}, Func{ServiceResponse{TResponse}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{ServiceResponse{TResponse}}})"/>.
         /// </summary>
         /// <typeparam name="T1">The type of the first parameter.</typeparam>
         /// <typeparam name="T2">The type of the second parameter.</typeparam>
@@ -333,11 +342,11 @@ namespace RESTworld.Business
         /// The result of the function or a <see cref="ServiceResponse{T}" /> containing a problem description.
         /// </returns>
         /// <seealso cref="TryExecuteAsync{T}(Func{Task{ServiceResponse{T}}})" />
-        /// <seealso cref="WithAuthorizationAsync{T1, T2, TResponse}(T1, T2, Func{T1, T2, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResult{TEntity, T1, T2}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{AuthorizationResult{TEntity, T1, T2}}}, Func{ServiceResponse{TResponse}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{ServiceResponse{TResponse}}})"/>
+        /// <seealso cref="WithAuthorizationAsync{T1, T2, TResponse}(T1, T2, Func{AuthorizationResult{TEntity, T1, T2}, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResult{TEntity, T1, T2}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{AuthorizationResult{TEntity, T1, T2}}}, Func{ServiceResponse{TResponse}, ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}, Task{ServiceResponse{TResponse}}})"/>
         protected virtual Task<ServiceResponse<TResponse>> TryExecuteWithAuthorizationAsync<T1, T2, TResponse>(
             T1 param1,
             T2 param2,
-            Func<T1, T2, Task<ServiceResponse<TResponse>>> function,
+            Func<AuthorizationResult<TEntity, T1, T2>, Task<ServiceResponse<TResponse>>> function,
             Func<AuthorizationResult<TEntity, T1, T2>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<AuthorizationResult<TEntity, T1, T2>>> authorizeRequest,
             Func<ServiceResponse<TResponse>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<ServiceResponse<TResponse>>> authorizeResult)
             => TryExecuteAsync(() => WithAuthorizationAsync(param1, param2, function, authorizeRequest, authorizeResult));
@@ -346,13 +355,15 @@ namespace RESTworld.Business
         /// The method contains the business logic for the UPDATE-Single operation.
         /// It will update the entity in the database with the given DTO.
         /// </summary>
-        /// <param name="dto">The DTO which contains updated values.</param>
+        /// <param name="authorizationResult">The result of the authorization which contains the DTO which contains updated values.</param>
         /// <returns>The item as it is stored in the database after the update operation.</returns>
-        protected virtual async Task<ServiceResponse<TGetFullDto>> UpdateInternalAsync(TUpdateDto dto)
+        protected virtual async Task<ServiceResponse<TGetFullDto>> UpdateInternalAsync(AuthorizationResult<TEntity, TUpdateDto> authorizationResult)
         {
+            var dto = authorizationResult.Value1;
+
             await using var context = _contextFactory.CreateDbContext();
 
-            var entity = await context.Set<TEntity>().FirstOrDefaultAsync(e => e.Id == dto.Id);
+            var entity = await context.Set<TEntity>().WithAuthorizationFilter(authorizationResult).FirstOrDefaultAsync(e => e.Id == dto.Id);
 
             if (entity is null)
                 return ServiceResponse.FromStatus<TGetFullDto>(HttpStatusCode.NotFound);
@@ -372,16 +383,17 @@ namespace RESTworld.Business
         /// The method contains the business logic for the UPDATE-Multiple operation.
         /// It will update the entities in the database with the given DTOs.
         /// </summary>
-        /// <param name="request">The DTOs which contain updated values.</param>
+        /// <param name="authorizationResult">The result of the authorization which contains the DTOs which contain updated values.</param>
         /// <returns>The items as stored in the database after the update operation.</returns>
-        protected virtual async Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> UpdateInternalAsync(IUpdateMultipleRequest<TUpdateDto, TEntity> request)
+        protected virtual async Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> UpdateInternalAsync(AuthorizationResult<TEntity, IUpdateMultipleRequest<TUpdateDto, TEntity>> authorizationResult)
         {
+            var request = authorizationResult.Value1;
             var dtos = request.Dtos;
 
             var ids = System.Linq.Enumerable.ToHashSet(System.Linq.Enumerable.Select(dtos, d => d.Id));
             await using var context = _contextFactory.CreateDbContext();
 
-            var entities = await request.Filter(System.Linq.Queryable.Where(context.Set<TEntity>(), e => ids.Contains(e.Id)))
+            var entities = await request.Filter(System.Linq.Queryable.Where(context.Set<TEntity>().WithAuthorizationFilter(authorizationResult), e => ids.Contains(e.Id)))
                 .ToDictionaryAsync(e => e.Id);
 
             if (entities.Count != dtos.Count)
@@ -415,17 +427,16 @@ namespace RESTworld.Business
         /// </returns>
         protected virtual async Task<ServiceResponse<TResponse>> WithAuthorizationAsync<T1, TResponse>(
             T1 param1,
-            Func<T1, Task<ServiceResponse<TResponse>>> function,
+            Func<AuthorizationResult<TEntity, T1>, Task<ServiceResponse<TResponse>>> function,
             Func<AuthorizationResult<TEntity, T1>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<AuthorizationResult<TEntity, T1>>> authorizeRequest,
             Func<ServiceResponse<TResponse>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<ServiceResponse<TResponse>>> authorizeResult)
         {
-
             var requestAuthResult = await AuthorizeRequestAsync(param1, authorizeRequest);
 
             if (requestAuthResult.Status != HttpStatusCode.OK)
                 return ServiceResponse.FromStatus<TResponse>(requestAuthResult.Status);
 
-            var serviceCallResponse = await function(requestAuthResult.Value1);
+            var serviceCallResponse = await function(requestAuthResult);
 
             var resultAuthResponse = await AuthorizeResultAsync(serviceCallResponse, authorizeResult);
 
@@ -449,17 +460,16 @@ namespace RESTworld.Business
         protected virtual async Task<ServiceResponse<TResponse>> WithAuthorizationAsync<T1, T2, TResponse>(
             T1 param1,
             T2 param2,
-            Func<T1, T2, Task<ServiceResponse<TResponse>>> function,
+            Func<AuthorizationResult<TEntity, T1, T2>, Task<ServiceResponse<TResponse>>> function,
             Func<AuthorizationResult<TEntity, T1, T2>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<AuthorizationResult<TEntity, T1, T2>>> authorizeRequest,
             Func<ServiceResponse<TResponse>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, Task<ServiceResponse<TResponse>>> authorizeResult)
         {
-
             var requestAuthResult = await AuthorizeRequestAsync(param1, param2, authorizeRequest);
 
             if (requestAuthResult.Status != HttpStatusCode.OK)
                 return ServiceResponse.FromStatus<TResponse>(requestAuthResult.Status);
 
-            var serviceCallResponse = await function(requestAuthResult.Value1, requestAuthResult.Value2);
+            var serviceCallResponse = await function(requestAuthResult);
 
             var resultAuthResponse = await AuthorizeResultAsync(serviceCallResponse, authorizeResult);
 
@@ -486,7 +496,6 @@ namespace RESTworld.Business
 
             return result;
         }
-
 
         /// <summary>
         /// Calls the Handle...RequestAsync for all <see cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}" />s with two parameters.
@@ -535,7 +544,6 @@ namespace RESTworld.Business
             }
 
             return result;
-
         }
 
         /// <summary>

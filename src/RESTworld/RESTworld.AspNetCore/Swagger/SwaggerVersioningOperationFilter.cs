@@ -50,7 +50,7 @@ namespace RESTworld.AspNetCore.Swagger
                     var contentTypeWithVersion = $"{contentType}; v=";
                     foreach (var apiResponseFormat in responseType.ApiResponseFormats)
                     {
-                        if(apiResponseFormat.MediaType.StartsWith(contentTypeWithVersion))
+                        if (apiResponseFormat.MediaType.StartsWith(contentTypeWithVersion))
                         {
                             response.Content.Remove(contentType);
                             response.Content[apiResponseFormat.MediaType] = content.Value;

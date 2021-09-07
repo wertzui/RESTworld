@@ -232,8 +232,9 @@ namespace RESTworld.AspNetCore.Controller
         [HttpPost]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Post))]
         [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status409Conflict)]
-        [ProducesResponseType(201)]
-        public virtual async Task<ActionResult<Resource<TUpdateDto>>> PostAsync([FromBody] SingleObjectOrCollection<TCreateDto> dto)
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(Resource), StatusCodes.Status201Created)]
+        public virtual async Task<ActionResult<Resource<TGetFullDto>>> PostAsync([FromBody] SingleObjectOrCollection<TCreateDto> dto)
         {
             if (dto == null)
                 return CreateError(StatusCodes.Status400BadRequest, "Unable to read either a collection or a single object from the request body.");
@@ -244,100 +245,6 @@ namespace RESTworld.AspNetCore.Controller
                 return await PostSingleAsync(dto.SingleObject);
         }
 
-
-        /// <summary>
-        /// Creates the given new resource.
-        /// This method is called when <see cref="PostAsync(SingleObjectOrCollection{TCreateDto})"/> is called with a single object.
-        /// </summary>
-        /// <param name="dto">The resource to create.</param>
-        /// <returns>The full resource as stored in the database.</returns>
-        protected virtual async Task<ActionResult<Resource<TUpdateDto>>> PostSingleAsync(TCreateDto dto)
-        {
-            var response = await _service.CreateAsync(dto);
-
-            if (!response.Succeeded)
-                return CreateError(response);
-
-            var resource = _resourceFactory.CreateForGetEndpoint(response.ResponseObject);
-            AddSaveAndDeleteLinks(resource);
-
-            return Created(Url.ActionLink(values: new { id = response.ResponseObject!.Id }), resource);
-        }
-
-        /// <summary>
-        /// Creates the given new resources.
-        /// This method is called when <see cref="PostAsync(SingleObjectOrCollection{TCreateDto})"/> is called with a collection.
-        /// </summary>
-        /// <param name="dtos">The resources to create.</param>
-        /// <returns>The full resources as stored in the database.</returns>
-        protected virtual async Task<ActionResult<Resource<TUpdateDto>>> PostMultipleAsync(IReadOnlyCollection<TCreateDto> dtos)
-        {
-            var response = await _service.CreateAsync(dtos);
-
-            if (!response.Succeeded)
-                return CreateError(response);
-
-            var resource = _resourceFactory.CreateForListEndpoint(response.ResponseObject, _ => "items", m => m.Id);
-
-            if (resource.Embedded is not null)
-            {
-                foreach (var embedded in resource.Embedded.SelectMany(e => e.Value).Cast<Resource<TGetFullDto>>())
-                {
-                    AddDeleteLink(embedded);
-                }
-            }
-
-            var filter = CreateODataFilterForIds(response.ResponseObject.Select(d => d.Id));
-            var url = Url.ActionLink() + "?$filter=" + filter;
-
-            resource.Links["self"].First().Href = url;
-
-            return Created(url, resource);
-        }
-
-        private static string CreateODataFilterForIds(IEnumerable<long> ids)
-        {
-            using var enumerator = ids.OrderBy(i => i).GetEnumerator();
-            enumerator.MoveNext();
-            var currentStart = enumerator.Current;
-            var currentEnd = currentStart;
-
-            var sb = new StringBuilder();
-
-            while (enumerator.MoveNext())
-            {
-                if (enumerator.Current == currentEnd + 1)
-                {
-                    currentEnd++;
-                }
-                else
-                {
-                    AppendRange(sb, currentStart, currentEnd);
-
-                    currentStart = enumerator.Current;
-                    currentEnd = currentStart;
-                }
-            }
-            AppendRange(sb, currentStart, currentEnd);
-
-            return sb.ToString();
-        }
-
-        private static void AppendRange(StringBuilder sb, long inclusiveStart, long inclusiveEnd)
-        {
-            if (sb.Length != 0)
-                sb.Append(" or ");
-
-            sb.Append('(');
-
-            if (inclusiveStart == inclusiveEnd)
-                sb.AppendFormat("id eq {0}", inclusiveStart);
-            else
-                sb.AppendFormat("id ge {0} and id le {1}", inclusiveStart, inclusiveEnd);
-
-            sb.Append(')');
-        }
-
         /// <summary>
         /// Updates the given resource(s) with new values.
         /// </summary>
@@ -346,10 +253,11 @@ namespace RESTworld.AspNetCore.Controller
         /// <returns>The full resource(s) as stored in the database.</returns>
         [HttpPut("{id:long?}")]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Put))]
-        [ProducesResponseType(200)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Resource), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status409Conflict)]
-        public virtual async Task<ActionResult<Resource<TUpdateDto>>> PutAsync(long? id, [FromBody] SingleObjectOrCollection<TUpdateDto> dto)
+        public virtual async Task<ActionResult<Resource<TGetFullDto>>> PutAsync(long? id, [FromBody] SingleObjectOrCollection<TUpdateDto> dto)
         {
             if (dto == null)
                 return CreateError(StatusCodes.Status400BadRequest, "Unable to read either a collection or a single object from the request body.");
@@ -368,85 +276,6 @@ namespace RESTworld.AspNetCore.Controller
 
                 return await PutSingleAsync(dto.SingleObject);
             }
-        }
-
-        /// <summary>
-        /// Updates the given resources with new values.
-        /// This method is called when <see cref="PutAsync(long?, SingleObjectOrCollection{TUpdateDto})"/> is called with a collection.
-        /// </summary>
-        /// <param name="dtos">Updated values for the resources.</param>
-        /// <returns>The full resources as stored in the database.</returns>
-        protected virtual async Task<ActionResult<Resource<TUpdateDto>>> PutMultipleAsync(IReadOnlyCollection<TUpdateDto> dtos)
-        {
-            var request = new UpdateMultipleRequest<TUpdateDto, TEntity>(dtos, x => x);
-            var response = await _service.UpdateAsync(request);
-
-            if (!response.Succeeded)
-                return CreateError(response);
-
-            var resource = _resourceFactory.CreateForListEndpoint(response.ResponseObject, _ => "items", m => m.Id);
-
-            if (resource.Embedded is not null)
-            {
-                foreach (var embedded in resource.Embedded.SelectMany(e => e.Value).Cast<Resource<TGetFullDto>>())
-                {
-                    AddDeleteLink(embedded);
-                }
-            }
-
-            var filter = CreateODataFilterForIds(response.ResponseObject.Select(d => d.Id));
-            var url = Url.ActionLink() + "?$filter=" + filter;
-
-            resource.Links["self"].First().Href = url;
-
-            return Ok(resource);
-        }
-
-        /// <summary>
-        /// Updates the given resource with new values.
-        /// This method is called when <see cref="PutAsync(long?, SingleObjectOrCollection{TUpdateDto})"/> is called with a single object.
-        /// </summary>
-        /// <param name="dto">Updated values for the resource.</param>
-        /// <returns>The full resource as stored in the database.</returns>
-        protected virtual async Task<ActionResult<Resource<TUpdateDto>>> PutSingleAsync(TUpdateDto dto)
-        {
-            var response = await _service.UpdateAsync(dto);
-
-            if (!response.Succeeded)
-                return CreateError(response);
-
-            var resource = _resourceFactory.CreateForGetEndpoint(response.ResponseObject);
-            AddSaveAndDeleteLinks(resource);
-
-            return Ok(resource);
-        }
-
-        /// <summary>
-        /// This method is called by the <see cref="NewAsync"/> operation to create a template resource to return.
-        /// The default implementation just calls the empty constructor and sets all strings to an empty string if they are not set initially.
-        /// </summary>
-        /// <returns></returns>
-        protected virtual TCreateDto CreateEmpty()
-        {
-            var type = typeof(TCreateDto);
-            var constructor = type.GetConstructor(Type.EmptyTypes);
-
-            if (constructor is not null)
-            {
-                var dto = (TCreateDto)constructor.Invoke(Array.Empty<object>());
-                var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty);
-                foreach (var property in properties)
-                {
-                    if (property.PropertyType == typeof(string) && property.GetValue(dto) != default)
-                    {
-                        property.SetValue(dto, "");
-                    }
-                }
-
-                return dto;
-            }
-
-            return default;
         }
 
         /// <summary>
@@ -504,6 +333,34 @@ namespace RESTworld.AspNetCore.Controller
         }
 
         /// <summary>
+        /// This method is called by the <see cref="NewAsync"/> operation to create a template resource to return.
+        /// The default implementation just calls the empty constructor and sets all strings to an empty string if they are not set initially.
+        /// </summary>
+        /// <returns></returns>
+        protected virtual TCreateDto CreateEmpty()
+        {
+            var type = typeof(TCreateDto);
+            var constructor = type.GetConstructor(Type.EmptyTypes);
+
+            if (constructor is not null)
+            {
+                var dto = (TCreateDto)constructor.Invoke(Array.Empty<object>());
+                var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty);
+                foreach (var property in properties)
+                {
+                    if (property.PropertyType == typeof(string) && property.GetValue(dto) != default)
+                    {
+                        property.SetValue(dto, "");
+                    }
+                }
+
+                return dto;
+            }
+
+            return default;
+        }
+
+        /// <summary>
         /// Creates an error to return out of the given <see cref="ServiceResponse{T}"/>s status and problem details.
         /// </summary>
         /// <typeparam name="T">The type of the service response.</typeparam>
@@ -524,6 +381,150 @@ namespace RESTworld.AspNetCore.Controller
                 _resourceFactory.Create(new ProblemDetails { Status = status, Detail = problemDetails });
             var result = StatusCode(resource.State.Status!.Value, resource);
             return result;
+        }
+
+        /// <summary>
+        /// Creates the given new resources.
+        /// This method is called when <see cref="PostAsync(SingleObjectOrCollection{TCreateDto})"/> is called with a collection.
+        /// </summary>
+        /// <param name="dtos">The resources to create.</param>
+        /// <returns>The full resources as stored in the database.</returns>
+        protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PostMultipleAsync(IReadOnlyCollection<TCreateDto> dtos)
+        {
+            var response = await _service.CreateAsync(dtos);
+
+            if (!response.Succeeded)
+                return CreateError(response);
+
+            var resource = _resourceFactory.CreateForListEndpoint(response.ResponseObject, _ => "items", m => m.Id);
+
+            if (resource.Embedded is not null)
+            {
+                foreach (var embedded in resource.Embedded.SelectMany(e => e.Value).Cast<Resource<TGetFullDto>>())
+                {
+                    AddDeleteLink(embedded);
+                }
+            }
+
+            var filter = CreateODataFilterForIds(response.ResponseObject.Select(d => d.Id));
+            var url = Url.ActionLink() + "?$filter=" + filter;
+
+            resource.Links["self"].First().Href = url;
+
+            return Created(url, resource);
+        }
+
+        /// <summary>
+        /// Creates the given new resource.
+        /// This method is called when <see cref="PostAsync(SingleObjectOrCollection{TCreateDto})"/> is called with a single object.
+        /// </summary>
+        /// <param name="dto">The resource to create.</param>
+        /// <returns>The full resource as stored in the database.</returns>
+        protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PostSingleAsync(TCreateDto dto)
+        {
+            var response = await _service.CreateAsync(dto);
+
+            if (!response.Succeeded)
+                return CreateError(response);
+
+            var resource = _resourceFactory.CreateForGetEndpoint(response.ResponseObject);
+            AddSaveAndDeleteLinks(resource);
+
+            return Created(Url.ActionLink(values: new { id = response.ResponseObject!.Id }), resource);
+        }
+
+        /// <summary>
+        /// Updates the given resources with new values.
+        /// This method is called when <see cref="PutAsync(long?, SingleObjectOrCollection{TUpdateDto})"/> is called with a collection.
+        /// </summary>
+        /// <param name="dtos">Updated values for the resources.</param>
+        /// <returns>The full resources as stored in the database.</returns>
+        protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PutMultipleAsync(IReadOnlyCollection<TUpdateDto> dtos)
+        {
+            var request = new UpdateMultipleRequest<TUpdateDto, TEntity>(dtos, x => x);
+            var response = await _service.UpdateAsync(request);
+
+            if (!response.Succeeded)
+                return CreateError(response);
+
+            var resource = _resourceFactory.CreateForListEndpoint(response.ResponseObject, _ => "items", m => m.Id);
+
+            if (resource.Embedded is not null)
+            {
+                foreach (var embedded in resource.Embedded.SelectMany(e => e.Value).Cast<Resource<TGetFullDto>>())
+                {
+                    AddDeleteLink(embedded);
+                }
+            }
+
+            var filter = CreateODataFilterForIds(response.ResponseObject.Select(d => d.Id));
+            var url = Url.ActionLink() + "?$filter=" + filter;
+
+            resource.Links["self"].First().Href = url;
+
+            return Ok(resource);
+        }
+
+        /// <summary>
+        /// Updates the given resource with new values.
+        /// This method is called when <see cref="PutAsync(long?, SingleObjectOrCollection{TUpdateDto})"/> is called with a single object.
+        /// </summary>
+        /// <param name="dto">Updated values for the resource.</param>
+        /// <returns>The full resource as stored in the database.</returns>
+        protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PutSingleAsync(TUpdateDto dto)
+        {
+            var response = await _service.UpdateAsync(dto);
+
+            if (!response.Succeeded)
+                return CreateError(response);
+
+            var resource = _resourceFactory.CreateForGetEndpoint(response.ResponseObject);
+            AddSaveAndDeleteLinks(resource);
+
+            return Ok(resource);
+        }
+
+        private static void AppendRange(StringBuilder sb, long inclusiveStart, long inclusiveEnd)
+        {
+            if (sb.Length != 0)
+                sb.Append(" or ");
+
+            sb.Append('(');
+
+            if (inclusiveStart == inclusiveEnd)
+                sb.AppendFormat("id eq {0}", inclusiveStart);
+            else
+                sb.AppendFormat("id ge {0} and id le {1}", inclusiveStart, inclusiveEnd);
+
+            sb.Append(')');
+        }
+
+        private static string CreateODataFilterForIds(IEnumerable<long> ids)
+        {
+            using var enumerator = ids.OrderBy(i => i).GetEnumerator();
+            enumerator.MoveNext();
+            var currentStart = enumerator.Current;
+            var currentEnd = currentStart;
+
+            var sb = new StringBuilder();
+
+            while (enumerator.MoveNext())
+            {
+                if (enumerator.Current == currentEnd + 1)
+                {
+                    currentEnd++;
+                }
+                else
+                {
+                    AppendRange(sb, currentStart, currentEnd);
+
+                    currentStart = enumerator.Current;
+                    currentEnd = currentStart;
+                }
+            }
+            AppendRange(sb, currentStart, currentEnd);
+
+            return sb.ToString();
         }
     }
 }

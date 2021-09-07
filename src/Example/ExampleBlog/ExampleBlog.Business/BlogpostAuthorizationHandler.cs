@@ -4,44 +4,34 @@ using Microsoft.Extensions.Logging;
 using RESTworld.Business;
 using RESTworld.Business.Abstractions;
 using System;
-using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
 namespace ExampleBlog.Business
 {
-    public class BlogpostAuthorizationHandler : ICrudAuthorizationHandler<Post, PostCreateDto, PostListDto, PostGetFullDto, PostUpdateDto>
+    public class BlogpostAuthorizationHandler : CrudAuthorizationHandlerBase<Post, PostCreateDto, PostListDto, PostGetFullDto, PostUpdateDto>
     {
-        private readonly IUserAccessor _userAccessor;
         private readonly ILogger<BlogpostAuthorizationHandler> _logger;
 
-        public BlogpostAuthorizationHandler(IUserAccessor userAccessor, ILogger<BlogpostAuthorizationHandler> logger)
+        public BlogpostAuthorizationHandler(ILogger<BlogpostAuthorizationHandler> logger)
         {
-            _userAccessor = userAccessor ?? throw new ArgumentNullException(nameof(userAccessor));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public Task<AuthorizationResult<Post, PostCreateDto>> HandleCreateRequestAsync(AuthorizationResult<Post, PostCreateDto> previousResult) => Task.FromResult(previousResult);
-
-        public Task<AuthorizationResult<Post, IReadOnlyCollection<PostCreateDto>>> HandleCreateRequestAsync(AuthorizationResult<Post, IReadOnlyCollection<PostCreateDto>> previousResult) => Task.FromResult(previousResult);
-
-        public Task<ServiceResponse<PostGetFullDto>> HandleCreateResponseAsync(ServiceResponse<PostGetFullDto> previousResponse) => Task.FromResult(previousResponse);
-
-        public Task<ServiceResponse<IReadOnlyCollection<PostGetFullDto>>> HandleCreateResponseAsync(ServiceResponse<IReadOnlyCollection<PostGetFullDto>> previousResponse) => Task.FromResult(previousResponse);
-
-        public Task<AuthorizationResult<Post, long, byte[]>> HandleDeleteRequestAsync(AuthorizationResult<Post, long, byte[]> previousResult) => Task.FromResult(previousResult);
-
-        public Task<ServiceResponse<object>> HandleDeleteResponseAsync(ServiceResponse<object> previousResponse) => Task.FromResult(previousResponse);
-
-        public Task<AuthorizationResult<Post, IGetListRequest<Post>>> HandleGetListRequestAsync(AuthorizationResult<Post, IGetListRequest<Post>> previousResult) => Task.FromResult(previousResult);
-
-        public Task<ServiceResponse<IReadOnlyPagedCollection<PostListDto>>> HandleGetListResponseAsync(ServiceResponse<IReadOnlyPagedCollection<PostListDto>> previousResponse) => Task.FromResult(previousResponse);
-
-        public Task<AuthorizationResult<Post, long>> HandleGetSingleRequestAsync(AuthorizationResult<Post, long> previousResult)
+        public override Task<AuthorizationResult<Post, IGetListRequest<Post>>> HandleGetListRequestAsync(AuthorizationResult<Post, IGetListRequest<Post>> previousResult)
         {
             // This is just to illustrate how authorization handlers work.
-            // In a normal environment you would use the _userAccessor and do some real authorization.
-            // whenever you request an id that is also an HTTP status code, you will get back the status code as result.
+            // In a normal environment you would use the current user (probably through UserIsAuthorizedCrudAuthorizationHandler) and do some real authorization.
+            // We only return posts with an even ID.
+            return Task.FromResult(previousResult.WithFilter(source => source.Where(p => p.Id % 2 == 0)));
+        }
+
+        public override Task<AuthorizationResult<Post, long>> HandleGetSingleRequestAsync(AuthorizationResult<Post, long> previousResult)
+        {
+            // This is just to illustrate how authorization handlers work.
+            // In a normal environment you would use the current user (probably through UserIsAuthorizedCrudAuthorizationHandler) and do some real authorization.
+            // Whenever you request an id that is also an HTTP status code, you will get back the status code as result.
             var requestedPostId = previousResult.Value1;
             if (Enum.IsDefined(typeof(HttpStatusCode), (int)requestedPostId))
             {
@@ -52,11 +42,11 @@ namespace ExampleBlog.Business
             return Task.FromResult(previousResult);
         }
 
-        public Task<ServiceResponse<PostGetFullDto>> HandleGetSingleResponseAsync(ServiceResponse<PostGetFullDto> previousResponse)
+        public override Task<ServiceResponse<PostGetFullDto>> HandleGetSingleResponseAsync(ServiceResponse<PostGetFullDto> previousResponse)
         {
             // This is just to illustrate how authorization handlers work.
-            // In a normal environment you would use the _userAccessor and do some real authorization.
-            // whenever you request the id 42, we report a problem
+            // In a normal environment you would use the current user (probably through UserIsAuthorizedCrudAuthorizationHandler) and do some real authorization.
+            // Instead of the post with the ID 42, we report a problem.
             var requestedPostId = previousResponse.ResponseObject.Id;
             if (requestedPostId == 42)
             {
@@ -66,13 +56,5 @@ namespace ExampleBlog.Business
 
             return Task.FromResult(previousResponse);
         }
-
-        public Task<AuthorizationResult<Post, PostUpdateDto>> HandleUpdateRequestAsync(AuthorizationResult<Post, PostUpdateDto> previousResult) => Task.FromResult(previousResult);
-
-        public Task<AuthorizationResult<Post, IUpdateMultipleRequest<PostUpdateDto, Post>>> HandleUpdateRequestAsync(AuthorizationResult<Post, IUpdateMultipleRequest<PostUpdateDto, Post>> previousResult) => Task.FromResult(previousResult);
-
-        public Task<ServiceResponse<PostGetFullDto>> HandleUpdateResponseAsync(ServiceResponse<PostGetFullDto> previousResponse) => Task.FromResult(previousResponse);
-
-        public Task<ServiceResponse<IReadOnlyCollection<PostGetFullDto>>> HandleUpdateResponseAsync(ServiceResponse<IReadOnlyCollection<PostGetFullDto>> previousResponse) => Task.FromResult(previousResponse);
     }
 }
