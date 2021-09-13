@@ -40,7 +40,7 @@ namespace RESTworld.AspNetCore.Health
             }
             catch (Exception e)
             {
-                return new HealthCheckResult(context.Registration.FailureStatus, $"Cannot get hte list of pending migrations for {_contextName}.", e);
+                return new HealthCheckResult(context.Registration.FailureStatus, $"Cannot get the list of pending migrations for {_contextName}.", e);
             }
 
             return HealthCheckResult.Healthy($"No pending migrations for {_contextName}.");

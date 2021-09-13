@@ -427,7 +427,7 @@ namespace RESTworld.AspNetCore.Controller
             if (!response.Succeeded)
                 return CreateError(response);
 
-            var resource = _resourceFactory.CreateForGetEndpoint(response.ResponseObject);
+            var resource = _resourceFactory.CreateForGetEndpoint(response.ResponseObject, routeValues: new { id = response.ResponseObject.Id });
             AddSaveAndDeleteLinks(resource);
 
             return Created(Url.ActionLink(values: new { id = response.ResponseObject!.Id }), resource);

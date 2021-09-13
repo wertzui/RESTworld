@@ -2,6 +2,7 @@
 using Microsoft.AspNet.OData.Builder;
 using Microsoft.AspNet.OData.Extensions;
 using Microsoft.AspNet.OData.Formatter;
+using Microsoft.AspNet.OData.Query;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
@@ -174,13 +175,19 @@ namespace RESTworld.AspNetCore
                     options.ApiVersionParameterSource = new MediaTypeApiVersionReader(parameterName);
                 }
             });
+
             services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureVersioningWithSwaggerOptions>();
             services.AddSwaggerGen(options =>
             {
+                // Remove the ODataQueryOptions which is used on the GetList endpoint from the schema and the operation.
                 options.OperationFilter<SwaggerIgnoreOperationFilter>();
+                options.MapType(typeof(ODataQueryOptions<>), () => new());
 
+                // Add versioning through media type.
                 var parameterName = Configuration.GetValue("RESTworld:Versioning:ParameterName", "v");
                 options.OperationFilter<SwaggerVersioningOperationFilter>(parameterName);
+
+                // Add meaningfull examples.
                 options.OperationFilter<SwaggerExampleOperationFilter>();
             });
 
