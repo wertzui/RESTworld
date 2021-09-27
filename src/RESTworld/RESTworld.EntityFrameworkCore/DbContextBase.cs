@@ -15,6 +15,9 @@ namespace RESTworld.EntityFrameworkCore
     /// <seealso cref="Microsoft.EntityFrameworkCore.DbContext" />
     public class DbContextBase : DbContext
     {
+        // This property indicates whether or not you're running inside LINQPad:
+        private static bool _insideLINQPad = AppDomain.CurrentDomain.FriendlyName.StartsWith("LINQPad");
+
         /// <summary>
         /// Initializes a new instance of the <see cref="DbContextBase"/> class.
         /// </summary>
@@ -97,6 +100,17 @@ namespace RESTworld.EntityFrameworkCore
         {
             AddChangedFields(currentUser);
             return SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (_insideLINQPad)
+            {
+                optionsBuilder.UseLazyLoadingProxies();
+                optionsBuilder.EnableSensitiveDataLogging(true);
+            }
+
+            base.OnConfiguring(optionsBuilder);
         }
 
         private void AddChangedFields(string currentUser = null)
