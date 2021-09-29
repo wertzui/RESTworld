@@ -15,12 +15,14 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using RESTworld.AspNetCore.Controller;
 using RESTworld.AspNetCore.DependencyInjection;
+using RESTworld.AspNetCore.Formatter;
 using RESTworld.AspNetCore.Health;
 using RESTworld.AspNetCore.Serialization;
 using RESTworld.AspNetCore.Swagger;
 using RESTworld.AspNetCore.Versioning;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -58,6 +60,16 @@ namespace RESTworld.AspNetCore
         {
             if (env.IsDevelopment())
                 app.UseDeveloperExceptionPage();
+
+            app.UseRequestLocalization(options =>
+            {
+                // All cultures are supported as these will just be handed down to the appropriate serializer.
+                options.DefaultRequestCulture = new(CultureInfo.InvariantCulture);
+
+                var allCultures = CultureInfo.GetCultures(CultureTypes.AllCultures);
+                options.SupportedCultures = allCultures;
+                options.SupportedCultures = allCultures;
+            });
 
             app.UseRouting();
 
@@ -140,6 +152,8 @@ namespace RESTworld.AspNetCore
                 {
                     options.OutputFormatters.RemoveType<ODataOutputFormatter>();
                     options.InputFormatters.RemoveType<ODataInputFormatter>();
+                    options.OutputFormatters.Add(new CsvOutputFormatter());
+                    options.RespectBrowserAcceptHeader = true;
                 })
                 .ConfigureApplicationPartManager(manager =>
                 {

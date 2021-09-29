@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using RESTworld.AspNetCore.DependencyInjection;
+using RESTworld.AspNetCore.Filters;
 using RESTworld.AspNetCore.Serialization;
 using RESTworld.AspNetCore.Swagger;
 using RESTworld.Business;
@@ -178,6 +179,7 @@ namespace RESTworld.AspNetCore.Controller
         [HttpGet]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
         [ProducesResponseType(200)]
+        [ProducesWithContentNegotiation("application/hal+json", "text/csv")]
         public virtual async Task<ActionResult<Resource>> GetListAsync(
             [SwaggerIgnore] ODataQueryOptions<TEntity> options,
             [FromQuery(Name = "$filter")] string? filter = default,
@@ -193,7 +195,7 @@ namespace RESTworld.AspNetCore.Controller
             if (!response.Succeeded)
                 return CreateError(response);
 
-            var result = _resourceFactory.CreateForOdataListEndpointUsingSkipTopPaging(response.ResponseObject.Items, _ => "items", m => m.Id, options, options.Context.DefaultQuerySettings.MaxTop.Value, response.ResponseObject.TotalCount);
+            var result = _resourceFactory.CreateForOdataListEndpointUsingSkipTopPaging(response.ResponseObject.Items, _ => RESTworld.Common.Constants.ListItems, m => m.Id, options, options.Context.DefaultQuerySettings.MaxTop.Value, response.ResponseObject.TotalCount);
 
             if (result.Embedded is not null)
             {
