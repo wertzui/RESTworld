@@ -45,6 +45,9 @@ namespace ExampleBlog
             // We add our custom authorization too. Get Post 42, or ony post with a valid HTTP status code as id to test it!
             services.AddRestPipelineWithAuthorization<BlogDatabase, Post, PostCreateDto, PostListDto, PostGetFullDto, PostUpdateDto, BlogpostAuthorizationHandler>(Configuration);
 
+            services.AddScoped<MyCustomService>();
+            services.AddScoped<MyCustomAuthorizationHandler>();
+
             base.ConfigureServices(services);
         }
 

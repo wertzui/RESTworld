@@ -30,6 +30,14 @@ namespace ExampleBlog.Business
                 .CreateMap<Post, PostGetFullDto>();
             config
                 .CreateMap<PostUpdateDto, Post>();
+
+
+
+            config
+                .CreateMap<Post, PostWithAuthorDto>();
+            config.CreateMap<Author, PostWithAuthorDto>()
+                .ForMember(dst => dst.Author, opt => opt.MapFrom(src => src))
+                .ForAllOtherMembers(opt => opt.Ignore());
         }
     }
 }

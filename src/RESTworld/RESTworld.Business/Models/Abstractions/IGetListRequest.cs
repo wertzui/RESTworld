@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-namespace RESTworld.Business.Abstractions
+namespace RESTworld.Business.Models.Abstractions
 {
     /// <summary>
     /// A request for a list of records.

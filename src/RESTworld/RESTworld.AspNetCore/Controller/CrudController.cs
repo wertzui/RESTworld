@@ -11,7 +11,8 @@ using RESTworld.AspNetCore.Filters;
 using RESTworld.AspNetCore.Serialization;
 using RESTworld.AspNetCore.Swagger;
 using RESTworld.Business;
-using RESTworld.Business.Abstractions;
+using RESTworld.Business.Models;
+using RESTworld.Business.Services.Abstractions;
 using RESTworld.Common.Dtos;
 using RESTworld.EntityFrameworkCore.Models;
 using System;
@@ -41,7 +42,7 @@ namespace RESTworld.AspNetCore.Controller
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status503ServiceUnavailable)]
     [ProducesErrorResponseType(typeof(Resource<ProblemDetails>))]
-    public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> : HalControllerBase
+    public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> : RestControllerBase
         where TEntity : EntityBase
         where TGetListDto : DtoBase
         where TGetFullDto : DtoBase
@@ -54,7 +55,6 @@ namespace RESTworld.AspNetCore.Controller
         private static readonly JsonSerializerOptions _createNewResourceJsonSettings;
 
         private readonly RestWorldOptions _options;
-        private readonly IODataResourceFactory _resourceFactory;
         private readonly ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> _service;
 
         static CrudController()
@@ -78,13 +78,13 @@ namespace RESTworld.AspNetCore.Controller
             ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> service,
             IODataResourceFactory resourceFactory,
             IOptions<RestWorldOptions> options)
+            :base(resourceFactory)
         {
             if (options is null)
                 throw new ArgumentNullException(nameof(options));
             _options = options.Value;
 
             _service = service ?? throw new ArgumentNullException(nameof(service));
-            _resourceFactory = resourceFactory ?? throw new ArgumentNullException(nameof(resourceFactory));
         }
 
         /// <summary>
@@ -281,60 +281,6 @@ namespace RESTworld.AspNetCore.Controller
         }
 
         /// <summary>
-        /// Adds a delete link to the given resource.
-        /// </summary>
-        /// <typeparam name="TDto">The type of the resource.</typeparam>
-        /// <param name="result">The resource to add the link to.</param>
-        protected void AddDeleteLink<TDto>(Resource<TDto> result)
-            where TDto : DtoBase
-        {
-            if (result.State?.Timestamp is null)
-                return;
-
-            result.AddLink(
-                "delete",
-                new Link
-                {
-                    Name = HttpMethod.Delete.Method,
-                    Href = Url.ActionLink(
-                        HttpMethod.Delete.Method,
-                        values: new { id = result.State.Id, timestamp = Base64UrlTextEncoder.Encode(result.State.Timestamp) })
-                });
-        }
-
-        /// <summary>
-        /// Adds a save and a delete link to the given resource.
-        /// </summary>
-        /// <typeparam name="TDto">The type of the resource.</typeparam>
-        /// <param name="result">The resource to add the links to.</param>
-        protected void AddSaveAndDeleteLinks<TDto>(Resource<TDto> result)
-            where TDto : DtoBase
-        {
-            AddSaveLink(result);
-            AddDeleteLink(result);
-        }
-
-        /// <summary>
-        /// Adds a save link to the given resource.
-        /// </summary>
-        /// <typeparam name="TDto">The type of the resource.</typeparam>
-        /// <param name="result">The resource to add the link to.</param>
-        protected void AddSaveLink<TDto>(Resource<TDto> result)
-            where TDto : DtoBase
-        {
-            if (result.State is null)
-                return;
-
-            result.AddLink(
-                "save",
-                new Link
-                {
-                    Name = HttpMethod.Put.Method,
-                    Href = Url.ActionLink(HttpMethod.Put.Method, values: new { id = result.State.Id })
-                });
-        }
-
-        /// <summary>
         /// This method is called by the <see cref="NewAsync"/> operation to create a template resource to return.
         /// The default implementation just calls the empty constructor and sets all strings to an empty string if they are not set initially.
         /// </summary>
@@ -360,29 +306,6 @@ namespace RESTworld.AspNetCore.Controller
             }
 
             return default;
-        }
-
-        /// <summary>
-        /// Creates an error to return out of the given <see cref="ServiceResponse{T}"/>s status and problem details.
-        /// </summary>
-        /// <typeparam name="T">The type of the service response.</typeparam>
-        /// <param name="response">The service response holding a status and problem details.</param>
-        /// <returns>A result with the problem details and the given status code.</returns>
-        protected ObjectResult CreateError<T>(ServiceResponse<T> response)
-            => CreateError((int)response.Status, response.ProblemDetails);
-
-        /// <summary>
-        /// Creates an error to return out of the given status and problem details.
-        /// </summary>
-        /// <param name="status">A valid HTTP status code.</param>
-        /// <param name="problemDetails">Details of the problem to return to the user.</param>
-        /// <returns>A result with the problem details and the given status code.</returns>
-        protected ObjectResult CreateError(int status, string problemDetails)
-        {
-            var resource =
-                _resourceFactory.Create(new ProblemDetails { Status = status, Detail = problemDetails });
-            var result = StatusCode(resource.State.Status!.Value, resource);
-            return result;
         }
 
         /// <summary>

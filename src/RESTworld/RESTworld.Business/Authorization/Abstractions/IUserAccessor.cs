@@ -1,6 +1,6 @@
 ﻿using System.Security.Claims;
 
-namespace RESTworld.Business.Abstractions
+namespace RESTworld.Business.Authorization.Abstractions
 {
     /// <summary>
     /// An abstraction to get the current user.

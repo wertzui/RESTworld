@@ -1,8 +1,8 @@
-﻿using RESTworld.Business.Abstractions;
+﻿using RESTworld.Business.Models.Abstractions;
 using System;
 using System.Linq;
 
-namespace RESTworld.Business
+namespace RESTworld.Business.Models
 {
     /// <inheritdoc/>
     public record GetListRequest<TEntity> : IGetListRequest<TEntity>

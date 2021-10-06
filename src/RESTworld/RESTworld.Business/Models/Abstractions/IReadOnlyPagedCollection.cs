@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace RESTworld.Business.Abstractions
+namespace RESTworld.Business.Models.Abstractions
 {
     /// <summary>
     /// Defines a total count besides an <see cref="IReadOnlyCollection{T}"/>.

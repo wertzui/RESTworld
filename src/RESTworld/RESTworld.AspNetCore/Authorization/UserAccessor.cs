@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
-using RESTworld.Business.Abstractions;
+using RESTworld.Business.Authorization.Abstractions;
 using System;
 using System.Security.Claims;
 

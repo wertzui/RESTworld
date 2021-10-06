@@ -102,6 +102,7 @@ namespace RESTworld.EntityFrameworkCore
             return SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
         }
 
+        /// <inheritdoc/>
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (_insideLINQPad)

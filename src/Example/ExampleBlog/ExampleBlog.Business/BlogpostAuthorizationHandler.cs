@@ -1,8 +1,9 @@
 ﻿using ExampleBlog.Common.Dtos;
 using ExampleBlog.Data.Models;
 using Microsoft.Extensions.Logging;
-using RESTworld.Business;
-using RESTworld.Business.Abstractions;
+using RESTworld.Business.Authorization;
+using RESTworld.Business.Models;
+using RESTworld.Business.Models.Abstractions;
 using System;
 using System.Linq;
 using System.Net;

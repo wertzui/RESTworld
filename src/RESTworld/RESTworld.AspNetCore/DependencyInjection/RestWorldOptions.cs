@@ -19,7 +19,7 @@ namespace RESTworld.AspNetCore.DependencyInjection
         public string Curie { get; set; }
 
         /// <summary>
-        /// Disables all <see cref="Business.Abstractions.ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>s so they wont be called.
+        /// Disables all <see cref="Business.Authorization.Abstractions.ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>s so they wont be called.
         /// You can use this in test setups where you want to disable the authorization for debugging purposes.
         /// You should never set this in a production environment!
         /// </summary>

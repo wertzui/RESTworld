@@ -1,11 +1,13 @@
-﻿using RESTworld.Business.Abstractions;
+﻿using RESTworld.Business.Authorization.Abstractions;
+using RESTworld.Business.Models;
+using RESTworld.Business.Models.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace RESTworld.Business
+namespace RESTworld.Business.Authorization
 {
     /// <summary>
     /// This authorization handler gets the current user and provides overidable methods for request and response handling which also have the user as an input parameter.
@@ -17,14 +19,14 @@ namespace RESTworld.Business
     /// <typeparam name="TGetListDto">The type of the get list dto.</typeparam>
     /// <typeparam name="TGetFullDto">The type of the get full dto.</typeparam>
     /// <typeparam name="TUpdateDto">The type of the update dto.</typeparam>
-    /// <seealso cref="RESTworld.Business.CrudAuthorizationHandlerBase&lt;TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto&gt;" />
+    /// <seealso cref="CrudAuthorizationHandlerBase&lt;TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto&gt;" />
     public class UserIsAuthorizedCrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> : CrudAuthorizationHandlerBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="UserIsAuthorizedCrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> class.
         /// </summary>
         /// <param name="userAccessor">The user accessor.</param>
-        /// <exception cref="System.ArgumentNullException">userAccessor</exception>
+        /// <exception cref="ArgumentNullException">userAccessor</exception>
         public UserIsAuthorizedCrudAuthorizationHandler(IUserAccessor userAccessor)
         {
             UserAccessor = userAccessor ?? throw new ArgumentNullException(nameof(userAccessor));
@@ -149,7 +151,7 @@ namespace RESTworld.Business
             var user = GetUser();
 
             if (!user.Identity?.IsAuthenticated == true)
-                return Task.FromResult(previousResult.WithStatus(System.Net.HttpStatusCode.Unauthorized));
+                return Task.FromResult(previousResult.WithStatus(HttpStatusCode.Unauthorized));
 
             return HandleUpdateRequestWithUserAsync(previousResult, user);
         }

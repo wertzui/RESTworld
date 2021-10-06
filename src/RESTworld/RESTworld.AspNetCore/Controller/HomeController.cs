@@ -14,6 +14,7 @@ namespace guenstiger.Table.Controller
     /// It will output links to all endpoints of all controllers.
     /// </summary>
     [Route("")]
+    [ApiVersionNeutral]
     public class HomeController : HalControllerBase
     {
         private readonly string _curieName;
@@ -42,9 +43,9 @@ namespace guenstiger.Table.Controller
         /// <returns>A list of links to all controller endpoints.</returns>
         [HttpGet]
         [ProducesResponseType(typeof(Resource), StatusCodes.Status200OK)]
-        public virtual IActionResult Index()
+        public virtual IActionResult Index(ApiVersion version)
         {
-            var resource = _resourceFactory.CreateForHomeEndpointWithSwaggerUi(_curieName);
+            var resource = _resourceFactory.CreateForHomeEndpointWithSwaggerUi(_curieName, version);
 
             var startup = _linkFactory.Create(name: "startup");
             startup.Href += "health/startup";

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace RESTworld.Business.Abstractions
+namespace RESTworld.Business.Models.Abstractions
 {
     /// <summary>
     /// A request for an update of multiple records.

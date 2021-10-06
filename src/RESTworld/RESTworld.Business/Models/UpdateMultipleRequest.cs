@@ -1,9 +1,9 @@
-﻿using RESTworld.Business.Abstractions;
+﻿using RESTworld.Business.Models.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace RESTworld.Business
+namespace RESTworld.Business.Models
 {
     /// <inheritdoc/>
     public record UpdateMultipleRequest<TDto, TEntity> : IUpdateMultipleRequest<TDto, TEntity>

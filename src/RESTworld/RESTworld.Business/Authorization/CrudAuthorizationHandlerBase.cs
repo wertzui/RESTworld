@@ -1,19 +1,23 @@
-﻿using RESTworld.Business.Abstractions;
+﻿using RESTworld.Business.Authorization.Abstractions;
+using RESTworld.Business.Models;
+using RESTworld.Business.Models.Abstractions;
+using RESTworld.Business.Services.Abstractions;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace RESTworld.Business
+namespace RESTworld.Business.Authorization
 {
     /// <summary>
-    /// This class can be used as a base for your authorization handlers.
+    /// This class can be used as a base for your CRUD authorization handlers.
+    /// Use it if you have a <see cref="ICrudServiceBase{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> and want to check for authorization.
     /// It does not check anything, but implements the interface.
     /// This allows you to only override the methods which you need to implement.
     /// </summary>
     /// <typeparam name="TEntity">The type of the entity.</typeparam>
-    /// <typeparam name="TCreateDto">The type of the create dto.</typeparam>
-    /// <typeparam name="TGetListDto">The type of the get list dto.</typeparam>
-    /// <typeparam name="TGetFullDto">The type of the get full dto.</typeparam>
-    /// <typeparam name="TUpdateDto">The type of the update dto.</typeparam>
+    /// <typeparam name="TCreateDto">The type of the create DTO.</typeparam>
+    /// <typeparam name="TGetListDto">The type of the get list DTO.</typeparam>
+    /// <typeparam name="TGetFullDto">The type of the get full DTO.</typeparam>
+    /// <typeparam name="TUpdateDto">The type of the update DTO.</typeparam>
     /// <seealso cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}" />
     public abstract class CrudAuthorizationHandlerBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> : ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
     {

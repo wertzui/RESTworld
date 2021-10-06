@@ -1,9 +1,11 @@
-﻿using RESTworld.Common.Dtos;
+﻿using RESTworld.Business.Models;
+using RESTworld.Business.Models.Abstractions;
+using RESTworld.Common.Dtos;
 using RESTworld.EntityFrameworkCore.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace RESTworld.Business.Abstractions
+namespace RESTworld.Business.Services.Abstractions
 {
     /// <summary>
     /// Defines the base interface for all CRUD services.

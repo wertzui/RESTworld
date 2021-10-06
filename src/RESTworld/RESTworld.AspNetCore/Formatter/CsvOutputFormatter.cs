@@ -9,16 +9,19 @@ using System.Threading.Tasks;
 
 namespace RESTworld.AspNetCore.Formatter
 {
+    /// <summary>
+    /// A formatter to output a <see cref="Resource"/>s Embedded["items"] collection as csv.
+    /// The embedded items must be of type <see cref="Resource{TState}"/> and all have the same state type.
+    /// </summary>
+    /// <seealso cref="TextOutputFormatter" />
     public class CsvOutputFormatter : TextOutputFormatter
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CsvOutputFormatter"/> class.
+        /// </summary>
         public CsvOutputFormatter()
         {
             SupportedMediaTypes.Add(MediaTypeHeaderValue.Parse("text/csv"));
-
-            // I tried to add these explicitly, but it does not change anything.
-            SupportedMediaTypes.Add(MediaTypeHeaderValue.Parse("text/csv; charset=utf-8"));
-            SupportedMediaTypes.Add(MediaTypeHeaderValue.Parse("text/csv; charset=utf-8; v=1.0"));
-            SupportedMediaTypes.Add(MediaTypeHeaderValue.Parse("text/csv; charset=utf-8; v=2.0"));
 
             // UTF-8 is default, but all are supported if requested.
             foreach (var encodingInfo in Encoding.GetEncodings())
@@ -31,22 +34,21 @@ namespace RESTworld.AspNetCore.Formatter
             }
         }
 
+        /// <inheritdoc/>
         public override IReadOnlyList<string> GetSupportedContentTypes(string contentType, System.Type objectType)
         {
-            // This method only gets called during startup with either "application/hal+json" or "text/csv".
-            // On my Controller method I have the attribute [Produces("application/hal+json", "text/csv")]
             return base.GetSupportedContentTypes(contentType, objectType);
         }
 
+        /// <inheritdoc/>
         protected override bool CanWriteType(System.Type type)
         {
-            // This method only gets called if the Accept header is exactly "text/csv".
             return typeof(Resource).IsAssignableFrom(type);
         }
 
+        /// <inheritdoc/>
         public override bool CanWriteResult(OutputFormatterCanWriteContext context)
         {
-            // This method only gets called if the Accept header is exactly "text/csv" if the formatter is at the end of the list.
             if (!context.ContentType.Value.Contains("text/csv"))
                 return false;
 
@@ -63,9 +65,9 @@ namespace RESTworld.AspNetCore.Formatter
             return true;
         }
 
+        /// <inheritdoc/>
         public override async Task WriteResponseBodyAsync(OutputFormatterWriteContext context, Encoding selectedEncoding)
         {
-            // This method only gets called if the Accept header is exactly "text/csv" if the formatter is at the end of the list.
             var resource = (Resource)context.Object;
             var list = resource.Embedded[Common.Constants.ListItems];
 
@@ -73,14 +75,13 @@ namespace RESTworld.AspNetCore.Formatter
             if (list == null || list.Count == 0)
                 return;
 
-            // We know that the element must be of type Resource.
-            // We check that is of type Resource<T> so we can get the state out of it.
+            // We know that the elements must be of type Resource.
+            // We check that they are of type Resource<T> so we can get the state out of it.
             var firstElement = list.First();
             var elementType = firstElement.GetType();
             if (!elementType.IsGenericType)
                 return;
 
-            //var stateType = elementType.GetGenericArguments()[0];
             // The states are the part that should be serialized into the CSV.
             var states = list.Select(r => ((dynamic)r).State);
 

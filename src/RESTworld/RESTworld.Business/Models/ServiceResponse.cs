@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
 
-namespace RESTworld.Business
+namespace RESTworld.Business.Models
 {
     /// <summary>
     /// A response from a service call.
