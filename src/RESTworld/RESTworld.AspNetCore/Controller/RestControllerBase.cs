@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using RESTworld.Business.Models;
 using RESTworld.Common.Dtos;
 using System;
+using System.Net;
 using System.Net.Http;
 
 namespace RESTworld.AspNetCore.Controller
@@ -108,7 +109,7 @@ namespace RESTworld.AspNetCore.Controller
         protected ObjectResult CreateError(int status, string problemDetails)
         {
             var resource =
-                _resourceFactory.Create(new ProblemDetails { Status = status, Detail = problemDetails });
+                _resourceFactory.Create(new ProblemDetails { Title = Enum.GetName(typeof(HttpStatusCode), status), Status = status, Detail = problemDetails });
             var result = StatusCode(resource.State.Status!.Value, resource);
             return result;
         }

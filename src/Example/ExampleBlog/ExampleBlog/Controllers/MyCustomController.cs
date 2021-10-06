@@ -25,13 +25,13 @@ namespace ExampleBlog.Controllers
             _service = service ?? throw new ArgumentNullException(nameof(service));
         }
 
-        [HttpGet("postwithauthor/{postId:long}")]
+        [HttpGet("postwithauthor/{id:long}")]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
         [ProducesResponseType(200)]
         [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<Resource<PostWithAuthorDto>>> GetPostWithAuthorAsync(long postId)
+        public async Task<ActionResult<Resource<PostWithAuthorDto>>> GetPostWithAuthorAsync(long id)
         {
-            var response = await _service.GetPostWithAuthor(postId);
+            var response = await _service.GetPostWithAuthor(id);
 
             if (!response.Succeeded)
                 return CreateError(response);

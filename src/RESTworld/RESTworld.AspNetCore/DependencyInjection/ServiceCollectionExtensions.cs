@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
         /// <param name="configuration">The configuration instance which holds the RESTWorld configuration.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
-        public static IServiceCollection AddAuthorizationHandler<TAuthorizationhandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddCrudAuthorizationHandler<TAuthorizationhandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(this IServiceCollection services, IConfiguration configuration)
             where TAuthorizationhandler : class, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
             where TEntity : EntityBase
             where TGetListDto : DtoBase
@@ -46,6 +46,28 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             if (!configuration.GetValue<bool>($"{nameof(RESTworld)}:{nameof(RestWorldOptions.DisableAuthorization)}"))
                 services.AddScoped<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, TAuthorizationhandler>();
+
+            return services;
+        }
+
+        /// <summary>
+        /// Adds an <see cref="IBasicAuthorizationHandler{TEntity, TRequest, TResponse}" /> which you can use when calling <see cref="ServiceBase.TryExecuteWithAuthorizationAsync{TEntity, T1, TResponse, TAuthorizationHandler}(T1, System.Func{RESTworld.Business.Authorization.AuthorizationResult{TEntity, T1}, System.Threading.Tasks.Task{RESTworld.Business.Models.ServiceResponse{TResponse}}}, System.Func{RESTworld.Business.Authorization.AuthorizationResult{TEntity, T1}, TAuthorizationHandler, System.Threading.Tasks.Task{RESTworld.Business.Authorization.AuthorizationResult{TEntity, T1}}}, System.Func{RESTworld.Business.Models.ServiceResponse{TResponse}, TAuthorizationHandler, System.Threading.Tasks.Task{RESTworld.Business.Models.ServiceResponse{TResponse}}}, System.Collections.Generic.IEnumerable{TAuthorizationHandler})" /> from your service method.
+        /// </summary>
+        /// <typeparam name="TAuthorizationhandler">The type of the authorization handler.</typeparam>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        /// <typeparam name="TRequest">The type of the request.</typeparam>
+        /// <typeparam name="TResponse">The type of the response.</typeparam>
+        /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
+        /// <param name="configuration">The configuration instance which holds the RESTWorld configuration.</param>
+        /// <returns>
+        /// A reference to this instance after the operation has completed.
+        /// </returns>
+        public static IServiceCollection AddBasicAuthorizationHandler<TAuthorizationhandler, TEntity, TRequest, TResponse>(this IServiceCollection services, IConfiguration configuration)
+            where TAuthorizationhandler : class, IBasicAuthorizationHandler<TEntity, TRequest, TResponse>
+            where TEntity : EntityBase
+        {
+            if (!configuration.GetValue<bool>($"{nameof(RESTworld)}:{nameof(RestWorldOptions.DisableAuthorization)}"))
+                services.AddScoped<IBasicAuthorizationHandler<TEntity, TRequest, TResponse>, TAuthorizationhandler>();
 
             return services;
         }
@@ -180,7 +202,7 @@ namespace Microsoft.Extensions.DependencyInjection
             where TAuthorizationhandler : class, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
         {
             services.AddRestPipeline<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(apiVersion, isDeprecated);
-            services.AddAuthorizationHandler<TAuthorizationhandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(configuration);
+            services.AddCrudAuthorizationHandler<TAuthorizationhandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(configuration);
 
             return services;
         }
@@ -235,7 +257,32 @@ namespace Microsoft.Extensions.DependencyInjection
             where TAuthorizationhandler : class, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
         {
             services.AddRestPipelineWithCustomService<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TService>();
-            services.AddAuthorizationHandler<TAuthorizationhandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(configuration);
+            services.AddCrudAuthorizationHandler<TAuthorizationhandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(configuration);
+
+            return services;
+        }
+
+        /// <summary>
+        /// Adds a custom service with basic authorization, using a custom <typeparamref name="TService" /> and the <typeparamref name="TAuthorizationhandler" />.
+        /// Note that you need to write the custom controller which will call your service yourself and put it into the /Controllers folder of your application so it gets automatically recognized.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        /// <typeparam name="TRequest">The type of the request.</typeparam>
+        /// <typeparam name="TResponse">The type of the response.</typeparam>
+        /// <typeparam name="TService">The type of the custom <see cref="ICrudServiceBase{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}" /> implementation.</typeparam>
+        /// <typeparam name="TAuthorizationhandler">The type of the <see cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}" />.</typeparam>
+        /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
+        /// <param name="configuration">The <see cref="IConfiguration" /> instance which holds the RESTWorld configuration.</param>
+        /// <returns>
+        /// A reference to this instance after the operation has completed.
+        /// </returns>
+        public static IServiceCollection AddCustomServiceAndAuthorization<TEntity, TRequest, TResponse, TService, TAuthorizationhandler>(this IServiceCollection services, IConfiguration configuration)
+            where TEntity : EntityBase
+            where TService : class
+            where TAuthorizationhandler : class, IBasicAuthorizationHandler<TEntity, TRequest, TResponse>
+        {
+            services.AddScoped<TService>();
+            services.AddBasicAuthorizationHandler<TAuthorizationhandler, TEntity, TRequest, TResponse>(configuration);
 
             return services;
         }

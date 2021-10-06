@@ -141,7 +141,7 @@ namespace RESTworld.AspNetCore.Swagger
                     }
                 }
 
-                if (type.Example is null && responseTypeFromApiDescription.Type.IsAssignableTo(typeof(Resource)))
+                if (type.Example is null && (type.Examples?.Count).GetValueOrDefault() == 0 && responseTypeFromApiDescription.Type.IsAssignableTo(typeof(Resource)))
                 {
                     // Example for a response that does not come from a controller but is still a Resource
                     AddExampleForSuccessfullUnknownResourceResponse(type, responseTypeFromApiDescription.Type, resourceFactory, linkFactory);
@@ -174,11 +174,12 @@ namespace RESTworld.AspNetCore.Swagger
         private void AddExampleForSucessfullCrudResponse(OpenApiMediaType type, LinkFactory linkFactory, ODataResourceFactory resourceFactory, ControllerActionDescriptor controllerActionDescriptor)
         {
             var actionName = controllerActionDescriptor.ActionName;
+            var controllerName = controllerActionDescriptor.ControllerName;
             if (actionName == "GetList")
             {
                 var tListDto = controllerActionDescriptor.ControllerTypeInfo.GenericTypeArguments[2];
                 var embedded = Enumerable.Repeat<object>(null, 3).Select(_ => _fixture.Create(tListDto, _specimenContext)).ToList();
-                var resource = resourceFactory.CreateForOdataListEndpointUsingSkipTopPaging(embedded, _ => "List", e => ((DtoBase)e).Id, _oDataQueryFactory.GetListNavigation(embedded, new ODataRawQueryOptions(), linkFactory.Create().Href, 0, 0, 100), new Page { CurrentPage = 0, TotalPages = 34 });
+                var resource = resourceFactory.CreateForOdataListEndpointUsingSkipTopPaging(embedded, _ => "List", e => ((DtoBase)e).Id, _oDataQueryFactory.GetListNavigation(embedded, new ODataRawQueryOptions(), linkFactory.Create(action: actionName, controller: controllerName).Href, 3, 3, 10), new Page { CurrentPage = 2, TotalPages = 4 }, controllerName);
                 type.Example = CreateExample(resource);
             }
             else if (actionName == "Get" || actionName == "Post" || actionName == "Put" || actionName == "New")
@@ -207,13 +208,13 @@ namespace RESTworld.AspNetCore.Swagger
                                 changeTrackingDtoBase.LastChangedBy = default;
                             }
                         }
-                        resource = resourceFactory.CreateForGetEndpoint(state, action: "New", controller: controllerActionDescriptor.ControllerName);
+                        resource = resourceFactory.CreateForGetEndpoint(state, action: "New", controller: controllerName);
 
-                        resource.AddLink("save", linkFactory.Create("POST", action: "Post", controller: controllerActionDescriptor.ControllerName));
+                        resource.AddLink("save", linkFactory.Create("POST", action: "Post", controller: controllerName));
                     }
                     else
                     {
-                        resource = resourceFactory.CreateForGetEndpoint(state, controller: controllerActionDescriptor.ControllerName, routeValues: new { id = ((DtoBase)state).Id });
+                        resource = resourceFactory.CreateForGetEndpoint(state, controller: controllerName, routeValues: new { id = ((DtoBase)state).Id });
                     }
 
                     type.Example = CreateExample(resource);
@@ -222,10 +223,10 @@ namespace RESTworld.AspNetCore.Swagger
                 {
                     // Post and Put either return an object or a collection
                     var states = Enumerable.Repeat<object>(null, 3).Select(_ => _fixture.Create(tFullDto, _specimenContext)).Cast<DtoBase>().ToList();
-                    var CollectionResource = resourceFactory.CreateForListEndpoint(states, _ => "List", d => d.Id);
+                    var CollectionResource = resourceFactory.CreateForListEndpoint(states, _ => "List", d => d.Id, controllerName);
 
-                    type.Examples.Add("Single Object", new OpenApiExample { Value = CreateExample((Resource)resourceFactory.CreateForGetEndpoint(states[0], controller: controllerActionDescriptor.ControllerName, routeValues: new { id = states[0].Id })) });
-                    type.Examples.Add("Collection", new OpenApiExample { Value = CreateExample(resourceFactory.CreateForListEndpoint(states, _ => "List", d => d.Id)) });
+                    type.Examples.Add("Single Object", new OpenApiExample { Value = CreateExample((Resource)resourceFactory.CreateForGetEndpoint(states[0], controller: controllerName, routeValues: new { id = states[0].Id })) });
+                    type.Examples.Add("Collection", new OpenApiExample { Value = CreateExample(resourceFactory.CreateForListEndpoint(states, _ => "List", d => d.Id, controllerName)) });
                 }
             }
         }
