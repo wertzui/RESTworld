@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31702.278
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31808.319
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExampleBlog", "ExampleBlog\ExampleBlog.csproj", "{9120D797-2B02-4D7C-82B8-81F38D37E9F4}"
 EndProject
@@ -18,6 +18,16 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RESTworld.Common", "..\..\RESTworld\RESTworld.Common\RESTworld.Common.csproj", "{D1BDF853-2E54-4FB3-960B-65A961C26369}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RESTworld.EntityFrameworkCore", "..\..\RESTworld\RESTworld.EntityFrameworkCore\RESTworld.EntityFrameworkCore.csproj", "{3D8629D4-7EC8-4D11-8A41-85B3C8EE3994}"
+EndProject
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "RESTworld.Client.Angular", "..\..\RESTworld\RESTworld.Client.Angular\RESTworld.Client.Angular.esproj", "{04D0246B-57E5-4284-90A9-AE55AC64DE96}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExampleBlog.Client.Angular", "ExampleBlog.Client.Angular\ExampleBlog.Client.Angular.csproj", "{860963DE-16BB-4E70-BE0A-1CD90510AF23}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HAL.AspNetCore.OData", "..\..\..\..\HAL\src\HAL\Hal.AspNetCore.OData\HAL.AspNetCore.OData.csproj", "{C530E23D-D6C9-4D8D-9C21-9B395B5409C4}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HAL.AspNetCore", "..\..\..\..\HAL\src\HAL\HAL.AspNetCore\HAL.AspNetCore.csproj", "{DD6C8269-8F02-4CE8-A1F4-5B2CAD797E5C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RESTworld.Client.AspNetCore", "..\..\RESTworld\RESTworld.Client.AspNetCore\RESTworld.Client.AspNetCore.csproj", "{997ED653-79F0-419D-A4D5-AD58CCAF40C8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -57,6 +67,28 @@ Global
 		{3D8629D4-7EC8-4D11-8A41-85B3C8EE3994}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3D8629D4-7EC8-4D11-8A41-85B3C8EE3994}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3D8629D4-7EC8-4D11-8A41-85B3C8EE3994}.Release|Any CPU.Build.0 = Release|Any CPU
+		{04D0246B-57E5-4284-90A9-AE55AC64DE96}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{04D0246B-57E5-4284-90A9-AE55AC64DE96}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{04D0246B-57E5-4284-90A9-AE55AC64DE96}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{04D0246B-57E5-4284-90A9-AE55AC64DE96}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{04D0246B-57E5-4284-90A9-AE55AC64DE96}.Release|Any CPU.Build.0 = Release|Any CPU
+		{04D0246B-57E5-4284-90A9-AE55AC64DE96}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{860963DE-16BB-4E70-BE0A-1CD90510AF23}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{860963DE-16BB-4E70-BE0A-1CD90510AF23}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{860963DE-16BB-4E70-BE0A-1CD90510AF23}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{860963DE-16BB-4E70-BE0A-1CD90510AF23}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C530E23D-D6C9-4D8D-9C21-9B395B5409C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C530E23D-D6C9-4D8D-9C21-9B395B5409C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C530E23D-D6C9-4D8D-9C21-9B395B5409C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C530E23D-D6C9-4D8D-9C21-9B395B5409C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DD6C8269-8F02-4CE8-A1F4-5B2CAD797E5C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD6C8269-8F02-4CE8-A1F4-5B2CAD797E5C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD6C8269-8F02-4CE8-A1F4-5B2CAD797E5C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD6C8269-8F02-4CE8-A1F4-5B2CAD797E5C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{997ED653-79F0-419D-A4D5-AD58CCAF40C8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{997ED653-79F0-419D-A4D5-AD58CCAF40C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{997ED653-79F0-419D-A4D5-AD58CCAF40C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{997ED653-79F0-419D-A4D5-AD58CCAF40C8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

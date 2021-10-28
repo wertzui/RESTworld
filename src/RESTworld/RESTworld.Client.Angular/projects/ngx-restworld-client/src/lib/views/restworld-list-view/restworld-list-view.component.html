@@ -1,0 +1,62 @@
+<p-table [value]="value"
+         [lazy]="true"
+         [lazyLoadOnInit]="false"
+         (onLazyLoad)="load($event)"
+         responsiveLayout="scroll"
+         [paginator]="true"
+         [rows]="rows"
+         [rowsPerPageOptions]="rowsPerPage"
+         [totalRecords]="totalRecords"
+         [loading]="isLoading"
+         [showInitialSortBadge]="true"
+         [columns]="columns">
+
+  <ng-template pTemplate="header" let-columns>
+    <tr>
+      <th *ngFor="let col of columns" [pSortableColumn]="col.field">
+        <div class="p-d-flex p-jc-between p-ai-center">
+          {{col.header}}
+          <p-sortIcon [field]="col.field"></p-sortIcon>
+          <p-columnFilter [type]="col.type" [field]="col.field" display="menu"></p-columnFilter>
+        </div>
+      </th>
+      <th>
+        <div class="flex justify-content-end">
+          <div class="mx-2" pTooltip="Create new" tooltipPosition="left">
+            <a class="p-button-success" icon="fas fa-plus" pButton [routerLink]="['/edit', apiName, newHref]"></a>
+          </div>
+        </div>
+      </th>
+    </tr>
+  </ng-template>
+
+  <ng-template pTemplate="body" let-entity let-columns="columns">
+    <tr>
+      <td [ngSwitch]="col.type" *ngFor="let col of columns">
+        <ng-container *ngSwitchCase="'text'">
+          <p-avatar *ngIf="col.field === 'createdBy' || col.field === 'lastChangedBy'" [pTooltip]="entity[col.field]" tooltipPosition="top" [image]="avatarGenerator.getImage(entity[col.field])" [label]="avatarGenerator.getLabel(entity[col.field])" [style]="avatarGenerator.getStyle(entity[col.field])" shape="circle"></p-avatar>
+          <span *ngIf="col.field !== 'createdBy' && col.field !== 'lastChangedBy'">{{entity[col.field]}}</span>
+        </ng-container>
+        <span *ngSwitchCase="'numeric'" class="flex justify-content-end">{{entity[col.field]}}</span>
+        <span *ngSwitchCase="'boolean'" class="flex justify-content-center"><p-triStateCheckbox [(ngModel)]="entity[col.field]" [readonly]="true"></p-triStateCheckbox></span>
+        <span *ngSwitchCase="'date'" [pTooltip]="entity[col.field]">{{entity[col.field] | date:dateFormat}}</span>
+      </td>
+      <td>
+        <div class="flex justify-content-end">
+          <a pButton pTooltip="View/Edit" tooltipPosition="left" [routerLink]="[editLink, apiName, entity._links?.self[0].href]" icon="fas fa-edit"></a>
+          <button pTooltip="Delete" tooltipPosition="left" pButton *ngIf="entity._links.delete" (click)="showDeleteConfirmatioModal(entity)" icon="fas fa-trash-alt" type="button" class="mx-2 p-button-danger"></button>
+        </div>
+      </td>
+    </tr>
+  </ng-template>
+
+  <ng-template pTemplate="emptymessage">
+    <tr>
+      <td colspan="8">No entries found.</td>
+    </tr>
+  </ng-template>
+
+</p-table>
+
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>

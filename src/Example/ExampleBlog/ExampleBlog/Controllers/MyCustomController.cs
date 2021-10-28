@@ -1,13 +1,12 @@
 ﻿using ExampleBlog.Business;
 using ExampleBlog.Common.Dtos;
+using HAL.AspNetCore.Abstractions;
 using HAL.AspNetCore.OData.Abstractions;
 using HAL.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using RESTworld.AspNetCore.Controller;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace ExampleBlog.Controllers
@@ -16,13 +15,16 @@ namespace ExampleBlog.Controllers
     public class MyCustomController : RestControllerBase
     {
         private readonly MyCustomService _service;
+        private readonly ILinkFactory _linkFactory;
 
         public MyCustomController(
             MyCustomService service,
-            IODataResourceFactory resourceFactory)
+            IODataResourceFactory resourceFactory,
+            ILinkFactory linkFactory)
             : base(resourceFactory)
         {
             _service = service ?? throw new ArgumentNullException(nameof(service));
+            _linkFactory = linkFactory ?? throw new ArgumentNullException(nameof(linkFactory));
         }
 
         [HttpGet("postwithauthor/{id:long}")]
@@ -36,7 +38,9 @@ namespace ExampleBlog.Controllers
             if (!response.Succeeded)
                 return CreateError(response);
 
-            var result = _resourceFactory.CreateForGetEndpoint(response.ResponseObject);
+            var result = _resourceFactory.CreateForGetEndpoint(response.ResponseObject, null);
+            var link = _linkFactory.Create("Author", "Get", CrudControllerNameConventionAttribute.CreateNameFromType<AuthorDto>(), new { id = result.State.AuthorId });
+            result.AddLink(link);
 
             AddSaveAndDeleteLinks(result);
 

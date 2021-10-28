@@ -1,6 +1,5 @@
 ﻿using AutoFixture;
 using AutoFixture.Kernel;
-using guenstiger.Table.Controller;
 using HAL.AspNetCore;
 using HAL.AspNetCore.Abstractions;
 using HAL.AspNetCore.OData;

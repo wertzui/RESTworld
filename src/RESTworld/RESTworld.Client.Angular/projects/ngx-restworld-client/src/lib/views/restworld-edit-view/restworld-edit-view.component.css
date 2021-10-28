@@ -1,0 +1,26 @@
+.blockable-container {
+  display: grid;
+  place-items: center;
+  grid-template-areas:
+    "inner";
+}
+
+.blockable-element {
+  grid-area: inner;
+  width: 100%;
+}
+
+.blockable-overlay {
+  grid-area: inner;
+  height: 100%;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.field.grid > label.hasChildren {
+    border-right: 1px solid rgba(0, 0, 0, .1)
+}

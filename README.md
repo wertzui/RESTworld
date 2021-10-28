@@ -220,7 +220,9 @@ That's it. Now you can start your API and use a HAL browser like https://chatty4
 If you are using a `launchSettings.json`, I suggest to use this as your `"launchUrl"`.
 
 ## Usage as client developer
-This project does not provide a client implementation (as of now), but here are some guidelines when developing a client:
+When developing an Angular SPA, you can use the `@wertzui/ngx-restworld-client` npm package for your Angular application and the `RESTworld.Client.AspNetCore` NuGet package for hosting.
+
+Here are some guidelines when developing your own client:
 
 ### Make use of HAL
 Write your client in such a way that it will always connect to the home-endpoint (`/`) first to discover all the other endpoints. You can cache the routes to the controller enpoints for quite some time (maybe a day or for the duration of a session), but do not hardcode them! There are also a couple of libraries for different programming languages out there which support HAL. The specification can be found at https://stateless.group/hal_specification.html.

@@ -1,0 +1,12 @@
+﻿{
+  "profiles": {
+    "ExampleBlog.Client.Angular": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:5433",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

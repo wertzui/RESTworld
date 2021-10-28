@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 using RESTworld.AspNetCore.DependencyInjection;
 using System;
 
-namespace guenstiger.Table.Controller
+namespace RESTworld.AspNetCore.Controller
 {
     /// <summary>
     /// The HomeController is the one that is used for the root of you application.

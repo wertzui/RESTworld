@@ -4,7 +4,7 @@
     "ExampleBlog": {
       "commandName": "Project",
       "dotnetRunMessages": true,
-      "launchBrowser": true,
+      "launchBrowser": false,
       "launchUrl": "https://chatty42.herokuapp.com/hal-explorer/index.html#uri=https://localhost:5432",
       "applicationUrl": "https://localhost:5432",
       "environmentVariables": {

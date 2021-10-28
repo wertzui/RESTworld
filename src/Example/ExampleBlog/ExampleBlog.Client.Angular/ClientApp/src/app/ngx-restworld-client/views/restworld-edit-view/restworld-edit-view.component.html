@@ -1,0 +1,82 @@
+<div class="grid">
+  <div class="col">
+    <h1>Edit resource</h1>
+  </div>
+</div>
+
+<form [formGroup]="formGroup" (ngSubmit)="save()">
+  <p-tabView>
+    <p-tabPanel header="Visual" [disabled]="!resource || isLoading">
+      <ng-template #defaultVisualTab>
+        <ng-container *ngIf="!resource && isLoading">
+          <div *ngFor="let i of [1, 2, 3, 4, 5]" class="grid field">
+            <p-skeleton class="col-12 mb-2 md:col-2 md:mb-0" height="39px"></p-skeleton>
+            <div class="col-12 md:col-10">
+              <p-skeleton class="w-full" height="39px"></p-skeleton>
+            </div>
+          </div>
+        </ng-container>
+
+        <div *ngIf="resource" class="blockable-container">
+          <div class="blockable-element">
+            <ng-template #defaultForm let-properties="properties" let-formGroup="formGroup">
+              <div [formGroup]="formGroup">
+                <div *ngFor="let property of properties" class="grid field">
+                  <ng-template #defaultFormRow>
+                    <ng-template #defaultFormLabel>
+                      <label [attr.for]="property.field" class="col-12 mb-2 md:col-2 md:mb-0" [class.p-disabled]="property.isReadOnly" [class.hasChildren]="property.children?.length > 0">{{property.label}}</label>
+                    </ng-template>
+                    <ng-container *ngTemplateOutlet="formLabelRef || defaultFormLabel; context:{ $implicit: property }"></ng-container>
+                    <ng-template #defaultFormInput let-property let-formGroup="formGroup">
+                        <div [ngSwitch]="property.type" class="col-12 md:col-10">
+                            <input *ngSwitchCase="'text'" [formControlName]="property.field" [id]="property.field" type="text" pInputText class="w-full" [class.p-disabled]="property.isReadOnly">
+                            <p-calendar *ngSwitchCase="'date'" [formControlName]="property.field" [id]="property.field" [dateFormat]="dateFormat" [showTime]="true" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.isReadOnly"></p-calendar>
+                            <p-inputNumber *ngSwitchCase="'numeric'" [formControlName]="property.field" [id]="property.field" mode="decimal" [showButtons]="!property.isReadOnly" class="w-full" styleClass="w-full" [class.p-disabled]="property.isReadOnly"></p-inputNumber>
+                            <p-checkbox *ngSwitchCase="'boolean'" [formControl]="formGroup.controls[property.field]" [id]="property.field" [readonly]="property.isReadOnly"></p-checkbox>
+                            <div *ngSwitchCase="'object'">
+                                <ng-container *ngTemplateOutlet="formRef || defaultForm; context:{ properties: property.children, formGroup: formGroup.controls[property.field] }"></ng-container>
+                            </div>
+                        </div>
+                    </ng-template>
+                    <ng-container *ngTemplateOutlet="formInputRef || defaultFormInput; context:{ $implicit: property, formGroup: formGroup }"></ng-container>
+                  </ng-template>
+                  <ng-container *ngTemplateOutlet="formRowRef || defaultFormRow; context:{ $implicit: property }"></ng-container>
+                </div>
+              </div>
+            </ng-template>
+            <ng-container *ngTemplateOutlet="formRef || defaultForm; context: { properties: properties, formGroup: formGroup }"></ng-container>
+          </div>
+          <div class="blockable-overlay" *ngIf="isLoading">
+            <p-progressSpinner></p-progressSpinner>
+          </div>
+        </div>
+      </ng-template>
+      <ng-container *ngTemplateOutlet="visualTabRef || defaultVisualTab"></ng-container>
+      <ng-container *ngTemplateOutlet="visualTabAdditionalRef || null; context:{ $implicit: resource, properties: properties, isLoading: isLoading }"></ng-container>
+    </p-tabPanel>
+
+    <p-tabPanel header="Raw" [disabled]="!resource || isLoading">
+      <ng-template #defaultRawTab>
+        <pre>{{resource | json}}</pre>
+      </ng-template>
+      <ng-container *ngTemplateOutlet="rawTabRef || defaultRawTab"></ng-container>
+    </p-tabPanel>
+  </p-tabView>
+
+  <div class="grid">
+    <div class="col">
+      <div class="flex justify-content-end w-full">
+        <ng-template #defaultButtons>
+          <button pButton pRipple type="submit" label="Save" icon="far fa-save" class="mx-2 p-button-success" [disabled]="!resource || isLoading || !canSave"></button>
+          <button pButton pRipple type="button" label="Reload" icon="fas fa-redo" class="mx-2 p-button-info" (click)="load()" [disabled]="isLoading"></button>
+          <button pButton pRipple type="button" label="Delete" icon="far fa-trash-alt" class="mx-2 p-button-danger" (click)="showDeleteConfirmatioModal()" [disabled]="!resource || isLoading || !canDelete"></button>
+        </ng-template>
+        <ng-container *ngTemplateOutlet="buttonsRef || defaultButtons"></ng-container>
+      </div>
+    </div>
+  </div>
+
+</form>
+
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>

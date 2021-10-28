@@ -1,5 +1,4 @@
-﻿using HAL.AspNetCore.Controllers;
-using HAL.AspNetCore.OData.Abstractions;
+﻿using HAL.AspNetCore.OData.Abstractions;
 using HAL.Common;
 using Microsoft.AspNet.OData.Query;
 using Microsoft.AspNetCore.Http;
@@ -10,7 +9,6 @@ using RESTworld.AspNetCore.DependencyInjection;
 using RESTworld.AspNetCore.Filters;
 using RESTworld.AspNetCore.Serialization;
 using RESTworld.AspNetCore.Swagger;
-using RESTworld.Business;
 using RESTworld.Business.Models;
 using RESTworld.Business.Services.Abstractions;
 using RESTworld.Common.Dtos;
@@ -78,7 +76,7 @@ namespace RESTworld.AspNetCore.Controller
             ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> service,
             IODataResourceFactory resourceFactory,
             IOptions<RestWorldOptions> options)
-            :base(resourceFactory)
+            : base(resourceFactory)
         {
             if (options is null)
                 throw new ArgumentNullException(nameof(options));
@@ -205,7 +203,7 @@ namespace RESTworld.AspNetCore.Controller
                 }
             }
 
-            result.AddLink(new Link { Name = "New", Href = Url.ActionLink("new") });
+            result.AddLink(new Link { Name = "new", Href = Url.ActionLink("new") });
 
             return Ok(result);
         }
@@ -221,8 +219,9 @@ namespace RESTworld.AspNetCore.Controller
         {
             var result = _resourceFactory.Create(CreateEmpty());
 
-            result.AddLink("save",
-                new Link { Name = HttpMethod.Post.Method, Href = Url.ActionLink(HttpMethod.Post.Method) });
+            result
+                .AddSelfLink(Url.ActionLink("new"))
+                .AddLink("save", new Link { Name = HttpMethod.Post.Method, Href = Url.ActionLink(HttpMethod.Post.Method) });
             return Task.FromResult<ActionResult<Resource<TCreateDto>>>(new JsonResult(result, _createNewResourceJsonSettings));
         }
 
@@ -403,7 +402,7 @@ namespace RESTworld.AspNetCore.Controller
             if (!response.Succeeded)
                 return CreateError(response);
 
-            var resource = _resourceFactory.CreateForGetEndpoint(response.ResponseObject);
+            var resource = _resourceFactory.CreateForGetEndpoint(response.ResponseObject, routeValues: new { id = dto.Id });
             AddSaveAndDeleteLinks(resource);
 
             return Ok(resource);
