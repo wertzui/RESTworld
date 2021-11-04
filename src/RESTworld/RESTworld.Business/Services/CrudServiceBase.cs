@@ -272,7 +272,7 @@ namespace RESTworld.Business.Services
             if (entity is null)
                 return ServiceResponse.FromStatus<TGetFullDto>(HttpStatusCode.NotFound);
 
-            context.Entry(entity).Property(nameof(EntityBase.Timestamp)).OriginalValue = dto.Timestamp;
+            SetTimestampOriginalValue(dto, context, entity);
 
             _mapper.Map(dto, entity);
 
@@ -281,6 +281,19 @@ namespace RESTworld.Business.Services
             var resultDto = _mapper.Map<TGetFullDto>(entity);
 
             return ServiceResponse.FromResult(resultDto);
+        }
+        /// <summary>
+        /// Sets the OriginalValue of the timestamp if the timestamp exists on the entity. It is is marked with a [NotMapped] Attribute, this method will do nothing.
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <param name="context"></param>
+        /// <param name="entity"></param>
+        private static void SetTimestampOriginalValue(TUpdateDto dto, TContext context, TEntity entity)
+        {
+            var entry = context.Entry(entity);
+            var timestampProperty = System.Linq.Enumerable.SingleOrDefault(entry.Properties, p => p.Metadata.Name == nameof(EntityBase.Timestamp));
+            if (timestampProperty is not null)
+                timestampProperty.OriginalValue = dto.Timestamp;
         }
 
         /// <summary>
@@ -306,7 +319,7 @@ namespace RESTworld.Business.Services
             foreach (var dto in dtos)
             {
                 var entity = entities[dto.Id];
-                context.Entry(entity).Property(nameof(EntityBase.Timestamp)).OriginalValue = dto.Timestamp;
+                SetTimestampOriginalValue(dto, context, entity);
                 _mapper.Map(dto, entity);
             }
 

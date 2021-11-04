@@ -45,7 +45,10 @@ namespace Microsoft.Extensions.DependencyInjection
             where TUpdateDto : DtoBase
         {
             if (!configuration.GetValue<bool>($"{nameof(RESTworld)}:{nameof(RestWorldOptions.DisableAuthorization)}"))
+            {
                 services.AddScoped<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, TAuthorizationhandler>();
+                services.AddScoped<TAuthorizationhandler>();
+            }
 
             return services;
         }
@@ -67,7 +70,10 @@ namespace Microsoft.Extensions.DependencyInjection
             where TEntity : EntityBase
         {
             if (!configuration.GetValue<bool>($"{nameof(RESTworld)}:{nameof(RestWorldOptions.DisableAuthorization)}"))
+            {
                 services.AddScoped<IBasicAuthorizationHandler<TEntity, TRequest, TResponse>, TAuthorizationhandler>();
+                services.AddScoped<TAuthorizationhandler>();
+            }
 
             return services;
         }
