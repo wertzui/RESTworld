@@ -9,7 +9,7 @@ export interface ProblemDetailsDto {
   status?: number;
   detail?: string;
   instance?: string;
-  extensions?: { [key: string] : any }
+  [key: string]: unknown;
 }
 
 export class ProblemDetails extends Resource implements ResourceOfDto<ProblemDetailsDto> {
@@ -18,7 +18,7 @@ export class ProblemDetails extends Resource implements ResourceOfDto<ProblemDet
   public status?: number;
   public detail?: string;
   public instance?: string;
-  public extensions?: { [key: string]: any }
+  [key: string]: unknown;
 
   public static isProblemDetails(resource: any): resource is ProblemDetails {
     return resource instanceof ProblemDetails;

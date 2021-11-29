@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\HAL\src\HAL\HAL.Common\HAL.Common.csproj" />
     <ProjectReference Include="..\..\..\RESTworld\RESTworld.Common\RESTworld.Common.csproj" />
   </ItemGroup>
 

@@ -1,12 +1,14 @@
 ﻿using HAL.AspNetCore.Controllers;
 using HAL.AspNetCore.OData.Abstractions;
 using HAL.Common;
+using HAL.Common.Forms;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using RESTworld.Business.Models;
 using RESTworld.Common.Dtos;
 using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 
@@ -60,6 +62,32 @@ namespace RESTworld.AspNetCore.Controller
         }
 
         /// <summary>
+        /// Adds a delete link to the given resource.
+        /// </summary>
+        /// <param name="result">The resource to add the link to.</param>
+        protected void AddDeleteLink(FormsResource result)
+        {
+            if (!result.Templates.TryGetValue("default", out var template))
+                return;
+
+            var id = template.Properties.FirstOrDefault(p => p.Name == nameof(DtoBase.Id))?.Value;
+            var timsestamp = template.Properties.FirstOrDefault(p => p.Name == nameof(DtoBase.Timestamp))?.Value as byte[];
+
+            if (id is null)
+                return;
+
+            result.AddLink(
+                "delete",
+                new Link
+                {
+                    Name = HttpMethod.Delete.Method,
+                    Href = Url.ActionLink(
+                        HttpMethod.Delete.Method,
+                        values: new { id = id, timestamp = Base64UrlTextEncoder.Encode(timsestamp) })
+                });
+        }
+
+        /// <summary>
         /// Adds a save and a delete link to the given resource.
         /// </summary>
         /// <typeparam name="TDto">The type of the resource.</typeparam>
@@ -109,7 +137,7 @@ namespace RESTworld.AspNetCore.Controller
         protected ObjectResult CreateError(int status, string problemDetails)
         {
             var resource =
-                _resourceFactory.Create(new ProblemDetails { Title = Enum.GetName(typeof(HttpStatusCode), status), Status = status, Detail = problemDetails });
+                _resourceFactory.CreateForGetEndpoint(new ProblemDetails { Title = Enum.GetName(typeof(HttpStatusCode), status), Status = status, Detail = problemDetails }, null);
             var result = StatusCode(resource.State.Status!.Value, resource);
             return result;
         }

@@ -4,79 +4,280 @@
   </div>
 </div>
 
-<form [formGroup]="formGroup" (ngSubmit)="save()">
-  <p-tabView>
-    <p-tabPanel header="Visual" [disabled]="!resource || isLoading">
-      <ng-template #defaultVisualTab>
-        <ng-container *ngIf="!resource && isLoading">
-          <div *ngFor="let i of [1, 2, 3, 4, 5]" class="grid field">
-            <p-skeleton class="col-12 mb-2 md:col-2 md:mb-0" height="39px"></p-skeleton>
-            <div class="col-12 md:col-10">
-              <p-skeleton class="w-full" height="39px"></p-skeleton>
-            </div>
-          </div>
-        </ng-container>
+<p-tabView>
 
-        <div *ngIf="resource" class="blockable-container">
-          <div class="blockable-element">
-            <ng-template #defaultForm let-properties="properties" let-formGroup="formGroup">
-              <div [formGroup]="formGroup">
-                <div *ngFor="let property of properties" class="grid field">
-                  <ng-template #defaultFormRow>
-                    <ng-template #defaultFormLabel>
-                      <label [attr.for]="property.field" class="col-12 mb-2 md:col-2 md:mb-0" [class.p-disabled]="property.isReadOnly" [class.hasChildren]="property.children?.length > 0">{{property.label}}</label>
-                    </ng-template>
-                    <ng-container *ngTemplateOutlet="formLabelRef || defaultFormLabel; context:{ $implicit: property }"></ng-container>
-                    <ng-template #defaultFormInput let-property let-formGroup="formGroup">
-                        <div [ngSwitch]="property.type" class="col-12 md:col-10">
-                            <input *ngSwitchCase="'text'" [formControlName]="property.field" [id]="property.field" type="text" pInputText class="w-full" [class.p-disabled]="property.isReadOnly">
-                            <p-calendar *ngSwitchCase="'date'" [formControlName]="property.field" [id]="property.field" [dateFormat]="dateFormat" [showTime]="true" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.isReadOnly"></p-calendar>
-                            <p-inputNumber *ngSwitchCase="'numeric'" [formControlName]="property.field" [id]="property.field" mode="decimal" [showButtons]="!property.isReadOnly" class="w-full" styleClass="w-full" [class.p-disabled]="property.isReadOnly"></p-inputNumber>
-                            <p-checkbox *ngSwitchCase="'boolean'" [formControl]="formGroup.controls[property.field]" [id]="property.field" [readonly]="property.isReadOnly"></p-checkbox>
-                            <div *ngSwitchCase="'object'">
-                                <ng-container *ngTemplateOutlet="formRef || defaultForm; context:{ properties: property.children, formGroup: formGroup.controls[property.field] }"></ng-container>
-                            </div>
-                        </div>
-                    </ng-template>
-                    <ng-container *ngTemplateOutlet="formInputRef || defaultFormInput; context:{ $implicit: property, formGroup: formGroup }"></ng-container>
-                  </ng-template>
-                  <ng-container *ngTemplateOutlet="formRowRef || defaultFormRow; context:{ $implicit: property }"></ng-container>
-                </div>
-              </div>
-            </ng-template>
-            <ng-container *ngTemplateOutlet="formRef || defaultForm; context: { properties: properties, formGroup: formGroup }"></ng-container>
-          </div>
-          <div class="blockable-overlay" *ngIf="isLoading">
-            <p-progressSpinner></p-progressSpinner>
-          </div>
-        </div>
-      </ng-template>
-      <ng-container *ngTemplateOutlet="visualTabRef || defaultVisualTab"></ng-container>
-      <ng-container *ngTemplateOutlet="visualTabAdditionalRef || null; context:{ $implicit: resource, properties: properties, isLoading: isLoading }"></ng-container>
-    </p-tabPanel>
-
-    <p-tabPanel header="Raw" [disabled]="!resource || isLoading">
-      <ng-template #defaultRawTab>
-        <pre>{{resource | json}}</pre>
-      </ng-template>
-      <ng-container *ngTemplateOutlet="rawTabRef || defaultRawTab"></ng-container>
-    </p-tabPanel>
-  </p-tabView>
-
-  <div class="grid">
-    <div class="col">
-      <div class="flex justify-content-end w-full">
-        <ng-template #defaultButtons>
-          <button pButton pRipple type="submit" label="Save" icon="far fa-save" class="mx-2 p-button-success" [disabled]="!resource || isLoading || !canSave"></button>
-          <button pButton pRipple type="button" label="Reload" icon="fas fa-redo" class="mx-2 p-button-info" (click)="load()" [disabled]="isLoading"></button>
-          <button pButton pRipple type="button" label="Delete" icon="far fa-trash-alt" class="mx-2 p-button-danger" (click)="showDeleteConfirmatioModal()" [disabled]="!resource || isLoading || !canDelete"></button>
-        </ng-template>
-        <ng-container *ngTemplateOutlet="buttonsRef || defaultButtons"></ng-container>
+  <p-tabPanel *ngIf="isLoadingForTheFirstTime" header="Loading">
+    <div *ngFor="let i of [1, 2, 3, 4, 5]" class="grid field">
+      <p-skeleton class="col-12 mb-2 md:col-2 md:mb-0" height="39px"></p-skeleton>
+      <div class="col-12 md:col-10">
+        <p-skeleton class="w-full" height="39px"></p-skeleton>
       </div>
     </div>
-  </div>
+    <div class="grid">
+      <div class="col">
+        <div class="flex justify-content-end w-full">
+          <p-skeleton width="120px" height="39px" class="mx-2"></p-skeleton>
+          <p-skeleton width="120px" height="39px" class="mx-2"></p-skeleton>
+          <p-skeleton width="120px" height="39px" class="mx-2"></p-skeleton>
+        </div>
+      </div>
+    </div>
+  </p-tabPanel>
 
-</form>
+  <p-tabPanel *ngFor="let item of templates | keyvalue" [header]="item.value.title || item.key" [disabled]="isLoading">
+    <form [formGroup]="formTabs[item.key]" (ngSubmit)="submit(item.key, item.value, formTabs[item.key].value)">
+      <div class="blockable-container">
+        <div class="blockable-element">
+          <div *ngFor="let property of item.value.properties" class="grid field">
+            <label *ngIf="property.type !== PropertyType.Hidden" [attr.for]="property.name" class="col-12 mb-2 md:col-2 md:mb-0" [class.p-disabled]="property.readOnly" [class.hasChildren]="property._templates">{{property.prompt || property.name}}</label>
+            <div class="col-12 md:col-10">
+
+              <ng-template #defaultInputOptions let-property="property" let-template="template">
+
+                <ng-template #defaultInputOptionsSingle let-property="property" let-template="template">
+                  <p-dropdown [formControlName]="property.name" [id]="property.name" [options]="property.options.inline" [filterBy]="(property.options.promptField || 'prompt') + ',' + (property.options.valueField || 'value')" [optionValue]="property.options.valueField || 'value'" [readonly]="property.readOnly" [required]="property.required || property.options.minItems > 0" [filter]="true" [autoDisplayFirst]="false" [showClear]="!property.required || property.options.minItems <= 0" (onFilter)="onOptionsFiltered(property, $event)" styleClass="w-full" [filterPlaceholder]="property?.options?.link?.href ? 'search for more results' : ''">
+                    <ng-template let-item pTemplate="selectedItem">
+                      <span [pTooltip]="getTooltip(item, [property.options.promptField || 'prompt', property.options.valueField || 'value'])">{{item[property.options.promptField || 'prompt']}} ({{item[property.options.valueField || 'value']}})</span>
+                    </ng-template>
+                    <ng-template let-item pTemplate="item">
+                      <span [pTooltip]="getTooltip(item, [property.options.promptField || 'prompt', property.options.valueField || 'value'])">{{item[property.options.promptField || 'prompt']}} ({{item[property.options.valueField || 'value']}})</span>
+                    </ng-template>
+                  </p-dropdown>
+                </ng-template>
+                <ng-container *ngIf="!property.options.maxItems || property.options.maxItems == 1">
+                  <ng-container *ngTemplateOutlet="inputOptionsSingleRef || defaultInputOptionsSingle; context: { property: property, template: template, formGroup: formTabs[item.key] }"></ng-container>
+                </ng-container>
+
+                <ng-template #defaultInputOptionsMultiple let-property="property" let-template="template">
+                  <p-multiSelect [formControlName]="property.name" [id]="property.name" [options]="property.options.inline" [optionLabel]="property.options.promptField || 'prompt'" [optionValue]="property.options.valueField || 'value'" [readonly]="property.readOnly" [selectionLimit]="property.options.maxItems" [required]="property.required || property.options.minItems > 0"></p-multiSelect>
+                </ng-template>
+                <ng-container *ngIf="property.options.maxItems > 1">
+                  <ng-container *ngTemplateOutlet="inputOptionsMultipleRef || defaultInputOptionsMultiple; context: { property: property, template: template, formGroup: formTabs[item.key] }"></ng-container>
+                </ng-container>
+
+              </ng-template>
+              <ng-container *ngIf="property.options">
+                <ng-container *ngTemplateOutlet="inputOptionsRef || defaultInputOptions; context: { property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+              </ng-container>
+
+              <div *ngIf="!property.options">
+                <div [ngSwitch]="property.type">
+
+                  <ng-template #defaultInputHidden let-property="property" let-template="template">
+                    <input [formControlName]="property.name" [id]="property.name" type="hidden" [value]="property.value" />
+                  </ng-template>
+                  <ng-container *ngSwitchCase="PropertyType.Hidden">
+                    <ng-container *ngTemplateOutlet="inputHiddenRef || defaultInputHidden; context:{ property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+                  <ng-template #defaultInputText let-property="property" let-template="template">
+                    <input [formControlName]="property.name" [id]="property.name" type="text" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+                  </ng-template>
+                  <ng-container *ngSwitchCase="PropertyType.Text">
+                    <ng-container *ngTemplateOutlet="inputTextRef || defaultInputText; context:{ property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+
+                  <ng-template #defaultInputTextarea let-property="property" let-template="template">
+                    <textarea [formControlName]="property.name" [id]="property.name" pInputTextarea class="w-full p-inputtextarea p-inputtext p-component p-element" [class.p-disabled]="property.readOnly" [cols]="property.cols" [rows]="property.rows"></textarea>
+                  </ng-template>
+                  <ng-container *ngSwitchCase="PropertyType.Textarea">
+                    <ng-container *ngTemplateOutlet="inputTextareaRef || defaultInputTextarea; context: { property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+
+                  <ng-template #defaultInputSearch let-property="property" let-template="template">
+                    <input [formControlName]="property.name" [id]="property.name" type="search" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+                  </ng-template>
+                  <ng-container *ngSwitchCase="PropertyType.Search">
+                    <ng-container *ngTemplateOutlet="inputSearchRef || defaultInputSearch; context: { property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+
+                  <ng-template #defaultInputTel let-property="property" let-template="template">
+                    <input [formControlName]="property.name" [id]="property.name" type="tel" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+                  </ng-template>
+                  <ng-container *ngSwitchCase="PropertyType.Tel">
+                    <ng-container *ngTemplateOutlet="inputTelRef || defaultInputTel; context: { property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+
+                  <ng-template #defaultInputUrl let-property="property" let-template="template">
+                    <input [formControlName]="property.name" [id]="property.name" type="url" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+                  </ng-template>
+                  <ng-container *ngSwitchCase="PropertyType.Url">
+                    <ng-container *ngTemplateOutlet="inputUrlRef || defaultInputUrl; context: { property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+
+                  <ng-template #defaultInputEmail let-property="property" let-template="template">
+                    <input [formControlName]="property.name" [id]="property.name" type="email" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+                  </ng-template>
+                  <ng-container *ngSwitchCase="PropertyType.Email">
+                    <ng-container *ngTemplateOutlet="inputEmailRef || defaultInputEmail; context: { property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+
+                  <ng-template #defaultInputPassword let-property="property" let-template="template">
+                    <input [formControlName]="property.name" [id]="property.name" type="password" pPassword class="w-full" [class.p-disabled]="property.readOnly" />
+                  </ng-template>
+                  <ng-container *ngSwitchCase="PropertyType.Password">
+                    <ng-container *ngTemplateOutlet="inputPasswordRef || defaultInputPassword; context: { property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+
+                  <ng-template #defaultInputDate let-property="property" let-template="template">
+                    <p-calendar [formControlName]="property.name" [id]="property.name" [dateFormat]="dateFormat" [showWeek]="true" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-calendar>
+                  </ng-template>
+                  <ng-container *ngSwitchCase="PropertyType.Date">
+                    <ng-container *ngTemplateOutlet="inputDateRef || defaultInputDate; context: { property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+
+                  <ng-template #defaultInputMonth let-property="property" let-template="template">
+                    <p-calendar [formControlName]="property.name" [id]="property.name" [dateFormat]="dateFormat" [showWeek]="false" view="month" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-calendar>
+                  </ng-template>
+                  <ng-container *ngSwitchCase="PropertyType.Month">
+                    <ng-container *ngTemplateOutlet="inputMonthRef || defaultInputMonth; context: { property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+
+                  <ng-template #defaultInputWeek let-property="property" let-template="template">
+                    <input [formControlName]="property.name" [id]="property.name" type="week" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+                  </ng-template>
+                  <ng-container *ngSwitchCase="PropertyType.Week">
+                    <ng-container *ngTemplateOutlet="inputWeekRef || defaultInputWeek; context: { property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+
+                  <ng-template #defaultInputTime let-property="property" let-template="template">
+                    <p-calendar [formControlName]="property.name" [id]="property.name" [dateFormat]="dateFormat" [showTime]="true" [timeOnly]="true" [showWeek]="false" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-calendar>
+                  </ng-template>
+                  <ng-container *ngSwitchCase="PropertyType.Time">
+                    <ng-container *ngTemplateOutlet="inputTimeRef || defaultInputTime; context: { property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+
+                  <ng-template #defaultInputDatetimeLocal let-property="property" let-template="template">
+                    <p-calendar [formControlName]="property.name" [id]="property.name" [dateFormat]="dateFormat" [showTime]="true" [showWeek]="false" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-calendar>
+                  </ng-template>
+                  <ng-container *ngSwitchCase="PropertyType.DatetimeLocal">
+                    <ng-container *ngTemplateOutlet="inputDatetimeLocalRef || defaultInputDatetimeLocal; context: { property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+
+                  <ng-template #defaultInputNumber let-property="property" let-template="template">
+                    <p-inputNumber [formControlName]="property.name" [id]="property.name" mode="decimal" [showButtons]="!property.readOnly" class="w-full" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-inputNumber>
+                  </ng-template>
+                  <ng-container *ngSwitchCase="PropertyType.Number">
+                    <ng-container *ngTemplateOutlet="inputNumberRef || defaultInputNumber; context: { property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+
+                  <ng-template #defaultInputRange let-property="property" let-template="template">
+                    <input [formControlName]="property.name" [id]="property.name" type="range" [min]="property.min" [max]="property.max" [step]="property.step" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+                  </ng-template>
+                  <ng-container *ngSwitchCase="PropertyType.Range">
+                    <ng-container *ngTemplateOutlet="inputRangeRef || defaultInputRange; context: { property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+
+                  <ng-template #defaultInputColor let-property="property" let-template="template">
+                    <input [formControlName]="property.name" [id]="property.name" type="color" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+                  </ng-template>
+                  <ng-container *ngSwitchCase="PropertyType.Color">
+                    <ng-container *ngTemplateOutlet="inputColorRef || defaultInputColor; context: { property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+
+                  <ng-template #defaultInputBool let-property="property" let-template="template" let-formGroup="formGroup">
+                    <p-checkbox *ngIf="property.required" [formControl]="formGroup.controls[property.name]" [id]="property.name" [readonly]="property.readOnly"></p-checkbox>
+                    <p-triStateCheckbox *ngIf="!property.required" [formControl]="formGroup.controls[property.name]" [id]="property.name" [readonly]="property.readOnly"></p-triStateCheckbox>
+                  </ng-template>
+                  <ng-container *ngSwitchCase="PropertyType.Bool">
+                    <ng-container *ngTemplateOutlet="inputBoolRef || defaultInputBool; context: { property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+
+                  <ng-template #defaultInputDatetimeOffset let-property="property" let-template="template">
+                    <p-calendar [formControlName]="property.name" [id]="property.name" [dateFormat]="dateFormat" [showTime]="true" [showWeek]="false" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-calendar>
+                  </ng-template>
+                  <ng-container *ngSwitchCase="PropertyType.DatetimeOffset">
+                    <ng-container *ngTemplateOutlet="inputDatetimeOffsetRef || defaultInputDatetimeOffset; context: { property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+
+                  <ng-template #defaultInputDuration let-property="property" let-template="template">
+                    <p-calendar *ngSwitchCase="PropertyType.Duration" [formControlName]="property.name" [id]="property.name" [dateFormat]="dateFormat" [showTime]="true" [timeOnly]="true" [showWeek]="false" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-calendar>
+                  </ng-template>
+                  <ng-container *ngSwitchCase="PropertyType.Duration">
+                    <ng-container *ngTemplateOutlet="inputDurationRef || defaultInputDuration; context: { property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+
+                  <ng-template #defaultInputImage let-property="property" let-template="template">
+                    <rw-image [formControlName]="property.name" [accept]="property.placeholder"></rw-image>
+                  </ng-template>
+                  <ng-container *ngSwitchCase="PropertyType.Image">
+                    <ng-container *ngTemplateOutlet="inputImageRef || defaultInputImage; context: { property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+
+                  <ng-template #defaultInputFile let-property="property" let-template="template">
+                    <rw-file [formControlName]="property.name" [fileName]="property.name" [accept]="property.placeholder"></rw-file>
+                  </ng-template>
+                  <ng-container *ngSwitchCase="PropertyType.File">
+                    <ng-container *ngTemplateOutlet="inputFileRef || defaultInputFile; context: { property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+
+                  <ng-template #defaultInputDefault let-property="property" let-template="template">
+                    <input [formControlName]="property.name" [id]="property.name" type="text" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+                  </ng-template>
+                  <ng-container *ngSwitchDefault>
+                    <ng-container *ngTemplateOutlet="inputDefaultRef || defaultInputDefault; context: { property: property, template: item.value, formGroup: formTabs[item.key] }"></ng-container>
+                  </ng-container>
+
+                </div>
+              </div>
+              <val-errors [controlName]="property.name || null">
+                <ng-template valError="required">The field '{{property.prompt || property.name}}' is required.</ng-template>
+                <ng-template valError="email">The email must be a valid email address.</ng-template>
+                <ng-template valError="min" let-error="error">'{{property.prompt || property.name}}' must be equal or greater than {{ error.min }}.</ng-template>
+                <ng-template valError="max" let-error="error">'{{property.prompt || property.name}}' must be smaller than {{ error.max }}.</ng-template>
+                <ng-template valError="minlength" let-error="error">The length of '{{property.prompt || property.name}}' must be equal or greater than {{ error.minlength }}.</ng-template>
+                <ng-template valError="maxlength" let-error="error">The length of '{{property.prompt || property.name}}' must be shorter than {{ error.maxlength }}.</ng-template>
+                <ng-template valError="pattern" let-error="error">The value for '{{property.prompt || property.name}}' does not match the pattern {{ error }}.</ng-template>
+                <ng-template valError="remote" let-error="error">{{ error }}</ng-template>
+              </val-errors>
+            </div>
+          </div>
+        </div>
+        <div class="blockable-overlay" *ngIf="isLoading">
+          <p-progressSpinner></p-progressSpinner>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="col">
+          <div class="flex justify-content-end w-full">
+            <ng-template #defaultButtons>
+              <button pButton pRipple type="submit" label="Save" icon="far fa-save" class="mx-2 p-button-success" [disabled]="isLoading || !canSubmit(item.key)"></button>
+              <button pButton pRipple type="button" label="Reload" icon="fas fa-redo" class="mx-2 p-button-info" (click)="load()" [disabled]="isLoading"></button>
+              <button pButton pRipple type="button" label="Delete" icon="far fa-trash-alt" class="mx-2 p-button-danger" (click)="showDeleteConfirmatioModal()" [disabled]="!resource || isLoading || !canDelete"></button>
+            </ng-template>
+            <ng-container *ngTemplateOutlet="buttonsRef || defaultButtons"></ng-container>
+          </div>
+        </div>
+      </div>
+    </form>
+  </p-tabPanel>
+
+  <ng-template #defaultExtraTabs>
+  </ng-template>
+  <ng-container *ngTemplateOutlet="extraTabsRef || defaultExtraTabs"></ng-container>
+
+</p-tabView>
 
 <p-toast></p-toast>
 <p-confirmDialog></p-confirmDialog>

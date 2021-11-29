@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +20,7 @@ using RESTworld.AspNetCore.Formatter;
 using RESTworld.AspNetCore.Health;
 using RESTworld.AspNetCore.Serialization;
 using RESTworld.AspNetCore.Swagger;
+using RESTworld.AspNetCore.Validation;
 using RESTworld.AspNetCore.Versioning;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
@@ -84,6 +86,27 @@ namespace RESTworld.AspNetCore
                         description.GroupName.ToUpperInvariant());
                 }
                 options.ConfigObject.DeepLinking = true;
+
+                // When sending large files in Swagger UI, these should be downloaded instead of displayed.
+                options.UseResponseInterceptor(@"
+(res) => {
+    window.res = res;
+    if (res && res.status >= 200 && res.status < 300 && res.data && res.headers['content-type'] && !res.data.length > 1000000) {
+        try {
+            var blob = new Blob([res.data], { type: res.headers['content-type'] });
+            var blobURL = URL.createObjectURL(blob);
+            var tempLink = document.createElement('a');
+            tempLink.style.display = 'none';
+            tempLink.href = blobURL;
+            tempLink.setAttribute('download', new URL(res.url).pathname.replace('/', ''));
+            tempLink.click();
+            res.body = null;
+        }
+        catch { }
+    }
+    return res;
+}"
+.Replace("\r", "").Replace("\n", ""));
             });
 
             app.UseCors();
@@ -164,7 +187,7 @@ namespace RESTworld.AspNetCore
                 .AddJsonOptions(o =>
                 {
                     o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
-                    o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+                    o.JsonSerializerOptions.Converters.Add(new JsonStringEnumMemberConverter(JsonNamingPolicy.CamelCase));
                     o.JsonSerializerOptions.Converters.Add(new SingleObjectOrCollectionJsonConverterFactory());
                 });
 
@@ -204,6 +227,8 @@ namespace RESTworld.AspNetCore
                 // Add meaningfull examples.
                 options.OperationFilter<SwaggerExampleOperationFilter>();
             });
+
+            services.AddSingleton<ProblemDetailsFactory, RestWorldProblemDetailsFactory>();
 
             services.AddAutoMapper(ConfigureAutomapper);
 

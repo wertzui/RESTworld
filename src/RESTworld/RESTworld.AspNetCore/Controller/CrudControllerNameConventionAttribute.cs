@@ -34,7 +34,7 @@ namespace RESTworld.AspNetCore.Controller
         {
             var dtoName = readDtoType.Name;
 
-            var match = Regex.Match(dtoName, "^(?<tbl>tbl)?(?<name>.*?)(?<get>get)?(?<full>full)?(?<dto>dto)?(?<version>v(er(sion)?)?\\d+)?$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+            var match = Regex.Match(dtoName, "^(?<tbl>tbl)?(?<name>.*?)(?<get>get)?(?<full>full)?(?<list>list)?(?<dto>dto)?(?<version>v(er(sion)?)?\\d+)?$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
             var groups = match.Groups;
 
             var controllerName = groups["name"].Value;

@@ -1,41 +1,39 @@
-import { Component, Input, OnInit } from '@angular/core';
-import { Resource } from '@wertzui/ngx-hal-client';
+import { Component, Input } from '@angular/core';
+import { PropertyType, Resource, Template, Templates, FormsResource, Property } from '@wertzui/ngx-hal-client';
 import { RESTworldClient } from '../../services/restworld-client';
-import * as _ from 'lodash'
+import * as _ from 'lodash';
 import { RESTworldClientCollection } from '../../services/restworld-client-collection';
-import { FormControl, FormGroup } from '@angular/forms';
+import { AbstractControl, FormControl, FormGroup,  Validators } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { ProblemDetails } from '../../models/problem-details';
-import { HttpStatusCode } from '@angular/common/http';
 import { ContentChild } from '@angular/core';
 import { TemplateRef } from '@angular/core';
-
-interface PropertyDescription {
-  field: string,
-  value: any,
-  label: string,
-  type: 'text' | 'numeric' | 'date' | 'boolean' | 'object' | 'array',
-  isReadOnly: boolean,
-  children?: PropertyDescription[]
-}
+import { ValdemortConfig } from 'ngx-valdemort';
 
 @Component({
-  selector: 'restworld-edit-view',
+  selector: 'rw-edit',
   templateUrl: './restworld-edit-view.component.html',
   styleUrls: ['./restworld-edit-view.component.css']
 })
 export class RESTworldEditViewComponent {
-  public get properties() {
-    return this._properties;
+  public get PropertyType() {
+    return PropertyType;
   }
-  private _properties: PropertyDescription[] = [];
+  public get templates() {
+    return this._templates;
+  }
+  private _templates: Templates = {};
 
-  public get formGroup() {
-    return this._formGroup;
+  public get isLoadingForTheFirstTime() {
+    return Object.keys(this.templates).length === 0 && this.isLoading;
   }
-  private _formGroup: FormGroup = new FormGroup({});
+
+  public get formTabs() {
+    return this._formTabs;
+  }
+  private _formTabs: { [name: string]: FormGroup } = {};
 
   @Input()
   public set apiName(value: string | undefined) {
@@ -77,6 +75,10 @@ export class RESTworldEditViewComponent {
     const length = this.resource?._links["delete"]?.length;
     return length !== undefined && length > 0;
   }
+  public canSubmit(templateName: string) {
+    const form = this.formTabs[templateName];
+    return form && form.valid;
+  }
 
   public get dateFormat(): string {
     return new Date(3333, 10, 22)
@@ -87,37 +89,113 @@ export class RESTworldEditViewComponent {
       .replace("33", "y");
   }
 
-  @ContentChild('visualTab', { static: false })
-  visualTabRef?: TemplateRef<any>;
+  @ContentChild('extraTabs', { static: false })
+  extraTabsRef?: TemplateRef<any>;
 
-  @ContentChild('form', { static: false })
-  formRef?: TemplateRef<any>;
-
-  @ContentChild('formRow', { static: false })
-  formRowRef?: TemplateRef<any>;
-
-  @ContentChild('formLabel', { static: false })
-  formLabelRef?: TemplateRef<any>;
-
-  @ContentChild('formInput', { static: false })
-  formInputRef?: TemplateRef<any>;
-
-  @ContentChild('visualTabAdditional', { static: false })
-  visualTabAdditionalRef?: TemplateRef<any>;
-
-  @ContentChild('rawTab', { static: false })
-  rawTabRef?: TemplateRef<any>;
-
-  @ContentChild('buttonsRef', { static: false })
+  @ContentChild('buttons', { static: false })
   buttonsRef?: TemplateRef<any>;
+
+  @ContentChild('inputOptionsSingle', { static: false })
+  inputOptionsSingleRef?: TemplateRef<any>;
+
+  @ContentChild('inputOptionsMultiple', { static: false })
+  inputOptionsMultipleRef?: TemplateRef<any>;
+
+  @ContentChild('inputOptions', { static: false })
+  inputOptionsRef?: TemplateRef<any>;
+
+  @ContentChild('inputHidden', { static: false })
+  inputHiddenRef?: TemplateRef<any>;
+
+  @ContentChild('inputText', { static: false })
+  inputTextRef?: TemplateRef<any>;
+
+  @ContentChild('inputTextarea', { static: false })
+  inputTextareaRef?: TemplateRef<any>;
+
+  @ContentChild('inputSearch', { static: false })
+  inputSearchRef?: TemplateRef<any>;
+
+  @ContentChild('inputTel', { static: false })
+  inputTelRef?: TemplateRef<any>;
+
+  @ContentChild('inputUrl', { static: false })
+  inputUrlRef?: TemplateRef<any>;
+
+  @ContentChild('inputEmail', { static: false })
+  inputEmailRef?: TemplateRef<any>;
+
+  @ContentChild('inputPassword', { static: false })
+  inputPasswordRef?: TemplateRef<any>;
+
+  @ContentChild('inputDate', { static: false })
+  inputDateRef?: TemplateRef<any>;
+
+  @ContentChild('inputMonth', { static: false })
+  inputMonthRef?: TemplateRef<any>;
+
+  @ContentChild('inputWeek', { static: false })
+  inputWeekRef?: TemplateRef<any>;
+
+  @ContentChild('inputTime', { static: false })
+  inputTimeRef?: TemplateRef<any>;
+
+  @ContentChild('inputDatetimeLocal', { static: false })
+  inputDatetimeLocalRef?: TemplateRef<any>;
+
+  @ContentChild('inputNumber', { static: false })
+  inputNumberRef?: TemplateRef<any>;
+
+  @ContentChild('inputRange', { static: false })
+  inputRangeRef?: TemplateRef<any>;
+
+  @ContentChild('inputColor', { static: false })
+  inputColorRef?: TemplateRef<any>;
+
+  @ContentChild('inputBool', { static: false })
+  inputBoolRef?: TemplateRef<any>;
+
+  @ContentChild('inputDatetimeOffset', { static: false })
+  inputDatetimeOffsetRef?: TemplateRef<any>;
+
+  @ContentChild('inputDuration', { static: false })
+  inputDurationRef?: TemplateRef<any>;
+
+  @ContentChild('inputImage', { static: false })
+  inputImageRef?: TemplateRef<any>;
+
+  @ContentChild('inputFile', { static: false })
+  inputFileRef?: TemplateRef<any>;
+
+  @ContentChild('inputDefault', { static: false })
+  inputDefaultRef?: TemplateRef<any>;
 
   constructor(
     private _clients: RESTworldClientCollection,
     private _confirmationService: ConfirmationService,
     private _messageService: MessageService,
     private _location: Location,
-    private _router: Router) {
+    private _router: Router,
+    valdemortConfig: ValdemortConfig) {
+    valdemortConfig.errorClasses = 'p-error text-sm';
+  }
 
+  public getTooltip(resource: Resource, keysToExclude?: string[]): string {
+    const tooltip = Object.entries(resource)
+      .filter(([key]) => !(key.startsWith('_') || ['createdAt', 'createdBy', 'lastChangedAt', 'lastChangedBy', 'timestamp'].includes(key) || keysToExclude?.includes(key)))
+      .reduce((prev, [key, value], index) => `${prev}${index === 0 ? '' : '\n'}${key}: ${RESTworldEditViewComponent.jsonStringifyWithElipsis(value)}`, '');
+
+    return tooltip;
+  }
+
+  private static jsonStringifyWithElipsis(value: unknown) {
+    const maxLength = 200;
+    const end = 10;
+    const start = maxLength - end - 2;
+    const json = JSON.stringify(value);
+    const shortened = json.length > maxLength ? json.substring(0, start) + '…' + json.substring(json.length - end) : json;
+
+    return shortened;
   }
 
   private getClient(): RESTworldClient {
@@ -127,33 +205,53 @@ export class RESTworldEditViewComponent {
     return this._clients.getClient(this.apiName);
   }
 
-  public async save(): Promise<void> {
-    if (!this.apiName || !this.uri || !this.resource)
-      return;
-
-    Object.assign(this.resource, this.formGroup.value);
-    const selfHrefBeforeSave = this.resource._links.self[0].href;
-
+  public async submit(templateName:string, template: Template, formValue: {}) {
     this.isLoading = true;
-    const response = await this.getClient().save(this.resource);
-    this.isLoading = false;
 
-    if (!response.ok || ProblemDetails.isProblemDetails(response.body)) {
-      const message = response.status === HttpStatusCode.Conflict ? 'Someone else modified the resource. Try reloading it and apply your changes again.' : 'Error while saving the resource.';
-      this._messageService.add({ severity: 'error', summary: 'Error', detail: message, data: response });
-    }
-    else {
-      const selfHrefAfterSave = this.resource._links.self[0].href;
+    try {
+      const targetBeforeSave = template.target;
+      const response = await this.getClient().submit(template, formValue);
 
-      setTimeout(() =>
-        this._messageService.add({ severity: 'success', summary: 'Saved', detail: 'The resource has been saved.' }),
-        100);
+      if (!response.ok) {
+        let summary = 'Error';
+        let detail = 'Error while saving the resource.';
+        if (ProblemDetails.isProblemDetails(response.body)) {
+          const problemDetails = response.body as ProblemDetails;
+          summary = problemDetails.title || summary;
+          detail = problemDetails.detail || detail;
+          // display validation errors
+          if (problemDetails['errors'] as {}) {
+            const form = this.formTabs[templateName];
+            for (const [key, errorsForKey] of Object.entries(problemDetails['errors'] as {})) {
+              const path = key.split(/\.|\[/).map(e => e.replace("]", ""));
+              const formControl = path.reduce<AbstractControl>((control, pathElement) => (control instanceof FormGroup ? control.controls[pathElement] : control) || control, form);
+              formControl.setErrors({ remote: errorsForKey });
+            }
+          }
+        }
 
-      if (selfHrefBeforeSave !== selfHrefAfterSave) {
-        this._router.navigate(['/edit', this.apiName, selfHrefAfterSave]);
+        this._messageService.add({ severity: 'error', summary: summary, detail: detail, data: response, life: 10000 });
       }
+      else {
+        const responseResource = (response.body as FormsResource);
+        const targetAfterSave = responseResource._templates[templateName].target;
+
+        setTimeout(() =>
+          this._messageService.add({ severity: 'success', summary: 'Saved', detail: 'The resource has been saved.' }),
+          100);
+
+        if (targetBeforeSave !== targetAfterSave) {
+          this._router.navigate(['/edit', this.apiName, responseResource._links.self[0].href]);
+        }
+      }
+
+    }
+    catch (e: unknown) {
+      this._messageService.add({ severity: 'error', summary: 'Error', detail: `An unknown error occurred. ${JSON.stringify(e)}`, life: 10000 });
+      console.log(e);
     }
 
+    this.isLoading = false;
   }
 
   public showDeleteConfirmatioModal() {
@@ -169,7 +267,7 @@ export class RESTworldEditViewComponent {
     if (!this.apiName || !this.uri || !this.resource)
       return;
 
-    Object.assign(this.resource, this.formGroup.value);
+    Object.assign(this.resource, this.formTabs.value);
 
     await this.getClient().delete(this.resource);
     setTimeout(() =>
@@ -187,120 +285,142 @@ export class RESTworldEditViewComponent {
 
     const response = await this.getClient().getSingle(this.uri);
     if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body) {
-      this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the resource from the API.', data: response })
+      this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the resource from the API.', data: response });
     }
     else {
       this._resource = response.body;
-      this._properties = RESTworldEditViewComponent.createProperyInfos(this._resource);
-      this._formGroup = RESTworldEditViewComponent.createFormGroup(this._properties);
+      this._templates = await this.getAllTemplates(this._resource);
+      this._formTabs = RESTworldEditViewComponent.createFormTabs(this._templates);
     }
 
     this.isLoading = false;
   }
 
-  static createFormGroup(properties: PropertyDescription[]): FormGroup {
-    const controls = Object.fromEntries(properties.map(p => [
-      p.field,
-      p.type === 'object' && p.children ? RESTworldEditViewComponent.createFormGroup(p.children) : new FormControl(p.value)
+  public async onOptionsFiltered(property: Property, event: { originalEvent: any, filter: string | null; }) {
+    if (!property?.options?.link?.href || !event.filter || event.filter == '')
+      return;
+
+    const templatedUri = property.options.link.href;
+    let filter = `contains(${property.options.promptField}, '${event.filter}')`;
+    if (property.options.valueField?.toLowerCase() === 'id' && !Number.isNaN(Number.parseInt(event.filter)))
+      filter = `(${property.options.valueField} eq ${event.filter})  or (${filter})`;
+
+    const response = await this.getClient().getListByUri(templatedUri, { $filter: filter, $top: 10 });
+    if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body) {
+      const message = `An error occurred while getting the filtered items.`;
+      this._messageService.add({ severity: 'error', summary: 'Error', detail: message, data: response });
+      return;
+    }
+
+    const items = response.body._embedded.items;
+    property.options.inline = items;
+  }
+
+  private async setInitialSelectedOptionsElementsForTemplates(templates: Templates) {
+    return Promise.all(Object.values(templates)
+      .map(template => this.setInitialSelectedOptionsElementsForTemplate(template)));
+  }
+
+  public imageChanged(formControl: FormControl, event: { files: File[]; }): void {
+    const file = event.files[0];
+    console.log(file);
+    const reader = new FileReader();
+    reader.onload = e => {
+      const uri = reader.result;
+      console.log(uri);
+      formControl.setValue(uri);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  private async setInitialSelectedOptionsElementsForTemplate(template: Template) {
+    return Promise.all(template.properties
+      .filter(property => property?.options?.link?.href)
+      .map(property => this.setInitialSelectedOptionsElementForProperty(property)));
+  }
+
+  private async setInitialSelectedOptionsElementForProperty(property: Property) {
+    if (!property?.options?.link?.href)
+      return;
+
+    const templatedUri = property.options.link.href;
+    const filter = `${property.options.valueField} eq ${property.value}`;
+    const response = await this.getClient().getListByUri(templatedUri, { $filter: filter, $top: 10 });
+    if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body) {
+      const message = `An error occurred while getting the filtered items.`;
+      this._messageService.add({ severity: 'error', summary: 'Error', detail: message, data: response });
+      return;
+    }
+
+    const items = response.body._embedded.items;
+    property.options.inline = items;
+  }
+
+  private async getAllTemplates(resource: Resource): Promise<Templates> {
+    const formResponses = await this.getClient().getAllForms(resource);
+
+    const failedResponses = formResponses.filter(response => !response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body);
+    if (failedResponses.length !== 0) {
+      for (var response of failedResponses) {
+        this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the resource from the API.', data: response });
+      }
+      return Promise.resolve({});
+    }
+
+    const formTemplates = Object.assign({}, ...formResponses.map(response => (response.body as FormsResource)._templates)) as Templates;
+
+    await this.setInitialSelectedOptionsElementsForTemplates(formTemplates);
+
+    return formTemplates;
+  }
+
+  static createFormTabs(templates: Templates): { [key: string]: FormGroup } {
+    const tabs = Object.fromEntries(Object.entries(templates).map(([name, template]) => [
+      name,
+      this.createFormGroup(template)
+    ]));
+
+    return tabs;
+  }
+
+  static createFormGroups(templates: Templates): FormGroup {
+    const controls = Object.fromEntries(Object.entries(templates).map(([name, template]) => [
+      name,
+      this.createFormGroup(template)
     ]));
     const formGroup = new FormGroup(controls);
     return formGroup;
   }
 
-  private static createProperyInfos(resource: any): PropertyDescription[] {
-    if (!resource)
-      return [];
-
-    // Get all distinct properties from all rows
-    // We look at all rows to eliminate possible undefined values
-    const properties = Object.entries(resource)
-      .filter(p =>
-        p[0] !== '_links' &&
-        p[0] !== '_embedded' &&
-        p[0] !== 'id' &&
-        p[0] !== 'timestamp');
-
-    // Check if the rows are entities with change tracking
-    const withoutChangeTrackingProperties = properties.filter(p =>
-      p[0] !== 'createdAt' &&
-      p[0] !== 'createdBy' &&
-      p[0] !== 'lastChangedAt' &&
-      p[0] !== 'lastChangedBy');
-    const hasChangeTrackingProperties = withoutChangeTrackingProperties.length < properties.length;
-
-    // First the id, then all other properties
-    const sortedProperties: [string, any][] = [];
-    if (Object.hasOwnProperty('id'))
-      sortedProperties.push(['id', resource['id']]);
-
-    sortedProperties.push(...withoutChangeTrackingProperties);
-
-    // And change tracking properties at the end
-    if (hasChangeTrackingProperties) {
-      sortedProperties.push(['createdAt', resource['createdAt']]);
-      sortedProperties.push(['createdBy', resource['createdBy']]);
-      sortedProperties.push(['lastChangedAt', resource['lastChangedAt']]);
-      sortedProperties.push(['lastChangedBy', resource['lastChangedBy']]);
-    }
-
-    const propertyDescriptions: PropertyDescription[] = sortedProperties
-      .map(p => ({
-        field: p[0],
-        value: p[1],
-        label: RESTworldEditViewComponent.toTitleCase(p[0]),
-        type: RESTworldEditViewComponent.getColumnType(p[0], p[1]),
-        isReadOnly: RESTworldEditViewComponent.getIsReadOnly(p[0])
-      }));
-
-    for (var description of propertyDescriptions) {
-      if (description.type === 'object') {
-        const children = RESTworldEditViewComponent.createProperyInfos(description.value);
-        children.forEach(d => description.field + '.' + d.field);
-        description.children = children;
-      }
-    }
-
-    return propertyDescriptions;
+  static createFormGroup(template: Template): FormGroup {
+    const controls = Object.fromEntries(template.properties.map(p => [
+      p.name,
+      (p.type === PropertyType.Object || p.type === PropertyType.Collection) && p._templates ? RESTworldEditViewComponent.createFormGroups(p._templates) : this.createFormControl(p)
+    ]));
+    const formGroup = new FormGroup(controls);
+    return formGroup;
   }
 
-  private static getIsReadOnly(field: string) {
-    return field === 'id' || field === 'createdAt' || field === 'createdBy' || field === 'lastChangedAt' || field === 'lastChangedBy';
-  }
+  private static createFormControl(property: Property): FormControl | FormGroup {
+    if (property.type === PropertyType.Object || property.type === PropertyType.Collection)
+      return RESTworldEditViewComponent.createFormGroups(property._templates);
 
-  private static getColumnType(field: string, value: any) {
-    if (value === null || value === undefined)
-      return 'text';
+    const control = new FormControl(property.value);
+    if (property.max)
+      control.addValidators(Validators.max(property.max));
+    if (property.maxLength)
+      control.addValidators(Validators.maxLength(property.maxLength));
+    if (property.min)
+      control.addValidators(Validators.min(property.min));
+    if (property.minLength)
+      control.addValidators(Validators.minLength(property.minLength));
+    if (property.regex)
+      control.addValidators(Validators.pattern(property.regex));
+    if (property.required)
+      control.addValidators(Validators.required);
+    if (property.type === PropertyType.Email)
+      control.addValidators(Validators.email);
 
-    if (_.isNumber(value))
-      return 'numeric';
-
-    if (_.isDate(value))
-      return 'date'
-
-    if (_.isString(value)) {
-      return 'text';
-    }
-
-    if (_.isBoolean(value))
-      return 'boolean';
-
-    if (_.isObject(value))
-      return 'object'
-
-    if (_.isArray(value))
-      return 'array'
-
-    return 'text'
-  }
-
-  private static toTitleCase(anyCase: string) {
-    return anyCase
-      .replace(/(_)+/g, ' ')                              // underscore to whitespace
-      .replace(/([a-z])([A-Z][a-z])/g, "$1 $2")           // insert space before each new word if there is none
-      .replace(/([A-Z][a-z])([A-Z])/g, "$1 $2")           // insert space after each word if there is none
-      .replace(/([a-z])([A-Z]+[a-z])/g, "$1 $2")          // insert space after single letter word if there is none
-      .replace(/([A-Z]+)([A-Z][a-z][a-z])/g, "$1 $2")     // insert space before single letter word if there is none
-      .replace(/([a-z]+)([A-Z0-9]+)/g, "$1 $2")           // insert space after numbers
-      .replace(/^./, (match) => match.toUpperCase());     // change first letter to be upper case
+    return control;
   }
 }

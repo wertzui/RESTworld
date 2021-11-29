@@ -23,7 +23,7 @@ namespace RESTworld.AspNetCore
                 .Enrich.FromLogContext()
                 .WriteTo.Console()
                 .WriteTo.File("logs/log.log", rollingInterval: RollingInterval.Day, rollOnFileSizeLimit: true)
-                .MinimumLevel.Verbose()
+                .MinimumLevel.Information()
                 .CreateLogger();
             try
             {

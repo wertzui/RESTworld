@@ -1,3 +1,7 @@
+::ng-deep .p-tooltip {
+  max-width: fit-content !important;
+}
+
 .blockable-container {
   display: grid;
   place-items: center;

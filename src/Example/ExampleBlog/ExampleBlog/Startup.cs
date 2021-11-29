@@ -43,8 +43,11 @@ namespace ExampleBlog
 
             // We are using dedicated DTOs here to give the consumer a much better experience.
             // We add our custom authorization too. Get Post 42, or ony post with a valid HTTP status code as id to test it!
-            services.AddRestPipelineWithAuthorization<BlogDatabase, Post, PostCreateDto, PostListDto, PostGetFullDto, PostUpdateDto, BlogpostAuthorizationHandler>(Configuration);
+            // We also add our own service to populate the Image and Attachement properties which do not come from the database.
+            services.AddRestPipelineWithCustomServiceAndAuthorization<BlogDatabase, Post, PostCreateDto, PostListDto, PostGetFullDto, PostUpdateDto, PostService, BlogpostAuthorizationHandler>(Configuration);
 
+            // For the MyCustomController we just need to add the service and the authorization handler,
+            // because ASP.Net Core automatically adds all Controllers
             services.AddScoped<MyCustomService>();
             services.AddScoped<MyCustomAuthorizationHandler>();
 

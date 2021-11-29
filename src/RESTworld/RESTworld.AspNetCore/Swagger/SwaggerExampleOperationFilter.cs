@@ -77,7 +77,7 @@ namespace RESTworld.AspNetCore.Swagger
             _oDataQueryFactory = oDataQueryFactory ?? throw new ArgumentNullException(nameof(oDataQueryFactory));
 
             _serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault };
-            _serializerOptions.Converters.Add(new JsonStringEnumConverter());
+            _serializerOptions.Converters.Add(new JsonStringEnumMemberConverter(JsonNamingPolicy.CamelCase));
 
             _fixture
                 .Customize(new DtoBaseCustomization())

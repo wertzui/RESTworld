@@ -2,7 +2,6 @@ import { HttpBackend, HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { ClientSettings } from "../models/client-settings";
 import { RESTworldOptions } from "../models/restworld-options";
-import { RESTworldClient } from "./restworld-client";
 import { RESTworldClientCollection } from "./restworld-client-collection";
 
 @Injectable({
@@ -31,12 +30,12 @@ export class SettingsService {
       .toPromise();
   }
 
-  private populateRESTworldClientCollectionFromSettings(): Promise<RESTworldClient[]> {
+  private async populateRESTworldClientCollectionFromSettings(): Promise<void> {
     if (!this._settings?.apiUrls)
-      return Promise.resolve([]);
+      return;
 
-    return Promise.all(this._settings.apiUrls
-      .map(api => this._clients.addClient(api.name, new RESTworldOptions(api.url, api.version))));
+    await Promise.all(this._settings.apiUrls
+      .map(api =>  this._clients.addOrGetExistingClient(api.name, new RESTworldOptions(api.url, api.version))));
   }
 
 }

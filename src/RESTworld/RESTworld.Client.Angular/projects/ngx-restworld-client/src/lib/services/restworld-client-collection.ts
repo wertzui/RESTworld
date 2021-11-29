@@ -14,9 +14,13 @@ export class RESTworldClientCollection {
     this._clients = {};
   }
 
-  public async addClient(name: string, options: RESTworldOptions): Promise<RESTworldClient> {
+  public containsClient(name: string): boolean {
+    return Object.keys(this._clients).includes(name);
+  }
+
+  public async addOrGetExistingClient(name: string, options: RESTworldOptions): Promise<RESTworldClient> {
     if (Object.keys(this._clients).includes(name))
-      throw new Error(`A client with the name '${name}' already exists.`);
+      return this.getClient(name);
 
     const client = new RESTworldClient(this._halClient, options);
     await client.ensureHomeResourceIsSet();

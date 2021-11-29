@@ -21,12 +21,23 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { RippleModule } from 'primeng/ripple';
 import { TriStateCheckboxModule } from 'primeng/tristatecheckbox';
 import { AvatarModule } from 'primeng/avatar';
+import { DropdownModule } from 'primeng/dropdown';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { FileUploadModule } from 'primeng/fileupload';
+import { ValdemortModule } from 'ngx-valdemort';
+import { ImageCropperModule } from 'ngx-image-cropper';
+import { DialogModule } from 'primeng/dialog';
+import { ColorPickerModule } from 'primeng/colorpicker';
 
 import { RESTworldListViewComponent } from './views/restworld-list-view/restworld-list-view.component';
 import { RESTworldEditViewComponent } from './views/restworld-edit-view/restworld-edit-view.component';
 import { RESTworldClientCollection } from './services/restworld-client-collection';
 import { AvatarGenerator } from './services/avatar-generator';
 import { SettingsService } from './services/settings.service';
+import { RESTWorldImageViewComponent } from './views/restworld-image-view/restworld-image-view.component';
+import { ButtonModule } from 'primeng/button';
+import { RESTWorldFileViewComponent } from './views/restworld-file-view/restworld-file-view.component';
+import { SafeUrlPipe } from './pipes/safe-url.pipe'
 
 export function initializeSettings(settingsService: SettingsService): () => Promise<void> {
   return async () => await settingsService.initialize();
@@ -35,7 +46,10 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
 @NgModule({
   declarations: [
     RESTworldListViewComponent,
-    RESTworldEditViewComponent
+    RESTworldEditViewComponent,
+    RESTWorldImageViewComponent,
+    RESTWorldFileViewComponent,
+    SafeUrlPipe
   ],
   imports: [
     CommonModule,
@@ -58,11 +72,22 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
     ProgressSpinnerModule,
     RippleModule,
     TriStateCheckboxModule,
-    AvatarModule
+    AvatarModule,
+    DropdownModule,
+    MultiSelectModule,
+    FileUploadModule,
+    ValdemortModule,
+    ImageCropperModule,
+    DialogModule,
+    ButtonModule,
+    ColorPickerModule
   ],
   exports: [
     RESTworldListViewComponent,
-    RESTworldEditViewComponent
+    RESTworldEditViewComponent,
+    RESTWorldImageViewComponent,
+    RESTWorldFileViewComponent,
+    SafeUrlPipe
   ],
   providers: [
     RESTworldClientCollection,

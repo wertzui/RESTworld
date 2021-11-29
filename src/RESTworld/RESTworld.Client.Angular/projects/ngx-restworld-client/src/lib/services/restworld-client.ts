@@ -1,6 +1,6 @@
 import { HttpHeaders, HttpResponse } from '@angular/common/http';
 import * as _ from "lodash";
-import { HalClient, Link, PagedListResource, Resource } from "@wertzui/ngx-hal-client"
+import { FormsResource, HalClient, Link, PagedListResource, Resource, Template } from "@wertzui/ngx-hal-client"
 import { LinkNames } from "../constants/link-names";
 import { ProblemDetails } from "../models/problem-details";
 import { RESTworldOptions } from "../models/restworld-options";
@@ -26,13 +26,13 @@ export class RESTworldClient {
       }
       if (!response.body)
         throw new Error(`Cannot get the home resource from ${this._options.BaseUrl} with Version ${this._options.Version}. Response was empty.`)
-      this._homeResource = response.body!;
+      this._homeResource = response.body;
       this.setDefaultCurie();
     }
   }
 
   private async getHomeForced(): Promise<HttpResponse<Resource | ProblemDetails>> {
-    const header = RESTworldClient.createHeaders(this._options.Version);
+    const header = RESTworldClient.createHeaders('application/hal+json', this._options.Version);
     const response = await this.halClient.get(this._options.BaseUrl, Resource, ProblemDetails, header);
     return response;
   }
@@ -50,6 +50,16 @@ export class RESTworldClient {
     const uri = link.fillTemplate(parameters);
 
     const response = await this.halClient.get(uri, PagedListResource, ProblemDetails, headers);
+
+    return response;
+  }
+
+  public async getListByUri(uri: string, parameters: {}, headers?: HttpHeaders): Promise<HttpResponse<PagedListResource | ProblemDetails>> {
+    const link = new Link();
+    link.href = uri;
+    const filledUri = link.fillTemplate(parameters);
+
+    const response = await this.halClient.get(filledUri, PagedListResource, ProblemDetails, headers);
 
     return response;
   }
@@ -85,7 +95,7 @@ export class RESTworldClient {
 
     const uri = saveLink.href;
     const method = saveLink.name.toLowerCase();
-    const header = RESTworldClient.createHeaders(this._options.Version);
+    const header = RESTworldClient.createHeaders('application/hal+json', this._options.Version);
 
     let response;
     switch (method) {
@@ -102,12 +112,41 @@ export class RESTworldClient {
     return response;
   }
 
+  public async getAllForms(resource: Resource): Promise<HttpResponse<FormsResource | ProblemDetails>[]> {
+    const urls = resource.getFormLinkHrefs();
+    const header = RESTworldClient.createHeaders('application/prs.hal-forms+json', this._options.Version);
+    const formsPromises = urls.map(url => this._halClient.get(url, FormsResource, ProblemDetails, header));
+    const formsAndProblems = await Promise.all(formsPromises);
+    return formsAndProblems;
+  }
+
+  public async submit(template: Template, formValues: {}): Promise<HttpResponse<FormsResource | ProblemDetails>> {
+    const uri = template.target || '';
+    const method = template.method?.toLowerCase();
+    const header = RESTworldClient.createHeaders('application/prs.hal-forms+json', this._options.Version);
+
+    let response;
+    switch (method) {
+      case 'put':
+        response = await this.halClient.put(uri, formValues, FormsResource, ProblemDetails, header);
+        break;
+      case 'post':
+        response = await this.halClient.post(uri, formValues, FormsResource, ProblemDetails, header);
+        break;
+      default:
+        response = await this.halClient.get(uri, FormsResource, ProblemDetails, header);
+    }
+
+    return response;
+
+  }
+
   public async delete(resource: Resource): Promise<HttpResponse<void | ProblemDetails>> {
     const deleteLink = resource.findLink('delete');
     if (!deleteLink)
       throw new Error(`The resource ${resource} does not have a delete link.`);
     const uri = deleteLink.href;
-    const header = RESTworldClient.createHeaders(this._options.Version);
+    const header = RESTworldClient.createHeaders('application/hal+json', this._options.Version);
 
     const response = await this.halClient.delete(uri, ProblemDetails, header);
 
@@ -124,7 +163,7 @@ export class RESTworldClient {
   public getLinkFromHome(rel: string, name?: string, curie?: string): Link {
     const links = this.getLinksFromHome(rel, curie);
 
-    const link = !!name ? links.find(l => l.name == name) : links[0];
+    const link = name ? links.find(l => l.name === name) : links[0];
 
     if (!link)
       throw new Error(`The home resource does not have a link with the rel '${this.getFullRel(rel, curie)}' and the name '${name}'.`)
@@ -159,9 +198,9 @@ export class RESTworldClient {
     return fullRel;
   }
 
-  private static createHeaders(version?: number): HttpHeaders {
+  private static createHeaders(mediaType?: 'application/hal+json' | 'application/prs.hal-forms+json', version?: number): HttpHeaders {
     if (version)
-      return new HttpHeaders({ 'Accept': `v=${version}` });
+      return new HttpHeaders({ 'Accept': `${mediaType || 'application/hal+json'}; v=${version}` });
     return new HttpHeaders();
   }
 }

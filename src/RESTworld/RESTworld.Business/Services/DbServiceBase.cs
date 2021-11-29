@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RESTworld.Business.Authorization.Abstractions;
@@ -7,6 +8,7 @@ using RESTworld.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace RESTworld.Business.Services
@@ -24,7 +26,10 @@ namespace RESTworld.Business.Services
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         protected static bool _databaseIsMigratedToLatestVersion;
         protected readonly IDbContextFactory<TContext> _contextFactory;
+        protected static readonly Regex _foreignKeyRegex = new(@"FOREIGN KEY constraint ""(?<ForeignKeyName>(FK_(?<ForeignTable>\w+)_(?<PrimaryTable>\w+)_(?<ForeignKey>\w+))|[^""]+)""");
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DbServiceBase{TContext}"/> class.
@@ -90,11 +95,33 @@ namespace RESTworld.Business.Services
             {
                 return ServiceResponse.FromException<T>(HttpStatusCode.Conflict, e);
             }
+            catch (DbUpdateException e) when (e.InnerException is SqlException se && se.Number == 547)
+            {
+                return GetForeignKeyExceptionResponse<T>(se);
+            }
             catch (Exception e)
             {
                 _logger.LogError(e, "Error while executing a service call");
                 return ServiceResponse.FromException<T>(e);
             }
+        }
+
+        private static ServiceResponse<T> GetForeignKeyExceptionResponse<T>(SqlException e)
+        {
+            if (e?.Message is null)
+                return ServiceResponse.FromException<T>(e);
+
+            var match = _foreignKeyRegex.Match(e.Message);
+            if (!match.Success)
+                return ServiceResponse.FromException<T>(e);
+
+            if (match.Groups.TryGetValue("PrimaryTable", out var primaryTable))
+                return ServiceResponse.FromProblem<T>(HttpStatusCode.Conflict, $"Invalid relationship. '{primaryTable}' was not found.");
+
+            if (match.Groups.TryGetValue("ForeignKeyName", out var foreignKeyName))
+                return ServiceResponse.FromProblem<T>(HttpStatusCode.Conflict, $"Invalid relationship. The foreign key '{foreignKeyName}' was violated.");
+
+            return ServiceResponse.FromException<T>(HttpStatusCode.Conflict, e);
         }
 
     }

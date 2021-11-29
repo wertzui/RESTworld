@@ -1,22 +1,22 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { PagedListResource, Resource } from '@wertzui/ngx-hal-client';
-import * as _ from 'lodash'
-import { ConfirmationService, FilterMatchMode, FilterMetadata, LazyLoadEvent, MessageService } from 'primeng/api'
+import * as _ from 'lodash';
+import { ConfirmationService, FilterMatchMode, FilterMetadata, LazyLoadEvent, MessageService } from 'primeng/api';
 import { RESTworldClient } from '../../services/restworld-client';
 import { RESTworldClientCollection } from '../../services/restworld-client-collection';
 import { ProblemDetails } from '../../models/problem-details';
 import { AvatarGenerator } from '../../services/avatar-generator';
 
 @Component({
-  selector: 'restworld-list-view',
+  selector: 'rw-list',
   templateUrl: './restworld-list-view.component.html',
   styleUrls: ['./restworld-list-view.component.css']
 })
 export class RESTworldListViewComponent {
-  public get columns(): any[] {
+  public get columns(): Column[] {
     return this._columns;
   }
-  private _columns: any[] = [];
+  private _columns: Column[] = [];
   @Input()
   public set editLink(value: string) {
     if (value)
@@ -92,7 +92,7 @@ export class RESTworldListViewComponent {
 
     this._lastEvent = {
       rows: this.rowsPerPage[0]
-    }
+    };
   }
 
   private getClient(): RESTworldClient {
@@ -109,10 +109,10 @@ export class RESTworldListViewComponent {
     this.isLoading = true;
     this._lastEvent = event;
 
-    const parameters = RESTworldListViewComponent.createParametersFromEvent(event);
+    const parameters = this.createParametersFromEvent(event);
     const response = await this.getClient().getList(this.rel, parameters);
     if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body) {
-      this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the resources from the API.',  data: response})
+      this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the resources from the API.', data: response });
     }
     else {
       this.resource = response.body;
@@ -141,12 +141,12 @@ export class RESTworldListViewComponent {
 
     this._messageService.add({ severity: 'success', summary: 'Deleted', detail: 'The resource has been deleted.' });
 
-    this.load(this._lastEvent)
+    this.load(this._lastEvent);
   }
 
-  private createColumns(): any[] {
+  private createColumns(): Column[] {
     if (this.value.length === 0)
-      return [];
+      return this.columns;
 
     // Get all distinct properties from all rows
     // We look at all rows to eliminate possible undefined values
@@ -168,7 +168,7 @@ export class RESTworldListViewComponent {
         if (!alreadyFoundPropertyWithSameName) // Add new property
           distinctProperties.push(property);
         else if (!alreadyFoundPropertyWithSameName[1] && propertyValue) // Use defined value instead of existing undefined value
-          alreadyFoundPropertyWithSameName[1] = propertyValue
+          alreadyFoundPropertyWithSameName[1] = propertyValue;
       }
     }
 
@@ -204,23 +204,23 @@ export class RESTworldListViewComponent {
     return columns;
   }
 
-  private static getColumnType(value: any) {
+  private static getColumnType(value: any): ColumnType {
     if (value === null || value === undefined)
-      return 'text';
+      return ColumnType.text;
 
     if (_.isNumber(value))
-      return 'numeric';
+      return ColumnType.numeric;
 
     if (_.isDate(value))
-      return 'date'
+      return ColumnType.date;
 
     if (_.isString(value))
-      return 'text';
+      return ColumnType.text;
 
     if (_.isBoolean(value))
-      return 'boolean';
+      return ColumnType.boolean;
 
-    return 'text'
+    return ColumnType.text;
   }
 
   private static toTitleCase(anyCase: string) {
@@ -234,9 +234,9 @@ export class RESTworldListViewComponent {
       .replace(/^./, (match) => match.toUpperCase());     // change first letter to be upper case
   }
 
-  private static createParametersFromEvent(event: LazyLoadEvent) {
+  private createParametersFromEvent(event: LazyLoadEvent) {
     const oDataParameters = {
-      $filter: RESTworldListViewComponent.createFilterFromEvent(event),
+      $filter: this.createFilterFromEvent(event),
       $orderby: RESTworldListViewComponent.createOrderByFromEvent(event),
       $top: RESTworldListViewComponent.createTopFromEvent(event),
       $skip: RESTworldListViewComponent.createSkipFromEvent(event)
@@ -261,29 +261,44 @@ export class RESTworldListViewComponent {
 
     return undefined;
   }
-  static createFilterFromEvent(event: LazyLoadEvent): string | undefined {
+
+  private createFilterFromEvent(event: LazyLoadEvent): string | undefined {
     if (!event.filters)
       return undefined;
 
     const filter = Object.entries(event.filters)
-      .map(([property, filter]) => RESTworldListViewComponent.createFilterForProperty(property, filter))
-      .filter(filter => !!filter)
+      // The type definition is wrong, event.filters has values of type FilterMetadata[] and not FilterMetadata.
+      .map(([property, filter]) => ({ property: property, filters: filter as FilterMetadata[] }))
+      .map(f => this.createFilterForPropertyArray(f.property, f.filters))
+      .filter(f => !!f)
       .join(' and ');
 
     if (filter === '')
       return undefined;
 
-    return `(${filter})`
+    return `(${filter})`;
   }
 
-  static createFilterForProperty(property: string, filter: FilterMetadata): string | undefined {
+  private createFilterForPropertyArray(property: string, filters: FilterMetadata[]): string | undefined {
+    const filter = filters
+      .map(f => this.createFilterForProperty(property, f))
+      .filter(f => !!f)
+      .join(` ${filters[0].operator} `);
+
+    if (filter === '')
+      return undefined;
+
+    return `(${filter})`;
+  }
+
+  private createFilterForProperty(property: string, filter: FilterMetadata): string | undefined {
     if (!filter.value)
       return undefined;
 
     const oDataOperator = RESTworldListViewComponent.createODataOperator(
       filter.matchMode,
     );
-    const comparisonValue = RESTworldListViewComponent.createComparisonValue(filter.value);
+    const comparisonValue = this.createComparisonValue(property, filter.value);
 
     switch (oDataOperator) {
       case 'contains':
@@ -296,7 +311,7 @@ export class RESTworldListViewComponent {
     }
   }
 
-  static createODataOperator(matchMode?: string): string {
+  private static createODataOperator(matchMode?: string): string {
     switch (matchMode) {
       case FilterMatchMode.STARTS_WITH:
         return 'startswith';
@@ -328,35 +343,53 @@ export class RESTworldListViewComponent {
         return 'lt';
       case FilterMatchMode.AFTER:
         return 'gt';
+      case FilterMatchMode.DATE_AFTER:
+        return 'ge';
+      case FilterMatchMode.DATE_BEFORE:
+        return 'lt';
+      case FilterMatchMode.DATE_IS:
+        return 'eq';
+      case FilterMatchMode.DATE_IS_NOT:
+        return 'ne';
       default:
         throw Error(`Unknown matchMode ${matchMode}`);
     }
   }
 
-  static createComparisonValue(value: unknown): string {
+  private createComparisonValue(property: string, value: unknown): string {
     if (value === null || value === undefined)
       return 'null';
 
-    if (_.isNumber(value))
-      return `${value}`;
+    const columns = this.columns.filter(c => c.field === property);
+    if (columns.length !== 1)
+      throw new Error(`Cannot find the column for the property ${property} which is specified in the filter.`);
 
-    if (_.isDate(value))
-      return `cast(${value.toISOString()}, Edm.DateTimeOffset)`;
+    const type = columns[0].type;
 
-    if (_.isString(value)) {
-      const date = new Date(value);
-      if (!isNaN(date.valueOf()))
-        return `cast(${date.toISOString()}, Edm.DateTimeOffset)`;
-
-      return `'${value}'`;
+    switch (type) {
+      case ColumnType.boolean:
+        return `${value}`;
+      case ColumnType.date:
+        return `cast(${(value as Date).toISOString()}, Edm.DateTimeOffset)`;
+      case ColumnType.numeric:
+        return `${value}`;
+      case ColumnType.text:
+        return `'${value}'`;
+      default:
+        throw new Error(`Unknown column type '${type}'`);
     }
-
-    if (_.isArray(value))
-      return `(${value
-        .map((v) => this.createComparisonValue(v))
-        .join(',')})`;
-
-    throw new Error(`Unknown type of value: ${value}.`);
   }
+}
 
+export enum ColumnType {
+  text = 'text',
+  numeric = 'numeric',
+  boolean = 'boolean',
+  date = 'date'
+}
+
+export interface Column {
+  header: string;
+  field: string;
+  type: ColumnType;
 }

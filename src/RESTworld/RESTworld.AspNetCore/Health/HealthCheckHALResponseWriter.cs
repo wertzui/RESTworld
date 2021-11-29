@@ -22,7 +22,7 @@ namespace RESTworld.AspNetCore.Health
         static HealthCheckHALResponseWriter()
         {
             _jsonSerializerOptions.Converters.Add(new JsonTimeSpanConverter());
-            _jsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+            _jsonSerializerOptions.Converters.Add(new JsonStringEnumMemberConverter(JsonNamingPolicy.CamelCase));
         }
 
         /// <summary>
