@@ -9,7 +9,7 @@ namespace ExampleBlog.Data
     internal static class DefaultDataExtensions
     {
         private const string creator = "me";
-        private static DateTimeOffset creationDate = new DateTimeOffset(2021, 1, 2, 3, 4, 5, TimeSpan.FromHours(6));
+        private static DateTimeOffset creationDate = new(2021, 1, 2, 3, 4, 5, TimeSpan.FromHours(6));
 
         internal static T AddDefaults<T>(this T entity)
             where T : ChangeTrackingEntityBase

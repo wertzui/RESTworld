@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Net.Http.Headers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -35,13 +36,13 @@ namespace RESTworld.AspNetCore.Formatter
         }
 
         /// <inheritdoc/>
-        public override IReadOnlyList<string> GetSupportedContentTypes(string contentType, System.Type objectType)
+        public override IReadOnlyList<string>? GetSupportedContentTypes(string contentType, Type objectType)
         {
             return base.GetSupportedContentTypes(contentType, objectType);
         }
 
         /// <inheritdoc/>
-        protected override bool CanWriteType(System.Type type)
+        protected override bool CanWriteType(Type? type)
         {
             return typeof(Resource).IsAssignableFrom(type);
         }
@@ -68,11 +69,13 @@ namespace RESTworld.AspNetCore.Formatter
         /// <inheritdoc/>
         public override async Task WriteResponseBodyAsync(OutputFormatterWriteContext context, Encoding selectedEncoding)
         {
-            var resource = (Resource)context.Object;
-            var list = resource.Embedded[Common.Constants.ListItems];
+            if (context.Object is not Resource resource)
+                throw new ArgumentException($"{nameof(context)}.{nameof(context.Object)} is not a {nameof(Resource)}");
+
+            var list = resource.Embedded?[Common.Constants.ListItems];
 
             // An empty list results in an empty file.
-            if (list == null || list.Count == 0)
+            if (list is null || list.Count == 0)
                 return;
 
             // We know that the elements must be of type Resource.
@@ -85,7 +88,7 @@ namespace RESTworld.AspNetCore.Formatter
             // The states are the part that should be serialized into the CSV.
             var states = list.Select(r => ((dynamic)r).State);
 
-            var culture = context.HttpContext.Features.Get<IRequestCultureFeature>().RequestCulture.Culture;
+            var culture = context.HttpContext.Features.Get<IRequestCultureFeature>()?.RequestCulture.Culture;
             var configuration = new CsvHelper.Configuration.CsvConfiguration(culture)
             {
                 Encoding = selectedEncoding,

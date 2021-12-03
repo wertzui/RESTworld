@@ -16,30 +16,30 @@ using System.Threading.Tasks;
 
 namespace ExampleBlog.Business
 {
-    public class MyCustomService : DbServiceBase<BlogDatabase>
+    public class MyCustomServiceV1 : DbServiceBase<BlogDatabase>
     {
-        private readonly IEnumerable<MyCustomAuthorizationHandler> _authorizationHandlers;
+        private readonly IEnumerable<MyCustomAuthorizationHandlerV1> _authorizationHandlers;
 
-        public MyCustomService(
+        public MyCustomServiceV1(
             IDbContextFactory<BlogDatabase> contextFactory,
             IMapper mapper,
             IUserAccessor userAccessor,
             ILogger<MyCustomService> logger,
-            IEnumerable<MyCustomAuthorizationHandler> authorizationHandlers)
+            IEnumerable<MyCustomAuthorizationHandlerV1> authorizationHandlers)
             : base(contextFactory, mapper, userAccessor, logger)
         {
             _authorizationHandlers = authorizationHandlers ?? throw new ArgumentNullException(nameof(authorizationHandlers));
         }
 
-        public Task<ServiceResponse<PostWithAuthorDto>> GetPostWithAuthor(long postId)
-            => TryExecuteWithAuthorizationAsync<Post, long, PostWithAuthorDto, MyCustomAuthorizationHandler>(
+        public Task<ServiceResponse<PostWithAuthorDtoV1>> GetPostWithAuthor(long postId)
+            => TryExecuteWithAuthorizationAsync<Post, long, PostWithAuthorDtoV1, MyCustomAuthorizationHandlerV1>(
                 postId,
                 result => GetPostWithAuthorInternalAsync(result),
                 (result, handler) => handler.HandleRequestAsync(result),
                 (response, handler) => handler.HandleResponseAsync(response),
                 _authorizationHandlers);
 
-        private async Task<ServiceResponse<PostWithAuthorDto>> GetPostWithAuthorInternalAsync(AuthorizationResult<Post, long> result)
+        private async Task<ServiceResponse<PostWithAuthorDtoV1>> GetPostWithAuthorInternalAsync(AuthorizationResult<Post, long> result)
         {
             var postId = result.Value1;
 
@@ -56,10 +56,10 @@ namespace ExampleBlog.Business
             await Task.WhenAll(postTask, authorTask);
 
             if (postTask.Result is null)
-                return ServiceResponse.FromStatus<PostWithAuthorDto>(HttpStatusCode.NotFound);
+                return ServiceResponse.FromStatus<PostWithAuthorDtoV1>(HttpStatusCode.NotFound);
 
             // Map to DTO.
-            var dto = _mapper.Map<PostWithAuthorDto>(postTask.Result);
+            var dto = _mapper.Map<PostWithAuthorDtoV1>(postTask.Result);
             _mapper.Map(authorTask.Result, dto);
 
             return ServiceResponse.FromResult(dto);

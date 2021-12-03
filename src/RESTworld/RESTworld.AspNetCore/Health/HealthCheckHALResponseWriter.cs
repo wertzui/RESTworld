@@ -14,7 +14,7 @@ namespace RESTworld.AspNetCore.Health
     /// </summary>
     public static class HealthCheckHALResponseWriter
     {
-        private static readonly JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+        private static readonly JsonSerializerOptions _jsonSerializerOptions = new(JsonSerializerDefaults.Web)
         {
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         };

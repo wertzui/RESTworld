@@ -216,7 +216,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// if set to <c>true</c> the pipeline with this version is treated as deprecated.
         /// </param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
-        public static IServiceCollection AddRestPipeline<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(this IServiceCollection services, ApiVersion apiVersion = null, bool isDeprecated = false)
+        public static IServiceCollection AddRestPipeline<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(this IServiceCollection services, ApiVersion? apiVersion = null, bool isDeprecated = false)
                     where TContext : DbContextBase
             where TEntity : EntityBase
             where TGetListDto : DtoBase
@@ -269,7 +269,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// if set to <c>true</c> the pipeline with this version is treated as deprecated.
         /// </param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
-        public static IServiceCollection AddRestPipelineWithAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TAuthorizationhandler>(this IServiceCollection services, IConfiguration configuration, ApiVersion apiVersion = null, bool isDeprecated = false)
+        public static IServiceCollection AddRestPipelineWithAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TAuthorizationhandler>(this IServiceCollection services, IConfiguration configuration, ApiVersion? apiVersion = null, bool isDeprecated = false)
             where TContext : DbContextBase
             where TEntity : EntityBase
             where TGetListDto : DtoBase

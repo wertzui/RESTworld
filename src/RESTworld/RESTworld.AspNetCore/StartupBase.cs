@@ -25,6 +25,7 @@ using RESTworld.AspNetCore.Versioning;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
 using System.Globalization;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -79,7 +80,7 @@ namespace RESTworld.AspNetCore
 
             app.UseSwaggerUI(options =>
             {
-                foreach (var description in provider.ApiVersionDescriptions)
+                foreach (var description in provider.ApiVersionDescriptions.OrderByDescending(v => v.ApiVersion))
                 {
                     options.SwaggerEndpoint(
                         $"/swagger/{description.GroupName}/swagger.json",
@@ -144,7 +145,7 @@ namespace RESTworld.AspNetCore
                 }
                 else
                 {
-                    if (!ApiVersion.TryParse(defaultVersion, out var parsedVersion))
+                    if (!ApiVersion.TryParse(defaultVersion, out var parsedVersion) || parsedVersion is null)
                         throw new ArgumentOutOfRangeException("RESTworld:Versioning:DefaultVersion", defaultVersion, "The setting for \"RESTworld:Versioning:DefaultVersion\" was neither \"*\" nor a valid API version.");
 
                     options.DefaultApiVersion = parsedVersion;

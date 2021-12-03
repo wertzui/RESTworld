@@ -175,7 +175,10 @@ namespace RESTworld.Business.Services
             if (entity is null)
                 return ServiceResponse.FromStatus<object>(HttpStatusCode.NotFound);
 
-            if (!System.Linq.Enumerable.SequenceEqual(entity.Timestamp, timestamp))
+            if (entity.Timestamp is not null && timestamp is null)
+                return ServiceResponse.FromProblem<object>(HttpStatusCode.Conflict, "You must provide a timestamp.");
+
+            if (entity.Timestamp is not null && !System.Linq.Enumerable.SequenceEqual(entity.Timestamp, timestamp))
                 return ServiceResponse.FromProblem<object>(HttpStatusCode.Conflict, "The entity was modfied.");
 
             context.Remove(entity);
@@ -196,9 +199,9 @@ namespace RESTworld.Business.Services
         {
             var request = authorizationResult.Value1;
 
-            var setForEntities = _contextFactory.Set<TEntity>().WithAuthorizationFilter(authorizationResult);
+            var setForEntities = _contextFactory.Set<TContext, TEntity>().WithAuthorizationFilter(authorizationResult);
 
-            Task<long> totalPagesTask = null;
+            Task<long>? totalPagesTask = null;
             long? totalCount = null;
 
             var tasks = new List<Task>(2);
@@ -213,7 +216,7 @@ namespace RESTworld.Business.Services
                     if (request.FilterForTotalCount is null)
                         throw new ArgumentException($"If {nameof(request)}.{nameof(request.CalculateTotalCount)} is true, {nameof(request)}.{nameof(request.FilterForTotalCount)} must not be null.", nameof(request));
 
-                    var totalPagesSet = _contextFactory.Set<TEntity>().WithAuthorizationFilter(authorizationResult);
+                    var totalPagesSet = _contextFactory.Set<TContext, TEntity>().WithAuthorizationFilter(authorizationResult);
                     totalPagesSet = request.FilterForTotalCount(totalPagesSet);
                     totalPagesTask = totalPagesSet.LongCountAsync();
                     tasks.Add(totalPagesTask);
@@ -227,7 +230,7 @@ namespace RESTworld.Business.Services
 
             var dtos = _mapper.Map<IReadOnlyCollection<TGetListDto>>(entitiesTask.Result);
 
-            if (request.CalculateTotalCount)
+            if (request is not null && request.CalculateTotalCount && totalPagesTask is not null)
                 totalCount = totalPagesTask.Result;
 
             IReadOnlyPagedCollection<TGetListDto> pagedCollection = new ReadOnlyPagedCollection<TGetListDto>(dtos, totalCount);
@@ -239,13 +242,13 @@ namespace RESTworld.Business.Services
         /// The method contains the business logic for the READ-Single operation.
         /// It will return the item with the specified ID from the database.
         /// </summary>
-        /// <param name="authorizationResult">TThe result of the authorization which contains thehe identifier of the item.</param>
+        /// <param name="authorizationResult">TThe result of the authorization which contains the identifier of the item.</param>
         /// <returns>The item with the specified ID, or 404 (Not Found).</returns>
         protected virtual async Task<ServiceResponse<TGetFullDto>> GetSingleInternalAsync(AuthorizationResult<TEntity, long> authorizationResult)
         {
             var id = authorizationResult.Value1;
 
-            var entity = await _contextFactory.Set<TEntity>().WithAuthorizationFilter(authorizationResult).FirstOrDefaultAsync(e => e.Id == id);
+            var entity = await _contextFactory.Set<TContext, TEntity>().WithAuthorizationFilter(authorizationResult).FirstOrDefaultAsync(e => e.Id == id);
 
             if (entity is null)
                 return ServiceResponse.FromStatus<TGetFullDto>(HttpStatusCode.NotFound);

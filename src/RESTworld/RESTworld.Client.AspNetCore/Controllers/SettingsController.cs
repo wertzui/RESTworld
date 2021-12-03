@@ -15,6 +15,12 @@ namespace RESTworld.Client.AspNetCore.Controllers
     {
         private readonly IOptions<RestWorldOptions> _options;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SettingsController"/> class.
+        /// </summary>
+        /// <param name="options">RestWorldOptions from the app config.</param>
+        /// <param name="resourceFactory">The resource factory.</param>
+        /// <exception cref="System.ArgumentNullException"></exception>
         public SettingsController(IOptions<RestWorldOptions> options, IODataResourceFactory resourceFactory)
             : base(resourceFactory)
         {
@@ -27,7 +33,7 @@ namespace RESTworld.Client.AspNetCore.Controllers
         [HttpGet("")]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
         [ProducesResponseType(200)]
-        public ActionResult<Resource<ClientSettings>> Get()
+        public ActionResult<Resource<ClientSettings?>> Get()
         {
             var resource = _resourceFactory.CreateForGetEndpoint(_options.Value.ClientSettings);
 

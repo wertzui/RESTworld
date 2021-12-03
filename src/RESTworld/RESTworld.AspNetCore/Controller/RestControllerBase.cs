@@ -50,15 +50,15 @@ namespace RESTworld.AspNetCore.Controller
             if (result.State?.Timestamp is null)
                 return;
 
-            result.AddLink(
-                "delete",
-                new Link
-                {
-                    Name = HttpMethod.Delete.Method,
-                    Href = Url.ActionLink(
-                        HttpMethod.Delete.Method,
-                        values: new { id = result.State.Id, timestamp = Base64UrlTextEncoder.Encode(result.State.Timestamp) })
-                });
+            var id = result.State.Id;
+            var timestamp = Base64UrlTextEncoder.Encode(result.State.Timestamp);
+
+
+            var href = Url.ActionLink(HttpMethod.Delete.Method, values: new { id, timestamp });
+            if (href is null)
+                throw new UriFormatException($"Unable to generate the delete link for ID '{id}' and timestamp '{timestamp}'.");
+
+            result.AddLink("delete", new Link(href) { Name = HttpMethod.Delete.Method });
         }
 
         /// <summary>
@@ -70,21 +70,20 @@ namespace RESTworld.AspNetCore.Controller
             if (!result.Templates.TryGetValue("default", out var template))
                 return;
 
-            var id = template.Properties.FirstOrDefault(p => p.Name == nameof(DtoBase.Id))?.Value;
-            var timsestamp = template.Properties.FirstOrDefault(p => p.Name == nameof(DtoBase.Timestamp))?.Value as byte[];
-
+            var id = template.Properties?.FirstOrDefault(p => p.Name == nameof(DtoBase.Id))?.Value;
             if (id is null)
                 return;
 
-            result.AddLink(
-                "delete",
-                new Link
-                {
-                    Name = HttpMethod.Delete.Method,
-                    Href = Url.ActionLink(
-                        HttpMethod.Delete.Method,
-                        values: new { id = id, timestamp = Base64UrlTextEncoder.Encode(timsestamp) })
-                });
+            if (template.Properties?.FirstOrDefault(p => p.Name == nameof(DtoBase.Timestamp))?.Value is not byte[] timestampBytes)
+                return;
+
+            var timestamp = Base64UrlTextEncoder.Encode(timestampBytes);
+
+            var href = Url.ActionLink(HttpMethod.Delete.Method, values: new { id, timestamp });
+            if (href is null)
+                throw new UriFormatException($"Unable to generate the delete link for ID '{id}' and timestamp '{timestamp}'.");
+
+            result.AddLink("delete", new Link(href) { Name = HttpMethod.Delete.Method });
         }
 
         /// <summary>
@@ -110,12 +109,17 @@ namespace RESTworld.AspNetCore.Controller
             if (result.State is null)
                 return;
 
+            var id = result.State.Id;
+
+            var href = Url.ActionLink(HttpMethod.Put.Method, values: new { id });
+            if (href is null)
+                throw new UriFormatException($"Unable to generate the save link for ID '{id}'.");
+
             result.AddLink(
                 "save",
-                new Link
+                new Link(href)
                 {
                     Name = HttpMethod.Put.Method,
-                    Href = Url.ActionLink(HttpMethod.Put.Method, values: new { id = result.State.Id })
                 });
         }
 
@@ -137,8 +141,8 @@ namespace RESTworld.AspNetCore.Controller
         protected ObjectResult CreateError(int status, string problemDetails)
         {
             var resource =
-                _resourceFactory.CreateForGetEndpoint(new ProblemDetails { Title = Enum.GetName(typeof(HttpStatusCode), status), Status = status, Detail = problemDetails }, null);
-            var result = StatusCode(resource.State.Status!.Value, resource);
+                _resourceFactory.CreateForGetEndpoint(new ProblemDetails { Title = Enum.GetName(typeof(HttpStatusCode), status), Status = status, Detail = problemDetails });
+            var result = StatusCode(status, resource);
             return result;
         }
     }

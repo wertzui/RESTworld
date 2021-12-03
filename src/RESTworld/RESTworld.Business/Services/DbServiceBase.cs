@@ -108,7 +108,7 @@ namespace RESTworld.Business.Services
 
         private static ServiceResponse<T> GetForeignKeyExceptionResponse<T>(SqlException e)
         {
-            if (e?.Message is null)
+            if (e.Message is null)
                 return ServiceResponse.FromException<T>(e);
 
             var match = _foreignKeyRegex.Match(e.Message);

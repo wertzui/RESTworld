@@ -2,6 +2,6 @@
 {
     public class PostWithAuthorDto : PostGetFullDto
     {
-        public AuthorDto Author { get; set; }
+        public override AuthorDto? Author { get => base.Author; set => base.Author = value; }
     }
 }

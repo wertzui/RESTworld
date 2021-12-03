@@ -12,13 +12,13 @@ using System.Threading.Tasks;
 namespace ExampleBlog.Controllers
 {
     [Route("postwithauthor")]
-    [ApiVersion("2")]
-    public class MyCustomController : RestControllerBase
+    [ApiVersion("1", Deprecated = true)]
+    public class MyCustomController1 : RestControllerBase
     {
         private readonly MyCustomService _service;
         private readonly ILinkFactory _linkFactory;
 
-        public MyCustomController(
+        public MyCustomController1(
             MyCustomService service,
             IODataResourceFactory resourceFactory,
             ILinkFactory linkFactory)
@@ -44,7 +44,7 @@ namespace ExampleBlog.Controllers
 
             if (authorId is not null)
             {
-                var link = _linkFactory.Create("Author", "Get", CrudControllerNameConventionAttribute.CreateNameFromType<AuthorDto>(), new { id = authorId });
+                var link = _linkFactory.Create("Author", "Get", CrudControllerNameConventionAttribute.CreateNameFromType<AuthorDtoV1>(), new { id = authorId });
                 result.AddLink(link);
             }
 

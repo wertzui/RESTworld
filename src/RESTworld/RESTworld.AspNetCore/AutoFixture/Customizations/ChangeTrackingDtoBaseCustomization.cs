@@ -19,7 +19,7 @@ namespace RESTworld.AspNetCore.AutoFixture.Customizations
             "Eve"
         };
 
-        private static readonly Random _random = new Random();
+        private static readonly Random _random = new();
 
         /// <inheritdoc/>
         public void Customize(IFixture fixture)

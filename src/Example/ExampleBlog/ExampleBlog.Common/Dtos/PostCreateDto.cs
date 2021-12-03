@@ -12,18 +12,18 @@ namespace ExampleBlog.Common.Dtos
         [Display(Name = "Blog")]
         public long BlogId { get; set; }
         [Required]
-        public string Headline { get; set; }
+        public string Headline { get; set; } = default!;
         public PostState State { get; set; }
         [DataType(DataType.MultilineText)]
         [Required]
-        public string Text { get; set; }
+        public string Text { get; set; } = default!;
         [JsonIgnore]
-        public AuthorDto Author { get; set; }
+        public virtual AuthorDto? Author { get; set; }
         [JsonIgnore]
-        public BlogDto Blog { get; set; }
+        public virtual BlogDto? Blog { get; set; }
         [DataType(DataType.ImageUrl)]
-        public HalFile Image { get; set; }
+        public HalFile? Image { get; set; }
         [DataType(DataType.Upload)]
-        public HalFile Attachement { get; set; }
+        public HalFile? Attachement { get; set; }
     }
 }

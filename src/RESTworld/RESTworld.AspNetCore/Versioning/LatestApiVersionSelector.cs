@@ -13,6 +13,7 @@ namespace RESTworld.AspNetCore.Versioning
     public class LatestApiVersionSelector : IApiVersionSelector
     {
         /// <inheritdoc/>
-        public ApiVersion SelectVersion(HttpRequest request, ApiVersionModel model) => model.ImplementedApiVersions.OrderByDescending(v => v).FirstOrDefault();
+        public ApiVersion SelectVersion(HttpRequest request, ApiVersionModel model)
+            => model.ImplementedApiVersions.OrderByDescending(v => v).FirstOrDefault() ?? ApiVersion.Default ?? ApiVersion.Neutral;
     }
 }

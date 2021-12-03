@@ -51,6 +51,10 @@ namespace ExampleBlog
             services.AddScoped<MyCustomService>();
             services.AddScoped<MyCustomAuthorizationHandler>();
 
+            // The same goes for the deprecated V1
+            services.AddScoped<MyCustomServiceV1>();
+            services.AddScoped<MyCustomAuthorizationHandlerV1>();
+
             base.ConfigureServices(services);
         }
 

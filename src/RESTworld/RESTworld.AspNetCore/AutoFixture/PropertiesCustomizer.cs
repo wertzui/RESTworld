@@ -12,7 +12,7 @@ namespace AutoFixture
     /// </summary>
     public class PropertiesCustomizer<T> : ICustomization
     {
-        private List<ISpecimenBuilder> _builders = new List<ISpecimenBuilder>();
+        private List<ISpecimenBuilder> _builders = new();
 
         /// <inheritdoc/>
         public void Customize(IFixture fixture)

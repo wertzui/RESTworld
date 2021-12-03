@@ -27,7 +27,7 @@ namespace RESTworld.AspNetCore.Swagger
         /// <inheritdoc/>
         public void Configure(SwaggerGenOptions options)
         {
-            var assemblyName = Assembly.GetEntryAssembly().GetName().Name;
+            var assemblyName = Assembly.GetEntryAssembly()?.GetName().Name;
             foreach (var description in provider.ApiVersionDescriptions)
             {
                 options.SwaggerDoc(

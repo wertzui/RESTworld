@@ -39,7 +39,7 @@ namespace RESTworld.Business.Authorization
         /// <typeparam name="TEntity">The type of the entity.</typeparam>
         /// <param name="status">The HTTP status code.</param>
         /// <returns>An AuthorizationResult from the status.</returns>
-        public static AuthorizationResult<TEntity> FromStatus<TEntity>(HttpStatusCode status) => new AuthorizationResult<TEntity>(status);
+        public static AuthorizationResult<TEntity> FromStatus<TEntity>(HttpStatusCode status) => new(status);
 
         /// <summary>
         /// Creates an AuthorizationResult from a status.
@@ -51,7 +51,7 @@ namespace RESTworld.Business.Authorization
         /// <returns>
         /// An AuthorizationResult from the status.
         /// </returns>
-        public static AuthorizationResult<TEntity, T1> FromStatus<TEntity, T1>(HttpStatusCode status, T1 value1) => new AuthorizationResult<TEntity, T1>(status, value1);
+        public static AuthorizationResult<TEntity, T1> FromStatus<TEntity, T1>(HttpStatusCode status, T1 value1) => new(status, value1);
 
         /// <summary>
         /// Creates an AuthorizationResult from a status.
@@ -65,7 +65,7 @@ namespace RESTworld.Business.Authorization
         /// <returns>
         /// An AuthorizationResult from the status.
         /// </returns>
-        public static AuthorizationResult<TEntity, T1, T2> FromStatus<TEntity, T1, T2>(HttpStatusCode status, T1 value1, T2 value2) => new AuthorizationResult<TEntity, T1, T2>(status, value1, value2);
+        public static AuthorizationResult<TEntity, T1, T2> FromStatus<TEntity, T1, T2>(HttpStatusCode status, T1 value1, T2 value2) => new(status, value1, value2);
 
         /// <summary>
         /// Creates a successfull AuthorizationResult.
@@ -140,7 +140,7 @@ namespace RESTworld.Business.Authorization
         /// <param name="filter">The filter.</param>
         /// <returns></returns>
         public static AuthorizationResult<TEntity> WithFilter<TEntity>(this AuthorizationResult<TEntity> previousResult, Func<IQueryable<TEntity>, IQueryable<TEntity>> filter)
-            => new AuthorizationResult<TEntity>(previousResult.Status, CombineFilters(previousResult.Filter, filter));
+            => new(previousResult.Status, CombineFilters(previousResult.Filter, filter));
 
         /// <summary>
         /// Returns a new authorization result with the same status and value, but the new filter appended to the existing filter.
@@ -151,7 +151,7 @@ namespace RESTworld.Business.Authorization
         /// <param name="filter">The filter.</param>
         /// <returns></returns>
         public static AuthorizationResult<TEntity, T1> WithFilter<TEntity, T1>(this AuthorizationResult<TEntity, T1> previousResult, Func<IQueryable<TEntity>, IQueryable<TEntity>> filter)
-            => new AuthorizationResult<TEntity, T1>(previousResult.Status, previousResult.Value1, CombineFilters(previousResult.Filter, filter));
+            => new(previousResult.Status, previousResult.Value1, CombineFilters(previousResult.Filter, filter));
 
         /// <summary>
         /// Returns a new authorization result with the same status and values, but the new filter appended to the existing filter.
@@ -163,7 +163,7 @@ namespace RESTworld.Business.Authorization
         /// <param name="filter">The filter.</param>
         /// <returns></returns>
         public static AuthorizationResult<TEntity, T1, T2> WithFilter<TEntity, T1, T2>(this AuthorizationResult<TEntity, T1, T2> previousResult, Func<IQueryable<TEntity>, IQueryable<TEntity>> filter)
-            => new AuthorizationResult<TEntity, T1, T2>(previousResult.Status, previousResult.Value1, previousResult.Value2, CombineFilters(previousResult.Filter, filter));
+            => new(previousResult.Status, previousResult.Value1, previousResult.Value2, CombineFilters(previousResult.Filter, filter));
 
         /// <summary>
         /// Returns a new authorization result with the same filter, but the new status.
@@ -173,7 +173,7 @@ namespace RESTworld.Business.Authorization
         /// <param name="status">The status.</param>
         /// <returns></returns>
         public static AuthorizationResult<TEntity> WithStatus<TEntity>(this AuthorizationResult<TEntity> previousResult, HttpStatusCode status)
-            => new AuthorizationResult<TEntity>(status, previousResult.Filter);
+            => new(status, previousResult.Filter);
 
         /// <summary>
         /// Returns a new authorization result with the same filter and value, but the new status.
@@ -184,7 +184,7 @@ namespace RESTworld.Business.Authorization
         /// <param name="status">The status.</param>
         /// <returns></returns>
         public static AuthorizationResult<TEntity, T1> WithStatus<TEntity, T1>(this AuthorizationResult<TEntity, T1> previousResult, HttpStatusCode status)
-            => new AuthorizationResult<TEntity, T1>(status, previousResult.Value1, previousResult.Filter);
+            => new(status, previousResult.Value1, previousResult.Filter);
 
         /// <summary>
         /// Returns a new authorization result with the same filter and values, but the new status.
@@ -196,7 +196,7 @@ namespace RESTworld.Business.Authorization
         /// <param name="status">The status.</param>
         /// <returns></returns>
         public static AuthorizationResult<TEntity, T1, T2> WithStatus<TEntity, T1, T2>(this AuthorizationResult<TEntity, T1, T2> previousResult, HttpStatusCode status)
-            => new AuthorizationResult<TEntity, T1, T2>(status, previousResult.Value1, previousResult.Value2, previousResult.Filter);
+            => new(status, previousResult.Value1, previousResult.Value2, previousResult.Filter);
 
         private static Func<IQueryable<TEntity>, IQueryable<TEntity>> CombineFilters<TEntity>(Func<IQueryable<TEntity>, IQueryable<TEntity>> existingFilter, Func<IQueryable<TEntity>, IQueryable<TEntity>> newFilter)
         {
@@ -223,7 +223,7 @@ namespace RESTworld.Business.Authorization
         /// </summary>
         /// <param name="status">The status of the authorization.</param>
         /// <param name="filter">An optional filter to alter the request to the database.</param>
-        public AuthorizationResult(HttpStatusCode status, Func<IQueryable<TEntity>, IQueryable<TEntity>> filter = null)
+        public AuthorizationResult(HttpStatusCode status, Func<IQueryable<TEntity>, IQueryable<TEntity>>? filter = null)
         {
             Status = status;
 
@@ -257,7 +257,7 @@ namespace RESTworld.Business.Authorization
         /// <param name="status">The status of the authorization.</param>
         /// <param name="value1">The value of the first parameter.</param>
         /// <param name="filter">An optional filter to alter the request to the database.</param>
-        public AuthorizationResult(HttpStatusCode status, T1 value1, Func<IQueryable<TEntity>, IQueryable<TEntity>> filter = null) : base(status, filter)
+        public AuthorizationResult(HttpStatusCode status, T1 value1, Func<IQueryable<TEntity>, IQueryable<TEntity>>? filter = null) : base(status, filter)
         {
             Value1 = value1;
         }
@@ -283,7 +283,7 @@ namespace RESTworld.Business.Authorization
         /// <param name="value1">The value of the first parameter.</param>
         /// <param name="value2">The value of the second parameter.</param>
         /// <param name="filter">An optional filter to alter the request to the database.</param>
-        public AuthorizationResult(HttpStatusCode status, T1 value1, T2 value2, Func<IQueryable<TEntity>, IQueryable<TEntity>> filter = null) : base(status, value1, filter)
+        public AuthorizationResult(HttpStatusCode status, T1 value1, T2 value2, Func<IQueryable<TEntity>, IQueryable<TEntity>>? filter = null) : base(status, value1, filter)
         {
             Value2 = value2;
         }

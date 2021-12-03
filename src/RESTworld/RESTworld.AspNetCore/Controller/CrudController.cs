@@ -149,7 +149,7 @@ namespace RESTworld.AspNetCore.Controller
 
             return Ok();
 
-            static bool TryParseEncodedTimestamp(string timestamp, [NotNullWhen(true)] out byte[] timestampBytes)
+            static bool TryParseEncodedTimestamp(string timestamp, [NotNullWhen(true)] out byte[]? timestampBytes)
             {
                 try
                 {
@@ -231,7 +231,11 @@ namespace RESTworld.AspNetCore.Controller
                 result.Embedded = new Dictionary<string, ICollection<Resource>> { { Common.Constants.ListItems, new List<Resource>() } };
             }
 
-            result.AddLink(new Link { Name = "new", Href = Url.ActionLink("new") });
+            var href = Url.ActionLink("new");
+            if (href is null)
+                throw new UriFormatException("Unable top generate the 'new' link.");
+
+            result.AddLink(new Link(href) { Name = "new" });
 
             return Ok(result);
         }
@@ -249,8 +253,6 @@ namespace RESTworld.AspNetCore.Controller
             var result = CreateEmpty();
 
             return Task.FromResult<ActionResult<Resource<TCreateDto>>>(Json(result, accept, _createNewResourceJsonSettings));
-
-            return Task.FromResult<ActionResult<Resource<TCreateDto>>>(new JsonResult(result, _createNewResourceJsonSettings));
         }
 
         /// <summary>
@@ -318,7 +320,7 @@ namespace RESTworld.AspNetCore.Controller
         /// all strings to an empty string if they are not set initially.
         /// </summary>
         /// <returns></returns>
-        protected virtual TCreateDto CreateEmpty()
+        protected virtual TCreateDto? CreateEmpty()
         {
             var type = typeof(TCreateDto);
             var constructor = type.GetConstructor(Type.EmptyTypes);
@@ -360,8 +362,8 @@ namespace RESTworld.AspNetCore.Controller
         /// <param name="accept">The value of the Accept header.</param>
         /// <param name="jsonSerializerOptions">The options for the JSON serializer. Normally these are <see cref="_createNewResourceJsonSettings"/>.</param>
         /// <returns>The created Microsoft.AspNetCore.Mvc.OkObjectResult for the response.</returns>
-        protected virtual JsonResult Json(TCreateDto dto, string accept, JsonSerializerOptions jsonSerializerOptions)
-            => new JsonResult(CreateResource(dto, accept), jsonSerializerOptions);
+        protected virtual JsonResult Json(TCreateDto? dto, string accept, JsonSerializerOptions jsonSerializerOptions)
+            => new(CreateResource(dto, accept), jsonSerializerOptions);
 
         /// <summary>
         /// Creates an Microsoft.AspNetCore.Mvc.CreatedResult object that produces an Microsoft.AspNetCore.Http.StatusCodes.Status201Created
@@ -372,7 +374,7 @@ namespace RESTworld.AspNetCore.Controller
         /// <param name="accept">The value of the Accept header.</param>
         /// <returns>The created Microsoft.AspNetCore.Mvc.CreatedResult for the response.</returns>
         protected virtual CreatedResult Created(TGetFullDto dto, HttpMethod method, string accept)
-            => Created(Url.ActionLink(values: new { id = dto.Id }), CreateResource(dto, method, accept));
+            => Created(Url.ActionLink(values: new { id = dto.Id }) ?? throw new UriFormatException("Unable to generate the CreatedAt URI"), CreateResource(dto, method, accept));
 
         /// <summary>
         /// Creates the result which is either a HAL resource, or a HAL-Forms resource based on the
@@ -409,7 +411,7 @@ namespace RESTworld.AspNetCore.Controller
         /// <param name="dto">The DTO to return.</param>
         /// <param name="accept">The value of the Accept header.</param>
         /// <returns>Either a HAL resource, or a HAL-Forms resource</returns>
-        protected virtual Resource CreateResource(TCreateDto dto, string accept)
+        protected virtual Resource CreateResource(TCreateDto? dto, string accept)
         {
             if (accept.Contains("hal-forms+json"))
             {
@@ -421,8 +423,12 @@ namespace RESTworld.AspNetCore.Controller
             {
                 var result = _resourceFactory.CreateForGetEndpoint(dto, "New");
 
+                var saveHref = Url.ActionLink(HttpMethod.Post.Method);
+                if (saveHref is null)
+                    throw new UriFormatException("Unable to generate the 'save' link.");
+
                 result
-                    .AddLink("save", new Link { Name = HttpMethod.Post.Method, Href = Url.ActionLink(HttpMethod.Post.Method) });
+                    .AddLink("save", new Link(saveHref) { Name = HttpMethod.Post.Method });
 
                 _linkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
 
@@ -456,7 +462,11 @@ namespace RESTworld.AspNetCore.Controller
             var filter = CreateODataFilterForIds(response.ResponseObject.Select(d => d.Id));
             var url = Url.ActionLink() + "?$filter=" + filter;
 
-            resource.Links["self"].First().Href = url;
+            var selfLink = resource.Links?["self"].FirstOrDefault();
+            if (selfLink is null)
+                throw new Exception($"The result of {nameof(PostMultipleAsync)} does not have a 'self' link.");
+
+            selfLink.Href = url;
 
             return Created(url, resource);
         }
@@ -508,7 +518,11 @@ namespace RESTworld.AspNetCore.Controller
             var filter = CreateODataFilterForIds(response.ResponseObject.Select(d => d.Id));
             var url = Url.ActionLink() + "?$filter=" + filter;
 
-            resource.Links["self"].First().Href = url;
+            var selfLink = resource.Links?["self"].FirstOrDefault();
+            if (selfLink is null)
+                throw new Exception($"The result of {nameof(PutMultipleAsync)} does not have a 'self' link.");
+
+            selfLink.Href = url;
 
             return Ok(resource);
         }
@@ -518,6 +532,7 @@ namespace RESTworld.AspNetCore.Controller
         /// when <see cref="PutAsync(long?, SingleObjectOrCollection{TUpdateDto})"/> is called with a single object.
         /// </summary>
         /// <param name="dto">Updated values for the resource.</param>
+        /// <param name="accept">The Accept header.</param>
         /// <returns>The full resource as stored in the database.</returns>
         protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PutSingleAsync(TUpdateDto dto, string accept)
         {

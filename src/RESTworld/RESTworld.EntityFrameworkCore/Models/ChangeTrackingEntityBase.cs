@@ -16,7 +16,7 @@ namespace RESTworld.EntityFrameworkCore.Models
         /// <value>
         /// The date and time when this entity was created.
         /// </value>
-        public virtual DateTimeOffset CreatedAt { get; set; }
+        public virtual DateTimeOffset? CreatedAt { get; set; }
 
         /// <summary>
         /// Gets or sets the user who created this entity.
@@ -25,7 +25,7 @@ namespace RESTworld.EntityFrameworkCore.Models
         /// The user who created this entity.
         /// </value>
         [MaxLength(100)]
-        public virtual string CreatedBy { get; set; }
+        public virtual string? CreatedBy { get; set; }
 
         /// <summary>
         /// Gets or sets the date and time when this entity was last changed.
@@ -33,7 +33,7 @@ namespace RESTworld.EntityFrameworkCore.Models
         /// <value>
         /// The date and time when this entity was last changed.
         /// </value>
-        public virtual DateTimeOffset LastChangedAt { get; set; }
+        public virtual DateTimeOffset? LastChangedAt { get; set; }
 
         /// <summary>
         /// Gets or sets the user who was the last to change this entity.
@@ -42,6 +42,6 @@ namespace RESTworld.EntityFrameworkCore.Models
         /// The user who was the last to change this entity.
         /// </value>
         [MaxLength(100)]
-        public virtual string LastChangedBy { get; set; }
+        public virtual string? LastChangedBy { get; set; }
     }
 }

@@ -16,6 +16,6 @@ namespace RESTworld.Common.Dtos
         /// <summary>
         /// Gets or sets the timestamp which is used for concurrency detection.
         /// </summary>
-        public virtual byte[] Timestamp { get; set; }
+        public virtual byte[]? Timestamp { get; set; }
     }
 }

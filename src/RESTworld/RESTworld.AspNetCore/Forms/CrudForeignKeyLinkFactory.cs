@@ -1,7 +1,6 @@
 ﻿using HAL.AspNetCore.Abstractions;
 using HAL.AspNetCore.Forms.Abstractions;
 using HAL.Common.Forms;
-using Microsoft.AspNetCore.Http;
 using RESTworld.AspNetCore.Controller;
 using System;
 using System.Linq;
@@ -18,35 +17,31 @@ namespace RESTworld.AspNetCore.Forms
         private static readonly Type _type = typeof(TListDto);
         private const string getListAction = "GetList";
         private readonly ILinkFactory _linkFactory;
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private static readonly string controller = CrudControllerNameConventionAttribute.CreateNameFromType<TListDto>();
 
         /// <summary>
         /// Creates a new instance of the <see cref="CrudForeignKeyLinkFactory{TListDto}"/> class.
         /// </summary>
         /// <param name="linkFactory">The Link factory.</param>
-        /// <param name="httpContextAccessor">The HTTP Context Accessor.</param>
         /// <exception cref="ArgumentNullException"></exception>
-        public CrudForeignKeyLinkFactory(ILinkFactory linkFactory, IHttpContextAccessor httpContextAccessor)
+        public CrudForeignKeyLinkFactory(ILinkFactory linkFactory)
         {
             _linkFactory = linkFactory ?? throw new ArgumentNullException(nameof(linkFactory));
-            _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
         }
 
         /// <inheritdoc/>
         public bool CanCreateLink(Type listDtoType) => listDtoType == _type;
 
         /// <inheritdoc/>
-        public OptionsLink CreateLink(Type listDtoType)
+        public OptionsLink? CreateLink(Type listDtoType)
         {
             var halLinks = _linkFactory.CreateTemplated(getListAction, controller);
             var halLink = halLinks.FirstOrDefault();
             if (halLink is null)
                 return null;
 
-            var optionsLink = new OptionsLink
+            var optionsLink = new OptionsLink(halLink.Href)
             {
-                Href = halLink.Href,
                 Templated = halLink.Templated,
                 Type = "application/hal+json"
             };

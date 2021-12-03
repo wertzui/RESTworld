@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RESTworld.AspNetCore.Controller;
 using RESTworld.AspNetCore.DependencyInjection;
+using RESTworld.Client.AspNetCore.Controllers;
 
 namespace RESTworld.Client.AspNetCore
 {
@@ -18,12 +19,16 @@ namespace RESTworld.Client.AspNetCore
     /// </summary>
     public class StartupBase : RESTworld.AspNetCore.StartupBase
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StartupBase"/> class.
+        /// </summary>
+        /// <param name="configuration"></param>
         public StartupBase(IConfiguration configuration)
             : base(configuration)
         {
         }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
+        /// <inheritdoc/>
         public override void ConfigureServices(IServiceCollection services)
         {
             // In production, the Angular files will be served from this directory
@@ -42,10 +47,11 @@ namespace RESTworld.Client.AspNetCore
                 .ConfigureApplicationPartManager(manager =>
                 {
                     manager.FeatureProviders.Add(new RemoveHomeControllerFeatureProvider());
+                    manager.FeatureProviders.Add(new SettingsControllerFeatureProvider());
                 });
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        /// <inheritdoc/>
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env, IApiVersionDescriptionProvider provider)
         {
 

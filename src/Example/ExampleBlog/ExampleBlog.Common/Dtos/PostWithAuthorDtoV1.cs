@@ -1,12 +1,12 @@
 ﻿using ExampleBlog.Common.Enums;
 using HAL.Common.Binary;
-using RESTworld.Common.Dtos;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace ExampleBlog.Common.Dtos
 {
-    public class PostGetFullDto : ChangeTrackingDtoBase
+    // We do not inherit from PostGetFullDto here as that DTO has the Author property defined as AuthorDto and we need AuthorDtoV1
+    public class PostWithAuthorDtoV1
     {
         [Display(Name = "Author")]
         public long AuthorId { get; set; }
@@ -18,8 +18,8 @@ namespace ExampleBlog.Common.Dtos
         [Required]
         [DataType(DataType.MultilineText)]
         public string Text { get; set; } = default!;
-        [JsonIgnore]
-        public virtual AuthorDto? Author { get; set; }
+        // No JsonIgnore here, because in this custom DTO we want to render the Author inline.
+        public virtual AuthorDtoV1? Author { get; set; }
         [JsonIgnore]
         public virtual BlogDto? Blog { get; set; }
         [DataType(DataType.ImageUrl)]

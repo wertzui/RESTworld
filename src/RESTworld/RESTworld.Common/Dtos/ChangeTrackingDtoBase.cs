@@ -13,7 +13,7 @@ namespace RESTworld.Common.Dtos
         /// </summary>
         [Display(Name = "Created at", Order = 10000)]
         [Editable(false)]
-        public virtual DateTimeOffset CreatedAt { get; set; }
+        public virtual DateTimeOffset? CreatedAt { get; set; }
 
         /// <summary>
         /// Gets the user who created this instance.
@@ -21,14 +21,14 @@ namespace RESTworld.Common.Dtos
         [MaxLength(100)]
         [Display(Name = "Created by", Order = 10001)]
         [Editable(false)]
-        public virtual string CreatedBy { get; set; }
+        public virtual string? CreatedBy { get; set; }
 
         /// <summary>
         /// Gets the date and time when this instance was last changed.
         /// </summary>
         [Display(Name = "Last changed at", Order = 10002)]
         [Editable(false)]
-        public virtual DateTimeOffset LastChangedAt { get; set; }
+        public virtual DateTimeOffset? LastChangedAt { get; set; }
 
         /// <summary>
         /// Gets the user who changed this instance last.
@@ -36,6 +36,6 @@ namespace RESTworld.Common.Dtos
         [MaxLength(100)]
         [Display(Name = "Last changed by", Order = 10003)]
         [Editable(false)]
-        public virtual string LastChangedBy { get; set; }
+        public virtual string? LastChangedBy { get; set; }
     }
 }

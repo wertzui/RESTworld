@@ -129,7 +129,7 @@ namespace ExampleBlog.Business
             }
         }
 
-        private HalFile GetImage(string headline) => new HalFile($"https://dummyimage.com/600x400/000/fff&text={headline.Replace(" ", "_")}");
+        private HalFile GetImage(string headline) => new($"https://dummyimage.com/600x400/000/fff&text={headline.Replace(" ", "_")}");
 
         private HalFile GetAttachement(long id)
         {

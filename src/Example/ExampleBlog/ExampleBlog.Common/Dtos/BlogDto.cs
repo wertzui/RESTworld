@@ -4,6 +4,6 @@ namespace ExampleBlog.Common.Dtos
 {
     public class BlogDto : ChangeTrackingDtoBase
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
     }
 }

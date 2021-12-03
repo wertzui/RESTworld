@@ -23,6 +23,6 @@ namespace RESTworld.EntityFrameworkCore.Models
         /// The timestamp.
         /// </value>
         [Timestamp]
-        public virtual byte[] Timestamp { get; set; }
+        public virtual byte[]? Timestamp { get; set; }
     }
 }

@@ -35,8 +35,8 @@ namespace RESTworld.AspNetCore.Swagger
     /// <seealso cref="IOperationFilter" />
     public class SwaggerExampleOperationFilter : IOperationFilter
     {
-        private static readonly Fixture _fixture = new Fixture();
-        private static readonly SpecimenContext _specimenContext = new SpecimenContext(_fixture);
+        private static readonly Fixture _fixture = new();
+        private static readonly SpecimenContext _specimenContext = new(_fixture);
         private readonly IApiDescriptionGroupCollectionProvider _apiExplorer;
         private readonly string _curieName;
         private readonly IHttpContextAccessor _httpContextAccessor;
@@ -81,7 +81,8 @@ namespace RESTworld.AspNetCore.Swagger
 
             _fixture
                 .Customize(new DtoBaseCustomization())
-                .Customize(new ChangeTrackingDtoBaseCustomization());
+                .Customize(new ChangeTrackingDtoBaseCustomization())
+                .Customize(new HalFileCustomization());
         }
 
         /// <inheritdoc/>
@@ -93,7 +94,7 @@ namespace RESTworld.AspNetCore.Swagger
             AddExamplesForResponses(operation, context);
         }
 
-        private static Type GetBodyParameterType(MethodInfo method)
+        private static Type? GetBodyParameterType(MethodInfo method)
         {
             var bodyParameter = method.GetParameters().FirstOrDefault(p => p.GetCustomAttribute<FromBodyAttribute>(true) is not null);
             return bodyParameter?.ParameterType;
@@ -133,14 +134,14 @@ namespace RESTworld.AspNetCore.Swagger
                         // Example for Home Controller
                         AddExampleForSuccessfullHomeResponse(type, resourceFactory);
                     }
-                    else if (responseTypeFromApiDescription.Type.IsAssignableTo(typeof(Resource)))
+                    else if (responseTypeFromApiDescription.Type is not null && responseTypeFromApiDescription.Type.IsAssignableTo(typeof(Resource)))
                     {
                         // Example for any other, unknown controller
                         AddExampleForSuccessfullUnknownResourceResponse(type, responseTypeFromApiDescription.Type, resourceFactory, linkFactory, controllerActionDescriptor);
                     }
                 }
 
-                if (type.Example is null && (type.Examples?.Count).GetValueOrDefault() == 0 && responseTypeFromApiDescription.Type.IsAssignableTo(typeof(Resource)))
+                if (type.Example is null && (type.Examples?.Count).GetValueOrDefault() == 0 && responseTypeFromApiDescription.Type is not null && responseTypeFromApiDescription.Type.IsAssignableTo(typeof(Resource)))
                 {
                     // Example for a response that does not come from a controller but is still a Resource
                     AddExampleForSuccessfullUnknownResourceResponse(type, responseTypeFromApiDescription.Type, resourceFactory, linkFactory);
@@ -148,14 +149,14 @@ namespace RESTworld.AspNetCore.Swagger
             }
         }
 
-        private void AddExampleForSuccessfullUnknownResourceResponse(OpenApiMediaType type, Type resourceType, ODataResourceFactory resourceFactory, ILinkFactory linkFactory, ControllerActionDescriptor controllerActionDescriptor = null)
+        private void AddExampleForSuccessfullUnknownResourceResponse(OpenApiMediaType type, Type resourceType, ODataResourceFactory resourceFactory, ILinkFactory linkFactory, ControllerActionDescriptor? controllerActionDescriptor = null)
         {
             Resource resource;
             if (resourceType.IsGenericType)
             {
                 var stateType = resourceType.GenericTypeArguments[0];
                 var state = _fixture.Create(stateType, _specimenContext);
-                object routeValues = null;
+                object? routeValues = null;
                 if (state is DtoBase dtoBase)
                     routeValues = new { id = dtoBase.Id };
 
@@ -177,7 +178,7 @@ namespace RESTworld.AspNetCore.Swagger
             if (actionName == "GetList")
             {
                 var tListDto = controllerActionDescriptor.ControllerTypeInfo.GenericTypeArguments[2];
-                var embedded = Enumerable.Repeat<object>(null, 3).Select(_ => _fixture.Create(tListDto, _specimenContext)).ToList();
+                var embedded = Enumerable.Repeat<object?>(null, 3).Select(_ => _fixture.Create(tListDto, _specimenContext)).ToList();
                 var resource = resourceFactory.CreateForOdataListEndpointUsingSkipTopPaging(embedded, _ => "List", e => ((DtoBase)e).Id, _oDataQueryFactory.GetListNavigation(embedded, new ODataRawQueryOptions(), linkFactory.Create(action: actionName, controller: controllerName).Href, 3, 3, 10), new Page { CurrentPage = 2, TotalPages = 4 }, controllerName);
                 type.Example = CreateExample(resource);
             }
@@ -221,7 +222,7 @@ namespace RESTworld.AspNetCore.Swagger
                 else if (actionName == "Post" || actionName == "Put")
                 {
                     // Post and Put either return an object or a collection
-                    var states = Enumerable.Repeat<object>(null, 3).Select(_ => _fixture.Create(tFullDto, _specimenContext)).Cast<DtoBase>().ToList();
+                    var states = Enumerable.Repeat<object?>(null, 3).Select(_ => _fixture.Create(tFullDto, _specimenContext)).Cast<DtoBase>().ToList();
                     var CollectionResource = resourceFactory.CreateForListEndpoint(states, _ => "List", d => d.Id, controllerName);
 
                     type.Examples.Add("Single Object", new OpenApiExample { Value = CreateExample((Resource)resourceFactory.CreateForGetEndpoint(states[0], controller: controllerName, routeValues: new { id = states[0].Id })) });
@@ -239,10 +240,13 @@ namespace RESTworld.AspNetCore.Swagger
                     if (type.Example is null)
                     {
                         var bodyParameterType = GetBodyParameterType(context.MethodInfo);
+                        if (bodyParameterType is null)
+                            continue;
+
                         if (bodyParameterType.IsGenericType && bodyParameterType.GetGenericTypeDefinition() == typeof(SingleObjectOrCollection<>))
                         {
                             Type stateType = bodyParameterType.GenericTypeArguments[0];
-                            var states = Enumerable.Repeat<object>(null, 3).Select(_ => _fixture.Create(stateType, _specimenContext)).ToList();
+                            var states = Enumerable.Repeat<object?>(null, 3).Select(_ => _fixture.Create(stateType, _specimenContext)).ToList();
                             foreach (var state in states)
                             {
                                 if (state is DtoBase dtoBase)
@@ -374,23 +378,10 @@ namespace RESTworld.AspNetCore.Swagger
             return CreateExample(exampleObject);
         }
 
-        private IOpenApiAny CreateExample<T>(Action<T> afterCreation = null)
-        {
-            var exampleObject = _fixture.Create<T>();
-            afterCreation?.Invoke(exampleObject);
-            return CreateExample(exampleObject);
-        }
-
         private IOpenApiAny CreateExample<T>(T exampleObject)
         {
             var exampleJson = JsonSerializer.Serialize(exampleObject, _serializerOptions);
             return OpenApiAnyFactory.CreateFromJson(exampleJson);
-        }
-
-        private IOpenApiAny CreateManyExamples<T>(int? count = default)
-        {
-            var exampleObject = count.HasValue ? _fixture.CreateMany<T>(count.Value) : _fixture.CreateMany<T>();
-            return CreateExample(exampleObject);
         }
 
         private IOpenApiAny CreateManyExamples<T, U>(Func<IEnumerable<T>, U> afterCreation, int? count = default)

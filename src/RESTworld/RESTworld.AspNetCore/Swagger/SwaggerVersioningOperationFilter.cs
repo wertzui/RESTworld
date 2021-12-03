@@ -78,8 +78,12 @@ namespace RESTworld.AspNetCore.Swagger
                 if (parameter.Schema.Default == null && description.DefaultValue != null)
                 {
                     // REF: https://github.com/Microsoft/aspnet-api-versioning/issues/429#issuecomment-605402330
-                    var json = JsonSerializer.Serialize(description.DefaultValue, description.ModelMetadata.ModelType);
-                    parameter.Schema.Default = OpenApiAnyFactory.CreateFromJson(json);
+                    var modelType = description.ModelMetadata?.ModelType;
+                    if (modelType is not null)
+                    {
+                        var json = JsonSerializer.Serialize(description.DefaultValue, modelType);
+                        parameter.Schema.Default = OpenApiAnyFactory.CreateFromJson(json);
+                    }
                 }
 
                 parameter.Required |= description.IsRequired;

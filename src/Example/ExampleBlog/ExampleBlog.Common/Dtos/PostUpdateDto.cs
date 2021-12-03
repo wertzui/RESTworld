@@ -12,14 +12,14 @@ namespace ExampleBlog.Common.Dtos
         [Display(Name = "Blog")]
         public long BlogId { get; set; }
         [Required]
-        public string Headline { get; set; }
+        public string Headline { get; set; } = default!;
         public PostState State { get; set; }
         [Required]
         [DataType(DataType.MultilineText)]
-        public string Text { get; set; }
+        public string Text { get; set; } = default!;
         [DataType(DataType.ImageUrl)]
-        public HalFile Image { get; set; }
+        public HalFile? Image { get; set; }
         [DataType(DataType.Upload)]
-        public HalFile Attachement { get; set; }
+        public HalFile? Attachement { get; set; }
     }
 }

@@ -48,10 +48,10 @@ namespace RESTworld.AspNetCore.Validation
         public override ProblemDetails CreateProblemDetails(
             HttpContext httpContext,
             int? statusCode = null,
-            string title = null,
-            string type = null,
-            string detail = null,
-            string instance = null)
+            string? title = null,
+            string? type = null,
+            string? detail = null,
+            string? instance = null)
         {
             statusCode ??= 500;
 
@@ -74,10 +74,10 @@ namespace RESTworld.AspNetCore.Validation
             HttpContext httpContext,
             ModelStateDictionary modelStateDictionary,
             int? statusCode = null,
-            string title = null,
-            string type = null,
-            string detail = null,
-            string instance = null)
+            string? title = null,
+            string? type = null,
+            string? detail = null,
+            string? instance = null)
         {
             if (modelStateDictionary == null)
             {
@@ -87,10 +87,10 @@ namespace RESTworld.AspNetCore.Validation
             statusCode ??= 400;
 
             var errors = modelStateDictionary
-                .Where(kvp => kvp.Value.ValidationState == ModelValidationState.Invalid)
+                .Where(kvp => kvp.Value?.ValidationState == ModelValidationState.Invalid)
                 .ToDictionary(
                 kvp => CreateKey(kvp.Key),
-                kvp => kvp.Value.Errors.Select(x => x.ErrorMessage).ToArray()
+                kvp => kvp.Value?.Errors.Select(x => x.ErrorMessage).ToArray() ?? Array.Empty<string>()
             );
 
             var problemDetails = new ValidationProblemDetails(errors)
@@ -158,9 +158,13 @@ namespace RESTworld.AspNetCore.Validation
 
         private void AddSelfLink(ProblemDetails problemDetails)
         {
-            string path = _linkGenerator.GetUriByAction(_actionContextAccessor.ActionContext.HttpContext);
-            QueryString queryString = _actionContextAccessor.ActionContext.HttpContext.Request.QueryString;
-            var link = new Link { Name = Constants.SelfLinkName, Href = path + queryString };
+            var httpContext = _actionContextAccessor.ActionContext?.HttpContext;
+            if (httpContext is null)
+                throw new Exception("Cannot add the self link to the problem details, because the HttpContext is null.");
+
+            var path = _linkGenerator.GetUriByAction(httpContext);
+            QueryString queryString = httpContext.Request.QueryString;
+            var link = new Link(path + queryString) { Name = Constants.SelfLinkName };
 
             problemDetails.Extensions["_links"] = new Dictionary<string, ICollection<Link>>
             {

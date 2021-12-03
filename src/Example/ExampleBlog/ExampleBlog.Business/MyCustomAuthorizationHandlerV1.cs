@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ExampleBlog.Business
 {
-    public class MyCustomAuthorizationHandler : BasicAuthorizationHandlerBase<Post, long, PostWithAuthorDto>
+    public class MyCustomAuthorizationHandlerV1 : BasicAuthorizationHandlerBase<Post, long, PostWithAuthorDtoV1>
     {
         public override Task<AuthorizationResult<Post, long>> HandleRequestAsync(AuthorizationResult<Post, long> previousResult)
         {
@@ -16,9 +16,9 @@ namespace ExampleBlog.Business
             return base.HandleRequestAsync(result);
         }
 
-        public override Task<ServiceResponse<PostWithAuthorDto>> HandleResponseAsync(ServiceResponse<PostWithAuthorDto> previousResponse)
+        public override Task<ServiceResponse<PostWithAuthorDtoV1>> HandleResponseAsync(ServiceResponse<PostWithAuthorDtoV1> previousResponse)
         {
-            // Normally do some user authorization logic and only apply this if the user must not see authors with an even ID.
+            // Normally do some user authorization logik and only apply this if the user must not see authors with an even ID.
             if (previousResponse.Succeeded && previousResponse.ResponseObject.AuthorId % 2 == 0)
                 previousResponse.ResponseObject.Author = null;
 

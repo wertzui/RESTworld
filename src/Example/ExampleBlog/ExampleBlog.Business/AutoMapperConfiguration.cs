@@ -19,8 +19,8 @@ namespace ExampleBlog.Business
                 .CreateMap<Author, AuthorDtoV1>()
                 .ForMember(dst => dst.Name, opt => opt.MapFrom(src => src.FirstName + " " + src.LastName))
                 .ReverseMap()
-                .ForMember(dst => dst.FirstName, opt => opt.MapFrom(src => src.Name.Split(new[] { ' ' }, 2)[0]))
-                .ForMember(dst => dst.LastName, opt => opt.MapFrom(src => src.Name.Split(new[] { ' ' }, 2)[1]));
+                .ForMember(dst => dst.FirstName, opt => opt.MapFrom(src => src.Name == null ? null : src.Name.Split(new[] { ' ' }, 2)[0]))
+                .ForMember(dst => dst.LastName, opt => opt.MapFrom(src => src.Name == null ? null : src.Name.Split(new[] { ' ' }, 2)[1]));
 
             config
                 .CreateMap<PostCreateDto, Post>();
@@ -36,6 +36,12 @@ namespace ExampleBlog.Business
             config
                 .CreateMap<Post, PostWithAuthorDto>();
             config.CreateMap<Author, PostWithAuthorDto>()
+                .ForMember(dst => dst.Author, opt => opt.MapFrom(src => src))
+                .ForAllOtherMembers(opt => opt.Ignore());
+
+            config
+                .CreateMap<Post, PostWithAuthorDtoV1>();
+            config.CreateMap<Author, PostWithAuthorDtoV1>()
                 .ForMember(dst => dst.Author, opt => opt.MapFrom(src => src))
                 .ForAllOtherMembers(opt => opt.Ignore());
         }
