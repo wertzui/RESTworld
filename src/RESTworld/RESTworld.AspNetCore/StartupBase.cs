@@ -92,7 +92,7 @@ namespace RESTworld.AspNetCore
                 options.UseResponseInterceptor(@"
 (res) => {
     window.res = res;
-    if (res && res.status >= 200 && res.status < 300 && res.data && res.headers['content-type'] && !res.data.length > 1000000) {
+    if (res && res.status >= 200 && res.status < 300 && res.data && res.headers['content-type'] && res.data.length > 1000000) {
         try {
             var blob = new Blob([res.data], { type: res.headers['content-type'] });
             var blobURL = URL.createObjectURL(blob);
