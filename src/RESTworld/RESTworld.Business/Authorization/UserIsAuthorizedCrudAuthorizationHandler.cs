@@ -45,7 +45,7 @@ namespace RESTworld.Business.Authorization
         {
             var user = GetUser();
 
-            if (!user.Identity.IsAuthenticated)
+            if (user is null || user.Identity is null || !user.Identity.IsAuthenticated)
                 return Task.FromResult(previousResult.WithStatus(HttpStatusCode.Unauthorized));
 
             return HandleCreateRequestWithUserAsync(previousResult, user);
@@ -56,7 +56,7 @@ namespace RESTworld.Business.Authorization
         {
             var user = GetUser();
 
-            if (!user.Identity?.IsAuthenticated == true)
+            if (user is null || user.Identity is null || !user.Identity.IsAuthenticated)
                 return Task.FromResult(previousResult.WithStatus(HttpStatusCode.Unauthorized));
 
             return HandleCreateRequestWithUserAsync(previousResult, user);
@@ -67,6 +67,9 @@ namespace RESTworld.Business.Authorization
         {
             var user = GetUser();
 
+            if (user is null || user.Identity is null || !user.Identity.IsAuthenticated)
+                return Task.FromResult(ServiceResponse.FromStatus<IReadOnlyCollection<TGetFullDto>>(HttpStatusCode.Unauthorized));
+
             return HandleCreateResponseWithUserAsync(previousResponse, user);
         }
 
@@ -75,6 +78,9 @@ namespace RESTworld.Business.Authorization
         {
             var user = GetUser();
 
+            if (user is null || user.Identity is null || !user.Identity.IsAuthenticated)
+                return Task.FromResult(ServiceResponse.FromStatus<TGetFullDto>(HttpStatusCode.Unauthorized));
+
             return HandleCreateResponseWithUserAsync(previousResponse, user);
         }
 
@@ -82,7 +88,8 @@ namespace RESTworld.Business.Authorization
         public override Task<AuthorizationResult<TEntity, long, byte[]>> HandleDeleteRequestAsync(AuthorizationResult<TEntity, long, byte[]> previousResult)
         {
             var user = GetUser();
-            if (!user.Identity?.IsAuthenticated == true)
+
+            if (user is null || user.Identity is null || !user.Identity.IsAuthenticated)
                 return Task.FromResult(previousResult.WithStatus(HttpStatusCode.Unauthorized));
 
             return HandleDeleteRequestWithUserAsync(previousResult, user);
@@ -93,6 +100,9 @@ namespace RESTworld.Business.Authorization
         {
             var user = GetUser();
 
+            if (user is null || user.Identity is null || !user.Identity.IsAuthenticated)
+                return Task.FromResult(ServiceResponse.FromStatus<object>(HttpStatusCode.Unauthorized));
+
             return HandleDeleteResponseWithUserAsync(previousResponse, user);
         }
 
@@ -101,7 +111,7 @@ namespace RESTworld.Business.Authorization
         {
             var user = GetUser();
 
-            if (!user.Identity?.IsAuthenticated == true)
+            if (user is null || user.Identity is null || !user.Identity.IsAuthenticated)
                 return Task.FromResult(previousResult.WithStatus(HttpStatusCode.Unauthorized));
 
             return HandleGetListRequestWithUserAsync(previousResult, user);
@@ -112,6 +122,9 @@ namespace RESTworld.Business.Authorization
         {
             var user = GetUser();
 
+            if (user is null || user.Identity is null || !user.Identity.IsAuthenticated)
+                return Task.FromResult(ServiceResponse.FromStatus<IReadOnlyPagedCollection<TGetListDto>>(HttpStatusCode.Unauthorized));
+
             return HandleGetListResponseWithUserAsync(previousResponse, user);
         }
 
@@ -120,7 +133,7 @@ namespace RESTworld.Business.Authorization
         {
             var user = GetUser();
 
-            if (!user.Identity?.IsAuthenticated == true)
+            if (user is null || user.Identity is null || !user.Identity.IsAuthenticated)
                 return Task.FromResult(previousResult.WithStatus(HttpStatusCode.Unauthorized));
 
             return HandleGetSingleRequestWithUserAsync(previousResult, user);
@@ -131,6 +144,9 @@ namespace RESTworld.Business.Authorization
         {
             var user = GetUser();
 
+            if (user is null || user.Identity is null || !user.Identity.IsAuthenticated)
+                return Task.FromResult(ServiceResponse.FromStatus<TGetFullDto>(HttpStatusCode.Unauthorized));
+
             return HandleGetSingleResponseWithUserAsync(previousResponse, user);
         }
 
@@ -139,7 +155,7 @@ namespace RESTworld.Business.Authorization
         {
             var user = GetUser();
 
-            if (!user.Identity?.IsAuthenticated == true)
+            if (user is null || user.Identity is null || !user.Identity.IsAuthenticated)
                 return Task.FromResult(previousResult.WithStatus(HttpStatusCode.Unauthorized));
 
             return HandleUpdateRequestWithUserAsync(previousResult, user);
@@ -150,7 +166,7 @@ namespace RESTworld.Business.Authorization
         {
             var user = GetUser();
 
-            if (!user.Identity?.IsAuthenticated == true)
+            if (user is null || user.Identity is null || !user.Identity.IsAuthenticated)
                 return Task.FromResult(previousResult.WithStatus(HttpStatusCode.Unauthorized));
 
             return HandleUpdateRequestWithUserAsync(previousResult, user);
@@ -161,6 +177,9 @@ namespace RESTworld.Business.Authorization
         {
             var user = GetUser();
 
+            if (user is null || user.Identity is null || !user.Identity.IsAuthenticated)
+                return Task.FromResult(ServiceResponse.FromStatus<IReadOnlyCollection<TGetFullDto>>(HttpStatusCode.Unauthorized));
+
             return HandleUpdateResponseWithUserAsync(previousResponse, user);
         }
 
@@ -169,6 +188,9 @@ namespace RESTworld.Business.Authorization
         {
             var user = GetUser();
 
+            if (user is null || user.Identity is null || !user.Identity.IsAuthenticated)
+                return Task.FromResult(ServiceResponse.FromStatus<TGetFullDto>(HttpStatusCode.Unauthorized));
+
             return HandleUpdateResponseWithUserAsync(previousResponse, user);
         }
 
@@ -176,7 +198,7 @@ namespace RESTworld.Business.Authorization
         /// Gets the user from the <see cref="UserAccessor"/>.
         /// </summary>
         /// <returns>The current user.</returns>
-        protected virtual ClaimsPrincipal GetUser() => UserAccessor.User;
+        protected virtual ClaimsPrincipal? GetUser() => UserAccessor.User;
 
         /// <summary>
         /// This method is the same as <see cref="HandleCreateRequestAsync(AuthorizationResult{TEntity, IReadOnlyCollection{TCreateDto}})" /> but also gives access to the current <paramref name="user" />.

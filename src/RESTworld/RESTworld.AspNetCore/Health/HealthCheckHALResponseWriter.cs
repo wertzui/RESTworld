@@ -37,7 +37,12 @@ namespace RESTworld.AspNetCore.Health
         private class JsonTimeSpanConverter : JsonConverter<TimeSpan>
         {
             public override TimeSpan Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-                => TimeSpan.Parse(reader.GetString());
+            {
+                var timeSpanString = reader.GetString();
+                if (!TimeSpan.TryParse(timeSpanString, out var timeSpan))
+                    throw new JsonException($"The value {timeSpanString} is not a valid TimeSpan.");
+                return timeSpan;
+            }
 
             public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)
                 => writer.WriteStringValue(value.ToString());

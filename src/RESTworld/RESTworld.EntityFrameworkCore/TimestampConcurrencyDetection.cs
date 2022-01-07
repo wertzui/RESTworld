@@ -1,8 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using RESTworld.EntityFrameworkCore.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
 
 namespace RESTworld.EntityFrameworkCore
 {
@@ -11,9 +15,9 @@ namespace RESTworld.EntityFrameworkCore
     /// to apply concurrency detection using the time stamp in an environment with disconnected entities.
     /// </summary>
     /// <seealso cref="System.IDisposable" />
-    internal class TimestampConcurrencyDetection : IDisposable
+    public class TimestampConcurrencyDetection : IDisposable
     {
-        private readonly IDictionary<PropertyEntry<EntityBase, byte[]>, byte[]> _modifiedEntries = new Dictionary<PropertyEntry<EntityBase, byte[]>, byte[]>();
+        private readonly IDictionary<PropertyEntry<EntityBase, byte[]?>, byte[]?> _modifiedEntries = new Dictionary<PropertyEntry<EntityBase, byte[]?>, byte[]?>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TimestampConcurrencyDetection"/> class.
@@ -43,11 +47,35 @@ namespace RESTworld.EntityFrameworkCore
             {
                 if (entity.State == EntityState.Modified || entity.State == EntityState.Deleted)
                 {
-                    var timestampProperty = entity.Property(e => e.Timestamp);
-                    _modifiedEntries.Add(timestampProperty, timestampProperty.OriginalValue);
-                    timestampProperty.OriginalValue = timestampProperty.CurrentValue;
+                    // entity.Property(e => e.Timestamp) throws if the Timestamp has a [NotMapped] Attribute.
+                    var timestampProperty = GetPropertyOrDefault(entity, e => e.Timestamp);
+                    if (timestampProperty is not null)
+                    {
+                        _modifiedEntries.Add(timestampProperty, timestampProperty.OriginalValue);
+                        timestampProperty.OriginalValue = timestampProperty.CurrentValue;
+                    }
                 }
             }
+        }
+
+        private static PropertyEntry<TEntity, TProperty>? GetPropertyOrDefault<TEntity, TProperty>(EntityEntry<TEntity> entityEntry, Expression<Func<TEntity, TProperty>> propertyExpression)
+            where TEntity : class
+        {
+            var name = GetSimpleMemberName(propertyExpression.GetMemberAccess());
+            var property = entityEntry.Properties.FirstOrDefault(p => p.Metadata.Name == name) as PropertyEntry<TEntity, TProperty>;
+            return property;
+        }
+
+        private static string GetSimpleMemberName(MemberInfo member)
+        {
+            string name = member.Name;
+            int num = name.LastIndexOf('.');
+            if (num < 0)
+            {
+                return name;
+            }
+
+            return name[(num + 1)..];
         }
     }
 }

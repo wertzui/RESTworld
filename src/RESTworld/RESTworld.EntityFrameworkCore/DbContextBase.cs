@@ -68,7 +68,7 @@ namespace RESTworld.EntityFrameworkCore
         /// A task that represents the asynchronous save operation. The task result contains
         /// the number of state entries written to the database.
         /// </returns>
-        public Task<int> SaveChangesAsync(string currentUser = null, CancellationToken cancellationToken = default)
+        public Task<int> SaveChangesAsync(string? currentUser = null, CancellationToken cancellationToken = default)
         {
             return SaveChangesAsync(true, currentUser, cancellationToken);
         }
@@ -96,7 +96,7 @@ namespace RESTworld.EntityFrameworkCore
         /// A task that represents the asynchronous save operation. The task result contains
         /// the number of state entries written to the database.
         /// </returns>
-        public Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, string currentUser = null, CancellationToken cancellationToken = default)
+        public Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, string? currentUser = null, CancellationToken cancellationToken = default)
         {
             AddChangedFields(currentUser);
             return SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
@@ -114,7 +114,7 @@ namespace RESTworld.EntityFrameworkCore
             base.OnConfiguring(optionsBuilder);
         }
 
-        private void AddChangedFields(string currentUser = null)
+        private void AddChangedFields(string? currentUser = null)
         {
             var now = DateTimeOffset.Now;
             var entities = ChangeTracker.Entries<ChangeTrackingEntityBase>();

@@ -20,6 +20,6 @@ namespace RESTworld.AspNetCore.Authorization
         }
 
         /// <inheritdoc/>
-        public ClaimsPrincipal User => _httpContextAccessor.HttpContext.User;
+        public ClaimsPrincipal? User => _httpContextAccessor.HttpContext?.User;
     }
 }

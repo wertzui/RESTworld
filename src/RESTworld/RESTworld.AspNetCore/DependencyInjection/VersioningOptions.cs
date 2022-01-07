@@ -7,7 +7,7 @@
     {
         /// <summary>
         /// Gets or sets a value indicating whether versioning through a query parameter is allowed.
-        /// This allows versioning not only through the Acceppt header, but also in a query parameter style (https://example.org/blog/42?v=2).
+        /// This allows versioning not only through the Accept header, but also in a query parameter style (https://example.org/blog/42?v=2).
         /// The default is false.
         /// </summary>
         /// <value>
@@ -23,7 +23,7 @@
         /// <value>
         /// The default version.
         /// </value>
-        public string DefaultVersion { get; set; }
+        public string? DefaultVersion { get; set; }
 
         /// <summary>
         /// Gets or sets the name of the parameter that is used for versioning.
@@ -32,6 +32,6 @@
         /// <value>
         /// The name of the parameter.
         /// </value>
-        public string ParameterName { get; set; }
+        public string? ParameterName { get; set; }
     }
 }

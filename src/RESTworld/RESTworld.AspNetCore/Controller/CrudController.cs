@@ -179,7 +179,7 @@ namespace RESTworld.AspNetCore.Controller
         {
             var response = await _service.GetSingleAsync(id);
 
-            if (!response.Succeeded)
+            if (!response.Succeeded || response.ResponseObject is null)
                 return CreateError(response);
 
             return Ok(response.ResponseObject, id == 0 ? HttpMethod.Post : HttpMethod.Put, accept);
@@ -213,7 +213,7 @@ namespace RESTworld.AspNetCore.Controller
 
             var response = await _service.GetListAsync(getListrequest);
 
-            if (!response.Succeeded)
+            if (!response.Succeeded || response.ResponseObject is null)
                 return CreateError(response);
 
             var result = _resourceFactory.CreateForOdataListEndpointUsingSkipTopPaging(response.ResponseObject.Items, _ => Common.Constants.ListItems, m => m.Id, options, options.Context.DefaultQuerySettings.MaxTop.Value, response.ResponseObject.TotalCount);
@@ -268,13 +268,13 @@ namespace RESTworld.AspNetCore.Controller
         [ProducesResponseType(typeof(Resource), StatusCodes.Status201Created)]
         public virtual async Task<ActionResult<Resource<TGetFullDto>>> PostAsync([FromBody] SingleObjectOrCollection<TCreateDto> dto, [FromHeader, SwaggerIgnore] string accept)
         {
-            if (dto == null)
+            if (dto == null || (dto.ContainsCollection && dto.Collection is null) || (dto.ContainsSingleObject && dto.SingleObject is null))
                 return CreateError(StatusCodes.Status400BadRequest, "Unable to read either a collection or a single object from the request body.");
 
             if (dto.ContainsCollection)
-                return await PostMultipleAsync(dto.Collection);
+                return await PostMultipleAsync(dto.Collection!);
             else
-                return await PostSingleAsync(dto.SingleObject, accept);
+                return await PostSingleAsync(dto.SingleObject!, accept);
         }
 
         /// <summary>
@@ -295,7 +295,7 @@ namespace RESTworld.AspNetCore.Controller
         [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status409Conflict)]
         public virtual async Task<ActionResult<Resource<TGetFullDto>>> PutAsync(long? id, [FromBody] SingleObjectOrCollection<TUpdateDto> dto, [FromHeader, SwaggerIgnore] string accept)
         {
-            if (dto == null)
+            if (dto == null || (dto.ContainsCollection && dto.Collection is null) || (dto.ContainsSingleObject && dto.SingleObject is null))
                 return CreateError(StatusCodes.Status400BadRequest, "Unable to read either a collection or a single object from the request body.");
 
             if (dto.ContainsCollection)
@@ -303,14 +303,14 @@ namespace RESTworld.AspNetCore.Controller
                 if (id.HasValue)
                     return CreateError(StatusCodes.Status400BadRequest, "The URL must not contain an ID when the request body contains a collection.");
 
-                return await PutMultipleAsync(dto.Collection);
+                return await PutMultipleAsync(dto.Collection!);
             }
             else
             {
-                if (id != dto.SingleObject.Id)
+                if (id != dto.SingleObject?.Id)
                     return CreateError(StatusCodes.Status400BadRequest, "The URL must contain the same ID as the object in the request body when the request body contains a single object.");
 
-                return await PutSingleAsync(dto.SingleObject, accept);
+                return await PutSingleAsync(dto.SingleObject!, accept);
             }
         }
 
@@ -449,7 +449,9 @@ namespace RESTworld.AspNetCore.Controller
             if (!response.Succeeded)
                 return CreateError(response);
 
-            var resource = _resourceFactory.CreateForListEndpoint(response.ResponseObject, _ => "items", m => m.Id);
+            var responseObject = response.ResponseObject ?? Array.Empty<TGetFullDto>();
+
+            var resource = _resourceFactory.CreateForListEndpoint(responseObject, _ => "items", m => m.Id);
 
             if (resource.Embedded is not null)
             {
@@ -459,7 +461,7 @@ namespace RESTworld.AspNetCore.Controller
                 }
             }
 
-            var filter = CreateODataFilterForIds(response.ResponseObject.Select(d => d.Id));
+            var filter = CreateODataFilterForIds(responseObject.Select(d => d.Id));
             var url = Url.ActionLink() + "?$filter=" + filter;
 
             var selfLink = resource.Links?["self"].FirstOrDefault();
@@ -485,6 +487,9 @@ namespace RESTworld.AspNetCore.Controller
             if (!response.Succeeded)
                 return CreateError(response);
 
+            if (response.ResponseObject is null)
+                return CreateError(StatusCodes.Status500InternalServerError, "The service did return null for the created object.");
+
             var resource = _resourceFactory.CreateForGetEndpoint(response.ResponseObject, routeValues: new { id = response.ResponseObject.Id });
             AddSaveAndDeleteLinks(resource);
 
@@ -505,7 +510,9 @@ namespace RESTworld.AspNetCore.Controller
             if (!response.Succeeded)
                 return CreateError(response);
 
-            var resource = _resourceFactory.CreateForListEndpoint(response.ResponseObject, _ => "items", m => m.Id);
+            var responseObject = response.ResponseObject ?? Array.Empty<TGetFullDto>();
+
+            var resource = _resourceFactory.CreateForListEndpoint(responseObject, _ => "items", m => m.Id);
 
             if (resource.Embedded is not null)
             {
@@ -515,7 +522,7 @@ namespace RESTworld.AspNetCore.Controller
                 }
             }
 
-            var filter = CreateODataFilterForIds(response.ResponseObject.Select(d => d.Id));
+            var filter = CreateODataFilterForIds(responseObject.Select(d => d.Id));
             var url = Url.ActionLink() + "?$filter=" + filter;
 
             var selfLink = resource.Links?["self"].FirstOrDefault();
@@ -538,7 +545,7 @@ namespace RESTworld.AspNetCore.Controller
         {
             var response = await _service.UpdateAsync(dto);
 
-            if (!response.Succeeded)
+            if (!response.Succeeded || response.ResponseObject is null)
                 return CreateError(response);
 
             return Ok(response.ResponseObject, HttpMethod.Put, accept);

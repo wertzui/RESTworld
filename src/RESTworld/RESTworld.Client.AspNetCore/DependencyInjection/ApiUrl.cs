@@ -18,7 +18,7 @@
         public string? Url
         {
             get => _url;
-            set => _url = value.EndsWith('/') ? value : value + '/';
+            set => _url = (value?.EndsWith('/')).GetValueOrDefault() ? value : value + '/';
         }
 
         /// <summary>

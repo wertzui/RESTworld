@@ -92,7 +92,7 @@ namespace RESTworld.AspNetCore
                 options.UseResponseInterceptor(@"
 (res) => {
     window.res = res;
-    if (res && res.status >= 200 && res.status < 300 && res.data && res.headers['content-type'] && res.data.length > 1000000) {
+    if (res && res.status >= 200 && res.status < 300 && res.data && res.headers['content-type'] && res.url && !res.url.endsWith('swagger.json') && res.data.length > 1000000) {
         try {
             var blob = new Blob([res.data], { type: res.headers['content-type'] });
             var blobURL = URL.createObjectURL(blob);
@@ -101,7 +101,7 @@ namespace RESTworld.AspNetCore
             tempLink.href = blobURL;
             tempLink.setAttribute('download', new URL(res.url).pathname.replace('/', ''));
             tempLink.click();
-            res.body = null;
+            return { ok: res.ok, url: res.url, status: res.status, statusText: res.statusText, headers: res.headers, duration: res.duration };
         }
         catch { }
     }

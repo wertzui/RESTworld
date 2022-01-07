@@ -65,6 +65,6 @@ namespace AutoFixture
         }
 
         /// <inheritdoc/>
-        public object Create(object request, ISpecimenContext context) => _factory(request, context);
+        public object? Create(object request, ISpecimenContext context) => _factory(request, context);
     }
 }

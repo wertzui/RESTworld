@@ -26,7 +26,7 @@ namespace RESTworld.Business.Models
         /// </summary>
         /// <param name="status">The status.</param>
         /// <param name="problemDetails">The problem details.</param>
-        internal ServiceResponse(HttpStatusCode status, string problemDetails)
+        internal ServiceResponse(HttpStatusCode status, string? problemDetails)
         {
             Status = status;
             ProblemDetails = problemDetails;
@@ -38,7 +38,7 @@ namespace RESTworld.Business.Models
         /// <value>
         /// The response object.
         /// </value>
-        public T ResponseObject { get; }
+        public T? ResponseObject { get; }
 
         /// <summary>
         /// Gets a value indicating whether the service call succeeded.
@@ -54,7 +54,7 @@ namespace RESTworld.Business.Models
         /// <value>
         /// The problem details.
         /// </value>
-        public string ProblemDetails { get; }
+        public string? ProblemDetails { get; }
 
         /// <summary>
         /// Gets the status.
@@ -97,7 +97,7 @@ namespace RESTworld.Business.Models
         /// <param name="status">The status.</param>
         /// <param name="problemDetails">The problem details.</param>
         /// <returns></returns>
-        public static ServiceResponse<T> FromProblem<T>(HttpStatusCode status, string problemDetails)
+        public static ServiceResponse<T> FromProblem<T>(HttpStatusCode status, string? problemDetails)
             => new(status, problemDetails);
 
         /// <summary>

@@ -11,6 +11,6 @@ namespace RESTworld.Business.Authorization.Abstractions
         /// <summary>
         /// The current user.
         /// </summary>
-        public ClaimsPrincipal User { get; }
+        public ClaimsPrincipal? User { get; }
     }
 }

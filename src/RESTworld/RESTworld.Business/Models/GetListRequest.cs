@@ -35,6 +35,6 @@ namespace RESTworld.Business.Models
         /// <inheritdoc/>
         public bool CalculateTotalCount { get; }
         /// <inheritdoc/>
-        public Func<IQueryable<TEntity>, IQueryable<TEntity>> FilterForTotalCount { get; }
+        public Func<IQueryable<TEntity>, IQueryable<TEntity>>? FilterForTotalCount { get; }
     }
 }

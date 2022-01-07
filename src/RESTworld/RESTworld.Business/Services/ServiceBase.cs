@@ -140,7 +140,7 @@ namespace RESTworld.Business.Services
         /// This is the user name which gets stored in the <see cref="ChangeTrackingEntityBase.CreatedBy"/> and <see cref="ChangeTrackingEntityBase.LastChangedBy"/> properties.
         /// </summary>
         /// <returns>The name of the current user as defined by the <see cref="IUserAccessor.User"/></returns>
-        protected virtual string GetCurrentUsersName() => _userAccessor?.User?.Identity?.Name;
+        protected virtual string? GetCurrentUsersName() => _userAccessor?.User?.Identity?.Name;
 
         /// <summary>
         /// Tries to execute the given function while checking for errors and wrapping any exceptions into a problem ServiceResponse.

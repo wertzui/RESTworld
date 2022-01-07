@@ -24,8 +24,11 @@ namespace RESTworld.AspNetCore.Swagger
         {
             _actionContext = new ActionContext();
             _actionContext.ActionDescriptor = operationFilterContext.ApiDescription.ActionDescriptor;
-            _actionContext.HttpContext = httpContextAccessor.HttpContext;
-            _actionContext.RouteData = _actionContext.HttpContext.GetRouteData();
+            if (httpContextAccessor.HttpContext is not null)
+            {
+                _actionContext.HttpContext = httpContextAccessor.HttpContext;
+                _actionContext.RouteData = _actionContext.HttpContext.GetRouteData();
+            }
         }
 
         /// <inheritdoc/>

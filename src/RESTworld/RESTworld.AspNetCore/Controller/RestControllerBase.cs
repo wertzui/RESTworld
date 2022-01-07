@@ -138,10 +138,10 @@ namespace RESTworld.AspNetCore.Controller
         /// <param name="status">A valid HTTP status code.</param>
         /// <param name="problemDetails">Details of the problem to return to the user.</param>
         /// <returns>A result with the problem details and the given status code.</returns>
-        protected ObjectResult CreateError(int status, string problemDetails)
+        protected ObjectResult CreateError(int status, string? problemDetails)
         {
             var resource =
-                _resourceFactory.CreateForGetEndpoint(new ProblemDetails { Title = Enum.GetName(typeof(HttpStatusCode), status), Status = status, Detail = problemDetails });
+                _resourceFactory.CreateForGetEndpoint(new ProblemDetails { Title = Enum.GetName(typeof(HttpStatusCode), status), Status = status, Detail = problemDetails }, null);
             var result = StatusCode(status, resource);
             return result;
         }

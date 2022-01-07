@@ -13,7 +13,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RESTworld.EntityFrameworkCo
 EndProject
 Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "RESTworld.Client.Angular", "RESTworld.Client.Angular\RESTworld.Client.Angular.esproj", "{04D0246B-57E5-4284-90A9-AE55AC64DE96}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTworld.Client.AspNetCore", "RESTworld.Client.AspNetCore\RESTworld.Client.AspNetCore.csproj", "{6C110408-1A97-492C-8BE7-EF458E29E8E6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RESTworld.Client.AspNetCore", "RESTworld.Client.AspNetCore\RESTworld.Client.AspNetCore.csproj", "{6C110408-1A97-492C-8BE7-EF458E29E8E6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTworld.Tests", "RESTworld.Tests\RESTworld.Tests.csproj", "{78BD436D-4F00-4244-84EA-F70233EED34D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,6 +49,10 @@ Global
 		{6C110408-1A97-492C-8BE7-EF458E29E8E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6C110408-1A97-492C-8BE7-EF458E29E8E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6C110408-1A97-492C-8BE7-EF458E29E8E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{78BD436D-4F00-4244-84EA-F70233EED34D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{78BD436D-4F00-4244-84EA-F70233EED34D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{78BD436D-4F00-4244-84EA-F70233EED34D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{78BD436D-4F00-4244-84EA-F70233EED34D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

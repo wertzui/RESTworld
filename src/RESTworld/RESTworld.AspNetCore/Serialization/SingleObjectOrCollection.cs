@@ -14,7 +14,7 @@ namespace RESTworld.AspNetCore.Serialization
         /// Creates a new instance of the <see cref="SingleObjectOrCollection{T}"/> class which contains a single object.
         /// </summary>
         /// <param name="singleObject">The object to hold.</param>
-        public SingleObjectOrCollection(T singleObject)
+        public SingleObjectOrCollection(T? singleObject)
         {
             SingleObject = singleObject;
         }
@@ -23,7 +23,7 @@ namespace RESTworld.AspNetCore.Serialization
         /// Creates a new instance of the <see cref="SingleObjectOrCollection{T}"/> class which contains a collection.
         /// </summary>
         /// <param name="collection">The collection to hold.</param>
-        public SingleObjectOrCollection(IReadOnlyCollection<T> collection)
+        public SingleObjectOrCollection(IReadOnlyCollection<T>? collection)
         {
             Collection = collection;
         }
@@ -31,12 +31,12 @@ namespace RESTworld.AspNetCore.Serialization
         /// <summary>
         /// The object.
         /// </summary>
-        public T SingleObject { get; }
+        public T? SingleObject { get; }
 
         /// <summary>
         /// The collection.
         /// </summary>
-        public IReadOnlyCollection<T> Collection { get; }
+        public IReadOnlyCollection<T>? Collection { get; }
 
         /// <summary>
         /// Returns a value telling you if this instance holds a collection.

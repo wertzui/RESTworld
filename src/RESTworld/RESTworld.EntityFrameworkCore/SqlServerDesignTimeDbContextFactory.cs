@@ -11,7 +11,10 @@ namespace RESTworld.EntityFrameworkCore
         {
             var optionsBuilder = new DbContextOptionsBuilder<TDbContext>();
             optionsBuilder.UseSqlServer();
-            var context = (TDbContext)Activator.CreateInstance(typeof(TDbContext), optionsBuilder.Options);
+            var context = Activator.CreateInstance(typeof(TDbContext), optionsBuilder.Options) as TDbContext;
+            if (context is null)
+                throw new Exception($"Unable to create an instance of {typeof(TDbContext).Name}");
+
             return context;
         }
     }

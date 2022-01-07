@@ -24,6 +24,6 @@ namespace RESTworld.Business.Models.Abstractions
         /// A filter which is applied to the query and executed on the database during the calculation of the total count.
         /// It must not have any calls to Top or Skip as this would result in a wrong total count.
         /// </summary>
-        Func<IQueryable<TEntity>, IQueryable<TEntity>> FilterForTotalCount { get; }
+        Func<IQueryable<TEntity>, IQueryable<TEntity>>? FilterForTotalCount { get; }
     }
 }

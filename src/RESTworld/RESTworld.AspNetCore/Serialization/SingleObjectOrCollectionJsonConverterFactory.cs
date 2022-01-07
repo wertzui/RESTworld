@@ -26,11 +26,11 @@ namespace RESTworld.AspNetCore.Serialization
         }
 
         /// <inheritdoc/>
-        public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
+        public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             var objectType = typeToConvert.GetGenericArguments()[0];
 
-            var converter = (JsonConverter)Activator.CreateInstance(typeof(SingleObjectOrCollectionJsonConverter<>).MakeGenericType(objectType));
+            var converter = Activator.CreateInstance(typeof(SingleObjectOrCollectionJsonConverter<>).MakeGenericType(objectType)) as JsonConverter;
 
             return converter;
         }

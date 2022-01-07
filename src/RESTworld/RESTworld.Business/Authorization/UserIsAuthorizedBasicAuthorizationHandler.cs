@@ -41,7 +41,7 @@ namespace RESTworld.Business.Authorization
         {
             var user = GetUser();
 
-            if (!user.Identity.IsAuthenticated)
+            if (user is null || user.Identity is null || !user.Identity.IsAuthenticated)
                 return Task.FromResult(previousResult.WithStatus(HttpStatusCode.Unauthorized));
 
             return HandleRequestWithUserAsync(previousResult, user);
@@ -52,6 +52,9 @@ namespace RESTworld.Business.Authorization
         {
             var user = GetUser();
 
+            if (user is null || user.Identity is null || !user.Identity.IsAuthenticated)
+                return Task.FromResult(ServiceResponse.FromStatus<TResponse>(HttpStatusCode.Unauthorized));
+
             return HandleResponseWithUserAsync(previousResponse, user);
         }
 
@@ -59,7 +62,7 @@ namespace RESTworld.Business.Authorization
         /// Gets the user from the <see cref="UserAccessor"/>.
         /// </summary>
         /// <returns>The current user.</returns>
-        protected virtual ClaimsPrincipal GetUser() => UserAccessor.User;
+        protected virtual ClaimsPrincipal? GetUser() => UserAccessor.User;
 
         /// <summary>
         /// This method is the same as <see cref="HandleRequestAsync(AuthorizationResult{TEntity, TRequest})" /> but also gives access to the current <paramref name="user" />.

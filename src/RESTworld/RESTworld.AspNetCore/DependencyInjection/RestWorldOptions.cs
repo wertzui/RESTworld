@@ -9,14 +9,14 @@ namespace RESTworld.AspNetCore.DependencyInjection
     public class RestWorldOptions
     {
         /// <summary>
-        /// Gets or sets a value indicating wether the total count should be calculated for list endpoints. Calculating the total count means a second roundtrip to the database when calling the list endpoint.
+        /// Gets or sets a value indicating whether the total count should be calculated for list endpoints. Calculating the total count means a second roundtrip to the database when calling the list endpoint.
         /// </summary>
         public bool CalculateTotalCountForListEndpoint { get; set; }
 
         /// <summary>
         /// Gets or sets the curie name which is used to generate the prefix (the part before the ':') for your links on the home controller.
         /// </summary>
-        public string Curie { get; set; }
+        public string? Curie { get; set; }
 
         /// <summary>
         /// Disables all <see cref="Business.Authorization.Abstractions.ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>s so they wont be called.
@@ -36,7 +36,7 @@ namespace RESTworld.AspNetCore.DependencyInjection
         /// <value>
         /// The versioning options.
         /// </value>
-        public VersioningOptions Versioning { get; set; }
+        public VersioningOptions? Versioning { get; set; }
 
         /// <summary>
         /// Gets the curie if set, or default which is the upper case letters of the entry assembly as lower case (MyEntryAssembly => "mea").
@@ -47,7 +47,7 @@ namespace RESTworld.AspNetCore.DependencyInjection
             if (!string.IsNullOrWhiteSpace(Curie))
                 return Curie;
 
-            return string.Concat(Assembly.GetEntryAssembly().GetName().Name.Where(c => char.IsUpper(c))).ToLowerInvariant();
+            return string.Concat(Assembly.GetEntryAssembly()!.GetName().Name!.Where(c => char.IsUpper(c))).ToLowerInvariant();
         }
     }
 }
