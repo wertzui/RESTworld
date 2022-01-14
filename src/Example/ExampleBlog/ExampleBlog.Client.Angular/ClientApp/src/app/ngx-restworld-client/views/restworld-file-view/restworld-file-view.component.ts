@@ -26,15 +26,14 @@ export class RESTWorldFileViewComponent implements ControlValueAccessor {
   public disabled = false;
   public uri?: string;
 
-  constructor() { }
-
-  writeValue(obj: any): void {
+  writeValue(obj?: string): void {
     this.uri = obj;
   }
-  registerOnChange(fn: any): void {
+  registerOnChange(fn?: Function): void {
     this.onChange = fn;
   }
-  registerOnTouched(fn: any): void {
+  registerOnTouched(): void {
+    // not needed for this component, but needed to implement the interface
   }
   setDisabledState?(isDisabled: boolean): void {
     this.disabled = isDisabled;
@@ -43,7 +42,7 @@ export class RESTWorldFileViewComponent implements ControlValueAccessor {
   public fileChanged(event: { files: File[] }): void {
     const file = event.files[0];
     const reader = new FileReader();
-    reader.onload = e => {
+    reader.onload = () => {
       this.uri = reader.result as string;
       this.onChange?.(this.uri);
     };

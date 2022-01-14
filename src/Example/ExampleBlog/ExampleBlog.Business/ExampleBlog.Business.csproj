@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AutoFixture" Version="4.17.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\..\RESTworld\RESTworld.Business\RESTworld.Business.csproj" />
     <ProjectReference Include="..\ExampleBlog.Data\ExampleBlog.Data.csproj" />
   </ItemGroup>

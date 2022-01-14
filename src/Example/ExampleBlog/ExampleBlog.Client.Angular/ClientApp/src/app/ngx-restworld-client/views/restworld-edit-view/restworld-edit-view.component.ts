@@ -1,9 +1,8 @@
 import { Component, Input } from '@angular/core';
 import { PropertyType, Resource, Template, Templates, FormsResource, Property } from '@wertzui/ngx-hal-client';
 import { RESTworldClient } from '../../services/restworld-client';
-import * as _ from 'lodash';
 import { RESTworldClientCollection } from '../../services/restworld-client-collection';
-import { AbstractControl, FormControl, FormGroup,  Validators } from '@angular/forms';
+import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
@@ -11,6 +10,7 @@ import { ProblemDetails } from '../../models/problem-details';
 import { ContentChild } from '@angular/core';
 import { TemplateRef } from '@angular/core';
 import { ValdemortConfig } from 'ngx-valdemort';
+import { FormService } from '../../services/form.service';
 
 @Component({
   selector: 'rw-edit',
@@ -80,95 +80,86 @@ export class RESTworldEditViewComponent {
     return form && form.valid;
   }
 
-  public get dateFormat(): string {
-    return new Date(3333, 10, 22)
-      .toLocaleDateString()
-      .replace("22", "dd")
-      .replace("11", "mm")
-      .replace("3333", "yy")
-      .replace("33", "y");
-  }
-
   @ContentChild('extraTabs', { static: false })
-  extraTabsRef?: TemplateRef<any>;
+  extraTabsRef?: TemplateRef<unknown>;
 
   @ContentChild('buttons', { static: false })
-  buttonsRef?: TemplateRef<any>;
+  buttonsRef?: TemplateRef<unknown>;
 
   @ContentChild('inputOptionsSingle', { static: false })
-  inputOptionsSingleRef?: TemplateRef<any>;
+  inputOptionsSingleRef?: TemplateRef<unknown>;
 
   @ContentChild('inputOptionsMultiple', { static: false })
-  inputOptionsMultipleRef?: TemplateRef<any>;
+  inputOptionsMultipleRef?: TemplateRef<unknown>;
 
   @ContentChild('inputOptions', { static: false })
-  inputOptionsRef?: TemplateRef<any>;
+  inputOptionsRef?: TemplateRef<unknown>;
 
   @ContentChild('inputHidden', { static: false })
-  inputHiddenRef?: TemplateRef<any>;
+  inputHiddenRef?: TemplateRef<unknown>;
 
   @ContentChild('inputText', { static: false })
-  inputTextRef?: TemplateRef<any>;
+  inputTextRef?: TemplateRef<unknown>;
 
   @ContentChild('inputTextarea', { static: false })
-  inputTextareaRef?: TemplateRef<any>;
+  inputTextareaRef?: TemplateRef<unknown>;
 
   @ContentChild('inputSearch', { static: false })
-  inputSearchRef?: TemplateRef<any>;
+  inputSearchRef?: TemplateRef<unknown>;
 
   @ContentChild('inputTel', { static: false })
-  inputTelRef?: TemplateRef<any>;
+  inputTelRef?: TemplateRef<unknown>;
 
   @ContentChild('inputUrl', { static: false })
-  inputUrlRef?: TemplateRef<any>;
+  inputUrlRef?: TemplateRef<unknown>;
 
   @ContentChild('inputEmail', { static: false })
-  inputEmailRef?: TemplateRef<any>;
+  inputEmailRef?: TemplateRef<unknown>;
 
   @ContentChild('inputPassword', { static: false })
-  inputPasswordRef?: TemplateRef<any>;
+  inputPasswordRef?: TemplateRef<unknown>;
 
   @ContentChild('inputDate', { static: false })
-  inputDateRef?: TemplateRef<any>;
+  inputDateRef?: TemplateRef<unknown>;
 
   @ContentChild('inputMonth', { static: false })
-  inputMonthRef?: TemplateRef<any>;
+  inputMonthRef?: TemplateRef<unknown>;
 
   @ContentChild('inputWeek', { static: false })
-  inputWeekRef?: TemplateRef<any>;
+  inputWeekRef?: TemplateRef<unknown>;
 
   @ContentChild('inputTime', { static: false })
-  inputTimeRef?: TemplateRef<any>;
+  inputTimeRef?: TemplateRef<unknown>;
 
   @ContentChild('inputDatetimeLocal', { static: false })
-  inputDatetimeLocalRef?: TemplateRef<any>;
+  inputDatetimeLocalRef?: TemplateRef<unknown>;
 
   @ContentChild('inputNumber', { static: false })
-  inputNumberRef?: TemplateRef<any>;
+  inputNumberRef?: TemplateRef<unknown>;
 
   @ContentChild('inputRange', { static: false })
-  inputRangeRef?: TemplateRef<any>;
+  inputRangeRef?: TemplateRef<unknown>;
 
   @ContentChild('inputColor', { static: false })
-  inputColorRef?: TemplateRef<any>;
+  inputColorRef?: TemplateRef<unknown>;
 
   @ContentChild('inputBool', { static: false })
-  inputBoolRef?: TemplateRef<any>;
+  inputBoolRef?: TemplateRef<unknown>;
 
   @ContentChild('inputDatetimeOffset', { static: false })
-  inputDatetimeOffsetRef?: TemplateRef<any>;
+  inputDatetimeOffsetRef?: TemplateRef<unknown>;
 
   @ContentChild('inputDuration', { static: false })
-  inputDurationRef?: TemplateRef<any>;
+  inputDurationRef?: TemplateRef<unknown>;
 
   @ContentChild('inputImage', { static: false })
-  inputImageRef?: TemplateRef<any>;
+  inputImageRef?: TemplateRef<unknown>;
 
   @ContentChild('inputFile', { static: false })
-  inputFileRef?: TemplateRef<any>;
+  inputFileRef?: TemplateRef<unknown>;
 
   @ContentChild('inputDefault', { static: false })
-  inputDefaultRef?: TemplateRef<any>;
+  inputDefaultRef?: TemplateRef<unknown>;
 
   constructor(
     private _clients: RESTworldClientCollection,
@@ -176,6 +167,7 @@ export class RESTworldEditViewComponent {
     private _messageService: MessageService,
     private _location: Location,
     private _router: Router,
+    private _formService: FormService,
     valdemortConfig: ValdemortConfig) {
     valdemortConfig.errorClasses = 'p-error text-sm';
   }
@@ -205,7 +197,7 @@ export class RESTworldEditViewComponent {
     return this._clients.getClient(this.apiName);
   }
 
-  public async submit(templateName:string, template: Template, formValue: {}) {
+  public async submit(templateName: string, template: Template, formValue: {}) {
     this.isLoading = true;
 
     try {
@@ -290,30 +282,10 @@ export class RESTworldEditViewComponent {
     else {
       this._resource = response.body;
       this._templates = await this.getAllTemplates(this._resource);
-      this._formTabs = RESTworldEditViewComponent.createFormTabs(this._templates);
+      this._formTabs = this._formService.createFormGroupsFromTemplates(this._templates);
     }
 
     this.isLoading = false;
-  }
-
-  public async onOptionsFiltered(property: Property, event: { originalEvent: any, filter: string | null; }) {
-    if (!property?.options?.link?.href || !event.filter || event.filter == '')
-      return;
-
-    const templatedUri = property.options.link.href;
-    let filter = `contains(${property.options.promptField}, '${event.filter}')`;
-    if (property.options.valueField?.toLowerCase() === 'id' && !Number.isNaN(Number.parseInt(event.filter)))
-      filter = `(${property.options.valueField} eq ${event.filter})  or (${filter})`;
-
-    const response = await this.getClient().getListByUri(templatedUri, { $filter: filter, $top: 10 });
-    if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body) {
-      const message = `An error occurred while getting the filtered items.`;
-      this._messageService.add({ severity: 'error', summary: 'Error', detail: message, data: response });
-      return;
-    }
-
-    const items = response.body._embedded.items;
-    property.options.inline = items;
   }
 
   private async setInitialSelectedOptionsElementsForTemplates(templates: Templates) {
@@ -321,11 +293,11 @@ export class RESTworldEditViewComponent {
       .map(template => this.setInitialSelectedOptionsElementsForTemplate(template)));
   }
 
-  public imageChanged(formControl: FormControl, event: { files: File[]; }): void {
+  public imageChanged(formControl: FormControl, event: { files: File[] }): void {
     const file = event.files[0];
     console.log(file);
     const reader = new FileReader();
-    reader.onload = e => {
+    reader.onload = () => {
       const uri = reader.result;
       console.log(uri);
       formControl.setValue(uri);
@@ -340,11 +312,13 @@ export class RESTworldEditViewComponent {
   }
 
   private async setInitialSelectedOptionsElementForProperty(property: Property) {
-    if (!property?.options?.link?.href)
+    const options = property?.options;
+
+    if (!options?.link?.href)
       return;
 
-    const templatedUri = property.options.link.href;
-    const filter = `${property.options.valueField} eq ${property.value}`;
+    const templatedUri = options.link.href;
+    const filter = `${options.valueField} eq ${property.value}`;
     const response = await this.getClient().getListByUri(templatedUri, { $filter: filter, $top: 10 });
     if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body) {
       const message = `An error occurred while getting the filtered items.`;
@@ -353,7 +327,7 @@ export class RESTworldEditViewComponent {
     }
 
     const items = response.body._embedded.items;
-    property.options.inline = items;
+    options.inline = items;
   }
 
   private async getAllTemplates(resource: Resource): Promise<Templates> {
@@ -361,7 +335,7 @@ export class RESTworldEditViewComponent {
 
     const failedResponses = formResponses.filter(response => !response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body);
     if (failedResponses.length !== 0) {
-      for (var response of failedResponses) {
+      for (const response of failedResponses) {
         this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the resource from the API.', data: response });
       }
       return Promise.resolve({});
@@ -372,55 +346,5 @@ export class RESTworldEditViewComponent {
     await this.setInitialSelectedOptionsElementsForTemplates(formTemplates);
 
     return formTemplates;
-  }
-
-  static createFormTabs(templates: Templates): { [key: string]: FormGroup } {
-    const tabs = Object.fromEntries(Object.entries(templates).map(([name, template]) => [
-      name,
-      this.createFormGroup(template)
-    ]));
-
-    return tabs;
-  }
-
-  static createFormGroups(templates: Templates): FormGroup {
-    const controls = Object.fromEntries(Object.entries(templates).map(([name, template]) => [
-      name,
-      this.createFormGroup(template)
-    ]));
-    const formGroup = new FormGroup(controls);
-    return formGroup;
-  }
-
-  static createFormGroup(template: Template): FormGroup {
-    const controls = Object.fromEntries(template.properties.map(p => [
-      p.name,
-      (p.type === PropertyType.Object || p.type === PropertyType.Collection) && p._templates ? RESTworldEditViewComponent.createFormGroups(p._templates) : this.createFormControl(p)
-    ]));
-    const formGroup = new FormGroup(controls);
-    return formGroup;
-  }
-
-  private static createFormControl(property: Property): FormControl | FormGroup {
-    if (property.type === PropertyType.Object || property.type === PropertyType.Collection)
-      return RESTworldEditViewComponent.createFormGroups(property._templates);
-
-    const control = new FormControl(property.value);
-    if (property.max)
-      control.addValidators(Validators.max(property.max));
-    if (property.maxLength)
-      control.addValidators(Validators.maxLength(property.maxLength));
-    if (property.min)
-      control.addValidators(Validators.min(property.min));
-    if (property.minLength)
-      control.addValidators(Validators.minLength(property.minLength));
-    if (property.regex)
-      control.addValidators(Validators.pattern(property.regex));
-    if (property.required)
-      control.addValidators(Validators.required);
-    if (property.type === PropertyType.Email)
-      control.addValidators(Validators.email);
-
-    return control;
   }
 }

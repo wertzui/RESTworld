@@ -1,6 +1,7 @@
 import { APP_INITIALIZER, NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ScrollingModule } from '@angular/cdk/scrolling';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { RouterModule } from '@angular/router';
 
 import { TableModule } from 'primeng/table';
@@ -37,7 +38,10 @@ import { SettingsService } from './services/settings.service';
 import { RESTWorldImageViewComponent } from './views/restworld-image-view/restworld-image-view.component';
 import { ButtonModule } from 'primeng/button';
 import { RESTWorldFileViewComponent } from './views/restworld-file-view/restworld-file-view.component';
-import { SafeUrlPipe } from './pipes/safe-url.pipe'
+import { SafeUrlPipe } from './pipes/safe-url.pipe';
+import { RestworldEditFormComponent } from './views/restworld-edit-form/restworld-edit-form.component'
+import { FormService } from './services/form.service';
+import { AsPipe } from './pipes/as.pipe';
 
 export function initializeSettings(settingsService: SettingsService): () => Promise<void> {
   return async () => await settingsService.initialize();
@@ -49,7 +53,9 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
     RESTworldEditViewComponent,
     RESTWorldImageViewComponent,
     RESTWorldFileViewComponent,
-    SafeUrlPipe
+    SafeUrlPipe,
+    AsPipe,
+    RestworldEditFormComponent
   ],
   imports: [
     CommonModule,
@@ -80,7 +86,8 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
     ImageCropperModule,
     DialogModule,
     ButtonModule,
-    ColorPickerModule
+    ColorPickerModule,
+    DragDropModule
   ],
   exports: [
     RESTworldListViewComponent,
@@ -93,6 +100,7 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
     RESTworldClientCollection,
     AvatarGenerator,
     ConfirmationService,
+    FormService,
     MessageService,
     {
       provide: APP_INITIALIZER,

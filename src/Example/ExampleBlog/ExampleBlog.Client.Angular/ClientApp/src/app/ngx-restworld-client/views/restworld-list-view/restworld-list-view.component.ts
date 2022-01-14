@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { PagedListResource, Resource } from '@wertzui/ngx-hal-client';
 import * as _ from 'lodash';
 import { ConfirmationService, FilterMatchMode, FilterMetadata, LazyLoadEvent, MessageService } from 'primeng/api';
@@ -7,12 +7,26 @@ import { RESTworldClientCollection } from '../../services/restworld-client-colle
 import { ProblemDetails } from '../../models/problem-details';
 import { AvatarGenerator } from '../../services/avatar-generator';
 
+export enum ColumnType {
+  text = 'text',
+  numeric = 'numeric',
+  boolean = 'boolean',
+  date = 'date'
+}
+
+export interface Column {
+  header: string;
+  field: string;
+  type: ColumnType;
+}
+
 @Component({
   selector: 'rw-list',
   templateUrl: './restworld-list-view.component.html',
   styleUrls: ['./restworld-list-view.component.css']
 })
 export class RESTworldListViewComponent {
+
   public get columns(): Column[] {
     return this._columns;
   }
@@ -25,7 +39,7 @@ export class RESTworldListViewComponent {
   public get editLink() {
     return this._editLink;
   }
-  private _editLink: string = '/edit';
+  private _editLink = '/edit';
   @Input()
   public set apiName(value: string | undefined) {
     this._apiName = value;
@@ -50,7 +64,7 @@ export class RESTworldListViewComponent {
   public rowsPerPage: number[];
   public resource?: PagedListResource;
   public isLoading = false;
-  private _totalRecords: number = 0;
+  private _totalRecords = 0;
   private _lastEvent: LazyLoadEvent;
   public get value(): Resource[] {
     return this.resource?._embedded?.items || [];
@@ -114,9 +128,9 @@ export class RESTworldListViewComponent {
     if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body) {
       this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the resources from the API.', data: response });
     }
-    else {
+    else if (response.body) {
       this.resource = response.body;
-      this.totalRecords = this.resource!.totalPages && parameters.$top ? this.resource!.totalPages * parameters.$top : undefined;
+      this.totalRecords = this.resource.totalPages && parameters.$top ? this.resource.totalPages * parameters.$top : undefined;
       this._columns = this.createColumns();
     }
 
@@ -159,9 +173,9 @@ export class RESTworldListViewComponent {
             p[0] !== 'id' &&
             p[0] !== 'timestamp'));
 
-    let distinctProperties = rowsWithProperties[0];
-    for (let propertiesOfRow of rowsWithProperties) {
-      for (var property of propertiesOfRow) {
+    const distinctProperties = rowsWithProperties[0];
+    for (const propertiesOfRow of rowsWithProperties) {
+      for (const property of propertiesOfRow) {
         const propertyName = property[0];
         const propertyValue = property[1];
         const alreadyFoundPropertyWithSameName = distinctProperties.find(p => p[0] === propertyName);
@@ -181,7 +195,7 @@ export class RESTworldListViewComponent {
     const hasChangeTrackingProperties = withoutChangeTrackingProperties.length < distinctProperties.length;
 
     // First the id, then all other properties
-    const sortedProperties: [string, any][] = [
+    const sortedProperties: [string, unknown][] = [
       ['id', 0],
       ...withoutChangeTrackingProperties
     ];
@@ -204,7 +218,7 @@ export class RESTworldListViewComponent {
     return columns;
   }
 
-  private static getColumnType(value: any): ColumnType {
+  private static getColumnType(value: unknown): ColumnType {
     if (value === null || value === undefined)
       return ColumnType.text;
 
@@ -379,17 +393,4 @@ export class RESTworldListViewComponent {
         throw new Error(`Unknown column type '${type}'`);
     }
   }
-}
-
-export enum ColumnType {
-  text = 'text',
-  numeric = 'numeric',
-  boolean = 'boolean',
-  date = 'date'
-}
-
-export interface Column {
-  header: string;
-  field: string;
-  type: ColumnType;
 }

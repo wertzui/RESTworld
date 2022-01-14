@@ -51,15 +51,14 @@ export class RESTWorldImageViewComponent implements ControlValueAccessor {
   public displayCropDialog = false;
   public tempCroppedUri?: string | null;
 
-  constructor() { }
-
-  writeValue(obj: any): void {
+  writeValue(obj?: string | null): void {
     this.uri = obj;
   }
-  registerOnChange(fn: any): void {
+  registerOnChange(fn?: Function): void {
     this.onChange = fn;
   }
-  registerOnTouched(fn: any): void {
+  registerOnTouched(): void {
+    // not needed for this component, but needed to implement the interface
   }
 
   setDisabledState?(isDisabled: boolean): void {
@@ -70,7 +69,7 @@ export class RESTWorldImageViewComponent implements ControlValueAccessor {
     this.displayCropDialog = true;
   }
 
-  public imageChanged(event: { files: File[]; }): void {
+  public imageChanged(event: { files: File[] }): void {
     this.tempImageFile = event.files[0];
     this.showCropDialog();
   }

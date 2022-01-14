@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using RESTworld.EntityFrameworkCore.Models;
 
 namespace ExampleBlog
 {
@@ -54,6 +55,8 @@ namespace ExampleBlog
             // The same goes for the deprecated V1
             services.AddScoped<MyCustomServiceV1>();
             services.AddScoped<MyCustomAuthorizationHandlerV1>();
+
+            services.AddRestPipelineWithCustomService<BlogDatabase, EntityBase, TestDto, TestDto, TestDto, TestDto, TestService>();
 
             base.ConfigureServices(services);
         }

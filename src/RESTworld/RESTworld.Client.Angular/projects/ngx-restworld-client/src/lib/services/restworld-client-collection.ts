@@ -8,7 +8,7 @@ import { RESTworldClient } from "./restworld-client";
 })
 export class RESTworldClientCollection {
   private readonly _clients: {
-    [name: string]: RESTworldClient
+    [name: string]: RESTworldClient;
   };
   constructor(private _halClient: HalClient) {
     this._clients = {};

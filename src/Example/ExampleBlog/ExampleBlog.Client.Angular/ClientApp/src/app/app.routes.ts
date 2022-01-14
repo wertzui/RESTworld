@@ -70,6 +70,10 @@ export const AppMenu: MenuItem[] = [
         label: "Posts with author",
         routerLink: ['list', 'ExampleBlog', 'MyEx:Post'],
         queryParams: { editLink: '/postWithAuthor'}
+      },
+      {
+        label: "TestEntries",
+        routerLink: ['list', 'ExampleBlog', 'MyEx:Test']
       }
     ]
   }];

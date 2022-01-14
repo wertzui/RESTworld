@@ -20,12 +20,12 @@ export class ProblemDetails extends Resource implements ResourceOfDto<ProblemDet
   public instance?: string;
   [key: string]: unknown;
 
-  public static isProblemDetails(resource: any): resource is ProblemDetails {
+  public static isProblemDetails(resource: unknown): resource is ProblemDetails {
     return resource instanceof ProblemDetails;
   }
 
-  public static containsProblemDetailsInformation(resource: any) {
-    return resource && (resource instanceof ProblemDetails || (resource instanceof Resource && resource.hasOwnProperty('status') && _.isNumber((<any>resource).status) && (<any>resource).status >= 100 && (<any>resource).status < 600));
+  public static containsProblemDetailsInformation(resource: unknown) {
+    return resource && (resource instanceof ProblemDetails || (resource instanceof Resource && 'status' in resource && _.isNumber(resource['status']) && resource['status'] >= 100 && resource['status'] < 600));
   }
 
   public static fromResource(resource: Resource | null | undefined): ProblemDetails {

@@ -8,7 +8,7 @@ export class AvatarGenerator {
   private static _imageCache: Map<string, string> = new Map<string, string>();
 
   @Input()
-  public getImageOverride = (nameOrEmail: string) => '';
+  public getImageOverride: (nameOrEmail: string) => string = () => '';
 
   public getImage(nameOrEmail: string): string {
     let uri = AvatarGenerator._imageCache.get(nameOrEmail);

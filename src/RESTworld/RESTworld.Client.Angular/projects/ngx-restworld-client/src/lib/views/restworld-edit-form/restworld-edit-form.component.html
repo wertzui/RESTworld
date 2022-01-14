@@ -1,0 +1,263 @@
+<div *ngFor="let property of template.properties" class="grid field" [formGroup]="formGroup">
+  <label *ngIf="property.type !== PropertyType.Hidden" [attr.for]="property.name" class="col-12 mb-2 md:col-2 md:mb-0" [class.p-disabled]="property.readOnly" [class.hasChildren]="property._templates">{{property.prompt || property.name}}</label>
+  <div class="col-12 md:col-10">
+
+    <ng-template #defaultInputOptions let-property="property" let-template="template">
+
+      <ng-template #defaultInputOptionsSingle let-property="property" let-template="template">
+        <p-dropdown [formControlName]="property.name" [id]="property.name" [options]="property.options.inline" [filterBy]="(property.options.promptField || 'prompt') + ',' + (property.options.valueField || 'value')" [optionValue]="property.options.valueField || 'value'" [readonly]="property.readOnly" [required]="property.required || property.options.minItems > 0" [filter]="true" [autoDisplayFirst]="false" [showClear]="!property.required || property.options.minItems <= 0" (onFilter)="onOptionsFiltered(property, $event)" styleClass="w-full" [filterPlaceholder]="property?.options?.link?.href ? 'search for more results' : ''">
+          <ng-template let-item pTemplate="selectedItem">
+            <span [pTooltip]="getTooltip(item, [property.options.promptField || 'prompt', property.options.valueField || 'value'])">{{item[property.options.promptField || 'prompt']}} ({{item[property.options.valueField || 'value']}})</span>
+          </ng-template>
+          <ng-template let-item pTemplate="item">
+            <span [pTooltip]="getTooltip(item, [property.options.promptField || 'prompt', property.options.valueField || 'value'])">{{item[property.options.promptField || 'prompt']}} ({{item[property.options.valueField || 'value']}})</span>
+          </ng-template>
+        </p-dropdown>
+      </ng-template>
+      <ng-container *ngIf="!property.options.maxItems || property.options.maxItems == 1">
+        <ng-container *ngTemplateOutlet="inputOptionsSingleRef || defaultInputOptionsSingle; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+      </ng-container>
+
+      <ng-template #defaultInputOptionsMultiple let-property="property" let-template="template">
+        <p-multiSelect [formControlName]="property.name" [id]="property.name" [options]="property.options.inline" [optionLabel]="property.options.promptField || 'prompt'" [optionValue]="property.options.valueField || 'value'" [readonly]="property.readOnly" [selectionLimit]="property.options.maxItems" [required]="property.required || property.options.minItems > 0"></p-multiSelect>
+      </ng-template>
+      <ng-container *ngIf="property.options.maxItems > 1">
+        <ng-container *ngTemplateOutlet="inputOptionsMultipleRef || defaultInputOptionsMultiple; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+      </ng-container>
+
+    </ng-template>
+    <ng-container *ngIf="property.options">
+      <ng-container *ngTemplateOutlet="inputOptionsRef || defaultInputOptions; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+    </ng-container>
+
+    <div *ngIf="!property.options">
+      <div [ngSwitch]="property.type">
+
+        <ng-template #defaultInputHidden let-property="property" let-template="template">
+          <input [formControlName]="property.name" [id]="property.name" type="hidden" [value]="property.value" />
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.Hidden">
+          <ng-container *ngTemplateOutlet="inputHiddenRef || defaultInputHidden; context:{ property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+        <ng-template #defaultInputText let-property="property" let-template="template">
+          <input [formControlName]="property.name" [id]="property.name" type="text" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.Text">
+          <ng-container *ngTemplateOutlet="inputTextRef || defaultInputText; context:{ property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputTextarea let-property="property" let-template="template">
+          <textarea [formControlName]="property.name" [id]="property.name" pInputTextarea class="w-full p-inputtextarea p-inputtext p-component p-element" [class.p-disabled]="property.readOnly" [cols]="property.cols" [rows]="property.rows"></textarea>
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.Textarea">
+          <ng-container *ngTemplateOutlet="inputTextareaRef || defaultInputTextarea; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputSearch let-property="property" let-template="template">
+          <input [formControlName]="property.name" [id]="property.name" type="search" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.Search">
+          <ng-container *ngTemplateOutlet="inputSearchRef || defaultInputSearch; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputTel let-property="property" let-template="template">
+          <input [formControlName]="property.name" [id]="property.name" type="tel" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.Tel">
+          <ng-container *ngTemplateOutlet="inputTelRef || defaultInputTel; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputUrl let-property="property" let-template="template">
+          <input [formControlName]="property.name" [id]="property.name" type="url" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.Url">
+          <ng-container *ngTemplateOutlet="inputUrlRef || defaultInputUrl; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputEmail let-property="property" let-template="template">
+          <input [formControlName]="property.name" [id]="property.name" type="email" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.Email">
+          <ng-container *ngTemplateOutlet="inputEmailRef || defaultInputEmail; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputPassword let-property="property" let-template="template">
+          <input [formControlName]="property.name" [id]="property.name" type="password" pPassword class="w-full" [class.p-disabled]="property.readOnly" />
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.Password">
+          <ng-container *ngTemplateOutlet="inputPasswordRef || defaultInputPassword; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputDate let-property="property" let-template="template">
+          <p-calendar [formControlName]="property.name" [id]="property.name" [dateFormat]="dateFormat" [showWeek]="true" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-calendar>
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.Date">
+          <ng-container *ngTemplateOutlet="inputDateRef || defaultInputDate; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputMonth let-property="property" let-template="template">
+          <p-calendar [formControlName]="property.name" [id]="property.name" [dateFormat]="dateFormat" [showWeek]="false" view="month" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-calendar>
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.Month">
+          <ng-container *ngTemplateOutlet="inputMonthRef || defaultInputMonth; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputWeek let-property="property" let-template="template">
+          <input [formControlName]="property.name" [id]="property.name" type="week" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.Week">
+          <ng-container *ngTemplateOutlet="inputWeekRef || defaultInputWeek; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputTime let-property="property" let-template="template">
+          <p-calendar [formControlName]="property.name" [id]="property.name" [dateFormat]="dateFormat" [showTime]="true" [timeOnly]="true" [showWeek]="false" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-calendar>
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.Time">
+          <ng-container *ngTemplateOutlet="inputTimeRef || defaultInputTime; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputDatetimeLocal let-property="property" let-template="template">
+          <p-calendar [formControlName]="property.name" [id]="property.name" [dateFormat]="dateFormat" [showTime]="true" [showWeek]="false" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-calendar>
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.DatetimeLocal">
+          <ng-container *ngTemplateOutlet="inputDatetimeLocalRef || defaultInputDatetimeLocal; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputNumber let-property="property" let-template="template">
+          <p-inputNumber [formControlName]="property.name" [id]="property.name" mode="decimal" [showButtons]="!property.readOnly" class="w-full" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-inputNumber>
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.Number">
+          <ng-container *ngTemplateOutlet="inputNumberRef || defaultInputNumber; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputRange let-property="property" let-template="template">
+          <input [formControlName]="property.name" [id]="property.name" type="range" [min]="property.min" [max]="property.max" [step]="property.step" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.Range">
+          <ng-container *ngTemplateOutlet="inputRangeRef || defaultInputRange; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputColor let-property="property" let-template="template">
+          <input [formControlName]="property.name" [id]="property.name" type="color" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.Color">
+          <ng-container *ngTemplateOutlet="inputColorRef || defaultInputColor; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputBool let-property="property" let-template="template" let-formGroup="formGroup">
+          <p-checkbox *ngIf="property.required" [binary]="true" [formControl]="formGroup.controls[property.name]" [id]="property.name" [readonly]="property.readOnly"></p-checkbox>
+          <p-triStateCheckbox *ngIf="!property.required" [formControl]="formGroup.controls[property.name]" [id]="property.name" [readonly]="property.readOnly"></p-triStateCheckbox>
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.Bool">
+          <ng-container *ngTemplateOutlet="inputBoolRef || defaultInputBool; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputDatetimeOffset let-property="property" let-template="template">
+          <p-calendar [formControlName]="property.name" [id]="property.name" [dateFormat]="dateFormat" [showTime]="true" [showWeek]="false" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-calendar>
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.DatetimeOffset">
+          <ng-container *ngTemplateOutlet="inputDatetimeOffsetRef || defaultInputDatetimeOffset; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputDuration let-property="property" let-template="template">
+          <p-calendar *ngSwitchCase="PropertyType.Duration" [formControlName]="property.name" [id]="property.name" [dateFormat]="dateFormat" [showTime]="true" [timeOnly]="true" [showWeek]="false" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-calendar>
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.Duration">
+          <ng-container *ngTemplateOutlet="inputDurationRef || defaultInputDuration; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputImage let-property="property" let-template="template">
+          <rw-image [formControlName]="property.name" [accept]="property.placeholder"></rw-image>
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.Image">
+          <ng-container *ngTemplateOutlet="inputImageRef || defaultInputImage; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputFile let-property="property" let-template="template">
+          <rw-file [formControlName]="property.name" [fileName]="property.name" [accept]="property.placeholder"></rw-file>
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.File">
+          <ng-container *ngTemplateOutlet="inputFileRef || defaultInputFile; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputObject let-property="property" let-template="template">
+          <div class="flex align-items-center">
+            <div class="brace">
+            </div>
+            <div class="w-full">
+              <rw-form [formGroup]="(formGroup.controls[property.name] | as : FormGroup)" [template]="property._templates.default" [apiName]="apiName"></rw-form>
+            </div>
+          </div>
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.Object">
+          <ng-container *ngTemplateOutlet="inputObjectRef || defaultInputObject; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputCollection let-property="property" let-template="template">
+          <div class="flex align-items-center">
+            <div class="brace">
+            </div>
+            <div class="w-full" cdkDropList [cdkDropListData]="{ property: property, formArray: (formGroup.controls[property.name] | as : FormArray)}" (cdkDropListDropped)="collectionItemDropped($event)">
+              <div *ngFor="let template of getCollectionEntryTemplates(property)" class="flex align-items-center" cdkDrag>
+                <i class="fas fa-grip-lines" cdkDragHandle></i>
+                <div class="brace">
+                </div>
+                <div class="w-full flex justify-content-end">
+                  <rw-form [formGroup]="((formGroup.controls[property.name] | as : FormArray).controls[Number.parseInt(template.title!)] | as : FormGroup)" [template]="template" [apiName]="apiName" class="w-full"></rw-form>
+                  <button pButton pRipple type="button" icon="fas fa-trash" class="p-button-outlined p-button-danger ml-2 mb-3" (click)="deleteItemFromCollection(property, formGroup.controls[property.name], template)"></button>
+                </div>
+              </div>
+              <div class="flex justify-content-end w-full">
+                <button pButton pRipple type="button" icon="fas fa-plus" class="p-button-outlined p-button-info" (click)="addNewItemToCollection(property, formGroup.controls[property.name])"></button>
+              </div>
+            </div>
+          </div>
+        </ng-template>
+        <ng-container *ngSwitchCase="PropertyType.Collection">
+          <ng-container *ngTemplateOutlet="inputCollectionRef || defaultInputCollection; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+
+        <ng-template #defaultInputDefault let-property="property" let-template="template">
+          <input [formControlName]="property.name" [id]="property.name" type="text" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+        </ng-template>
+        <ng-container *ngSwitchDefault>
+          <ng-container *ngTemplateOutlet="inputDefaultRef || defaultInputDefault; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>
+        </ng-container>
+
+      </div>
+    </div>
+    <val-errors [controlName]="property.name || null">
+      <ng-template valError="required">The field '{{property.prompt || property.name}}' is required.</ng-template>
+      <ng-template valError="email">The email must be a valid email address.</ng-template>
+      <ng-template valError="min" let-error="error">'{{property.prompt || property.name}}' must be equal or greater than or equal to {{ error.min }}.</ng-template>
+      <ng-template valError="max" let-error="error">'{{property.prompt || property.name}}' must be smaller than or equal to {{ error.max }}.</ng-template>
+      <ng-template valError="minlength" let-error="error">The length of '{{property.prompt || property.name}}' must be equal or greater than or equal to {{ error.requiredLength }}.</ng-template>
+      <ng-template valError="maxlength" let-error="error">The length of '{{property.prompt || property.name}}' must be shorter than or equal to {{ error.requiredLength }}.</ng-template>
+      <ng-template valError="pattern" let-error="error">The value for '{{property.prompt || property.name}}' does not match the pattern {{ error }}.</ng-template>
+      <ng-template valError="remote" let-error="error">{{ error }}</ng-template>
+    </val-errors>
+  </div>
+</div>
