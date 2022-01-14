@@ -37,13 +37,15 @@ namespace ExampleBlog.Business
                 .CreateMap<Post, PostWithAuthorDto>();
             config.CreateMap<Author, PostWithAuthorDto>()
                 .ForMember(dst => dst.Author, opt => opt.MapFrom(src => src))
-                .ForAllOtherMembers(opt => opt.Ignore());
+                .ForMember(dst => dst.CreatedAt, opt => opt.Ignore())
+                .ForMember(dst => dst.CreatedBy, opt => opt.Ignore())
+                .ForMember(dst => dst.Id, opt => opt.Ignore())
+                .ForMember(dst => dst.Timestamp, opt => opt.Ignore());
 
             config
                 .CreateMap<Post, PostWithAuthorDtoV1>();
             config.CreateMap<Author, PostWithAuthorDtoV1>()
-                .ForMember(dst => dst.Author, opt => opt.MapFrom(src => src))
-                .ForAllOtherMembers(opt => opt.Ignore());
+                .ForMember(dst => dst.Author, opt => opt.MapFrom(src => src));
         }
     }
 }
