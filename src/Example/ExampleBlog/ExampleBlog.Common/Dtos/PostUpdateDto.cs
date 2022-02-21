@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace ExampleBlog.Common.Dtos
 {
-    public class PostUpdateDto : DtoBase
+    public class PostUpdateDto : ConcurrentDtoBase
     {
         [Display(Name = "Author")]
         public long AuthorId { get; set; }

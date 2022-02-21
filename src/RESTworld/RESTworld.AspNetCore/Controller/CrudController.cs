@@ -2,13 +2,11 @@
 using HAL.AspNetCore.Forms.Abstractions;
 using HAL.AspNetCore.OData.Abstractions;
 using HAL.Common;
-using Microsoft.AspNet.OData.Query;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using RESTworld.AspNetCore.DependencyInjection;
-using RESTworld.AspNetCore.Filters;
 using RESTworld.AspNetCore.Serialization;
 using RESTworld.AspNetCore.Swagger;
 using RESTworld.Business.Models;
@@ -29,7 +27,7 @@ using System.Threading.Tasks;
 namespace RESTworld.AspNetCore.Controller
 {
     /// <summary>
-    /// A basic crud controller offering operations for Create (also New for getting an empty
+    /// A basic CRUD controller offering operations for Create (also New for getting an empty
     /// instance), Read(List), Update and Delete.
     /// </summary>
     /// <typeparam name="TEntity">The type of the entity.</typeparam>
@@ -38,16 +36,16 @@ namespace RESTworld.AspNetCore.Controller
     /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
     /// <typeparam name="TUpdateDto">The type of the DTO for an Update operation.</typeparam>
     [Route("[controller]")]
-    [CrudControllerNameConvention]
+    [RestControllerNameConvention(RestControllerNameConventionAttribute.CrudControllerIndexOfDtoType)]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status503ServiceUnavailable)]
     [ProducesErrorResponseType(typeof(Resource<ProblemDetails>))]
-    public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> : RestControllerBase
-        where TEntity : EntityBase
-        where TGetListDto : DtoBase
-        where TGetFullDto : DtoBase
-        where TUpdateDto : DtoBase
+    public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> : ReadController<TEntity, TGetListDto, TGetFullDto>
+        where TEntity : ConcurrentEntityBase
+        where TGetListDto : ConcurrentDtoBase
+        where TGetFullDto : ConcurrentDtoBase
+        where TUpdateDto : ConcurrentDtoBase
     {
         /// <summary>
         /// These serializer options are used to create a JSON template for creating a new resource.
@@ -55,10 +53,7 @@ namespace RESTworld.AspNetCore.Controller
         /// </summary>
         private static readonly JsonSerializerOptions _createNewResourceJsonSettings;
 
-        private readonly IFormFactory _formFactory;
-        private readonly ILinkFactory _linkFactory;
-        private readonly RestWorldOptions _options;
-        private readonly ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> _service;
+        private readonly ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> _crudService;
 
         static CrudController()
         {
@@ -90,15 +85,9 @@ namespace RESTworld.AspNetCore.Controller
             ILinkFactory linkFactory,
             IFormFactory formFactory,
             IOptions<RestWorldOptions> options)
-            : base(resourceFactory)
+            : base(service, resourceFactory, linkFactory, formFactory, options)
         {
-            if (options is null)
-                throw new ArgumentNullException(nameof(options));
-            _options = options.Value;
-
-            _service = service ?? throw new ArgumentNullException(nameof(service));
-            _linkFactory = linkFactory ?? throw new ArgumentNullException(nameof(linkFactory));
-            _formFactory = formFactory ?? throw new ArgumentNullException(nameof(formFactory));
+            _crudService = service ?? throw new ArgumentNullException(nameof(service));
         }
 
         /// <summary>
@@ -142,10 +131,10 @@ namespace RESTworld.AspNetCore.Controller
                 }
             }
 
-            var response = await _service.DeleteAsync(id, timestampBytes);
+            var response = await _crudService.DeleteAsync(id, timestampBytes);
 
             if (!response.Succeeded)
-                return CreateError(response);
+                return ResourceFactory.CreateError(response);
 
             return Ok();
 
@@ -162,82 +151,6 @@ namespace RESTworld.AspNetCore.Controller
                     return false;
                 }
             }
-        }
-
-        /// <summary>
-        /// Gets a full representation of the resource with the given ID.
-        /// </summary>
-        /// <param name="id">The ID of the resource.</param>
-        /// <param name="accept">The Accept header.</param>
-        /// <returns>The full representation for the requested resource.</returns>
-        [HttpGet("{id:long}")]
-        [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
-        [ProducesWithContentNegotiation("application/hal+json", "application/prs.hal-forms+json", "application/hal-forms+json")]
-        public virtual async Task<ActionResult<Resource<TGetFullDto>>> GetAsync(long id, [FromHeader, SwaggerIgnore] string accept)
-        {
-            var response = await _service.GetSingleAsync(id);
-
-            if (!response.Succeeded || response.ResponseObject is null)
-                return CreateError(response);
-
-            return Ok(response.ResponseObject, id == 0 ? HttpMethod.Post : HttpMethod.Put, accept);
-        }
-
-        /// <summary>
-        /// Gets a paged list of resources matching the filter criteria.
-        /// </summary>
-        /// <param name="options">The OData options used to filter, order an page the list.</param>
-        /// <param name="filter">The filter to filter resources by.</param>
-        /// <param name="orderby">
-        /// The order of the resources. If none is given, the resources are returned as they appear
-        /// in the database.
-        /// </param>
-        /// <param name="top">The maximum number of resources to return. THis is used for paging.</param>
-        /// <param name="skip">The number of resources to skip. This is used for paging.</param>
-        /// <returns></returns>
-        [HttpGet]
-        [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
-        [ProducesResponseType(200)]
-        [ProducesWithContentNegotiation("application/hal+json", "text/csv")]
-        public virtual async Task<ActionResult<Resource>> GetListAsync(
-            [SwaggerIgnore] ODataQueryOptions<TEntity> options,
-            [FromQuery(Name = "$filter")] string? filter = default,
-            [FromQuery(Name = "$orderby")] string? orderby = default,
-            [FromQuery(Name = "$top")] long? top = default,
-            [FromQuery(Name = "$skip")] long? skip = default)
-        {
-            options.Context.DefaultQuerySettings.MaxTop = _options.MaxNumberForListEndpoint;
-            var getListrequest = options.ToListRequest(_options.CalculateTotalCountForListEndpoint);
-
-            var response = await _service.GetListAsync(getListrequest);
-
-            if (!response.Succeeded || response.ResponseObject is null)
-                return CreateError(response);
-
-            var result = _resourceFactory.CreateForOdataListEndpointUsingSkipTopPaging(response.ResponseObject.Items, _ => Common.Constants.ListItems, m => m.Id, options, options.Context.DefaultQuerySettings.MaxTop.Value, response.ResponseObject.TotalCount);
-
-            if (result.Embedded is not null)
-            {
-                foreach (var embedded in result.Embedded.SelectMany(e => e.Value).Cast<Resource<TGetListDto>>())
-                {
-                    AddDeleteLink(embedded);
-                }
-            }
-            else
-            {
-                // Ensure an empty collection so the consumer can be sure it is never null
-                result.Embedded = new Dictionary<string, ICollection<Resource>> { { Common.Constants.ListItems, new List<Resource>() } };
-            }
-
-            var href = Url.ActionLink("new");
-            if (href is null)
-                throw new UriFormatException("Unable top generate the 'new' link.");
-
-            result.AddLink(new Link(href) { Name = "new" });
-
-            return Ok(result);
         }
 
         /// <summary>
@@ -269,7 +182,7 @@ namespace RESTworld.AspNetCore.Controller
         public virtual async Task<ActionResult<Resource<TGetFullDto>>> PostAsync([FromBody] SingleObjectOrCollection<TCreateDto> dto, [FromHeader, SwaggerIgnore] string accept)
         {
             if (dto == null || (dto.ContainsCollection && dto.Collection is null) || (dto.ContainsSingleObject && dto.SingleObject is null))
-                return CreateError(StatusCodes.Status400BadRequest, "Unable to read either a collection or a single object from the request body.");
+                return ResourceFactory.CreateError(StatusCodes.Status400BadRequest, "Unable to read either a collection or a single object from the request body.");
 
             if (dto.ContainsCollection)
                 return await PostMultipleAsync(dto.Collection!);
@@ -296,19 +209,19 @@ namespace RESTworld.AspNetCore.Controller
         public virtual async Task<ActionResult<Resource<TGetFullDto>>> PutAsync(long? id, [FromBody] SingleObjectOrCollection<TUpdateDto> dto, [FromHeader, SwaggerIgnore] string accept)
         {
             if (dto == null || (dto.ContainsCollection && dto.Collection is null) || (dto.ContainsSingleObject && dto.SingleObject is null))
-                return CreateError(StatusCodes.Status400BadRequest, "Unable to read either a collection or a single object from the request body.");
+                return ResourceFactory.CreateError(StatusCodes.Status400BadRequest, "Unable to read either a collection or a single object from the request body.");
 
             if (dto.ContainsCollection)
             {
                 if (id.HasValue)
-                    return CreateError(StatusCodes.Status400BadRequest, "The URL must not contain an ID when the request body contains a collection.");
+                    return ResourceFactory.CreateError(StatusCodes.Status400BadRequest, "The URL must not contain an ID when the request body contains a collection.");
 
                 return await PutMultipleAsync(dto.Collection!);
             }
             else
             {
                 if (id != dto.SingleObject?.Id)
-                    return CreateError(StatusCodes.Status400BadRequest, "The URL must contain the same ID as the object in the request body when the request body contains a single object.");
+                    return ResourceFactory.CreateError(StatusCodes.Status400BadRequest, "The URL must contain the same ID as the object in the request body when the request body contains a single object.");
 
                 return await PutSingleAsync(dto.SingleObject!, accept);
             }
@@ -348,17 +261,6 @@ namespace RESTworld.AspNetCore.Controller
         /// response.
         /// </summary>
         /// <param name="dto">The DTO to return.</param>
-        /// <param name="method">The method to use when submitting the form.</param>
-        /// <param name="accept">The value of the Accept header.</param>
-        /// <returns>The created Microsoft.AspNetCore.Mvc.OkObjectResult for the response.</returns>
-        protected virtual OkObjectResult Ok(TGetFullDto dto, HttpMethod method, string accept)
-            => Ok(CreateResource(dto, method, accept));
-
-        /// <summary>
-        /// Creates an Microsoft.AspNetCore.Mvc.OkObjectResult object that produces an Microsoft.AspNetCore.Http.StatusCodes.Status200OK
-        /// response.
-        /// </summary>
-        /// <param name="dto">The DTO to return.</param>
         /// <param name="accept">The value of the Accept header.</param>
         /// <param name="jsonSerializerOptions">The options for the JSON serializer. Normally these are <see cref="_createNewResourceJsonSettings"/>.</param>
         /// <returns>The created Microsoft.AspNetCore.Mvc.OkObjectResult for the response.</returns>
@@ -384,21 +286,21 @@ namespace RESTworld.AspNetCore.Controller
         /// <param name="method">The method to use when submitting the form.</param>
         /// <param name="accept">The value of the Accept header.</param>
         /// <returns>Either a HAL resource, or a HAL-Forms resource</returns>
-        protected virtual Resource CreateResource(TGetFullDto dto, HttpMethod method, string accept)
+        protected override Resource CreateResource(TGetFullDto dto, HttpMethod method, string accept)
         {
             if (accept.Contains("hal-forms+json"))
             {
-                var result = _formFactory.CreateResourceForEndpoint(dto, method, "Edit", action: method.Method, routeValues: new { id = dto.Id });
-                AddDeleteLink(result);
+                var result = FormFactory.CreateResourceForEndpoint(dto, method, "Edit", action: method.Method, routeValues: new { id = dto.Id });
+                Url.AddDeleteLink(result);
 
                 return result;
             }
             else
             {
-                var result = _resourceFactory.CreateForGetEndpoint(dto, routeValues: new { id = dto.Id });
+                var result = ResourceFactory.CreateForGetEndpoint(dto, routeValues: new { id = dto.Id });
 
-                _linkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
-                AddSaveAndDeleteLinks(result);
+                LinkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
+                Url.AddSaveAndDeleteLinks(result);
 
                 return result;
             }
@@ -415,13 +317,13 @@ namespace RESTworld.AspNetCore.Controller
         {
             if (accept.Contains("hal-forms+json"))
             {
-                var result = _formFactory.CreateResourceForEndpoint(dto, HttpMethod.Post, "Create", action: HttpMethod.Post.Method);
+                var result = FormFactory.CreateResourceForEndpoint(dto, HttpMethod.Post, "Create", action: HttpMethod.Post.Method);
 
                 return result;
             }
             else
             {
-                var result = _resourceFactory.CreateForGetEndpoint(dto, "New");
+                var result = ResourceFactory.CreateForGetEndpoint(dto, "New");
 
                 var saveHref = Url.ActionLink(HttpMethod.Post.Method);
                 if (saveHref is null)
@@ -430,7 +332,7 @@ namespace RESTworld.AspNetCore.Controller
                 result
                     .AddLink("save", new Link(saveHref) { Name = HttpMethod.Post.Method });
 
-                _linkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
+                LinkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
 
                 return result;
             }
@@ -438,26 +340,26 @@ namespace RESTworld.AspNetCore.Controller
 
         /// <summary>
         /// Creates the given new resources. This method is called when
-        /// <see cref="PostAsync(SingleObjectOrCollection{TCreateDto})"/> is called with a collection.
+        /// <see cref="PostAsync(SingleObjectOrCollection{TCreateDto}, string)"/> is called with a collection.
         /// </summary>
         /// <param name="dtos">The resources to create.</param>
         /// <returns>The full resources as stored in the database.</returns>
         protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PostMultipleAsync(IReadOnlyCollection<TCreateDto> dtos)
         {
-            var response = await _service.CreateAsync(dtos);
+            var response = await _crudService.CreateAsync(dtos);
 
             if (!response.Succeeded)
-                return CreateError(response);
+                return ResourceFactory.CreateError(response);
 
             var responseObject = response.ResponseObject ?? Array.Empty<TGetFullDto>();
 
-            var resource = _resourceFactory.CreateForListEndpoint(responseObject, _ => "items", m => m.Id);
+            var resource = ResourceFactory.CreateForListEndpoint(responseObject, _ => "items", m => m.Id);
 
             if (resource.Embedded is not null)
             {
                 foreach (var embedded in resource.Embedded.SelectMany(e => e.Value).Cast<Resource<TGetFullDto>>())
                 {
-                    AddDeleteLink(embedded);
+                    Url.AddDeleteLink(embedded);
                 }
             }
 
@@ -475,50 +377,50 @@ namespace RESTworld.AspNetCore.Controller
 
         /// <summary>
         /// Creates the given new resource. This method is called when
-        /// <see cref="PostAsync(SingleObjectOrCollection{TCreateDto})"/> is called with a single object.
+        /// <see cref="PostAsync(SingleObjectOrCollection{TCreateDto}, string)"/> is called with a single object.
         /// </summary>
         /// <param name="dto">The resource to create.</param>
         /// <param name="accept">The value of the Accept header.</param>
         /// <returns>The full resource as stored in the database.</returns>
         protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PostSingleAsync(TCreateDto dto, string accept)
         {
-            var response = await _service.CreateAsync(dto);
+            var response = await _crudService.CreateAsync(dto);
 
             if (!response.Succeeded)
-                return CreateError(response);
+                return ResourceFactory.CreateError(response);
 
             if (response.ResponseObject is null)
-                return CreateError(StatusCodes.Status500InternalServerError, "The service did return null for the created object.");
+                return ResourceFactory.CreateError(StatusCodes.Status500InternalServerError, "The service did return null for the created object.");
 
-            var resource = _resourceFactory.CreateForGetEndpoint(response.ResponseObject, routeValues: new { id = response.ResponseObject.Id });
-            AddSaveAndDeleteLinks(resource);
+            var resource = ResourceFactory.CreateForGetEndpoint(response.ResponseObject, routeValues: new { id = response.ResponseObject.Id });
+            Url.AddSaveAndDeleteLinks(resource);
 
             return Created(response.ResponseObject, HttpMethod.Put, accept);
         }
 
         /// <summary>
         /// Updates the given resources with new values. This method is called
-        /// when <see cref="PutAsync(long?, SingleObjectOrCollection{TUpdateDto})"/> is called with a collection.
+        /// when <see cref="PutAsync(long?, SingleObjectOrCollection{TUpdateDto}, string)"/> is called with a collection.
         /// </summary>
         /// <param name="dtos">Updated values for the resources.</param>
         /// <returns>The full resources as stored in the database.</returns>
         protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PutMultipleAsync(IReadOnlyCollection<TUpdateDto> dtos)
         {
             var request = new UpdateMultipleRequest<TUpdateDto, TEntity>(dtos, x => x);
-            var response = await _service.UpdateAsync(request);
+            var response = await _crudService.UpdateAsync(request);
 
             if (!response.Succeeded)
-                return CreateError(response);
+                return ResourceFactory.CreateError(response);
 
             var responseObject = response.ResponseObject ?? Array.Empty<TGetFullDto>();
 
-            var resource = _resourceFactory.CreateForListEndpoint(responseObject, _ => "items", m => m.Id);
+            var resource = ResourceFactory.CreateForListEndpoint(responseObject, _ => "items", m => m.Id);
 
             if (resource.Embedded is not null)
             {
                 foreach (var embedded in resource.Embedded.SelectMany(e => e.Value).Cast<Resource<TGetFullDto>>())
                 {
-                    AddDeleteLink(embedded);
+                    Url.AddDeleteLink(embedded);
                 }
             }
 
@@ -536,17 +438,17 @@ namespace RESTworld.AspNetCore.Controller
 
         /// <summary>
         /// Updates the given resource with new values. This method is called
-        /// when <see cref="PutAsync(long?, SingleObjectOrCollection{TUpdateDto})"/> is called with a single object.
+        /// when <see cref="PutAsync(long?, SingleObjectOrCollection{TUpdateDto}, string)"/> is called with a single object.
         /// </summary>
         /// <param name="dto">Updated values for the resource.</param>
         /// <param name="accept">The Accept header.</param>
         /// <returns>The full resource as stored in the database.</returns>
         protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PutSingleAsync(TUpdateDto dto, string accept)
         {
-            var response = await _service.UpdateAsync(dto);
+            var response = await _crudService.UpdateAsync(dto);
 
             if (!response.Succeeded || response.ResponseObject is null)
-                return CreateError(response);
+                return ResourceFactory.CreateError(response);
 
             return Ok(response.ResponseObject, HttpMethod.Put, accept);
         }

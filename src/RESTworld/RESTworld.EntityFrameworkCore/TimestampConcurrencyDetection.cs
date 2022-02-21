@@ -17,7 +17,7 @@ namespace RESTworld.EntityFrameworkCore
     /// <seealso cref="System.IDisposable" />
     public class TimestampConcurrencyDetection : IDisposable
     {
-        private readonly IDictionary<PropertyEntry<EntityBase, byte[]?>, byte[]?> _modifiedEntries = new Dictionary<PropertyEntry<EntityBase, byte[]?>, byte[]?>();
+        private readonly IDictionary<PropertyEntry<ConcurrentEntityBase, byte[]?>, byte[]?> _modifiedEntries = new Dictionary<PropertyEntry<ConcurrentEntityBase, byte[]?>, byte[]?>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TimestampConcurrencyDetection"/> class.
@@ -41,7 +41,7 @@ namespace RESTworld.EntityFrameworkCore
 
         private void SetOriginalTimestampValueForConcurrencyDetection(ChangeTracker changeTracker)
         {
-            var entities = changeTracker.Entries<EntityBase>();
+            var entities = changeTracker.Entries<ConcurrentEntityBase>();
 
             foreach (var entity in entities)
             {

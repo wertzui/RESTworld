@@ -29,23 +29,23 @@ namespace ExampleBlog
         // This method gets called by the runtime. Use this method to add services to the container.
         public override void ConfigureServices(IServiceCollection services)
         {
-            // Add the database to the services and create an ODate context out of it which can be used for querying..
+            // Add the database to the services and create an OData context out of it which can be used for querying..
             services.AddDbContextFactoryWithDefaults<BlogDatabase>(Configuration);
             services.AddODataModelForDbContext<BlogDatabase>();
             services.MigrateDatabaseDuringStartup<BlogDatabase>();
 
             // Add a simple pipeline.
-            services.AddRestPipeline<BlogDatabase, Blog, BlogDto, BlogDto, BlogDto, BlogDto>();
+            services.AddCrudPipeline<BlogDatabase, Blog, BlogDto, BlogDto, BlogDto, BlogDto>();
 
             // Add a pipeline which is versioned.
             // Have a look at the DTo, the AutomapperConfiguration and the database migration "AuthorV2" if you want to know more.
-            services.AddRestPipeline<BlogDatabase, Author, AuthorDtoV1, AuthorDtoV1, AuthorDtoV1, AuthorDtoV1>(new ApiVersion(1, 0), true);
-            services.AddRestPipeline<BlogDatabase, Author, AuthorDto, AuthorDto, AuthorDto, AuthorDto>(new ApiVersion(2, 0));
+            services.AddCrudPipeline<BlogDatabase, Author, AuthorDtoV1, AuthorDtoV1, AuthorDtoV1, AuthorDtoV1>(new ApiVersion(1, 0), true);
+            services.AddCrudPipeline<BlogDatabase, Author, AuthorDto, AuthorDto, AuthorDto, AuthorDto>(new ApiVersion(2, 0));
 
             // We are using dedicated DTOs here to give the consumer a much better experience.
-            // We add our custom authorization too. Get Post 42, or ony post with a valid HTTP status code as id to test it!
+            // We add our custom authorization too. Get Post 42, or any post with a valid HTTP status code as id to test it!
             // We also add our own service to populate the Image and Attachement properties which do not come from the database.
-            services.AddRestPipelineWithCustomServiceAndAuthorization<BlogDatabase, Post, PostCreateDto, PostListDto, PostGetFullDto, PostUpdateDto, PostService, BlogpostAuthorizationHandler>(Configuration);
+            services.AddCrudPipelineWithCustomServiceAndAuthorization<BlogDatabase, Post, PostCreateDto, PostListDto, PostGetFullDto, PostUpdateDto, PostService, BlogpostAuthorizationHandler>(Configuration);
 
             // For the MyCustomController we just need to add the service and the authorization handler,
             // because ASP.Net Core automatically adds all Controllers
@@ -56,7 +56,8 @@ namespace ExampleBlog
             services.AddScoped<MyCustomServiceV1>();
             services.AddScoped<MyCustomAuthorizationHandlerV1>();
 
-            services.AddRestPipelineWithCustomService<BlogDatabase, EntityBase, TestDto, TestDto, TestDto, TestDto, TestService>();
+            // A pipeline which uses a service that just generates random test data.
+            services.AddCrudPipelineWithCustomService<BlogDatabase, ConcurrentEntityBase, TestDto, TestDto, TestDto, TestDto, TestService>();
 
             base.ConfigureServices(services);
         }

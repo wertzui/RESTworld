@@ -2,7 +2,7 @@
 
 namespace ExampleBlog.Common.Dtos
 {
-    public class PostListDto : DtoBase
+    public class PostListDto : ChangeTrackingDtoBase
     {
         public string Headline { get; set; } = default!;
     }

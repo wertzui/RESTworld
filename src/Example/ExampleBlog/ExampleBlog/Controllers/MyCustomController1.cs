@@ -37,18 +37,18 @@ namespace ExampleBlog.Controllers
             var response = await _service.GetPostWithAuthor(id);
 
             if (!response.Succeeded)
-                return CreateError(response);
+                return ResourceFactory.CreateError(response);
 
-            var result = _resourceFactory.CreateForGetEndpoint(response.ResponseObject, null);
+            var result = ResourceFactory.CreateForGetEndpoint(response.ResponseObject, null);
             var authorId = result.State?.AuthorId;
 
             if (authorId is not null)
             {
-                var link = _linkFactory.Create("Author", "Get", CrudControllerNameConventionAttribute.CreateNameFromType<AuthorDtoV1>(), new { id = authorId });
+                var link = _linkFactory.Create("Author", "Get", RestControllerNameConventionAttribute.CreateNameFromType<AuthorDtoV1>(), new { id = authorId });
                 result.AddLink(link);
             }
 
-            AddSaveAndDeleteLinks(result);
+            Url.AddSaveAndDeleteLinks(result);
 
             return Ok(result);
         }

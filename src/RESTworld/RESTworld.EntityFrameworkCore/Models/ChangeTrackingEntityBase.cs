@@ -4,11 +4,11 @@ using System.ComponentModel.DataAnnotations;
 namespace RESTworld.EntityFrameworkCore.Models
 {
     /// <summary>
-    /// Enhances the <see cref="EntityBase"/> class to provide some information about who and when an entity was created an last updated.
+    /// Enhances the <see cref="ConcurrentEntityBase"/> class to provide some information about who and when an entity was created an last updated.
     /// These values are automatically set when <see cref="DbContextBase.SaveChangesAsync(bool, string, System.Threading.CancellationToken)"/> is called.
     /// </summary>
-    /// <seealso cref="EntityBase" />
-    public class ChangeTrackingEntityBase : EntityBase
+    /// <seealso cref="ConcurrentEntityBase" />
+    public class ChangeTrackingEntityBase : ConcurrentEntityBase
     {
         /// <summary>
         /// Gets or sets the date and time when this entity was created.

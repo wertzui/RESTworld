@@ -6,7 +6,7 @@ namespace RESTworld.Common.Dtos
     /// <summary>
     /// A base class for DTOs which support tracking the creation and last change dates.
     /// </summary>
-    public class ChangeTrackingDtoBase : DtoBase
+    public class ChangeTrackingDtoBase : ConcurrentDtoBase
     {
         /// <summary>
         /// Gets the date and time when this instance was created.

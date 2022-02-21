@@ -35,7 +35,7 @@ namespace RESTworld.Client.AspNetCore.Controllers
         [ProducesResponseType(200)]
         public ActionResult<Resource<ClientSettings?>> Get()
         {
-            var resource = _resourceFactory.CreateForGetEndpoint(_options.Value.ClientSettings);
+            var resource = ResourceFactory.CreateForGetEndpoint(_options.Value.ClientSettings);
 
             return resource;
         }

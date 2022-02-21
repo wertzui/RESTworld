@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace ExampleBlog.Business
 {
-    public class TestService : ServiceBase, ICrudServiceBase<EntityBase, TestDto, TestDto, TestDto, TestDto>
+    public class TestService : ServiceBase, ICrudServiceBase<ConcurrentEntityBase, TestDto, TestDto, TestDto, TestDto>
     {
         private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web) { WriteIndented = true };
         private readonly Fixture _fixture;
@@ -59,7 +59,7 @@ namespace ExampleBlog.Business
             return Task.FromResult(ServiceResponse.FromStatus<object>(System.Net.HttpStatusCode.OK));
         }
 
-        public Task<ServiceResponse<IReadOnlyPagedCollection<TestDto>>> GetListAsync(IGetListRequest<EntityBase> request)
+        public Task<ServiceResponse<IReadOnlyPagedCollection<TestDto>>> GetListAsync(IGetListRequest<ConcurrentEntityBase> request)
         {
             var totalCount = 10;
             var dtos = _fixture.CreateMany<TestDto>(totalCount).ToList();
@@ -83,7 +83,7 @@ namespace ExampleBlog.Business
             return Task.FromResult(ServiceResponse.FromResult(dto));
         }
 
-        public Task<ServiceResponse<IReadOnlyCollection<TestDto>>> UpdateAsync(IUpdateMultipleRequest<TestDto, EntityBase> request)
+        public Task<ServiceResponse<IReadOnlyCollection<TestDto>>> UpdateAsync(IUpdateMultipleRequest<TestDto, ConcurrentEntityBase> request)
         {
             _logger.LogInformation($"Updated {JsonSerializer.Serialize(request.Dtos, _jsonOptions)}");
 

@@ -182,7 +182,7 @@ namespace RESTworld.AspNetCore
                 .ConfigureApplicationPartManager(manager =>
                 {
                     manager.FeatureProviders.Add(new HomeControllerFeatureProvider());
-                    manager.FeatureProviders.Add(new CrudControllerFeatureProvider());
+                    manager.FeatureProviders.Add(new RestControllerFeatureProvider());
                 })
                 .AddHALOData()
                 .AddJsonOptions(o =>

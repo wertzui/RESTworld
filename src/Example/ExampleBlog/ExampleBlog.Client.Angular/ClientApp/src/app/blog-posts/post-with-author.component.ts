@@ -28,14 +28,14 @@ export class PostWithAuthorComponent implements OnInit {
     if (!uri)
       return undefined;
 
-    return uri.replace(/\/post\//gmi, '/mycustom/postwithauthor/',);
+    return uri.replace(/\/post\//gmi, '/postwithauthor/',);
   }
 
   private static unModifyUri(uri?: string): string | undefined {
     if (!uri)
       return undefined;
 
-    return uri.replace(/\/mycustom\/postwithauthor\//gmi, '/post/');
+    return uri.replace(/\/postwithauthor\//gmi, '/post/');
   }
 
 }

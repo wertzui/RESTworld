@@ -18,23 +18,30 @@ namespace RESTworld.Business.Services
 {
     /// <inheritdoc/>
     public class CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
-        : DbServiceBase<TContext>, ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
+        : ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>, ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
         where TContext : DbContextBase
-        where TEntity : EntityBase
-        where TGetListDto : DtoBase
-        where TGetFullDto : DtoBase
-        where TUpdateDto : DtoBase
+        where TEntity : ConcurrentEntityBase
+        where TGetListDto : ConcurrentDtoBase
+        where TGetFullDto : ConcurrentDtoBase
+        where TUpdateDto : ConcurrentDtoBase
     {
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        protected IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> _authorizationHandlers;
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+        /// <summary>
+        /// The authorization handlers which are used for all CRUD operations.
+        /// </summary>
+        protected virtual IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> CrudAuthorizationHandlers { get; }
+
+        /// <inheritdoc/>
+        protected override IEnumerable<IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>> ReadAuthorizationHandlers => CrudAuthorizationHandlers;
 
         /// <summary>
-        /// Creates a new instance of the <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> class.
+        /// Creates a new instance of the <see cref="CrudServiceBase{TContext, TEntity, TCreateDto,
+        /// TGetListDto, TGetFullDto, TUpdateDto}"/> class.
         /// </summary>
         /// <param name="contextFactory">The factory used to create a <see cref="DbContext"/>.</param>
         /// <param name="mapper">The AutoMapper instance which maps between DTOs and entities.</param>
-        /// <param name="authorizationHandlers">All AuthorizationHandlers which will be called during authorization.</param>
+        /// <param name="authorizationHandlers">
+        /// All AuthorizationHandlers which will be called during authorization.
+        /// </param>
         /// <param name="userAccessor">The user accessor which gets the user of the current request.</param>
         /// <param name="logger">The logger.</param>
         public CrudServiceBase(
@@ -43,12 +50,14 @@ namespace RESTworld.Business.Services
             IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> authorizationHandlers,
             IUserAccessor userAccessor,
             ILogger<CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> logger)
-            : base(contextFactory, mapper, userAccessor, logger)
+            : base(contextFactory, mapper, authorizationHandlers, userAccessor, logger)
         {
-            _authorizationHandlers = authorizationHandlers ?? throw new ArgumentNullException(nameof(authorizationHandlers));
+            CrudAuthorizationHandlers = authorizationHandlers ?? throw new ArgumentNullException(nameof(authorizationHandlers));
 
-            if (!System.Linq.Enumerable.Any(_authorizationHandlers))
-                _logger.LogWarning($"No {nameof(ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}> is configured. No authorization will be performed for any methods of {nameof(CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}>.");
+            if (!System.Linq.Enumerable.Any(authorizationHandlers))
+                _logger.LogWarning("No {TCrudAuthorizationHandler} is configured. No authorization will be performed for any methods of {TCrudServiceBase}.",
+                    $"{nameof(ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}>",
+                    $"{nameof(CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}>");
         }
 
         /// <inheritdoc/>
@@ -58,7 +67,7 @@ namespace RESTworld.Business.Services
                 result => CreateInternalAsync(result),
                 (result, handler) => handler.HandleCreateRequestAsync(result),
                 (response, handler) => handler.HandleCreateResponseAsync(response),
-                _authorizationHandlers);
+                CrudAuthorizationHandlers);
 
         /// <inheritdoc/>
         public Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> CreateAsync(IReadOnlyCollection<TCreateDto> dtos)
@@ -67,7 +76,7 @@ namespace RESTworld.Business.Services
                 result => CreateInternalAsync(result),
                 (result, handler) => handler.HandleCreateRequestAsync(result),
                 (response, handler) => handler.HandleCreateResponseAsync(response),
-                _authorizationHandlers);
+                CrudAuthorizationHandlers);
 
         /// <inheritdoc/>
         public Task<ServiceResponse<object>> DeleteAsync(long id, byte[] timestamp)
@@ -77,25 +86,7 @@ namespace RESTworld.Business.Services
                 result => DeleteInternalAsync(result),
                 (result, handler) => handler.HandleDeleteRequestAsync(result),
                 (response, handler) => handler.HandleDeleteResponseAsync(response),
-                _authorizationHandlers);
-
-        /// <inheritdoc/>
-        public Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListAsync(IGetListRequest<TEntity> request)
-            => TryExecuteWithAuthorizationAsync<TEntity, IGetListRequest<TEntity>, IReadOnlyPagedCollection<TGetListDto>, IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>>(
-                request,
-                result => GetListInternalAsync(result),
-                (result, handler) => handler.HandleGetListRequestAsync(result),
-                (response, handler) => handler.HandleGetListResponseAsync(response),
-                _authorizationHandlers);
-
-        /// <inheritdoc/>
-        public Task<ServiceResponse<TGetFullDto>> GetSingleAsync(long id)
-            => TryExecuteWithAuthorizationAsync<TEntity, long, TGetFullDto, IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>>(
-                id,
-                result => GetSingleInternalAsync(result),
-                (result, handler) => handler.HandleGetSingleRequestAsync(result),
-                (response, handler) => handler.HandleGetSingleResponseAsync(response),
-                _authorizationHandlers);
+                CrudAuthorizationHandlers);
 
         /// <inheritdoc/>
         public Task<ServiceResponse<TGetFullDto>> UpdateAsync(TUpdateDto dto)
@@ -104,7 +95,7 @@ namespace RESTworld.Business.Services
                 result => UpdateInternalAsync(result),
                 (result, handler) => handler.HandleUpdateRequestAsync(result),
                 (response, handler) => handler.HandleUpdateResponseAsync(response),
-                _authorizationHandlers);
+                CrudAuthorizationHandlers);
 
         /// <inheritdoc/>
         public Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> UpdateAsync(IUpdateMultipleRequest<TUpdateDto, TEntity> request)
@@ -113,13 +104,30 @@ namespace RESTworld.Business.Services
                 result => UpdateInternalAsync(result),
                 (result, handler) => handler.HandleUpdateRequestAsync(result),
                 (response, handler) => handler.HandleUpdateResponseAsync(response),
-                _authorizationHandlers);
+                CrudAuthorizationHandlers);
 
         /// <summary>
-        /// The method contains the business logic for the CREATE operation.
-        /// It will insert the given DTO into the database.
+        /// Sets the OriginalValue of the timestamp if the timestamp exists on the entity. If it is
+        /// marked with a [NotMapped] Attribute, this method will do nothing.
         /// </summary>
-        /// <param name="authorizationResult">The result of the authorization which contains the DTO to insert into the database.</param>
+        /// <param name="dto">The DTO which contains the expected timestamp.</param>
+        /// <param name="context">The context on which the changes are done.</param>
+        /// <param name="entity">The entity as it has been read from the database.</param>
+        protected static void SetTimestampOriginalValue(ConcurrentDtoBase dto, DbContext context, ConcurrentEntityBase entity)
+        {
+            var entry = context.Entry(entity);
+            var timestampProperty = System.Linq.Enumerable.SingleOrDefault(entry.Properties, p => p.Metadata.Name == nameof(ConcurrentEntityBase.Timestamp));
+            if (timestampProperty is not null)
+                timestampProperty.OriginalValue = dto.Timestamp;
+        }
+
+        /// <summary>
+        /// The method contains the business logic for the CREATE operation. It will insert the
+        /// given DTO into the database.
+        /// </summary>
+        /// <param name="authorizationResult">
+        /// The result of the authorization which contains the DTO to insert into the database.
+        /// </param>
         /// <returns>A response containing the DTO as it is in the database.</returns>
         protected virtual async Task<ServiceResponse<TGetFullDto>> CreateInternalAsync(AuthorizationResult<TEntity, TCreateDto> authorizationResult)
         {
@@ -128,19 +136,27 @@ namespace RESTworld.Business.Services
             var entity = _mapper.Map<TEntity>(dto);
 
             await using var context = _contextFactory.CreateDbContext();
+
             context.Add(entity);
+
+            await OnCreatingInternalAsync(authorizationResult, context, entity);
+
             await context.SaveChangesAsync(GetCurrentUsersName());
 
             var resultDto = _mapper.Map<TGetFullDto>(entity);
+
+            await OnCreatedInternalAsync(authorizationResult, resultDto, entity);
 
             return ServiceResponse.FromResult(resultDto);
         }
 
         /// <summary>
-        /// The method contains the business logic for the CREATE operation.
-        /// It will insert the given DTOs into the database.
+        /// The method contains the business logic for the CREATE operation. It will insert the
+        /// given DTOs into the database.
         /// </summary>
-        /// <param name="authorizationResult">The result of the authorization which contains the DTOs to insert into the database.</param>
+        /// <param name="authorizationResult">
+        /// The result of the authorization which contains the DTOs to insert into the database.
+        /// </param>
         /// <returns>A response containing the DTOs as it is in the database.</returns>
         protected virtual async Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> CreateInternalAsync(AuthorizationResult<TEntity, IReadOnlyCollection<TCreateDto>> authorizationResult)
         {
@@ -149,20 +165,31 @@ namespace RESTworld.Business.Services
             var entities = _mapper.Map<IReadOnlyCollection<TEntity>>(dtos);
 
             await using var context = _contextFactory.CreateDbContext();
+
             context.AddRange(entities);
+
+            await OnCreatingInternalAsync(authorizationResult, context, entities);
+
             await context.SaveChangesAsync(GetCurrentUsersName());
 
             var resultDto = _mapper.Map<IReadOnlyCollection<TGetFullDto>>(entities);
+
+            await OnCreatedInternalAsync(authorizationResult, resultDto, entities);
 
             return ServiceResponse.FromResult(resultDto);
         }
 
         /// <summary>
-        /// The method contains the business logic for the DELETE operation.
-        /// It will delete the entity with the given ID and timestamp from the database.
+        /// The method contains the business logic for the DELETE operation. It will delete the
+        /// entity with the given ID and timestamp from the database.
         /// </summary>
-        /// <param name="authorizationResult">The result of the authorization which contains the identifier and the timestamp.</param>
-        /// <returns>An empty 200 (Ok) response, or a problem response with either 404 (Not found) if the ID does not exist or 409 (Conflict) if the timestamp does not match.</returns>
+        /// <param name="authorizationResult">
+        /// The result of the authorization which contains the identifier and the timestamp.
+        /// </param>
+        /// <returns>
+        /// An empty 200 (Ok) response, or a problem response with either 404 (Not found) if the ID
+        /// does not exist or 409 (Conflict) if the timestamp does not match.
+        /// </returns>
         protected virtual async Task<ServiceResponse<object>> DeleteInternalAsync(AuthorizationResult<TEntity, long, byte[]> authorizationResult)
         {
             var id = authorizationResult.Value1;
@@ -183,86 +210,173 @@ namespace RESTworld.Business.Services
 
             context.Remove(entity);
 
+            await OnDeletingAsync(authorizationResult, entity, context);
+
             await context.SaveChangesAsync(GetCurrentUsersName());
+
+            await OnDeletedAsync(authorizationResult, entity);
 
             return ServiceResponse.FromStatus<object>(HttpStatusCode.OK);
         }
 
         /// <summary>
-        /// The method contains the business logic for the READ-List operation.
-        /// It will return the items from the database as specified in the request.
+        /// This method is called after SaveChangesAsync() has been called.
         /// </summary>
-        /// <param name="authorizationResult">The result of the authorization which contains the request which contains a filter on which items to return. The filter is normally mapped from the OData parameters that where passed into the controller ($filter, $orderby, $top, $skip).</param>
-        /// <returns>All items as specified in the request with paging options if specified.</returns>
-        /// <exception cref="ArgumentException">If request.CalculateTotalCount is true, request.FilterForTotalCount must not be null.</exception>
-        protected virtual async Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListInternalAsync(AuthorizationResult<TEntity, IGetListRequest<TEntity>> authorizationResult)
+        /// <param name="authorizationResult">
+        /// The result of the authorization which contains the identifier and the timestamp.
+        /// </param>
+        /// <param name="entity">The entity as it has been read from the database.</param>
+        /// <returns></returns>
+        protected virtual Task OnDeletedAsync(AuthorizationResult<TEntity, long, byte[]> authorizationResult, TEntity entity)
         {
-            var request = authorizationResult.Value1;
-
-            var setForEntities = _contextFactory.Set<TContext, TEntity>().WithAuthorizationFilter(authorizationResult);
-
-            Task<long>? totalPagesTask = null;
-            long? totalCount = null;
-
-            var tasks = new List<Task>(2);
-
-            if (request is not null)
-            {
-                if (request.Filter is not null)
-                    setForEntities = request.Filter(setForEntities);
-
-                if (request.CalculateTotalCount)
-                {
-                    if (request.FilterForTotalCount is null)
-                        throw new ArgumentException($"If {nameof(request)}.{nameof(request.CalculateTotalCount)} is true, {nameof(request)}.{nameof(request.FilterForTotalCount)} must not be null.", nameof(request));
-
-                    var totalPagesSet = _contextFactory.Set<TContext, TEntity>().WithAuthorizationFilter(authorizationResult);
-                    totalPagesSet = request.FilterForTotalCount(totalPagesSet);
-                    totalPagesTask = totalPagesSet.LongCountAsync();
-                    tasks.Add(totalPagesTask);
-                }
-            }
-
-            var entitiesTask = setForEntities.ToListAsync();
-            tasks.Add(entitiesTask);
-
-            await Task.WhenAll(tasks);
-
-            var dtos = _mapper.Map<IReadOnlyCollection<TGetListDto>>(entitiesTask.Result);
-
-            if (request is not null && request.CalculateTotalCount && totalPagesTask is not null)
-                totalCount = totalPagesTask.Result;
-
-            IReadOnlyPagedCollection<TGetListDto> pagedCollection = new ReadOnlyPagedCollection<TGetListDto>(dtos, totalCount);
-
-            return ServiceResponse.FromResult(pagedCollection);
+            return Task.CompletedTask;
         }
 
         /// <summary>
-        /// The method contains the business logic for the READ-Single operation.
-        /// It will return the item with the specified ID from the database.
+        /// This method is called after the entity has been removed from the context, but before SaveChangesAsync() is called.
         /// </summary>
-        /// <param name="authorizationResult">TThe result of the authorization which contains the identifier of the item.</param>
-        /// <returns>The item with the specified ID, or 404 (Not Found).</returns>
-        protected virtual async Task<ServiceResponse<TGetFullDto>> GetSingleInternalAsync(AuthorizationResult<TEntity, long> authorizationResult)
+        /// <param name="authorizationResult">
+        /// The result of the authorization which contains the identifier and the timestamp.
+        /// </param>
+        /// <param name="entity">The entity as it has been read from the database.</param>
+        /// <param name="context">The context on which the changes are done.</param>
+        /// <returns></returns>
+        protected virtual Task OnDeletingAsync(AuthorizationResult<TEntity, long, byte[]> authorizationResult, TEntity entity, TContext context)
         {
-            var id = authorizationResult.Value1;
-
-            var entity = await _contextFactory.Set<TContext, TEntity>().WithAuthorizationFilter(authorizationResult).FirstOrDefaultAsync(e => e.Id == id);
-
-            if (entity is null)
-                return ServiceResponse.FromStatus<TGetFullDto>(HttpStatusCode.NotFound);
-
-            var dto = _mapper.Map<TGetFullDto>(entity);
-
-            return ServiceResponse.FromResult(dto);
+            return Task.CompletedTask;
         }
 
         /// <summary>
-        /// The method contains the business logic for the UPDATE-Single operation.
-        /// It will update the entity in the database with the given DTO.
+        /// This method is called after SaveChangesAsync() so the entity is already persisted in the
+        /// database and the result has been mapped into a DTO.
         /// </summary>
-        /// <param name="authorizationResult">The result of the authorization which contains the DTO which contains updated values.</param>
+        /// <param name="authorizationResult">
+        /// The result of the authorization which contains the DTO which contain updated values.
+        /// </param>
+        /// <param name="resultDto">The resulting DTO which was mapped from the persisted entity.</param>
+        /// <param name="entity">The entity as it has been persisted in the database.</param>
+        /// <returns></returns>
+        protected virtual Task OnCreatedInternalAsync(AuthorizationResult<TEntity, TCreateDto> authorizationResult, TGetFullDto resultDto, TEntity entity)
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// This method is called after SaveChangesAsync() so the entities are already persisted in
+        /// the database and the result has been mapped into a DTOs.
+        /// </summary>
+        /// <param name="authorizationResult">
+        /// The result of the authorization which contains the DTOs which contain updated values.
+        /// </param>
+        /// <param name="resultDto">
+        /// The resulting DTOs which have been mapped from the persisted entity.
+        /// </param>
+        /// <param name="entities">The entities as they have been persisted in the database.</param>
+        /// <returns></returns>
+        protected virtual Task OnCreatedInternalAsync(AuthorizationResult<TEntity, IReadOnlyCollection<TCreateDto>> authorizationResult, IReadOnlyCollection<TGetFullDto> resultDto, IReadOnlyCollection<TEntity> entities)
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// This method is called after the entity has been created from the DTO but before
+        /// SaveChangesAsync() is called.
+        /// </summary>
+        /// <param name="authorizationResult">
+        /// The result of the authorization which contains the DTOs which contain updated values.
+        /// </param>
+        /// <param name="context">The context on which the changes are done.</param>
+        /// <param name="entity">The entity with the modification from the DTO already applied.</param>
+        /// <returns></returns>
+        protected virtual Task OnCreatingInternalAsync(AuthorizationResult<TEntity, TCreateDto> authorizationResult, TContext context, TEntity entity)
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// This method is called after the entities have been created from the DTOs but before
+        /// SaveChangesAsync() is called.
+        /// </summary>
+        /// <param name="authorizationResult">
+        /// The result of the authorization which contains the DTOs which contain updated values.
+        /// </param>
+        /// <param name="context">The context on which the changes are done.</param>
+        /// <param name="entities">The entities with the modifications from the DTOs already applied.</param>
+        /// <returns></returns>
+        protected virtual Task OnCreatingInternalAsync(AuthorizationResult<TEntity, IReadOnlyCollection<TCreateDto>> authorizationResult, TContext context, IReadOnlyCollection<TEntity> entities)
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// This method is called after SaveChangesAsync() so the entity is already persisted in the
+        /// database and the result has been mapped into a DTO.
+        /// </summary>
+        /// <param name="authorizationResult">
+        /// The result of the authorization which contains the DTO which contain updated values.
+        /// </param>
+        /// <param name="resultDto">The resulting DTO which was mapped from the persisted entity.</param>
+        /// <param name="entity">The entity as it has been persisted in the database.</param>
+        /// <returns></returns>
+        protected virtual Task OnUpdatedInternalAsync(AuthorizationResult<TEntity, TUpdateDto> authorizationResult, TGetFullDto resultDto, TEntity entity)
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// This method is called after SaveChangesAsync() so the entities are already persisted in
+        /// the database and the result has been mapped into a DTOs.
+        /// </summary>
+        /// <param name="authorizationResult">
+        /// The result of the authorization which contains the DTOs which contain updated values.
+        /// </param>
+        /// <param name="resultDto">
+        /// The resulting DTOs which have been mapped from the persisted entity.
+        /// </param>
+        /// <param name="entities">The entities as they have been persisted in the database.</param>
+        /// <returns></returns>
+        protected virtual Task OnUpdatedInternalAsync(AuthorizationResult<TEntity, IUpdateMultipleRequest<TUpdateDto, TEntity>> authorizationResult, IReadOnlyCollection<TGetFullDto> resultDto, Dictionary<long, TEntity> entities)
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// This method is called after the update from the DTO has been applied to the entity but
+        /// before SaveChangesAsync() is called.
+        /// </summary>
+        /// <param name="authorizationResult">
+        /// The result of the authorization which contains the DTOs which contain updated values.
+        /// </param>
+        /// <param name="context">The context on which the changes are done.</param>
+        /// <param name="entity">The entity with the modification from the DTO already applied.</param>
+        /// <returns></returns>
+        protected virtual Task OnUpdatingInternalAsync(AuthorizationResult<TEntity, TUpdateDto> authorizationResult, TContext context, TEntity entity)
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// This method is called after the update from the DTO has been applied to the entity but
+        /// before SaveChangesAsync() is called.
+        /// </summary>
+        /// <param name="authorizationResult">
+        /// The result of the authorization which contains the DTOs which contain updated values.
+        /// </param>
+        /// <param name="context">The context on which the changes are done.</param>
+        /// <param name="entities">The entities with the modifications from the DTOs already applied.</param>
+        /// <returns></returns>
+        protected virtual Task OnUpdatingInternalAsync(AuthorizationResult<TEntity, IUpdateMultipleRequest<TUpdateDto, TEntity>> authorizationResult, TContext context, IDictionary<long, TEntity> entities)
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// The method contains the business logic for the UPDATE-Single operation. It will update
+        /// the entity in the database with the given DTO.
+        /// </summary>
+        /// <param name="authorizationResult">
+        /// The result of the authorization which contains the DTO which contains updated values.
+        /// </param>
         /// <returns>The item as it is stored in the database after the update operation.</returns>
         protected virtual async Task<ServiceResponse<TGetFullDto>> UpdateInternalAsync(AuthorizationResult<TEntity, TUpdateDto> authorizationResult)
         {
@@ -279,31 +393,24 @@ namespace RESTworld.Business.Services
 
             _mapper.Map(dto, entity);
 
+            await OnUpdatingInternalAsync(authorizationResult, context, entity);
+
             await context.SaveChangesAsync(GetCurrentUsersName());
 
             var resultDto = _mapper.Map<TGetFullDto>(entity);
 
+            await OnUpdatedInternalAsync(authorizationResult, resultDto, entity);
+
             return ServiceResponse.FromResult(resultDto);
-        }
-        /// <summary>
-        /// Sets the OriginalValue of the timestamp if the timestamp exists on the entity. It is is marked with a [NotMapped] Attribute, this method will do nothing.
-        /// </summary>
-        /// <param name="dto"></param>
-        /// <param name="context"></param>
-        /// <param name="entity"></param>
-        private static void SetTimestampOriginalValue(TUpdateDto dto, TContext context, TEntity entity)
-        {
-            var entry = context.Entry(entity);
-            var timestampProperty = System.Linq.Enumerable.SingleOrDefault(entry.Properties, p => p.Metadata.Name == nameof(EntityBase.Timestamp));
-            if (timestampProperty is not null)
-                timestampProperty.OriginalValue = dto.Timestamp;
         }
 
         /// <summary>
-        /// The method contains the business logic for the UPDATE-Multiple operation.
-        /// It will update the entities in the database with the given DTOs.
+        /// The method contains the business logic for the UPDATE-Multiple operation. It will update
+        /// the entities in the database with the given DTOs.
         /// </summary>
-        /// <param name="authorizationResult">The result of the authorization which contains the DTOs which contain updated values.</param>
+        /// <param name="authorizationResult">
+        /// The result of the authorization which contains the DTOs which contain updated values.
+        /// </param>
         /// <returns>The items as stored in the database after the update operation.</returns>
         protected virtual async Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> UpdateInternalAsync(AuthorizationResult<TEntity, IUpdateMultipleRequest<TUpdateDto, TEntity>> authorizationResult)
         {
@@ -326,9 +433,13 @@ namespace RESTworld.Business.Services
                 _mapper.Map(dto, entity);
             }
 
+            await OnUpdatingInternalAsync(authorizationResult, context, entities);
+
             await context.SaveChangesAsync(GetCurrentUsersName());
 
             var resultDto = _mapper.Map<IReadOnlyCollection<TGetFullDto>>(entities.Values);
+
+            await OnUpdatedInternalAsync(authorizationResult, resultDto, entities);
 
             return ServiceResponse.FromResult(resultDto);
         }

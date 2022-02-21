@@ -30,7 +30,7 @@ namespace RESTworld.Tests
         }
     }
 
-    public class TestModel : EntityBase
+    public class TestModel : ConcurrentEntityBase
     {
         [NotMapped]
         public override byte[]? Timestamp { get => base.Timestamp; set => base.Timestamp = value; }

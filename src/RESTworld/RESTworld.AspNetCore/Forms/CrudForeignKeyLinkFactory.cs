@@ -17,7 +17,7 @@ namespace RESTworld.AspNetCore.Forms
         private static readonly Type _type = typeof(TListDto);
         private const string getListAction = "GetList";
         private readonly ILinkFactory _linkFactory;
-        private static readonly string controller = CrudControllerNameConventionAttribute.CreateNameFromType<TListDto>();
+        private static readonly string controller = RestControllerNameConventionAttribute.CreateNameFromType<TListDto>();
 
         /// <summary>
         /// Creates a new instance of the <see cref="CrudForeignKeyLinkFactory{TListDto}"/> class.

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace ExampleBlog.Common.Dtos
 {
-    public class TestDto : DtoBase
+    public class TestDto : ConcurrentDtoBase
     {
         public string MyString { get; set; } = default!;
         public int MyInt { get; set; }
@@ -13,6 +13,7 @@ namespace ExampleBlog.Common.Dtos
         public int? MyNullableInt { get; set; }
         public char? MyNullableChar { get; set; }
         public bool? MyNullableBool { get; set; }
+        public decimal? MyNullableDecimal { get; set; }
         public ICollection<ListTestDto> MyCollection { get; set; } = new HashSet<ListTestDto>();
         public NestedTestDto? MyNestedObject { get; set; }
     }

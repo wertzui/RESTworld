@@ -157,7 +157,7 @@ namespace RESTworld.AspNetCore.Swagger
                 var stateType = resourceType.GenericTypeArguments[0];
                 var state = _fixture.Create(stateType, _specimenContext);
                 object? routeValues = null;
-                if (state is DtoBase dtoBase)
+                if (state is ConcurrentDtoBase dtoBase)
                     routeValues = new { id = dtoBase.Id };
 
                 resource = resourceFactory.CreateForGetEndpoint(state, controllerActionDescriptor?.ActionName ?? "Get", controllerActionDescriptor?.ControllerName, routeValues);
@@ -179,7 +179,7 @@ namespace RESTworld.AspNetCore.Swagger
             {
                 var tListDto = controllerActionDescriptor.ControllerTypeInfo.GenericTypeArguments[2];
                 var embedded = Enumerable.Repeat<object?>(null, 3).Select(_ => _fixture.Create(tListDto, _specimenContext)).ToList();
-                var resource = resourceFactory.CreateForOdataListEndpointUsingSkipTopPaging(embedded, _ => "List", e => ((DtoBase)e).Id, _oDataQueryFactory.GetListNavigation(embedded, new ODataRawQueryOptions(), linkFactory.Create(action: actionName, controller: controllerName).Href, 3, 3, 10), new Page { CurrentPage = 2, TotalPages = 4 }, controllerName);
+                var resource = resourceFactory.CreateForOdataListEndpointUsingSkipTopPaging(embedded, _ => "List", e => ((ConcurrentDtoBase)e).Id, _oDataQueryFactory.GetListNavigation(embedded, new ODataRawQueryOptions(), linkFactory.Create(action: actionName, controller: controllerName).Href, 3, 3, 10), new Page { CurrentPage = 2, TotalPages = 4 }, controllerName);
                 type.Example = CreateExample(resource);
             }
             else if (actionName == "Get" || actionName == "Post" || actionName == "Put" || actionName == "New")
@@ -193,7 +193,7 @@ namespace RESTworld.AspNetCore.Swagger
                     Resource resource;
                     if (actionName == "New")
                     {
-                        if (state is DtoBase dtoBase)
+                        if (state is ConcurrentDtoBase dtoBase)
                         {
                             // No Id and Timestamp when creating new resources
                             dtoBase.Id = default;
@@ -214,7 +214,7 @@ namespace RESTworld.AspNetCore.Swagger
                     }
                     else
                     {
-                        resource = resourceFactory.CreateForGetEndpoint(state, controller: controllerName, routeValues: new { id = ((DtoBase)state).Id });
+                        resource = resourceFactory.CreateForGetEndpoint(state, controller: controllerName, routeValues: new { id = ((ConcurrentDtoBase)state).Id });
                     }
 
                     type.Example = CreateExample(resource);
@@ -222,7 +222,7 @@ namespace RESTworld.AspNetCore.Swagger
                 else if (actionName == "Post" || actionName == "Put")
                 {
                     // Post and Put either return an object or a collection
-                    var states = Enumerable.Repeat<object?>(null, 3).Select(_ => _fixture.Create(tFullDto, _specimenContext)).Cast<DtoBase>().ToList();
+                    var states = Enumerable.Repeat<object?>(null, 3).Select(_ => _fixture.Create(tFullDto, _specimenContext)).Cast<ConcurrentDtoBase>().ToList();
                     var CollectionResource = resourceFactory.CreateForListEndpoint(states, _ => "List", d => d.Id, controllerName);
 
                     type.Examples.Add("Single Object", new OpenApiExample { Value = CreateExample((Resource)resourceFactory.CreateForGetEndpoint(states[0], controller: controllerName, routeValues: new { id = states[0].Id })) });
@@ -249,7 +249,7 @@ namespace RESTworld.AspNetCore.Swagger
                             var states = Enumerable.Repeat<object?>(null, 3).Select(_ => _fixture.Create(stateType, _specimenContext)).ToList();
                             foreach (var state in states)
                             {
-                                if (state is DtoBase dtoBase)
+                                if (state is ConcurrentDtoBase dtoBase)
                                 {
                                     // No Id and Timestamp when creating new resources
                                     if (context.ApiDescription.HttpMethod == "POST")

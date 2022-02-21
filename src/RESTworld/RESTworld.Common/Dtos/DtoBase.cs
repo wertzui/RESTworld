@@ -12,10 +12,5 @@ namespace RESTworld.Common.Dtos
         /// </summary>
         [Display(Name = "ID", Order = -1000)]
         public virtual long Id { get; set; }
-
-        /// <summary>
-        /// Gets or sets the timestamp which is used for concurrency detection.
-        /// </summary>
-        public virtual byte[]? Timestamp { get; set; }
     }
 }

@@ -8,7 +8,7 @@ namespace RESTworld.EntityFrameworkCore
 {
     /// <summary>
     /// A base class for all your DbCOntext classes.
-    /// It automatically adds timestamp concurrency detection for all <see cref="EntityBase"/> entities and
+    /// It automatically adds timestamp concurrency detection for all <see cref="ConcurrentEntityBase"/> entities and
     /// Automatically modifies the LastChangedAt and LastChangedBy properties of <see cref="ChangeTrackingEntityBase"/> entities.
     /// It also removes the timeout during migrations so long running migrations won't fail.
     /// </summary>
@@ -16,7 +16,7 @@ namespace RESTworld.EntityFrameworkCore
     public class DbContextBase : DbContext
     {
         // This property indicates whether or not you're running inside LINQPad:
-        private static bool _insideLINQPad = AppDomain.CurrentDomain.FriendlyName.StartsWith("LINQPad");
+        private static readonly bool _insideLINQPad = AppDomain.CurrentDomain.FriendlyName.StartsWith("LINQPad");
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DbContextBase"/> class.

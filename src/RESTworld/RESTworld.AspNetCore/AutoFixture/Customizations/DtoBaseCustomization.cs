@@ -5,7 +5,7 @@ using System.Linq;
 namespace RESTworld.AspNetCore.AutoFixture.Customizations
 {
     /// <summary>
-    /// Customizes the Timestamp property of <see cref="DtoBase"/> to always contain 8 bytes.
+    /// Customizes the Timestamp property of <see cref="ConcurrentDtoBase"/> to always contain 8 bytes.
     /// </summary>
     /// <seealso cref="ICustomization" />
     public class DtoBaseCustomization : ICustomization
@@ -14,7 +14,7 @@ namespace RESTworld.AspNetCore.AutoFixture.Customizations
         public void Customize(IFixture fixture)
         {
             fixture
-                .CustomizeProperties<DtoBase>(composer =>
+                .CustomizeProperties<ConcurrentDtoBase>(composer =>
                     composer
                         .With(d => d.Timestamp, () => fixture.CreateMany<byte>(8).ToArray()));
         }
