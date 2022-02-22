@@ -25,7 +25,7 @@ namespace ExampleBlog.Business
         protected override async Task<ServiceResponse<PostGetFullDto>> GetSingleInternalAsync(AuthorizationResult<Post, long> authorizationResult)
         {
             var result = await base.GetSingleInternalAsync(authorizationResult);
-            if (result.Succeeded)
+            if (result.Succeeded && result.ResponseObject is not null)
             {
                 // The attachement may be a file that is read from disc.
                 result.ResponseObject.Attachement = GetAttachement(result.ResponseObject.Id);
@@ -47,8 +47,11 @@ namespace ExampleBlog.Business
                 SaveImage(dto.Image);
                 SaveAttachement(dto.Attachement);
 
-                result.ResponseObject.Image = GetImage(result.ResponseObject.Headline);
-                result.ResponseObject.Attachement = GetAttachement(result.ResponseObject.Id);
+                if (result.ResponseObject is not null)
+                {
+                    result.ResponseObject.Image = GetImage(result.ResponseObject.Headline);
+                    result.ResponseObject.Attachement = GetAttachement(result.ResponseObject.Id);
+                }
             }
 
             return result;
@@ -64,11 +67,13 @@ namespace ExampleBlog.Business
                     SaveImage(requestDto.Image);
                     SaveAttachement(requestDto.Attachement);
                 }
-
-                foreach (var resultDto in result.ResponseObject)
+                if (result.ResponseObject is not null)
                 {
-                    resultDto.Image = GetImage(resultDto.Headline);
-                    resultDto.Attachement = GetAttachement(resultDto.Id);
+                    foreach (var resultDto in result.ResponseObject)
+                    {
+                        resultDto.Image = GetImage(resultDto.Headline);
+                        resultDto.Attachement = GetAttachement(resultDto.Id);
+                    }
                 }
             }
 
@@ -85,8 +90,11 @@ namespace ExampleBlog.Business
                 SaveImage(dto.Image);
                 SaveAttachement(dto.Attachement);
 
-                result.ResponseObject.Image = GetImage(result.ResponseObject.Headline);
-                result.ResponseObject.Attachement = GetAttachement(result.ResponseObject.Id);
+                if (result.ResponseObject is not null)
+                {
+                    result.ResponseObject.Image = GetImage(result.ResponseObject.Headline);
+                    result.ResponseObject.Attachement = GetAttachement(result.ResponseObject.Id);
+                }
             }
 
             return result;
@@ -103,17 +111,20 @@ namespace ExampleBlog.Business
                     SaveAttachement(requestDto.Attachement);
                 }
 
-                foreach (var resultDto in result.ResponseObject)
+                if (result.ResponseObject is not null)
                 {
-                    resultDto.Image = GetImage(resultDto.Headline);
-                    resultDto.Attachement = GetAttachement(resultDto.Id);
+                    foreach (var resultDto in result.ResponseObject)
+                    {
+                        resultDto.Image = GetImage(resultDto.Headline);
+                        resultDto.Attachement = GetAttachement(resultDto.Id);
+                    }
                 }
             }
 
             return result;
         }
 
-        private void SaveImage(HalFile image)
+        private void SaveImage(HalFile? image)
         {
             if (image?.Content is not null)
             {
@@ -121,7 +132,7 @@ namespace ExampleBlog.Business
             }
         }
 
-        private void SaveAttachement(HalFile attachement)
+        private void SaveAttachement(HalFile? attachement)
         {
             if (attachement?.Content is not null)
             {

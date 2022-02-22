@@ -19,7 +19,7 @@ namespace RESTworld.Business.Authorization
     /// <typeparam name="TGetFullDto">The type of the get full DTO.</typeparam>
     /// <typeparam name="TUpdateDto">The type of the update DTO.</typeparam>
     /// <seealso cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}" />
-    public abstract class CrudAuthorizationHandlerBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> : ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
+    public abstract class CrudAuthorizationHandlerBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> : ReadAuthorizationHandlerBase<TEntity, TGetListDto, TGetFullDto>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
     {
         /// <inheritdoc/>
         public virtual Task<AuthorizationResult<TEntity, TCreateDto>> HandleCreateRequestAsync(AuthorizationResult<TEntity, TCreateDto> previousResult) => Task.FromResult(previousResult);
@@ -38,18 +38,6 @@ namespace RESTworld.Business.Authorization
 
         /// <inheritdoc/>
         public virtual Task<ServiceResponse<object>> HandleDeleteResponseAsync(ServiceResponse<object> previousResponse) => Task.FromResult(previousResponse);
-
-        /// <inheritdoc/>
-        public virtual Task<AuthorizationResult<TEntity, IGetListRequest<TEntity>>> HandleGetListRequestAsync(AuthorizationResult<TEntity, IGetListRequest<TEntity>> previousResult) => Task.FromResult(previousResult);
-
-        /// <inheritdoc/>
-        public virtual Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> HandleGetListResponseAsync(ServiceResponse<IReadOnlyPagedCollection<TGetListDto>> previousResponse) => Task.FromResult(previousResponse);
-
-        /// <inheritdoc/>
-        public virtual Task<AuthorizationResult<TEntity, long>> HandleGetSingleRequestAsync(AuthorizationResult<TEntity, long> previousResult) => Task.FromResult(previousResult);
-
-        /// <inheritdoc/>
-        public virtual Task<ServiceResponse<TGetFullDto>> HandleGetSingleResponseAsync(ServiceResponse<TGetFullDto> previousResponse) => Task.FromResult(previousResponse);
 
         /// <inheritdoc/>
         public virtual Task<AuthorizationResult<TEntity, TUpdateDto>> HandleUpdateRequestAsync(AuthorizationResult<TEntity, TUpdateDto> previousResult) => Task.FromResult(previousResult);
