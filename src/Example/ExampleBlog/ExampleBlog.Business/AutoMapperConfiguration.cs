@@ -46,6 +46,13 @@ namespace ExampleBlog.Business
                 .CreateMap<Post, PostWithAuthorDtoV1>();
             config.CreateMap<Author, PostWithAuthorDtoV1>()
                 .ForMember(dst => dst.Author, opt => opt.MapFrom(src => src));
+
+            config
+                .CreateMap<Author, AuthorStatisticsListDto>()
+                .ReverseMap();
+            config
+                .CreateMap<Author, AuthorStatisticsFullDto>()
+                .ReverseMap();
         }
     }
 }

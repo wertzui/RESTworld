@@ -15,16 +15,28 @@ namespace RESTworld.AspNetCore.Controller
     public sealed class RestControllerNameConventionAttribute : Attribute, IControllerModelConvention
     {
         /// <summary>
-        /// The index of the TGetFullDto generic type argument of <see cref="CrudController{TEntity,
-        /// TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
+        /// The index of the TGetFullDto generic type argument of
+        /// <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
         /// </summary>
-        public const int CrudControllerIndexOfDtoType = 3;
+        public const int CrudControllerIndexOfFullDtoType = 3;
 
         /// <summary>
-        /// The index of the TGetFullDto generic type argument of <see cref="ReadController{TEntity,
-        /// TGetListDto, TGetFullDto}"/>
+        /// The index of the TGetListDto generic type argument of
+        /// <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
         /// </summary>
-        public const int ReadControllerIndexOfDtoType = 2;
+        public const int CrudControllerIndexOfListDtoType = 2;
+
+        /// <summary>
+        /// The index of the TGetFullDto generic type argument of
+        /// <see cref="ReadController{TEntity, TGetListDto, TGetFullDto}"/>
+        /// </summary>
+        public const int ReadControllerIndexOfFullDtoType = 2;
+
+        /// <summary>
+        /// The index of the TGetListDto generic type argument of
+        /// <see cref="ReadController{TEntity, TGetListDto, TGetFullDto}"/>
+        /// </summary>
+        public const int ReadControllerIndexOfListDtoType = 1;
 
         private readonly int _indexOfReadDtoType;
 

@@ -47,6 +47,10 @@ namespace ExampleBlog
             // We also add our own service to populate the Image and Attachement properties which do not come from the database.
             services.AddCrudPipelineWithCustomServiceAndAuthorization<BlogDatabase, Post, PostCreateDto, PostListDto, PostGetFullDto, PostUpdateDto, PostService, BlogpostAuthorizationHandler>(Configuration);
 
+            // Statistics can only be read, but not written so we use a read-only pipeline.
+            // Most times read-only will go hand in hand with a custom service.
+            services.AddReadPipelineWithCustomService<BlogDatabase, Author, AuthorStatisticsListDto, AuthorStatisticsFullDto, AuthorStatisticsService>();
+
             // For the MyCustomController we just need to add the service and the authorization handler,
             // because ASP.Net Core automatically adds all Controllers
             services.AddScoped<MyCustomService>();

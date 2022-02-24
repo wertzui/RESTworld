@@ -36,7 +36,7 @@ namespace RESTworld.AspNetCore.Controller
     /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
     /// <typeparam name="TUpdateDto">The type of the DTO for an Update operation.</typeparam>
     [Route("[controller]")]
-    [RestControllerNameConvention(RestControllerNameConventionAttribute.CrudControllerIndexOfDtoType)]
+    [RestControllerNameConvention(RestControllerNameConventionAttribute.CrudControllerIndexOfFullDtoType)]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status503ServiceUnavailable)]
@@ -265,7 +265,7 @@ namespace RESTworld.AspNetCore.Controller
         /// <param name="jsonSerializerOptions">The options for the JSON serializer. Normally these are <see cref="_createNewResourceJsonSettings"/>.</param>
         /// <returns>The created Microsoft.AspNetCore.Mvc.OkObjectResult for the response.</returns>
         protected virtual JsonResult Json(TCreateDto? dto, string accept, JsonSerializerOptions jsonSerializerOptions)
-            => new(CreateResource(dto, accept), jsonSerializerOptions);
+            => new(CreateNewResource(dto, accept), jsonSerializerOptions);
 
         /// <summary>
         /// Creates an Microsoft.AspNetCore.Mvc.CreatedResult object that produces an Microsoft.AspNetCore.Http.StatusCodes.Status201Created
@@ -277,6 +277,38 @@ namespace RESTworld.AspNetCore.Controller
         /// <returns>The created Microsoft.AspNetCore.Mvc.CreatedResult for the response.</returns>
         protected virtual CreatedResult Created(TGetFullDto dto, HttpMethod method, string accept)
             => Created(Url.ActionLink(values: new { id = dto.Id }) ?? throw new UriFormatException("Unable to generate the CreatedAt URI"), CreateResource(dto, method, accept));
+
+        /// <summary>
+        /// Creates the result which is either a HAL resource, or a HAL-Forms resource based on the
+        /// accept header.
+        /// </summary>
+        /// <param name="dto">The DTO to return.</param>
+        /// <param name="accept">The value of the Accept header.</param>
+        /// <returns>Either a HAL resource, or a HAL-Forms resource</returns>
+        protected virtual Resource CreateNewResource(TCreateDto? dto, string accept)
+        {
+            if (accept.Contains("hal-forms+json"))
+            {
+                var result = FormFactory.CreateResourceForEndpoint(dto, HttpMethod.Post, "Create", action: HttpMethod.Post.Method);
+
+                return result;
+            }
+            else
+            {
+                var result = ResourceFactory.CreateForGetEndpoint(dto, "New");
+
+                var saveHref = Url.ActionLink(HttpMethod.Post.Method);
+                if (saveHref is null)
+                    throw new UriFormatException("Unable to generate the 'save' link.");
+
+                result
+                    .AddLink("save", new Link(saveHref) { Name = HttpMethod.Post.Method });
+
+                LinkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
+
+                return result;
+            }
+        }
 
         /// <summary>
         /// Creates the result which is either a HAL resource, or a HAL-Forms resource based on the
@@ -301,38 +333,6 @@ namespace RESTworld.AspNetCore.Controller
 
                 LinkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
                 Url.AddSaveAndDeleteLinks(result);
-
-                return result;
-            }
-        }
-
-        /// <summary>
-        /// Creates the result which is either a HAL resource, or a HAL-Forms resource based on the
-        /// accept header.
-        /// </summary>
-        /// <param name="dto">The DTO to return.</param>
-        /// <param name="accept">The value of the Accept header.</param>
-        /// <returns>Either a HAL resource, or a HAL-Forms resource</returns>
-        protected virtual Resource CreateResource(TCreateDto? dto, string accept)
-        {
-            if (accept.Contains("hal-forms+json"))
-            {
-                var result = FormFactory.CreateResourceForEndpoint(dto, HttpMethod.Post, "Create", action: HttpMethod.Post.Method);
-
-                return result;
-            }
-            else
-            {
-                var result = ResourceFactory.CreateForGetEndpoint(dto, "New");
-
-                var saveHref = Url.ActionLink(HttpMethod.Post.Method);
-                if (saveHref is null)
-                    throw new UriFormatException("Unable to generate the 'save' link.");
-
-                result
-                    .AddLink("save", new Link(saveHref) { Name = HttpMethod.Post.Method });
-
-                LinkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
 
                 return result;
             }

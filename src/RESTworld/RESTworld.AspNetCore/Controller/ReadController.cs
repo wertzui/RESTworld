@@ -2,6 +2,7 @@
 using HAL.AspNetCore.Forms.Abstractions;
 using HAL.AspNetCore.OData.Abstractions;
 using HAL.Common;
+using HAL.Common.Forms;
 using Microsoft.AspNet.OData.Query;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -27,7 +28,7 @@ namespace RESTworld.AspNetCore.Controller
     /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
     /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
     [Route("[controller]")]
-    [RestControllerNameConvention(RestControllerNameConventionAttribute.ReadControllerIndexOfDtoType)]
+    [RestControllerNameConvention(RestControllerNameConventionAttribute.ReadControllerIndexOfFullDtoType)]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status503ServiceUnavailable)]
@@ -116,7 +117,7 @@ namespace RESTworld.AspNetCore.Controller
         /// </param>
         /// <param name="top">The maximum number of resources to return. THis is used for paging.</param>
         /// <param name="skip">The number of resources to skip. This is used for paging.</param>
-        /// <returns></returns>
+        /// <returns>A paged list of resources matching the filter criteria.</returns>
         [HttpGet]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
         [ProducesResponseType(200)]
@@ -151,11 +152,7 @@ namespace RESTworld.AspNetCore.Controller
                 result.Embedded = new Dictionary<string, ICollection<Resource>> { { Common.Constants.ListItems, new List<Resource>() } };
             }
 
-            var href = Url.ActionLink("new");
-            if (href is null)
-                throw new UriFormatException("Unable top generate the 'new' link.");
-
-            result.AddLink(new Link(href) { Name = "new" });
+            Url.AddNewLink(result);
 
             return Ok(result);
         }
@@ -172,8 +169,9 @@ namespace RESTworld.AspNetCore.Controller
         {
             if (accept.Contains("hal-forms+json"))
             {
-                var result = FormFactory.CreateResourceForEndpoint(dto, method, "Edit", action: method.Method, routeValues: new { id = dto.Id });
-                Url.AddDeleteLink(result);
+                var result = FormFactory.CreateResourceForEndpoint(dto, method, "View", routeValues: new { id = dto.Id });
+
+                MakeFormReadOnly(result);
 
                 return result;
             }
@@ -182,9 +180,31 @@ namespace RESTworld.AspNetCore.Controller
                 var result = ResourceFactory.CreateForGetEndpoint(dto, routeValues: new { id = dto.Id });
 
                 LinkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
-                Url.AddSaveAndDeleteLinks(result);
 
                 return result;
+            }
+        }
+
+        private static void MakeFormReadOnly(FormsResource? form)
+        {
+            MakeFormReadOnly(form?.Templates);
+        }
+
+        private static void MakeFormReadOnly(IDictionary<string, FormTemplate>? templates)
+        {
+            if (templates is null)
+                return;
+
+            foreach (var template in templates.Values)
+            {
+                if (template.Properties is not null)
+                {
+                    foreach (var property in template.Properties)
+                    {
+                        property.ReadOnly = true;
+                        MakeFormReadOnly(property.Templates);
+                    }
+                }
             }
         }
 

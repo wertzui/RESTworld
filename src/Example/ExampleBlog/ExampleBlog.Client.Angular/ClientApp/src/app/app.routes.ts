@@ -61,6 +61,10 @@ export const AppMenu: MenuItem[] = [
       {
         label: "Posts",
         routerLink: ['list', 'ExampleBlog', 'MyEx:Post']
+      },
+      {
+        label: "Statistics",
+        routerLink: ['list', 'ExampleBlog', 'MyEx:AuthorStatistics']
       }]
   },
   {

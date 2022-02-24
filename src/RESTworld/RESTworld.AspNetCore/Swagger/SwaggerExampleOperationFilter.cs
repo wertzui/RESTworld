@@ -124,10 +124,16 @@ namespace RESTworld.AspNetCore.Swagger
                 if (context.ApiDescription.ActionDescriptor is ControllerActionDescriptor controllerActionDescriptor)
                 {
                     if (controllerActionDescriptor.ControllerTypeInfo.IsGenericType
+                    && controllerActionDescriptor.ControllerTypeInfo.GetGenericTypeDefinition() == typeof(ReadController<,,>))
+                    {
+                        // Examples for READ Controller
+                        AddExampleForSucessfullCrudResponse(type, linkFactory, resourceFactory, controllerActionDescriptor, RestControllerNameConventionAttribute.ReadControllerIndexOfListDtoType, RestControllerNameConventionAttribute.ReadControllerIndexOfFullDtoType);
+                    }
+                    else if (controllerActionDescriptor.ControllerTypeInfo.IsGenericType
                     && controllerActionDescriptor.ControllerTypeInfo.GetGenericTypeDefinition() == typeof(CrudController<,,,,>))
                     {
                         // Examples for CRUD Controller
-                        AddExampleForSucessfullCrudResponse(type, linkFactory, resourceFactory, controllerActionDescriptor);
+                        AddExampleForSucessfullCrudResponse(type, linkFactory, resourceFactory, controllerActionDescriptor, RestControllerNameConventionAttribute.CrudControllerIndexOfListDtoType, RestControllerNameConventionAttribute.CrudControllerIndexOfFullDtoType);
                     }
                     else if (controllerActionDescriptor.ControllerTypeInfo == typeof(HomeController) && controllerActionDescriptor.ActionName == "Index")
                     {
@@ -157,7 +163,7 @@ namespace RESTworld.AspNetCore.Swagger
                 var stateType = resourceType.GenericTypeArguments[0];
                 var state = _fixture.Create(stateType, _specimenContext);
                 object? routeValues = null;
-                if (state is ConcurrentDtoBase dtoBase)
+                if (state is DtoBase dtoBase)
                     routeValues = new { id = dtoBase.Id };
 
                 resource = resourceFactory.CreateForGetEndpoint(state, controllerActionDescriptor?.ActionName ?? "Get", controllerActionDescriptor?.ControllerName, routeValues);
@@ -171,20 +177,22 @@ namespace RESTworld.AspNetCore.Swagger
             type.Example = CreateExample(resource);
         }
 
-        private void AddExampleForSucessfullCrudResponse(OpenApiMediaType type, LinkFactory linkFactory, ODataResourceFactory resourceFactory, ControllerActionDescriptor controllerActionDescriptor)
+        private void AddExampleForSucessfullCrudResponse(OpenApiMediaType type, LinkFactory linkFactory, ODataResourceFactory resourceFactory, ControllerActionDescriptor controllerActionDescriptor, int indexOfListDtoType, int indexOfFullDtoType)
         {
             var actionName = controllerActionDescriptor.ActionName;
             var controllerName = controllerActionDescriptor.ControllerName;
+            var controllerType = controllerActionDescriptor.ControllerTypeInfo;
+
             if (actionName == "GetList")
             {
-                var tListDto = controllerActionDescriptor.ControllerTypeInfo.GenericTypeArguments[2];
+                var tListDto = controllerType.GenericTypeArguments[indexOfListDtoType];
                 var embedded = Enumerable.Repeat<object?>(null, 3).Select(_ => _fixture.Create(tListDto, _specimenContext)).ToList();
-                var resource = resourceFactory.CreateForOdataListEndpointUsingSkipTopPaging(embedded, _ => "List", e => ((ConcurrentDtoBase)e).Id, _oDataQueryFactory.GetListNavigation(embedded, new ODataRawQueryOptions(), linkFactory.Create(action: actionName, controller: controllerName).Href, 3, 3, 10), new Page { CurrentPage = 2, TotalPages = 4 }, controllerName);
+                var resource = resourceFactory.CreateForOdataListEndpointUsingSkipTopPaging(embedded, _ => "List", e => ((DtoBase)e).Id, _oDataQueryFactory.GetListNavigation(embedded, new ODataRawQueryOptions(), linkFactory.Create(action: actionName, controller: controllerName).Href, 3, 3, 10), new Page { CurrentPage = 2, TotalPages = 4 }, controllerName);
                 type.Example = CreateExample(resource);
             }
             else if (actionName == "Get" || actionName == "Post" || actionName == "Put" || actionName == "New")
             {
-                var tFullDto = controllerActionDescriptor.ControllerTypeInfo.GenericTypeArguments[3];
+                var tFullDto = controllerType.GenericTypeArguments[indexOfFullDtoType];
 
                 if (actionName == "Get" || actionName == "New")
                 {
@@ -193,19 +201,22 @@ namespace RESTworld.AspNetCore.Swagger
                     Resource resource;
                     if (actionName == "New")
                     {
-                        if (state is ConcurrentDtoBase dtoBase)
+                        if (state is DtoBase dtoBase)
                         {
                             // No Id and Timestamp when creating new resources
                             dtoBase.Id = default;
-                            dtoBase.Timestamp = default;
-
-                            // Change tracking values are set by the server, not by the client
-                            if (dtoBase is ChangeTrackingDtoBase changeTrackingDtoBase)
+                            if (state is ConcurrentDtoBase concurrentDtoBase)
                             {
-                                changeTrackingDtoBase.CreatedAt = default;
-                                changeTrackingDtoBase.CreatedBy = default;
-                                changeTrackingDtoBase.LastChangedAt = default;
-                                changeTrackingDtoBase.LastChangedBy = default;
+                                concurrentDtoBase.Timestamp = default;
+
+                                // Change tracking values are set by the server, not by the client
+                                if (dtoBase is ChangeTrackingDtoBase changeTrackingDtoBase)
+                                {
+                                    changeTrackingDtoBase.CreatedAt = default;
+                                    changeTrackingDtoBase.CreatedBy = default;
+                                    changeTrackingDtoBase.LastChangedAt = default;
+                                    changeTrackingDtoBase.LastChangedBy = default;
+                                }
                             }
                         }
                         resource = resourceFactory.CreateForGetEndpoint(state, action: "New", controller: controllerName);
@@ -214,7 +225,7 @@ namespace RESTworld.AspNetCore.Swagger
                     }
                     else
                     {
-                        resource = resourceFactory.CreateForGetEndpoint(state, controller: controllerName, routeValues: new { id = ((ConcurrentDtoBase)state).Id });
+                        resource = resourceFactory.CreateForGetEndpoint(state, controller: controllerName, routeValues: new { id = ((DtoBase)state).Id });
                     }
 
                     type.Example = CreateExample(resource);
@@ -312,18 +323,18 @@ namespace RESTworld.AspNetCore.Swagger
 
                         case "$top":
                             parameter.Examples["server default"] = new OpenApiExample { Value = new OpenApiNull() };
-                            parameter.Examples["5"] = new OpenApiExample { Value = new OpenApiString("5") };
-                            parameter.Examples["10"] = new OpenApiExample { Value = new OpenApiString("10") };
-                            parameter.Examples["50"] = new OpenApiExample { Value = new OpenApiString("50") };
-                            parameter.Examples["100"] = new OpenApiExample { Value = new OpenApiString("100") };
+                            parameter.Examples[" 5"] = new OpenApiExample { Value = new OpenApiString("5") };
+                            parameter.Examples[" 10"] = new OpenApiExample { Value = new OpenApiString("10") };
+                            parameter.Examples[" 50"] = new OpenApiExample { Value = new OpenApiString("50") };
+                            parameter.Examples[" 100"] = new OpenApiExample { Value = new OpenApiString("100") };
                             break;
 
                         case "$skip":
-                            parameter.Examples["default (0)"] = new OpenApiExample { Value = new OpenApiNull() };
-                            parameter.Examples["5"] = new OpenApiExample { Value = new OpenApiString("5") };
-                            parameter.Examples["10"] = new OpenApiExample { Value = new OpenApiString("10") };
-                            parameter.Examples["50"] = new OpenApiExample { Value = new OpenApiString("50") };
-                            parameter.Examples["100"] = new OpenApiExample { Value = new OpenApiString("100") };
+                            parameter.Examples["server default (0)"] = new OpenApiExample { Value = new OpenApiNull() };
+                            parameter.Examples[" 5"] = new OpenApiExample { Value = new OpenApiString("5") };
+                            parameter.Examples[" 10"] = new OpenApiExample { Value = new OpenApiString("10") };
+                            parameter.Examples[" 50"] = new OpenApiExample { Value = new OpenApiString("50") };
+                            parameter.Examples[" 100"] = new OpenApiExample { Value = new OpenApiString("100") };
                             break;
 
                         case "timestamp":
