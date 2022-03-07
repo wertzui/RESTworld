@@ -23,8 +23,7 @@ namespace RESTworld.AspNetCore
                 .Enrich.FromLogContext()
                 .WriteTo.Console()
                 .WriteTo.File("logs/log.log", rollingInterval: RollingInterval.Day, rollOnFileSizeLimit: true)
-                .MinimumLevel.Information()
-                .CreateLogger();
+                .CreateBootstrapLogger();
             try
             {
                 Log.Information("Starting up");
@@ -42,7 +41,11 @@ namespace RESTworld.AspNetCore
 
         private static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
-                .UseSerilog()
+                .UseSerilog((context, services, configuration) =>
+                    configuration
+                        .ReadFrom.Configuration(context.Configuration)
+                        .ReadFrom.Services(services)
+                        .Enrich.FromLogContext())
                 .ConfigureWebHostDefaults(webBuilder => webBuilder.UseStartup<TStartup>());
     }
 }
