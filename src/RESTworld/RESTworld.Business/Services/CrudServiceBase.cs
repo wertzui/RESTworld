@@ -25,6 +25,8 @@ namespace RESTworld.Business.Services
         where TGetFullDto : ConcurrentDtoBase
         where TUpdateDto : ConcurrentDtoBase
     {
+        private static bool _authorizationHandlerWarningWasLogged;
+
         /// <summary>
         /// The authorization handlers which are used for all CRUD operations.
         /// </summary>
@@ -54,11 +56,21 @@ namespace RESTworld.Business.Services
         {
             CrudAuthorizationHandlers = authorizationHandlers ?? throw new ArgumentNullException(nameof(authorizationHandlers));
 
-            if (!System.Linq.Enumerable.Any(authorizationHandlers))
+            LogAuthoriztaionHandlerWarningOnlyOneTimeIfNoHandlersArePresent(authorizationHandlers);
+        }
+
+        private void LogAuthoriztaionHandlerWarningOnlyOneTimeIfNoHandlersArePresent(IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> authorizationHandlers)
+        {
+            if (!_authorizationHandlerWarningWasLogged && !System.Linq.Enumerable.Any(authorizationHandlers))
+            {
+                _authorizationHandlerWarningWasLogged = true;
+
                 _logger.LogWarning("No {TCrudAuthorizationHandler} is configured. No authorization will be performed for any methods of {TCrudServiceBase}.",
                     $"{nameof(ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}>",
                     $"{nameof(CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}>");
+            }
         }
+
 
         /// <inheritdoc/>
         public Task<ServiceResponse<TGetFullDto>> CreateAsync(TCreateDto dto)

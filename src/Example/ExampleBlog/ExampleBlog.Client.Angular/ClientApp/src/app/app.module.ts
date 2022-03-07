@@ -1,5 +1,5 @@
 import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
+import { ErrorHandler, NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
@@ -16,6 +16,7 @@ import { RestworldClientModule } from './ngx-restworld-client/restworld-client.m
 import { AppRoutes } from './app.routes';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { PostWithAuthorComponent } from './blog-posts/post-with-author.component';
+import { ApplicationinsightsAngularpluginErrorService } from '@microsoft/applicationinsights-angularplugin-js';
 
 @NgModule({
   declarations: [
@@ -38,6 +39,10 @@ import { PostWithAuthorComponent } from './blog-posts/post-with-author.component
     RestworldClientModule,
   ],
   providers: [
+    {
+      provide: ErrorHandler,
+      useClass: ApplicationinsightsAngularpluginErrorService
+    }
   ],
   bootstrap: [AppComponent]
 })

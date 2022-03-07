@@ -24,6 +24,8 @@ namespace RESTworld.Business.Services
         where TGetListDto : DtoBase
         where TGetFullDto : DtoBase
     {
+        private static bool _authorizationHandlerWarningWasLogged;
+
         /// <summary>
         /// The authorization handlers which are used for read operations.
         /// </summary>
@@ -50,10 +52,19 @@ namespace RESTworld.Business.Services
         {
             ReadAuthorizationHandlers = authorizationHandlers ?? throw new ArgumentNullException(nameof(authorizationHandlers));
 
-            if (!System.Linq.Enumerable.Any(authorizationHandlers))
+            LogAuthoriztaionHandlerWarningOnlyOneTimeIfNoHandlersArePresent(authorizationHandlers);
+        }
+
+        private void LogAuthoriztaionHandlerWarningOnlyOneTimeIfNoHandlersArePresent(IEnumerable<IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>> authorizationHandlers)
+        {
+            if (!_authorizationHandlerWarningWasLogged && !System.Linq.Enumerable.Any(authorizationHandlers))
+            {
+                _authorizationHandlerWarningWasLogged = true;
+
                 _logger.LogWarning("No {TReadAuthorizationHandler} is configured. No authorization will be performed for any methods of {TReadServiceBase}.",
                     $"{nameof(IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>)}<{typeof(TEntity).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}>",
                     $"{nameof(ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>)}<{typeof(TEntity).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}>");
+            }
         }
 
         /// <inheritdoc/>

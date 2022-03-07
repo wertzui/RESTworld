@@ -15,6 +15,7 @@ namespace ExampleBlog.Common.Dtos
         public bool? MyNullableBool { get; set; }
         public decimal? MyNullableDecimal { get; set; }
         public ICollection<ListTestDto> MyCollection { get; set; } = new HashSet<ListTestDto>();
+        public IDictionary<long, DictionaryTestDto> MyDictionary { get; set; } = new Dictionary<long, DictionaryTestDto>();
         public NestedTestDto? MyNestedObject { get; set; }
     }
 
@@ -28,5 +29,11 @@ namespace ExampleBlog.Common.Dtos
     {
         public string MyListString { get; set; } = default!;
         public int MyListInt { get; set; }
+    }
+
+    public class DictionaryTestDto
+    {
+        public string MyDictionaryString { get; set; } = default!;
+        public int MyDictionaryInt { get; set; }
     }
 }

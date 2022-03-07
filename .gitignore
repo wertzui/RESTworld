@@ -352,3 +352,6 @@ MigrationBackup/
 
 # Angular build output
 dist/
+
+#Angular cache
+.angular/
