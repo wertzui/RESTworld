@@ -22,6 +22,7 @@ namespace RESTworld.AspNetCore.Health
         static HealthCheckHALResponseWriter()
         {
             _jsonSerializerOptions.Converters.Add(new JsonTimeSpanConverter());
+            _jsonSerializerOptions.Converters.Add(new JsonExceptionConverter());
             _jsonSerializerOptions.Converters.Add(new JsonStringEnumMemberConverter(JsonNamingPolicy.CamelCase));
         }
 
@@ -46,6 +47,36 @@ namespace RESTworld.AspNetCore.Health
 
             public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)
                 => writer.WriteStringValue(value.ToString());
+        }
+
+        /// <summary>
+        /// <see cref="HealthCheckResult"/> may contain an exception.
+        /// Without this converter, the serialization of that exception would throw a <see cref="NotSupportedException"/> from System.Text.Json.
+        /// </summary>
+        private class JsonExceptionConverter : JsonConverter<Exception>
+        {
+            public override Exception? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override void Write(Utf8JsonWriter writer, Exception value, JsonSerializerOptions options)
+            {
+                writer.WriteStartObject();
+                writer.WriteString(nameof(Exception.Message), value.Message);
+                writer.WriteString(nameof(Exception.StackTrace), value.StackTrace);
+                if (value.Data is not null)
+                {
+                    writer.WritePropertyName(nameof(Exception.Data));
+                    JsonSerializer.Serialize(writer, value.Data, options);
+                }
+                if (value.InnerException is not null)
+                {
+                    writer.WritePropertyName(nameof(Exception.InnerException));
+                    JsonSerializer.Serialize(writer, value.InnerException, options);
+                }
+                writer.WriteEndObject();
+            }
         }
     }
 }
