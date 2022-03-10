@@ -4,7 +4,7 @@ using System;
 
 namespace RESTworld.EntityFrameworkCore
 {
-    internal class SqlServerDesignTimeDbContextFactory<TDbContext> : IDesignTimeDbContextFactory<TDbContext>
+    public class SqlServerDesignTimeDbContextFactory<TDbContext> : IDesignTimeDbContextFactory<TDbContext>
         where TDbContext : DbContext
     {
         public TDbContext CreateDbContext(string[] args)
