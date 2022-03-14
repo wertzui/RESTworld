@@ -200,7 +200,10 @@ export class RESTworldClient {
 
   private static createHeaders(mediaType?: 'application/hal+json' | 'application/prs.hal-forms+json', version?: number): HttpHeaders {
     if (version)
-      return new HttpHeaders({ 'Accept': `${mediaType || 'application/hal+json'}; v=${version}` });
+      return new HttpHeaders({
+        'Accept': `${mediaType || 'application/hal+json'}; v=${version}`,
+        'Content-Type': `${mediaType || 'application/hal+json'}; v=${version}`
+      });
     return new HttpHeaders();
   }
 }
