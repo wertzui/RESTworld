@@ -124,6 +124,8 @@ namespace RESTworld.AspNetCore
             app.UseHealthChecks("/health/startup", new HealthCheckOptions { Predicate = r => r.Tags.Contains("startup"), ResponseWriter = HealthCheckHALResponseWriter.WriteResponseAsync });
             app.UseHealthChecks("/health/live", new HealthCheckOptions { Predicate = r => r.Tags.Contains("live"), ResponseWriter = HealthCheckHALResponseWriter.WriteResponseAsync });
             app.UseHealthChecks("/health/ready", new HealthCheckOptions { Predicate = r => r.Tags.Contains("ready"), ResponseWriter = HealthCheckHALResponseWriter.WriteResponseAsync });
+
+            app.UseResponseCompression();
         }
 
         /// <summary>
@@ -240,6 +242,21 @@ namespace RESTworld.AspNetCore
             services.AddUserAccessor();
 
             services.AddHealthChecks();
+
+            services.AddResponseCompression(options =>
+            {
+                // The server does not send secure cookies and cannot be used to send arbitrary payloads by an attacker.
+                // The Bearer Token is only present in requests and not in responses.
+                // Therefore it is not vulnerable to CRIME and BREACH.
+                options.EnableForHttps = true;
+                options.MimeTypes = new[]
+                {
+                    "text/*",
+                    "application/*",
+                    "font/*",
+                    "image/svg+xml"
+                };
+            });
         }
 
         /// <summary>

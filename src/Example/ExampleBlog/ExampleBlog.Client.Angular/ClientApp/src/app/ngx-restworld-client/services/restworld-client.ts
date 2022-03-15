@@ -1,6 +1,6 @@
 import { HttpHeaders, HttpResponse } from '@angular/common/http';
 import * as _ from "lodash";
-import { FormsResource, HalClient, Link, PagedListResource, Resource, Template } from "@wertzui/ngx-hal-client"
+import { FormsResource, HalClient, Link, PagedListResource, Resource, Template } from "@wertzui/ngx-hal-client";
 import { LinkNames } from "../constants/link-names";
 import { ProblemDetails } from "../models/problem-details";
 import { RESTworldOptions } from "../models/restworld-options";
@@ -25,7 +25,7 @@ export class RESTworldClient {
         throw new Error(`Cannot get the home resource from ${this._options.BaseUrl} with Version ${this._options.Version}. Response was: ${response}`);
       }
       if (!response.body)
-        throw new Error(`Cannot get the home resource from ${this._options.BaseUrl} with Version ${this._options.Version}. Response was empty.`)
+        throw new Error(`Cannot get the home resource from ${this._options.BaseUrl} with Version ${this._options.Version}. Response was empty.`);
       this._homeResource = response.body;
       this.setDefaultCurie();
     }
@@ -45,11 +45,13 @@ export class RESTworldClient {
       this._defaultCurie = curies[0].name;
   }
 
-  public async getList(rel: string, parameters: {}, headers?: HttpHeaders, curie?: string): Promise<HttpResponse<PagedListResource | ProblemDetails>>{
+  public async getList(rel: string, parameters: {}, headers?: HttpHeaders, curie?: string): Promise<HttpResponse<PagedListResource | ProblemDetails>> {
     const link = this.getLinkFromHome(rel, LinkNames.getList, curie);
     const uri = link.fillTemplate(parameters);
+    const defaultHeaders = RESTworldClient.createHeaders('application/hal+json', this._options.Version);
+    const combinedHeaders = RESTworldClient.combineHeaders(headers, defaultHeaders, false);
 
-    const response = await this.halClient.get(uri, PagedListResource, ProblemDetails, headers);
+    const response = await this.halClient.get(uri, PagedListResource, ProblemDetails, combinedHeaders);
 
     return response;
   }
@@ -58,8 +60,10 @@ export class RESTworldClient {
     const link = new Link();
     link.href = uri;
     const filledUri = link.fillTemplate(parameters);
+    const defaultHeaders = RESTworldClient.createHeaders('application/hal+json', this._options.Version);
+    const combinedHeaders = RESTworldClient.combineHeaders(headers, defaultHeaders, false);
 
-    const response = await this.halClient.get(filledUri, PagedListResource, ProblemDetails, headers);
+    const response = await this.halClient.get(filledUri, PagedListResource, ProblemDetails, combinedHeaders);
 
     return response;
   }
@@ -68,20 +72,23 @@ export class RESTworldClient {
     let uri;
     if (relOrUri.startsWith('http')) {
       if (id !== undefined)
-        throw new Error('When supplying a URI, an ID cannot be supplied too.')
+        throw new Error('When supplying a URI, an ID cannot be supplied too.');
       if (curie)
-        throw new Error('When supplying a URI, a curie cannot be supplied too.')
+        throw new Error('When supplying a URI, a curie cannot be supplied too.');
 
       uri = relOrUri;
     }
     else {
       if (!_.isNumber(id))
-        throw new Error('When supplying a rel, an ID must be supplied too.')
+        throw new Error('When supplying a rel, an ID must be supplied too.');
 
       const link = this.getLinkFromHome(relOrUri, LinkNames.get, curie);
       uri = link.fillTemplate({ id: id.toString() });
     }
-    const response = await this.halClient.get(uri, Resource, ProblemDetails, headers);
+
+    const defaultHeaders = RESTworldClient.createHeaders('application/hal+json', this._options.Version);
+    const combinedHeaders = RESTworldClient.combineHeaders(headers, defaultHeaders, false);
+    const response = await this.halClient.get(uri, Resource, ProblemDetails, combinedHeaders);
 
     return response;
   }
@@ -153,7 +160,7 @@ export class RESTworldClient {
     return response;
   }
 
-  public getAllLinksFromHome(): { [rel: string]: Link[] | undefined } {
+  public getAllLinksFromHome(): { [rel: string]: Link[] | undefined; } {
     if (!this._homeResource)
       throw new Error('Home resource is not set. Call ensureHomeResourceIsSet() first.');
 
@@ -166,7 +173,7 @@ export class RESTworldClient {
     const link = name ? links.find(l => l.name === name) : links[0];
 
     if (!link)
-      throw new Error(`The home resource does not have a link with the rel '${this.getFullRel(rel, curie)}' and the name '${name}'.`)
+      throw new Error(`The home resource does not have a link with the rel '${this.getFullRel(rel, curie)}' and the name '${name}'.`);
 
     return link;
   }
@@ -205,5 +212,24 @@ export class RESTworldClient {
         'Content-Type': `${mediaType || 'application/hal+json'}; v=${version}`
       });
     return new HttpHeaders();
+  }
+
+  private static combineHeaders(originalHeaders: HttpHeaders | undefined, headersToAdd: HttpHeaders | undefined, overwriteExisting: boolean) {
+    if (!headersToAdd)
+      return originalHeaders;
+    if (!originalHeaders)
+      return headersToAdd;
+
+    let combinedHeaders = originalHeaders;
+
+    for (const key in headersToAdd.keys) {
+      if (!combinedHeaders.has(key) || overwriteExisting) {
+        const headerValuesToAdd = headersToAdd.getAll(key);
+        if (headerValuesToAdd)
+          combinedHeaders = combinedHeaders.set(key, headerValuesToAdd);
+      }
+    }
+
+    return combinedHeaders;
   }
 }

@@ -1,7 +1,7 @@
-import { Component, Input } from '@angular/core';
+import { AfterViewInit, Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { PagedListResource, Resource } from '@wertzui/ngx-hal-client';
 import * as _ from 'lodash';
-import { ConfirmationService, FilterMatchMode, FilterMetadata, LazyLoadEvent, MessageService } from 'primeng/api';
+import { ConfirmationService, FilterMatchMode, FilterMetadata, LazyLoadEvent, MessageService, SortMeta } from 'primeng/api';
 import { RESTworldClient } from '../../services/restworld-client';
 import { RESTworldClientCollection } from '../../services/restworld-client-collection';
 import { ProblemDetails } from '../../models/problem-details';
@@ -11,7 +11,9 @@ export enum ColumnType {
   text = 'text',
   numeric = 'numeric',
   boolean = 'boolean',
-  date = 'date'
+  date = 'date',
+  array = 'array',
+  object = 'object'
 }
 
 export interface Column {
@@ -25,7 +27,7 @@ export interface Column {
   templateUrl: './restworld-list-view.component.html',
   styleUrls: ['./restworld-list-view.component.css']
 })
-export class RESTworldListViewComponent {
+export class RESTworldListViewComponent implements AfterViewInit, OnInit, OnChanges {
 
   public get columns(): Column[] {
     return this._columns;
@@ -43,8 +45,7 @@ export class RESTworldListViewComponent {
   @Input()
   public set apiName(value: string | undefined) {
     this._apiName = value;
-    if (this.apiName && this.rel && this._lastEvent)
-      this.load(this._lastEvent);
+    this.load(this._lastEvent);
   }
   public get apiName(): string | undefined {
     return this._apiName;
@@ -53,13 +54,35 @@ export class RESTworldListViewComponent {
   @Input()
   public set rel(value: string | undefined) {
     this._rel = value;
-    if (this.apiName && this.rel && this._lastEvent)
-      this.load(this._lastEvent);
+    this.load(this._lastEvent);
   }
   public get rel(): string | undefined {
     return this._rel;
   }
   private _rel?: string;
+
+  @Input()
+  public set sortField(value: string | undefined) {
+    this._sortField = value ?? '';
+    this._lastEvent.sortField = value;
+    this.load(this._lastEvent);
+  }
+  public get sortField(): string {
+    return this._sortField;
+  }
+  private _sortField = '';
+
+  @Input()
+  public set sortOrder(value: number | undefined) {
+    this._sortOrder = value ?? 1;
+    this._lastEvent.sortOrder = value;
+    this.load(this._lastEvent);
+  }
+  public get sortOrder(): number {
+    return this._sortOrder;
+  }
+  private _sortOrder = 1;
+
   @Input()
   public rowsPerPage: number[];
   public resource?: PagedListResource;
@@ -77,9 +100,6 @@ export class RESTworldListViewComponent {
   }
   private set totalRecords(value: number | undefined) {
     this._totalRecords = value || 0;
-  }
-  public get sortOrder() {
-    return this._lastEvent.sortOrder || 0;
   }
 
   public get newHref(): string | undefined {
@@ -108,6 +128,17 @@ export class RESTworldListViewComponent {
       rows: this.rowsPerPage[0]
     };
   }
+  ngOnChanges(changes: SimpleChanges): void {
+    console.log("ngOnChanges " + changes);
+  }
+  ngOnInit(): void {
+    console.log("ngOnInit");
+  }
+
+  public async ngAfterViewInit(): Promise<void> {
+    console.log("ngAfterViewInit");
+    //await this.load(this._lastEvent);
+  }
 
   private getClient(): RESTworldClient {
     if (!this.apiName)
@@ -116,7 +147,9 @@ export class RESTworldListViewComponent {
     return this._clients.getClient(this.apiName);
   }
 
-  public async load(event: LazyLoadEvent): Promise<void> {
+  public load = _.debounce(this.load2, 100);
+
+  public async load2(event: LazyLoadEvent): Promise<void> {
     if (!this.apiName || !this.rel)
       return;
 
@@ -233,6 +266,12 @@ export class RESTworldListViewComponent {
 
     if (_.isBoolean(value))
       return ColumnType.boolean;
+
+    if (_.isArrayLike(value))
+      return ColumnType.array;
+
+    if (_.isObjectLike(value))
+      return ColumnType.object;
 
     return ColumnType.text;
   }

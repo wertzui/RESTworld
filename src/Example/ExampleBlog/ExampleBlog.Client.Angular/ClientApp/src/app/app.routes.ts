@@ -18,7 +18,9 @@ export const AppRoutes: DeepLinkingRoute[] = [
         { name: 'rel', type: 'string' }
       ],
       queryParams: [
-        { name: 'editLink', type: 'string' }
+        { name: 'editLink', type: 'string' },
+        { name: 'sortField', type: 'string' },
+        { name: 'sortOrder', type: 'number' }
       ]
     }
   },
@@ -60,7 +62,8 @@ export const AppMenu: MenuItem[] = [
       },
       {
         label: "Posts",
-        routerLink: ['list', 'ExampleBlog', 'MyEx:Post']
+        routerLink: ['list', 'ExampleBlog', 'MyEx:Post'],
+        queryParams: { sortField: 'lastChangedAt', sortOrder: -1 }
       },
       {
         label: "Statistics",

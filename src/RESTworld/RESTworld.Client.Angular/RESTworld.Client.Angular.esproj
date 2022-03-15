@@ -6,11 +6,11 @@
     <StartupCommand>ng build &amp;&amp; cd dist/ngx-restworld-client &amp;&amp; npm publish</StartupCommand>
     <JavaScriptTestFramework>Jasmine</JavaScriptTestFramework>
     <BuildCommand>ng build</BuildCommand>
-    <CleanCommand>cd projects/ngx-restworld-client &amp;&amp; yarn upgrade ngx-hal-client</CleanCommand>
+    <CleanCommand>cd projects/ngx-restworld-client &amp;&amp; npm install ngx-hal-client</CleanCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <BuildCommand>ng build</BuildCommand>
-    <CleanCommand>cd projects/ngx-restworld-client &amp;&amp; yarn upgrade ngx-hal-client</CleanCommand>
+    <CleanCommand>cd projects/ngx-restworld-client &amp;&amp; npm install ngx-hal-client</CleanCommand>
     <StartupCommand>ng build &amp;&amp; cd dist/ngx-restworld-client &amp;&amp; npm publish</StartupCommand>
   </PropertyGroup>
   <ItemGroup>

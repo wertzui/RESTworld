@@ -9,7 +9,9 @@
          [totalRecords]="totalRecords"
          [loading]="isLoading"
          [showInitialSortBadge]="true"
-         [columns]="columns">
+         [columns]="columns"
+         [sortField]="sortField"
+         [sortOrder]="sortOrder">
 
   <ng-template pTemplate="header" let-columns>
     <tr>
@@ -32,15 +34,17 @@
 
   <ng-template pTemplate="body" let-entity let-columns="columns">
     <tr>
-      <td [ngSwitch]="col.type" *ngFor="let col of columns">
-        <ng-container *ngSwitchCase="'text'">
-          <p-avatar *ngIf="col.field === 'createdBy' || col.field === 'lastChangedBy'" [pTooltip]="entity[col.field]" tooltipPosition="top" [image]="avatarGenerator.getImage(entity[col.field])" [label]="avatarGenerator.getLabel(entity[col.field])" [style]="avatarGenerator.getStyle(entity[col.field])" shape="circle"></p-avatar>
-          <span *ngIf="col.field !== 'createdBy' && col.field !== 'lastChangedBy'">{{entity[col.field]}}</span>
-        </ng-container>
-        <span *ngSwitchCase="'numeric'" class="flex justify-content-end">{{entity[col.field]}}</span>
-        <span *ngSwitchCase="'boolean'" class="flex justify-content-center"><p-triStateCheckbox [(ngModel)]="entity[col.field]" [readonly]="true"></p-triStateCheckbox></span>
-        <span *ngSwitchCase="'date'" [pTooltip]="entity[col.field]">{{entity[col.field] | date:dateFormat}}</span>
-      </td>
+        <td [ngSwitch]="col.type" *ngFor="let col of columns">
+            <ng-container *ngSwitchCase="'text'">
+                <p-avatar *ngIf="col.field === 'createdBy' || col.field === 'lastChangedBy'" [pTooltip]="entity[col.field]" tooltipPosition="top" [image]="avatarGenerator.getImage(entity[col.field])" [label]="avatarGenerator.getLabel(entity[col.field])" [style]="avatarGenerator.getStyle(entity[col.field])" shape="circle"></p-avatar>
+                <span *ngIf="col.field !== 'createdBy' && col.field !== 'lastChangedBy'">{{entity[col.field]}}</span>
+            </ng-container>
+            <span *ngSwitchCase="'numeric'" class="flex justify-content-end">{{entity[col.field]}}</span>
+            <span *ngSwitchCase="'boolean'" class="flex justify-content-center"><p-triStateCheckbox [(ngModel)]="entity[col.field]" [readonly]="true"></p-triStateCheckbox></span>
+            <span *ngSwitchCase="'date'" [pTooltip]="entity[col.field]">{{entity[col.field] | date:dateFormat}}</span>
+            <span *ngSwitchCase="'array'" class="flex justify-content-end"><p *ngFor="let arrayElement of entity[col.field]">{{arrayElement | json}}</p></span>
+            <span *ngSwitchCase="'object'" class="flex justify-content-end">{{entity[col.field] | json}}</span>
+        </td>
       <td>
         <div class="flex justify-content-end">
           <a pButton pTooltip="View/Edit" tooltipPosition="left" [routerLink]="[editLink, apiName, entity._links?.self[0].href]" icon="fas fa-edit"></a>
