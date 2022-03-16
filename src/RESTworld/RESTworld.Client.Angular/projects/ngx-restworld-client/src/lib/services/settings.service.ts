@@ -8,20 +8,16 @@ import { RESTworldClientCollection } from "./restworld-client-collection";
   providedIn: 'root'
 })
 export class SettingsService {
-  private readonly _client: HttpClient;
-
-  private _settings: ClientSettings | undefined;
+  private static _settings: ClientSettings | undefined;
   public get settings(): ClientSettings | undefined {
-    return this._settings;
+    return SettingsService._settings;
   }
 
   private initializing = false;
   private initialized = false;
 
   constructor(
-    backend: HttpBackend,
     private _clients: RESTworldClientCollection) {
-    this._client = new HttpClient(backend);
   }
 
   public async ensureInitialized(): Promise<void> {
@@ -30,7 +26,7 @@ export class SettingsService {
 
     this.initializing = true;
 
-    await this.loadSettings();
+    await SettingsService.ensureSettingsAreLoaded();
     await this.populateRESTworldClientCollectionFromSettings();
 
     this.initialized = true;
@@ -38,17 +34,40 @@ export class SettingsService {
 
   }
 
-  private async loadSettings(): Promise<void> {
-    this._settings = await this._client
-      .get<ClientSettings>('/settings')
-      .toPromise();
+  /**
+   * Call this method in your main.ts before calling bootstrapModule(...)
+   * 
+   * Example:
+   * async function main() {
+   *   try {
+   *     await SettingsService.ensureSettingsAreLoaded();
+   * 
+   *     const providers : StaticProvider[] = [
+   *       { provide: 'BASE_URL', useFactory: getBaseUrl, deps: [] }
+   *     ];
+   * 
+   *     await platformBrowserDynamic(providers).bootstrapModule(AppModule);
+   *   }
+   *   catch (e) {
+   *     console.error(e);
+   *   }
+   * }
+   * 
+   * main();
+   * */
+  public static async ensureSettingsAreLoaded(): Promise<void> {
+    if (SettingsService._settings === undefined) {
+      const response = await fetch('/settings');
+      const settings: ClientSettings = await response.json();
+      SettingsService._settings = settings;
+    }
   }
 
   private async populateRESTworldClientCollectionFromSettings(): Promise<void> {
-    if (!this._settings?.apiUrls)
+    if (!this.settings?.apiUrls)
       return;
 
-    await Promise.all(this._settings.apiUrls
+    await Promise.all(this.settings.apiUrls
       .map(api =>  this._clients.addOrGetExistingClient(api.name, new RESTworldOptions(api.url, api.version))));
   }
 
