@@ -1,11 +1,12 @@
 import { AfterViewInit, Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { PagedListResource, Resource } from '@wertzui/ngx-hal-client';
 import * as _ from 'lodash';
-import { ConfirmationService, FilterMatchMode, FilterMetadata, LazyLoadEvent, MessageService, SortMeta } from 'primeng/api';
+import { ConfirmationService, FilterMatchMode, FilterMetadata, LazyLoadEvent, MenuItem, MessageService, SortMeta } from 'primeng/api';
 import { RESTworldClient } from '../../services/restworld-client';
 import { RESTworldClientCollection } from '../../services/restworld-client-collection';
 import { ProblemDetails } from '../../models/problem-details';
 import { AvatarGenerator } from '../../services/avatar-generator';
+import { Router } from '@angular/router';
 
 export enum ColumnType {
   text = 'text',
@@ -85,6 +86,10 @@ export class RESTworldListViewComponent implements AfterViewInit, OnInit, OnChan
 
   @Input()
   public rowsPerPage: number[];
+
+  @Input()
+  public createButtonMenu?: MenuItem[];
+
   public resource?: PagedListResource;
   public isLoading = false;
   private _totalRecords = 0;
@@ -121,7 +126,8 @@ export class RESTworldListViewComponent implements AfterViewInit, OnInit, OnChan
     private _clients: RESTworldClientCollection,
     private _confirmationService: ConfirmationService,
     private _messageService: MessageService,
-    public avatarGenerator: AvatarGenerator) {
+    public avatarGenerator: AvatarGenerator,
+    private readonly _router: Router) {
     this.rowsPerPage = [10, 25, 50];
 
     this._lastEvent = {
@@ -138,6 +144,10 @@ export class RESTworldListViewComponent implements AfterViewInit, OnInit, OnChan
   public async ngAfterViewInit(): Promise<void> {
     console.log("ngAfterViewInit");
     //await this.load(this._lastEvent);
+  }
+
+  public createNew(): Promise<boolean> {
+    return this._router.navigate([this.editLink, this.apiName, this.newHref]);
   }
 
   private getClient(): RESTworldClient {

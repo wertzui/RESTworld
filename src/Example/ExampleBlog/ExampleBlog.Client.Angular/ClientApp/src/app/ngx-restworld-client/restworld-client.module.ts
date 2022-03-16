@@ -42,6 +42,7 @@ import { SafeUrlPipe } from './pipes/safe-url.pipe';
 import { RestworldEditFormComponent } from './views/restworld-edit-form/restworld-edit-form.component'
 import { FormService } from './services/form.service';
 import { AsPipe } from './pipes/as.pipe';
+import { SplitButtonModule } from 'primeng/splitbutton';
 
 export function initializeSettings(settingsService: SettingsService): () => Promise<void> {
   return async () => await settingsService.initialize();
@@ -87,7 +88,8 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
     DialogModule,
     ButtonModule,
     ColorPickerModule,
-    DragDropModule
+    DragDropModule,
+    SplitButtonModule,
   ],
   exports: [
     RESTworldListViewComponent,

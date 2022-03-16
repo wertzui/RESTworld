@@ -17,13 +17,16 @@ import { AppRoutes } from './app.routes';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { PostWithAuthorComponent } from './blog-posts/post-with-author.component';
 import { ApplicationinsightsAngularpluginErrorService } from '@microsoft/applicationinsights-angularplugin-js';
+import { PostWithAuthorListComponent } from './blog-posts/post-with-autor-list.component';
+import { DialogModule } from 'primeng/dialog';
 
 @NgModule({
   declarations: [
     AppComponent,
     HomeComponent,
     NavigationComponent,
-    PostWithAuthorComponent
+    PostWithAuthorComponent,
+    PostWithAuthorListComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -36,13 +39,14 @@ import { ApplicationinsightsAngularpluginErrorService } from '@microsoft/applica
     TooltipModule,
     ScrollingModule,
     BrowserAnimationsModule,
+    DialogModule,
     RestworldClientModule,
   ],
   providers: [
-    {
-      provide: ErrorHandler,
-      useClass: ApplicationinsightsAngularpluginErrorService
-    }
+    //{
+    //  provide: ErrorHandler,
+    //  useClass: ApplicationinsightsAngularpluginErrorService
+    //}
   ],
   bootstrap: [AppComponent]
 })

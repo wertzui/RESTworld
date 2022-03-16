@@ -4,9 +4,26 @@ import { RESTworldListViewComponent } from "./ngx-restworld-client/views/restwor
 import { RESTworldEditViewComponent } from "./ngx-restworld-client/views/restworld-edit-view/restworld-edit-view.component";
 import { PostWithAuthorComponent } from "./blog-posts/post-with-author.component";
 import { HomeComponent } from "./home/home.component";
+import { PostWithAuthorListComponent } from './blog-posts/post-with-autor-list.component';
 
 export const AppRoutes: DeepLinkingRoute[] = [
   { path: '', component: HomeComponent, pathMatch: 'full' },
+  {
+    path: 'list/postWithAuthor',
+    runGuardsAndResolvers: 'always',
+    component: PostWithAuthorListComponent
+  },
+  {
+    path: 'edit/postWithAuthor/:apiName/:uri',
+    component: DeepLinkingWrapperComponent,
+    wrappedComponent: PostWithAuthorComponent,
+    deepLinking: {
+      params: [
+        { name: 'apiName', type: 'string' },
+        { name: 'uri', type: 'string' }
+      ]
+    }
+  },
   {
     path: 'list/:apiName/:rel',
     runGuardsAndResolvers: 'always',
@@ -28,17 +45,6 @@ export const AppRoutes: DeepLinkingRoute[] = [
     path: 'edit/:apiName/:uri',
     component: DeepLinkingWrapperComponent,
     wrappedComponent: RESTworldEditViewComponent,
-    deepLinking: {
-      params: [
-        { name: 'apiName', type: 'string' },
-        { name: 'uri', type: 'string' }
-      ]
-    }
-  },
-  {
-    path: 'postWithAuthor/:apiName/:uri',
-    component: DeepLinkingWrapperComponent,
-    wrappedComponent: PostWithAuthorComponent,
     deepLinking: {
       params: [
         { name: 'apiName', type: 'string' },
@@ -75,8 +81,7 @@ export const AppMenu: MenuItem[] = [
     items: [
       {
         label: "Posts with author",
-        routerLink: ['list', 'ExampleBlog', 'MyEx:Post'],
-        queryParams: { editLink: '/postWithAuthor'}
+        routerLink: ['list/postWithAuthor']
       },
       {
         label: "TestEntries",
