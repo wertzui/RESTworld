@@ -1,7 +1,7 @@
-import { AfterViewInit, Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { PagedListResource, Resource } from '@wertzui/ngx-hal-client';
 import * as _ from 'lodash';
-import { ConfirmationService, FilterMatchMode, FilterMetadata, LazyLoadEvent, MenuItem, MessageService, SortMeta } from 'primeng/api';
+import { ConfirmationService, FilterMatchMode, FilterMetadata, LazyLoadEvent, MenuItem, MessageService } from 'primeng/api';
 import { RESTworldClient } from '../../services/restworld-client';
 import { RESTworldClientCollection } from '../../services/restworld-client-collection';
 import { ProblemDetails } from '../../models/problem-details';
@@ -28,7 +28,7 @@ export interface Column {
   templateUrl: './restworld-list-view.component.html',
   styleUrls: ['./restworld-list-view.component.css']
 })
-export class RESTworldListViewComponent implements AfterViewInit, OnInit, OnChanges {
+export class RESTworldListViewComponent {
 
   public get columns(): Column[] {
     return this._columns;
@@ -43,6 +43,7 @@ export class RESTworldListViewComponent implements AfterViewInit, OnInit, OnChan
     return this._editLink;
   }
   private _editLink = '/edit';
+
   @Input()
   public set apiName(value: string | undefined) {
     this._apiName = value;
@@ -52,6 +53,7 @@ export class RESTworldListViewComponent implements AfterViewInit, OnInit, OnChan
     return this._apiName;
   }
   private _apiName?: string;
+
   @Input()
   public set rel(value: string | undefined) {
     this._rel = value;
@@ -133,17 +135,6 @@ export class RESTworldListViewComponent implements AfterViewInit, OnInit, OnChan
     this._lastEvent = {
       rows: this.rowsPerPage[0]
     };
-  }
-  ngOnChanges(changes: SimpleChanges): void {
-    console.log("ngOnChanges " + changes);
-  }
-  ngOnInit(): void {
-    console.log("ngOnInit");
-  }
-
-  public async ngAfterViewInit(): Promise<void> {
-    console.log("ngAfterViewInit");
-    //await this.load(this._lastEvent);
   }
 
   public createNew(): Promise<boolean> {

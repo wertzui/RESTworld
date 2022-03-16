@@ -15,16 +15,30 @@ export class SettingsService {
     return this._settings;
   }
 
-  constructor(backend: HttpBackend, private _clients: RESTworldClientCollection) {
+  private initializing = false;
+  private initialized = false;
+
+  constructor(
+    backend: HttpBackend,
+    private _clients: RESTworldClientCollection) {
     this._client = new HttpClient(backend);
   }
 
-  public async initialize(): Promise<void> {
-    await this.ensureSettingsAreLoaded();
+  public async ensureInitialized(): Promise<void> {
+    if (this.initializing || this.initialized)
+      return;
+
+    this.initializing = true;
+
+    await this.loadSettings();
     await this.populateRESTworldClientCollectionFromSettings();
+
+    this.initialized = true;
+    this.initializing = false;
+
   }
 
-  private async ensureSettingsAreLoaded(): Promise<void> {
+  private async loadSettings(): Promise<void> {
     this._settings = await this._client
       .get<ClientSettings>('/settings')
       .toPromise();

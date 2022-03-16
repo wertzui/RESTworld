@@ -45,7 +45,7 @@ import { AsPipe } from './pipes/as.pipe';
 import { SplitButtonModule } from 'primeng/splitbutton';
 
 export function initializeSettings(settingsService: SettingsService): () => Promise<void> {
-  return async () => await settingsService.initialize();
+  return async () => await settingsService.ensureInitialized();
 }
 
 @NgModule({

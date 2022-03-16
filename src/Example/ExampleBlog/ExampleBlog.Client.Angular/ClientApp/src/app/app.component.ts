@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApplicationInsights, DistributedTracingModes } from '@microsoft/applicationinsights-web';
 import { AngularPlugin } from '@microsoft/applicationinsights-angularplugin-js';
@@ -8,30 +8,34 @@ import { SettingsService } from './ngx-restworld-client/services/settings.servic
   selector: 'app-root',
   templateUrl: './app.component.html'
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   title = 'app';
   constructor(
-    private router: Router,
-    private settings: SettingsService,
+    private readonly _router: Router,
+    private readonly _settings: SettingsService,
   ) {
-    const aiInstrumentationKey = 'ApplicationInsights_InstrumentationKey';
-    var angularPlugin = new AngularPlugin();
-    const appInsights = new ApplicationInsights({
-      config: {
-        instrumentationKey: settings.settings.extensions[aiInstrumentationKey],
-        distributedTracingMode: DistributedTracingModes.W3C,
-        disableFetchTracking: false,
-        enableCorsCorrelation: true,
-        enableDebug: true,
-        enableDebugExceptions: true,
-        enableRequestHeaderTracking: true,
-        enableResponseHeaderTracking: true,
-        extensions: [angularPlugin],
-        extensionConfig: {
-          [angularPlugin.identifier]: { router: this.router }
-        }
-      }
-    });
-    appInsights.loadAppInsights();
+
   }
+  public async ngOnInit(): Promise<void> {
+      await this._settings.ensureInitialized();
+      const aiInstrumentationKey = 'ApplicationInsights_InstrumentationKey';
+      var angularPlugin = new AngularPlugin();
+      const appInsights = new ApplicationInsights({
+        config: {
+          instrumentationKey: this._settings.settings.extensions[aiInstrumentationKey],
+          distributedTracingMode: DistributedTracingModes.W3C,
+          disableFetchTracking: false,
+          enableCorsCorrelation: true,
+          enableDebug: true,
+          enableDebugExceptions: true,
+          enableRequestHeaderTracking: true,
+          enableResponseHeaderTracking: true,
+          extensions: [angularPlugin],
+          extensionConfig: {
+            [angularPlugin.identifier]: { router: this._router }
+          }
+        }
+      });
+      appInsights.loadAppInsights();
+    }
 }

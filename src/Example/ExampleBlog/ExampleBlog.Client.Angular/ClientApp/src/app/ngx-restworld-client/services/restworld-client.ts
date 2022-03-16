@@ -47,11 +47,9 @@ export class RESTworldClient {
 
   public async getList(rel: string, parameters: {}, headers?: HttpHeaders, curie?: string): Promise<HttpResponse<PagedListResource | ProblemDetails>> {
     const link = this.getLinkFromHome(rel, LinkNames.getList, curie);
-    const uri = link.fillTemplate(parameters);
-    const defaultHeaders = RESTworldClient.createHeaders('application/hal+json', this._options.Version);
-    const combinedHeaders = RESTworldClient.combineHeaders(headers, defaultHeaders, false);
+    const uri = link.href
 
-    const response = await this.halClient.get(uri, PagedListResource, ProblemDetails, combinedHeaders);
+    const response = await this.getListByUri(uri, parameters, headers);
 
     return response;
   }
@@ -64,6 +62,48 @@ export class RESTworldClient {
     const combinedHeaders = RESTworldClient.combineHeaders(headers, defaultHeaders, false);
 
     const response = await this.halClient.get(filledUri, PagedListResource, ProblemDetails, combinedHeaders);
+
+    return response;
+  }
+
+  public async getAllPagesFromList(rel: string, parameters: {}, headers?: HttpHeaders, curie?: string): Promise<HttpResponse<PagedListResource | ProblemDetails>> {
+    const link = this.getLinkFromHome(rel, LinkNames.getList, curie);
+    const uri = link.href;
+
+    const response = await this.getAllPagesFromListByUri(uri, parameters, headers);
+
+    return response;
+  }
+
+  public async getAllPagesFromListByUri(uri: string, parameters: {}, headers?: HttpHeaders): Promise<HttpResponse<PagedListResource | ProblemDetails>> {
+    const response = await this.getListByUri(uri, parameters, headers);
+
+    if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body?._embedded?.items)
+      return response;
+
+
+    const items = response.body._embedded.items;
+    let lastResponse = response;
+
+    while ((lastResponse?.body?._links?.next?.length ?? 0) > 0) {
+      // Get the next response
+      const nextLinks = lastResponse.body?._links.next;
+      const nextLink = nextLinks ? nextLinks[0]: undefined;
+      const nextHref = nextLink?.href;
+      if (nextHref) {
+        lastResponse = await this.getListByUri(nextHref, parameters, headers);
+
+        if (!lastResponse.ok || ProblemDetails.isProblemDetails(lastResponse.body) || !lastResponse.body)
+          return lastResponse;
+
+        // Combine the embedded items
+        lastResponse.body?._embedded?.items?.forEach(r => items.push(r));
+      }
+    }
+
+    // We combined everything, so there is just one big page
+    response.body.totalPages = 1;
+    response.body._links.next = undefined;
 
     return response;
   }
