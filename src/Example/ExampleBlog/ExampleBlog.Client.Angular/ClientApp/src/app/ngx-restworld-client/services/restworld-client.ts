@@ -1,6 +1,6 @@
 import { HttpHeaders, HttpResponse } from '@angular/common/http';
 import * as _ from "lodash";
-import { FormsResource, HalClient, Link, PagedListResource, Resource, Template } from "@wertzui/ngx-hal-client";
+import { FormsResource, HalClient, Link, PagedListResource, Resource, ResourceDto, Template } from "@wertzui/ngx-hal-client";
 import { LinkNames } from "../constants/link-names";
 import { ProblemDetails } from "../models/problem-details";
 import { RESTworldOptions } from "../models/restworld-options";
@@ -45,38 +45,38 @@ export class RESTworldClient {
       this._defaultCurie = curies[0].name;
   }
 
-  public async getList(rel: string, parameters: {}, headers?: HttpHeaders, curie?: string): Promise<HttpResponse<PagedListResource | ProblemDetails>> {
+  public async getList<TListDto extends ResourceDto>(rel: string, parameters: {}, headers?: HttpHeaders, curie?: string): Promise<HttpResponse<PagedListResource<TListDto> | ProblemDetails>> {
     const link = this.getLinkFromHome(rel, LinkNames.getList, curie);
     const uri = link.href
 
-    const response = await this.getListByUri(uri, parameters, headers);
+    const response = await this.getListByUri<TListDto>(uri, parameters, headers);
 
     return response;
   }
 
-  public async getListByUri(uri: string, parameters: {}, headers?: HttpHeaders): Promise<HttpResponse<PagedListResource | ProblemDetails>> {
+  public async getListByUri<TListDto extends ResourceDto>(uri: string, parameters: {}, headers?: HttpHeaders): Promise<HttpResponse<PagedListResource<TListDto> | ProblemDetails>> {
     const link = new Link();
     link.href = uri;
     const filledUri = link.fillTemplate(parameters);
     const defaultHeaders = RESTworldClient.createHeaders('application/hal+json', this._options.Version);
     const combinedHeaders = RESTworldClient.combineHeaders(headers, defaultHeaders, false);
 
-    const response = await this.halClient.get(filledUri, PagedListResource, ProblemDetails, combinedHeaders);
+    const response = await this.halClient.get<PagedListResource<TListDto>, ProblemDetails>(filledUri, PagedListResource, ProblemDetails, combinedHeaders);
 
     return response;
   }
 
-  public async getAllPagesFromList(rel: string, parameters: {}, headers?: HttpHeaders, curie?: string): Promise<HttpResponse<PagedListResource | ProblemDetails>> {
+  public async getAllPagesFromList<TListDto extends ResourceDto>(rel: string, parameters: {}, headers?: HttpHeaders, curie?: string): Promise<HttpResponse<PagedListResource<TListDto> | ProblemDetails>> {
     const link = this.getLinkFromHome(rel, LinkNames.getList, curie);
     const uri = link.href;
 
-    const response = await this.getAllPagesFromListByUri(uri, parameters, headers);
+    const response = await this.getAllPagesFromListByUri<TListDto>(uri, parameters, headers);
 
     return response;
   }
 
-  public async getAllPagesFromListByUri(uri: string, parameters: {}, headers?: HttpHeaders): Promise<HttpResponse<PagedListResource | ProblemDetails>> {
-    const response = await this.getListByUri(uri, parameters, headers);
+  public async getAllPagesFromListByUri<TListDto extends ResourceDto>(uri: string, parameters: {}, headers?: HttpHeaders): Promise<HttpResponse<PagedListResource<TListDto> | ProblemDetails>> {
+    const response = await this.getListByUri<TListDto>(uri, parameters, headers);
 
     if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body?._embedded?.items)
       return response;
@@ -91,7 +91,7 @@ export class RESTworldClient {
       const nextLink = nextLinks ? nextLinks[0]: undefined;
       const nextHref = nextLink?.href;
       if (nextHref) {
-        lastResponse = await this.getListByUri(nextHref, parameters, headers);
+        lastResponse = await this.getListByUri<TListDto>(nextHref, parameters, headers);
 
         if (!lastResponse.ok || ProblemDetails.isProblemDetails(lastResponse.body) || !lastResponse.body)
           return lastResponse;

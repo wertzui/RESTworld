@@ -1,10 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ResourceDto } from '@wertzui/ngx-hal-client';
 
 import { RESTworldListViewComponent } from './restworld-list-view.component';
 
 describe('RestworldListViewComponent', () => {
-  let component: RESTworldListViewComponent;
-  let fixture: ComponentFixture<RESTworldListViewComponent>;
+  let component: RESTworldListViewComponent<ResourceDto>;
+  let fixture: ComponentFixture<RESTworldListViewComponent<ResourceDto>>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({

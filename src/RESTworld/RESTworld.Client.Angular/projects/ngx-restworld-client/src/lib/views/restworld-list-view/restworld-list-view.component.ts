@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { PagedListResource, Resource } from '@wertzui/ngx-hal-client';
+import { PagedListResource, Resource, ResourceDto } from '@wertzui/ngx-hal-client';
 import * as _ from 'lodash';
 import { ConfirmationService, FilterMatchMode, FilterMetadata, LazyLoadEvent, MenuItem, MessageService } from 'primeng/api';
 import { RESTworldClient } from '../../services/restworld-client';
@@ -28,7 +28,7 @@ export interface Column {
   templateUrl: './restworld-list-view.component.html',
   styleUrls: ['./restworld-list-view.component.css']
 })
-export class RESTworldListViewComponent {
+export class RESTworldListViewComponent<TListDto extends ResourceDto> {
 
   public get columns(): Column[] {
     return this._columns;
@@ -92,7 +92,7 @@ export class RESTworldListViewComponent {
   @Input()
   public createButtonMenu?: MenuItem[];
 
-  public resource?: PagedListResource;
+  public resource?: PagedListResource<TListDto>;
   public isLoading = false;
   private _totalRecords = 0;
   private _lastEvent: LazyLoadEvent;
@@ -158,7 +158,7 @@ export class RESTworldListViewComponent {
     this._lastEvent = event;
 
     const parameters = this.createParametersFromEvent(event);
-    const response = await this.getClient().getList(this.rel, parameters);
+    const response = await this.getClient().getList<TListDto>(this.rel, parameters);
     if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body) {
       this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the resources from the API.', data: response });
     }
