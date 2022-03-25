@@ -11,9 +11,9 @@ export class SafeUrlPipe implements PipeTransform {
   }
 
   transform(url: unknown) {
-    if (_.isString(url))
+    if (!_.isString(url))
       throw new Error(`The given url '${url}' is not a string.`)
 
-    return this._domSanitizer.bypassSecurityTrustResourceUrl(url as string);
+    return this._domSanitizer.bypassSecurityTrustResourceUrl(url);
   }
 }
