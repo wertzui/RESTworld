@@ -185,6 +185,12 @@ namespace RESTworld.AspNetCore.Controller
             }
         }
 
+        /// <summary>
+        /// Since this is a read-only controller, every property is also read only.
+        /// <see cref="CreateResource(TGetFullDto, HttpMethod, string)"/> is overridden in the <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
+        /// and there the form is kept as it is.
+        /// </summary>
+        /// <param name="form">The HAL-Form to make read-only</param>
         private static void MakeFormReadOnly(FormsResource? form)
         {
             MakeFormReadOnly(form?.Templates);

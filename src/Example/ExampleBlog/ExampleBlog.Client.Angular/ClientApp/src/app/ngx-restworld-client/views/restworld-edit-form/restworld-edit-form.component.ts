@@ -173,7 +173,7 @@ export class RestworldEditFormComponent implements OnInit {
     const maxIndex = Math.max(...Object.keys(property._templates)
       .map(key => Number.parseInt(key))
       .filter(key => Number.isSafeInteger(key)));
-    const nextIndex = maxIndex + 1;
+    const nextIndex = maxIndex < 0 ? 0 : maxIndex + 1;
 
     const defaultTemplate = property._templates['default'];
     const copiedTemplateDto = JSON.parse(JSON.stringify(defaultTemplate)) as TemplateDto;

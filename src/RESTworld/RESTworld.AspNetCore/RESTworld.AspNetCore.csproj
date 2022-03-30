@@ -11,7 +11,7 @@
     <Authors>wertzui</Authors>
     <PackageProjectUrl>https://github.com/wertzui/RESTworld</PackageProjectUrl>
     <RepositoryUrl>https://github.com/wertzui/RESTworld</RepositoryUrl>
-    <VersionPrefix>11.3.1</VersionPrefix>
+    <VersionPrefix>11.4.0</VersionPrefix>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -31,7 +31,7 @@
     <PackageReference Include="AutoFixture" Version="4.17.0" />
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="11.0.0" />
     <PackageReference Include="CsvHelper" Version="27.2.1" />
-    <PackageReference Include="HAL.AspNetCore.OData" Version="6.0.5" />
+    <PackageReference Include="HAL.AspNetCore.OData" Version="6.1.0" />
     <PackageReference Include="Macross.Json.Extensions" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.OData.Versioning.ApiExplorer" Version="5.0.0" />
@@ -41,7 +41,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\HAL\src\HAL\Hal.AspNetCore.OData\HAL.AspNetCore.OData.csproj" />
     <ProjectReference Include="..\RESTworld.Business\RESTworld.Business.csproj" />
   </ItemGroup>
 

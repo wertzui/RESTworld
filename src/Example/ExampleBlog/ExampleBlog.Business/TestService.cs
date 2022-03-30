@@ -72,6 +72,7 @@ namespace ExampleBlog.Business
         {
             var dto = _fixture.Create<TestDto>();
             dto.Id = id;
+            dto.MyNullCollection = null;
 
             return Task.FromResult(ServiceResponse.FromResult(dto));
         }

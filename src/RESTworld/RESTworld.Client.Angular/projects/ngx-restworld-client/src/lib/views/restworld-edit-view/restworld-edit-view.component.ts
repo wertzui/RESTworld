@@ -2,7 +2,7 @@ import { Component, Input } from '@angular/core';
 import { PropertyType, Resource, Template, Templates, FormsResource, Property } from '@wertzui/ngx-hal-client';
 import { RESTworldClient } from '../../services/restworld-client';
 import { RESTworldClientCollection } from '../../services/restworld-client-collection';
-import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
+import { AbstractControl, FormArray, FormControl, FormGroup } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
@@ -216,8 +216,12 @@ export class RESTworldEditViewComponent {
             const form = this.formTabs[templateName];
             for (const [key, errorsForKey] of Object.entries(problemDetails['errors'] as {})) {
               const path = key.split(/\.|\[/).map(e => e.replace("]", ""));
-              const formControl = path.reduce<AbstractControl>((control, pathElement) => (control instanceof FormGroup ? control.controls[pathElement] : control) || control, form);
-              formControl.setErrors({ remote: errorsForKey });
+              // The path might start with a $, indicating the root.
+              if (path.length > 0 && path[0] === '$')
+                path.shift();
+              const formControl = path.reduce<AbstractControl>(RESTworldEditViewComponent.getSubControl, form);
+              formControl.setErrors({ ...formControl.errors, ...{ remote: errorsForKey } });
+              formControl.markAsTouched();
             }
           }
         }
@@ -244,6 +248,17 @@ export class RESTworldEditViewComponent {
     }
 
     this.isLoading = false;
+  }
+
+  private static getSubControl(control: AbstractControl, pathElement: string): AbstractControl {
+    if (control instanceof FormGroup)
+      return control.controls[pathElement];
+    if (control instanceof FormArray) {
+      const index = Number.parseInt(pathElement);
+      if (Number.isInteger(index))
+        return control.controls[index];
+    }
+    return control;
   }
 
   public showDeleteConfirmatioModal() {

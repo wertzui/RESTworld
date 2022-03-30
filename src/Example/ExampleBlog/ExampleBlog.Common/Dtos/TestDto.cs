@@ -1,5 +1,7 @@
-﻿using RESTworld.Common.Dtos;
+﻿using HAL.Common.Converters;
+using RESTworld.Common.Dtos;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace ExampleBlog.Common.Dtos
 {
@@ -15,7 +17,9 @@ namespace ExampleBlog.Common.Dtos
         public bool? MyNullableBool { get; set; }
         public decimal? MyNullableDecimal { get; set; }
         public ICollection<ListTestDto> MyCollection { get; set; } = new HashSet<ListTestDto>();
-        public IDictionary<long, DictionaryTestDto> MyDictionary { get; set; } = new Dictionary<long, DictionaryTestDto>();
+        public ICollection<ListChangeTrackingDto>? MyNullCollection { get; set; }
+        [JsonConverter(typeof(KeyValueDictionaryConverterFactory))]
+        public IDictionary<string, DictionaryTestDto> MyDictionary { get; set; } = new Dictionary<string, DictionaryTestDto>();
         public NestedTestDto? MyNestedObject { get; set; }
     }
 
@@ -35,5 +39,11 @@ namespace ExampleBlog.Common.Dtos
     {
         public string MyDictionaryString { get; set; } = default!;
         public int MyDictionaryInt { get; set; }
+    }
+
+    public class ListChangeTrackingDto : ChangeTrackingDtoBase
+    {
+        public string MyListString { get; set; } = default!;
+        public int MyListInt { get; set; }
     }
 }
