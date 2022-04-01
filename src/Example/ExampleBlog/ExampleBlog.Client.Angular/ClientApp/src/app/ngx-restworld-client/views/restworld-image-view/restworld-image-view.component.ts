@@ -1,6 +1,6 @@
 import { Component, forwardRef, Input, QueryList, ViewChildren } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { ImageCroppedEvent, OutputFormat } from 'ngx-image-cropper';
+import { CropperPosition, ImageCroppedEvent, ImageCropperComponent, OutputFormat } from 'ngx-image-cropper';
 import { FileUpload } from 'primeng/fileupload';
 
 @Component({
@@ -16,6 +16,7 @@ import { FileUpload } from 'primeng/fileupload';
 export class RESTWorldImageViewComponent implements ControlValueAccessor {
 
   private onChange?: Function;
+  private _dialogHasBeenOpenedBefore = false;
 
   @Input()
   public alt?: string;
@@ -24,25 +25,54 @@ export class RESTWorldImageViewComponent implements ControlValueAccessor {
   @Input()
   public fileName?: string;
   @Input()
-  public maintainAspectRatio = false;
+  public alignImage?: 'center' | 'left';
   @Input()
-  public aspectRatio = 1;
+  public aspectRatio?: number;
   @Input()
-  public resizeToWidth = 0;
+  public backgroundColor?: string;
   @Input()
-  public resizeToHeight = 0;
+  public canvasRotation?: number;
   @Input()
-  public onlyScaleDown = false;
+  public containWithinAspectRatio?: boolean;
   @Input()
-  public containWithinAspectRatio = false;
+  public cropper?: CropperPosition;
   @Input()
-  public backgroundColor = "#ffffff";
+  public cropperMaxHeight?: number;
   @Input()
-  public format: OutputFormat = 'png';
+  public cropperMaxWidth?: number;
+  @Input()
+  public cropperMinHeight?: number;
+  @Input()
+  public cropperMinWidth?: number;
+  @Input()
+  public cropperStaticHeight?: number;
+  @Input()
+  public cropperStaticWidth?: number;
+  @Input()
+  public format?: OutputFormat;
+  @Input()
+  public imageQuality?: number;
+  @Input()
+  public initialStepSize?: number;
+  @Input()
+  public maintainAspectRatio?: boolean;
+  @Input()
+  public onlyScaleDown?: boolean;
+  @Input()
+  public resizeToWidth?: number;
+  @Input()
+  public resizeToHeight?: number;
+  @Input()
+  public roundCropper?: boolean;
+
 
 
   @ViewChildren(FileUpload)
   fileUploads?: QueryList<FileUpload>;
+
+
+  @ViewChildren(ImageCropperComponent)
+  imageCroppers?: QueryList<ImageCropperComponent>;
 
 
   public disabled = false;
@@ -67,6 +97,13 @@ export class RESTWorldImageViewComponent implements ControlValueAccessor {
 
   public showCropDialog(): void {
     this.displayCropDialog = true;
+
+    // The image cropper has a bug that stops the image from being visible otherwise.
+    // Changing the image or resizing the window would also cause the image to appear.
+    if (!this._dialogHasBeenOpenedBefore) {
+      this._dialogHasBeenOpenedBefore = true;
+      this.imageCroppers?.forEach(i => i.onResize());
+    }
   }
 
   public imageChanged(event: { files: File[] }): void {

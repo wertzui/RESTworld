@@ -186,7 +186,31 @@
 
 
         <ng-template #defaultInputImage let-property="property" let-template="template">
-          <rw-image [formControlName]="property.name" [accept]="property.placeholder"></rw-image>
+          <rw-image
+                    [formControlName]="property.name"
+                    [accept]="property.restWorldImage.accept ?? property.placeholder ?? 'image/*'"
+                    [alignImage]="property.restWorldImage.alignImage"
+                    [alt]="property.prompt ?? property.name"
+                    [aspectRatio]="property.restWorldImage.aspectRatio"
+                    [backgroundColor]="property.restWorldImage.backgroundColor"
+                    [canvasRotation]="property.restWorldImage.canvasRotation"
+                    [containWithinAspectRatio]="property.restWorldImage.containWithinAspectRatio"
+                    [cropper]="property.restWorldImage.cropper"
+                    [cropperMaxHeight]="property.restWorldImage.cropperMaxHeight"
+                    [cropperMaxWidth]="property.restWorldImage.cropperMaxWidth"
+                    [cropperMinHeight]="property.restWorldImage.cropperMinHeight"
+                    [cropperMinWidth]="property.restWorldImage.cropperMinWidth"
+                    [cropperStaticHeight]="property.restWorldImage.cropperStaticHeight"
+                    [cropperStaticWidth]="property.restWorldImage.cropperStaticWidth"
+                    [fileName]="property.name + '.' + (property.restWorldImage.format ?? 'png')"
+                    [format]="property.restWorldImage.format"
+                    [imageQuality]="property.restWorldImage.imageQuality"
+                    [initialStepSize]="property.restWorldImage.initialStepSize"
+                    [maintainAspectRatio]="property.restWorldImage.maintainAspectRatio"
+                    [onlyScaleDown]="property.restWorldImage.onlyScaleDown"
+                    [resizeToWidth]="property.restWorldImage.resizeToWidth"
+                    [resizeToHeight]="property.restWorldImage.resizeToHeight"
+                    [roundCropper]="property.restWorldImage.roundCropper"></rw-image>
         </ng-template>
         <ng-container *ngSwitchCase="PropertyType.Image">
           <ng-container *ngTemplateOutlet="inputImageRef || defaultInputImage; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>

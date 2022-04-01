@@ -1,4 +1,4 @@
-img {
+img.thumbnail {
     height: calc(1rem + 2*8px + 2*1px);
     cursor: zoom-in;
     border-radius: 3px;
