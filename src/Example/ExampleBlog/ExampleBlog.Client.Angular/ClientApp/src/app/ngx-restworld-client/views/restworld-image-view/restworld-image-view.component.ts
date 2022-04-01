@@ -24,19 +24,19 @@ export class RESTWorldImageViewComponent implements ControlValueAccessor {
   @Input()
   public fileName?: string;
   @Input()
-  maintainAspectRatio = true;
+  public maintainAspectRatio = false;
   @Input()
-  aspectRatio = 1;
+  public aspectRatio = 1;
   @Input()
-  resizeToWidth = 0;
+  public resizeToWidth = 0;
   @Input()
-  resizeToHeight = 0;
+  public resizeToHeight = 0;
   @Input()
-  onlyScaleDown = false;
+  public onlyScaleDown = false;
   @Input()
-  containWithinAspectRatio = false;
+  public containWithinAspectRatio = false;
   @Input()
-  backgroundColor = "#ffffff";
+  public backgroundColor = "#ffffff";
   @Input()
   public format: OutputFormat = 'png';
 

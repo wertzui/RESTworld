@@ -1,5 +1,5 @@
 <div class="flex align-items-center">
   <p-button *ngIf="!uri" [disabled]="true" icon="pi pi-download" class="mr-1" pTooltip="No file present"></p-button>
   <a *ngIf="uri" [href]="uri | safeUrl" [download]="fileName || 'download'" class="mr-1" pButton pTooltip="Download file" icon="pi pi-download"></a>
-  <p-fileUpload chooseIcon="pi-upload fas fa-upload" pTooltip="Upload new file" mode="basic" [auto]="true" [accept]="accept || 'false'" [customUpload]="true" (uploadHandler)="fileChanged($event)"></p-fileUpload>
+  <p-fileUpload chooseIcon="pi-upload fas fa-upload" pTooltip="Upload new file" mode="basic" [auto]="true" [accept]="accept || ''" [customUpload]="true" (uploadHandler)="fileChanged($event)"></p-fileUpload>
 </div>
