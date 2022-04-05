@@ -143,7 +143,7 @@ namespace ExampleBlog.Business
 
         private async Task<HalFile> GetImageAsync(string headline)
         {
-            var url = $"https://dummyimage.com/600x400/000/fff&text={headline.Replace(" ", "_")}";
+            var url = $"https://dummyimage.com/120x40/000/fff&text={headline.Replace(" ", "_")}";
             var client = new HttpClient();
             var bytes = await client.GetByteArrayAsync(url);
             var image = new HalFile("image/png", bytes);

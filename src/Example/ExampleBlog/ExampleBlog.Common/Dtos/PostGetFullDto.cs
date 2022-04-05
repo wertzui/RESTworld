@@ -25,7 +25,6 @@ namespace ExampleBlog.Common.Dtos
         [RestWorldImage(
             AspectRatio = 120.0 / 40.0,
             ContainWithinAspectRatio = true,
-            Format = OutputFormat.Png,
             MaintainAspectRatio = true,
             OnlyScaleDown = false,
             ResizeToHeight = 40,

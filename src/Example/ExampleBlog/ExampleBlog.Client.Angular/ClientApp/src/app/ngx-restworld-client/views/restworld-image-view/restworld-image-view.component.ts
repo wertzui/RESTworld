@@ -1,9 +1,9 @@
-import { AfterViewInit, Component, forwardRef, Input, OnInit, QueryList, ViewChildren } from '@angular/core';
+import { AfterViewInit, Component, forwardRef, Input, OnDestroy, OnInit, QueryList, ViewChildren } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { CropperPosition, ImageCroppedEvent, ImageCropperComponent, OutputFormat } from 'ngx-image-cropper';
 import { FileUpload } from 'primeng/fileupload';
 import { Dialog } from 'primeng/dialog'
-import { async, firstValueFrom } from 'rxjs';
+import { async, firstValueFrom, Subscription } from 'rxjs';
 
 @Component({
   selector: 'rw-image',
@@ -15,9 +15,10 @@ import { async, firstValueFrom } from 'rxjs';
     multi: true
   }]
 })
-export class RESTWorldImageViewComponent implements ControlValueAccessor, OnInit, AfterViewInit {
+export class RESTWorldImageViewComponent implements ControlValueAccessor, OnInit, OnDestroy, AfterViewInit {
 
   private onChange?: Function;
+  private _subscriptions?: Subscription[];
 
   @Input()
   public alt?: string;
@@ -78,7 +79,6 @@ export class RESTWorldImageViewComponent implements ControlValueAccessor, OnInit
   @ViewChildren(Dialog)
   dialogs?: QueryList<Dialog>;
 
-
   public disabled = false;
   public uri?: string | null;
   public tempImageFile?: File;
@@ -106,14 +106,17 @@ export class RESTWorldImageViewComponent implements ControlValueAccessor, OnInit
       this.backgroundColor = '#ffffff';
   }
 
+  ngOnDestroy(): void {
+    this._subscriptions.forEach(s => s.unsubscribe());
+  }
+
   ngAfterViewInit(): void {
-    // We need to trigger onResize one time, after the opening animation of the dialog has been completed.
-    // Otherwise the image cropper thinks that the image size is 0x0,
+    // We need to trigger imageLoadedInView each time, after the opening animation of the dialog has been completed.
+    // Otherwise the image cropper initially (and after every window resize) thinks that the image size is 0x0,
     // because the opening animation hast just begun when the image cropper is first shown.
-    this.dialogs?.forEach(async d => {
-      await firstValueFrom(d.onShow);
-      this.imageCroppers?.forEach(i => i.onResize());
-    });
+    this.dialogs?.map(d => d.onShow.subscribe(() =>
+      this.imageCroppers?.forEach(i => { i.imageLoadedInView(); })
+    ));
   }
 
   public showCropDialog(): void {
