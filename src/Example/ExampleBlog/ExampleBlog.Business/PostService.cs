@@ -12,6 +12,7 @@ using RESTworld.Business.Models.Abstractions;
 using RESTworld.Business.Services;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace ExampleBlog.Business
@@ -31,7 +32,7 @@ namespace ExampleBlog.Business
                 result.ResponseObject.Attachement = GetAttachement(result.ResponseObject.Id);
 
                 // The image might be stored on another URL so we just return the url.
-                result.ResponseObject.Image = GetImage(result.ResponseObject.Headline);
+                result.ResponseObject.Image = await GetImageAsync(result.ResponseObject.Headline);
             }
 
             return result;
@@ -49,7 +50,7 @@ namespace ExampleBlog.Business
 
                 if (result.ResponseObject is not null)
                 {
-                    result.ResponseObject.Image = GetImage(result.ResponseObject.Headline);
+                    result.ResponseObject.Image = await GetImageAsync(result.ResponseObject.Headline);
                     result.ResponseObject.Attachement = GetAttachement(result.ResponseObject.Id);
                 }
             }
@@ -71,7 +72,7 @@ namespace ExampleBlog.Business
                 {
                     foreach (var resultDto in result.ResponseObject)
                     {
-                        resultDto.Image = GetImage(resultDto.Headline);
+                        resultDto.Image = await GetImageAsync(resultDto.Headline);
                         resultDto.Attachement = GetAttachement(resultDto.Id);
                     }
                 }
@@ -92,7 +93,7 @@ namespace ExampleBlog.Business
 
                 if (result.ResponseObject is not null)
                 {
-                    result.ResponseObject.Image = GetImage(result.ResponseObject.Headline);
+                    result.ResponseObject.Image = await GetImageAsync(result.ResponseObject.Headline);
                     result.ResponseObject.Attachement = GetAttachement(result.ResponseObject.Id);
                 }
             }
@@ -115,7 +116,7 @@ namespace ExampleBlog.Business
                 {
                     foreach (var resultDto in result.ResponseObject)
                     {
-                        resultDto.Image = GetImage(resultDto.Headline);
+                        resultDto.Image = await GetImageAsync(resultDto.Headline);
                         resultDto.Attachement = GetAttachement(resultDto.Id);
                     }
                 }
@@ -140,7 +141,15 @@ namespace ExampleBlog.Business
             }
         }
 
-        private HalFile GetImage(string headline) => new($"https://dummyimage.com/600x400/000/fff&text={headline.Replace(" ", "_")}");
+        private async Task<HalFile> GetImageAsync(string headline)
+        {
+            var url = $"https://dummyimage.com/600x400/000/fff&text={headline.Replace(" ", "_")}";
+            var client = new HttpClient();
+            var bytes = await client.GetByteArrayAsync(url);
+            var image = new HalFile("image/png", bytes);
+
+            return image;
+        }
 
         private HalFile GetAttachement(long id)
         {

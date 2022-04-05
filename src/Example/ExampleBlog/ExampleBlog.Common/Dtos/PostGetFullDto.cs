@@ -24,7 +24,6 @@ namespace ExampleBlog.Common.Dtos
         public virtual BlogDto? Blog { get; set; }
         [RestWorldImage(
             AspectRatio = 120.0 / 40.0,
-            BackgroundColor = "#ffffff",
             ContainWithinAspectRatio = true,
             Format = OutputFormat.Png,
             MaintainAspectRatio = true,

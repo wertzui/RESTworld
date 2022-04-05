@@ -1,7 +1,9 @@
-import { Component, forwardRef, Input, QueryList, ViewChildren } from '@angular/core';
+import { AfterViewInit, Component, forwardRef, Input, OnInit, QueryList, ViewChildren } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { CropperPosition, ImageCroppedEvent, ImageCropperComponent, OutputFormat } from 'ngx-image-cropper';
 import { FileUpload } from 'primeng/fileupload';
+import { Dialog } from 'primeng/dialog'
+import { async, firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'rw-image',
@@ -13,10 +15,9 @@ import { FileUpload } from 'primeng/fileupload';
     multi: true
   }]
 })
-export class RESTWorldImageViewComponent implements ControlValueAccessor {
+export class RESTWorldImageViewComponent implements ControlValueAccessor, OnInit, AfterViewInit {
 
   private onChange?: Function;
-  private _dialogHasBeenOpenedBefore = false;
 
   @Input()
   public alt?: string;
@@ -74,6 +75,9 @@ export class RESTWorldImageViewComponent implements ControlValueAccessor {
   @ViewChildren(ImageCropperComponent)
   imageCroppers?: QueryList<ImageCropperComponent>;
 
+  @ViewChildren(Dialog)
+  dialogs?: QueryList<Dialog>;
+
 
   public disabled = false;
   public uri?: string | null;
@@ -95,15 +99,25 @@ export class RESTWorldImageViewComponent implements ControlValueAccessor {
     this.disabled = isDisabled;
   }
 
+  ngOnInit(): void {
+    // If no background color is set, we set it to white.
+    // Otherwise the color picker would show red, the input would be empty and the image cropper would show transparent.
+    if (!this.backgroundColor)
+      this.backgroundColor = '#ffffff';
+  }
+
+  ngAfterViewInit(): void {
+    // We need to trigger onResize one time, after the opening animation of the dialog has been completed.
+    // Otherwise the image cropper thinks that the image size is 0x0,
+    // because the opening animation hast just begun when the image cropper is first shown.
+    this.dialogs?.forEach(async d => {
+      await firstValueFrom(d.onShow);
+      this.imageCroppers?.forEach(i => i.onResize());
+    });
+  }
+
   public showCropDialog(): void {
     this.displayCropDialog = true;
-
-    // The image cropper has a bug that stops the image from being visible otherwise.
-    // Changing the image or resizing the window would also cause the image to appear.
-    if (!this._dialogHasBeenOpenedBefore) {
-      this._dialogHasBeenOpenedBefore = true;
-      this.imageCroppers?.forEach(i => i.onResize());
-    }
   }
 
   public imageChanged(event: { files: File[] }): void {
