@@ -303,30 +303,25 @@ export class RESTworldEditViewComponent {
     this.isLoading = false;
   }
 
-  private async setInitialSelectedOptionsElementsForTemplates(templates: Templates) {
-    return Promise.all(Object.values(templates)
-      .map(template => this.setInitialSelectedOptionsElementsForTemplate(template)));
+  private async setInitialSelectedOptionsElementsForTemplates(templates: Templates, skipDefaultTemplate: boolean): Promise<void> {
+    await Promise.all(Object.entries(templates)
+      .filter(([name,]) => !skipDefaultTemplate || name !== 'default')
+      .map(([, template]) => this.setInitialSelectedOptionsElementsForTemplate(template)));
   }
 
-  public imageChanged(formControl: FormControl, event: { files: File[] }): void {
-    const file = event.files[0];
-    console.log(file);
-    const reader = new FileReader();
-    reader.onload = () => {
-      const uri = reader.result;
-      console.log(uri);
-      formControl.setValue(uri);
-    };
-    reader.readAsDataURL(file);
-  }
-
-  private async setInitialSelectedOptionsElementsForTemplate(template: Template) {
-    return Promise.all(template.properties
+  private async setInitialSelectedOptionsElementsForTemplate(template: Template): Promise<void> {
+    const propertyPromises = template.properties
       .filter(property => property?.options?.link?.href)
-      .map(property => this.setInitialSelectedOptionsElementForProperty(property)));
+      .map(property => this.setInitialSelectedOptionsElementForProperty(property));
+    const nestedTemplatePromised = template.properties
+      .filter(property => property?._templates)
+      .map(property => this.setInitialSelectedOptionsElementsForTemplates(property._templates, true));
+    const allPromises = propertyPromises.concat(nestedTemplatePromised);
+
+    await Promise.all(allPromises);
   }
 
-  private async setInitialSelectedOptionsElementForProperty(property: Property) {
+  private async setInitialSelectedOptionsElementForProperty(property: Property): Promise<void> {
     const options = property?.options;
 
     if (!options?.link?.href)
@@ -358,8 +353,20 @@ export class RESTworldEditViewComponent {
 
     const formTemplates = Object.assign({}, ...formResponses.map(response => (response.body as FormsResource)._templates)) as Templates;
 
-    await this.setInitialSelectedOptionsElementsForTemplates(formTemplates);
+    await this.setInitialSelectedOptionsElementsForTemplates(formTemplates, false);
 
     return formTemplates;
+  }
+
+  public imageChanged(formControl: FormControl, event: { files: File[] }): void {
+    const file = event.files[0];
+    console.log(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const uri = reader.result;
+      console.log(uri);
+      formControl.setValue(uri);
+    };
+    reader.readAsDataURL(file);
   }
 }

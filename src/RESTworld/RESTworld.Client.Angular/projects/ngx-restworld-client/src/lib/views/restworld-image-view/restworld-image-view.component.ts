@@ -107,7 +107,7 @@ export class RESTWorldImageViewComponent implements ControlValueAccessor, OnInit
   }
 
   ngOnDestroy(): void {
-    this._subscriptions.forEach(s => s.unsubscribe());
+    this._subscriptions?.forEach(s => s.unsubscribe());
   }
 
   ngAfterViewInit(): void {

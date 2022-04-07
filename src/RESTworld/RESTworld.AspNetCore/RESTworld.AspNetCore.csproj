@@ -41,6 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\HAL\src\HAL\Hal.AspNetCore.OData\HAL.AspNetCore.OData.csproj" />
     <ProjectReference Include="..\RESTworld.Business\RESTworld.Business.csproj" />
   </ItemGroup>
 
