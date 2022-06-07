@@ -3,7 +3,7 @@ using HAL.Common;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using RESTworld.AspNetCore.Controller;
-using RESTworld.Client.AspNetCore.DependencyInjection;
+using RESTworld.Common.Client;
 
 namespace RESTworld.Client.AspNetCore.Controllers
 {
@@ -13,7 +13,7 @@ namespace RESTworld.Client.AspNetCore.Controllers
     [Route("[controller]")]
     public class SettingsController : RestControllerBase
     {
-        private readonly IOptions<RestWorldOptions> _options;
+        private readonly IOptions<RestWorldClientOptions> _options;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SettingsController"/> class.
@@ -21,7 +21,7 @@ namespace RESTworld.Client.AspNetCore.Controllers
         /// <param name="options">RestWorldOptions from the app config.</param>
         /// <param name="resourceFactory">The resource factory.</param>
         /// <exception cref="System.ArgumentNullException"></exception>
-        public SettingsController(IOptions<RestWorldOptions> options, IODataResourceFactory resourceFactory)
+        public SettingsController(IOptions<RestWorldClientOptions> options, IODataResourceFactory resourceFactory)
             : base(resourceFactory)
         {
             _options = options ?? throw new System.ArgumentNullException(nameof(options));

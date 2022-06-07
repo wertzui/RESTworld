@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace RESTworld.Client.AspNetCore.DependencyInjection
+namespace RESTworld.Common.Client
 {
     /// <summary>
     /// Contains the settings which the client requests to discover backend APIs.

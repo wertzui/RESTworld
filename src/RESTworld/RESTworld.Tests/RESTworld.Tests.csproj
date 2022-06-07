@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RESTworld.Business\RESTworld.Business.csproj" />
+    <ProjectReference Include="..\RESTworld.Client.Net\RESTworld.Client.Net.csproj" />
     <ProjectReference Include="..\RESTworld.EntityFrameworkCore\RESTworld.EntityFrameworkCore.csproj" />
     <ProjectReference Include="..\RESTworld.Testing\RESTworld.Testing.csproj" />
   </ItemGroup>

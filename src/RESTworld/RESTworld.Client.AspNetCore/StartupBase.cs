@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RESTworld.AspNetCore.Controller;
 using RESTworld.Client.AspNetCore.Controllers;
+using RESTworld.Common.Client;
 
 namespace RESTworld.Client.AspNetCore
 {
@@ -36,7 +37,7 @@ namespace RESTworld.Client.AspNetCore
                 configuration.RootPath = "ClientApp/dist";
             });
 
-            services.Configure<DependencyInjection.RestWorldOptions>(Configuration.GetSection("RESTworld"));
+            services.Configure<RestWorldClientOptions>(Configuration.GetSection("RESTworld"));
 
             base.ConfigureServices(services);
 

@@ -7,5 +7,7 @@ namespace RESTworld.Common.Dtos
     /// </summary>
     /// <param name="Supported">The currently supported versions.</param>
     /// <param name="Deprecated">These versions are deprecated and will be removed in future versions.</param>
-    public record VersionInformationDto(IReadOnlySet<string> Supported, IReadOnlySet<string> Deprecated);
+    public record VersionInformationDto(HashSet<string> Supported, HashSet<string> Deprecated)
+    {
+    }
 }

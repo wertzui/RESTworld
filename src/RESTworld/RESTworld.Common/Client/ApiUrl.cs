@@ -1,4 +1,4 @@
-﻿namespace RESTworld.Client.AspNetCore.DependencyInjection
+﻿namespace RESTworld.Common.Client
 {
     /// <summary>
     /// An URL to a backend API that is used by the client to discover available APIs.
