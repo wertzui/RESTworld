@@ -7,7 +7,10 @@ using System.Text.Json;
 
 namespace RESTworld.Client.Net
 {
-    public class RestWorldClient
+    /// <summary>
+    /// A client to call a RESTworld backend.
+    /// </summary>
+    public class RestWorldClient : IRestWorldClient
     {
         private readonly IHalClient _halClient;
         private readonly ILogger<RestWorldClient> _logger;
@@ -16,6 +19,16 @@ namespace RESTworld.Client.Net
         private string? _defaultCurie;
         private static readonly JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
 
+        /// <summary>
+        /// Creates a new client for the given <paramref name="apiUrl"/>.
+        /// </summary>
+        /// <param name="halClient">The underlying <see cref="IHalClient"/> to use for all calls.</param>
+        /// <param name="apiUrl">The URI which points to the home resource.</param>
+        /// <param name="logger">The logger.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A new client constructed from the home resource found at the given <paramref name="apiUrl"/>.</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
         public static async Task<RestWorldClient> CreateAsync(IHalClient halClient, ApiUrl apiUrl, ILogger<RestWorldClient> logger, CancellationToken cancellationToken = default)
         {
             if (halClient is null)
@@ -41,6 +54,14 @@ namespace RESTworld.Client.Net
             return new RestWorldClient(halClient, response.Resource, apiUrl, logger);
         }
 
+        /// <summary>
+        /// Creates a new instance of the <see cref="RestWorldClient"/> class.
+        /// </summary>
+        /// <param name="halClient">The underlying <see cref="IHalClient"/> to use for all calls.</param>
+        /// <param name="homeResource">The home resource to construct this client for.</param>
+        /// <param name="apiUrl">The URI which points to the home resource. Used for version information.</param>
+        /// <param name="logger">The logger.</param>
+        /// <exception cref="ArgumentNullException"></exception>
         public RestWorldClient(IHalClient halClient, Resource<HomeDto> homeResource, ApiUrl apiUrl, ILogger<RestWorldClient> logger)
         {
             _halClient = halClient ?? throw new ArgumentNullException(nameof(halClient));
@@ -70,6 +91,7 @@ namespace RESTworld.Client.Net
             return null;
         }
 
+        /// <inheritdoc/>
         public IEnumerable<Link> GetLinksFromHome(string rel, string? curie = default)
         {
             var fullRel = GetFullRel(rel, curie);
@@ -78,11 +100,13 @@ namespace RESTworld.Client.Net
             return links;
         }
 
+        /// <inheritdoc/>
         public IDictionary<string, ICollection<Link>> GetAllLinksFromHome()
         {
             return _homeResource.Links ?? new Dictionary<string, ICollection<Link>>();
         }
 
+        /// <inheritdoc/>
         public Link? GetLinkFromHome(string rel, string? name = default, string? curie = default)
         {
             var fullRel = GetFullRel(rel, curie);
@@ -91,6 +115,7 @@ namespace RESTworld.Client.Net
             return link;
         }
 
+        /// <inheritdoc/>
         public async Task<HalResponse<Page>> GetListAsync(
             string rel,
             string? curie = default,
@@ -109,6 +134,7 @@ namespace RESTworld.Client.Net
             return response;
         }
 
+        /// <inheritdoc/>
         public async Task<HalResponse<Page>> GetAllPagesListAsync(
             string rel,
             string? curie = default,
@@ -172,5 +198,79 @@ namespace RESTworld.Client.Net
 
             return fullRel;
         }
+
+        /// <inheritdoc/>
+        public Task<HalResponse<TResponse>> DeleteAsync<TResponse>(
+            Uri requestUri, string? eTag = null, IDictionary<string, object>? uriParameters = null,
+            IDictionary<string, IEnumerable<string>>? headers = null, string? version = null,
+            CancellationToken cancellationToken = default)
+            => _halClient.DeleteAsync<TResponse>(requestUri, eTag, uriParameters, headers, version, cancellationToken);
+
+        /// <inheritdoc/>
+        public Task<HalResponse<TResponse>> GetAsync<TResponse>(
+            Uri requestUri, IDictionary<string, object>? uriParameters = null,
+            IDictionary<string, IEnumerable<string>>? headers = null, string? version = null,
+            CancellationToken cancellationToken = default)
+            => _halClient.GetAsync<TResponse>(requestUri, uriParameters, headers, version, cancellationToken);
+
+        /// <inheritdoc/>
+        public Task<HalResponse<TResponse>> PostAsync<TRequest, TResponse>(
+            Uri requestUri, TRequest? content = default, IDictionary<string, object>? uriParameters = null,
+            IDictionary<string, IEnumerable<string>>? headers = null, string? version = null,
+            CancellationToken cancellationToken = default)
+            => _halClient.PostAsync<TRequest, TResponse>(requestUri, content, uriParameters, headers, version, cancellationToken);
+
+        /// <inheritdoc/>
+        public Task<HalResponse<TResponse>> PutAsync<TRequest, TResponse>(
+            Uri requestUri, TRequest? content = default, IDictionary<string, object>? uriParameters = null,
+            IDictionary<string, IEnumerable<string>>? headers = null, string? version = null,
+            CancellationToken cancellationToken = default)
+            => _halClient.PutAsync<TRequest, TResponse>(requestUri, content, uriParameters, headers, version, cancellationToken);
+
+        /// <inheritdoc/>
+        public Task<HalResponse<TResponse>> SendAsync<TRequest, TResponse>(
+            HttpMethod method, Uri requestUri, TRequest? content = default,
+            IDictionary<string, object>? uriParameters = null, IDictionary<string, IEnumerable<string>>? headers = null,
+            string? version = null, CancellationToken cancellationToken = default)
+            => _halClient.SendAsync<TRequest, TResponse>(method, requestUri, content, uriParameters, headers, version, cancellationToken);
+
+        /// <inheritdoc/>
+        public Task<HalResponse> DeleteAsync(
+            Uri requestUri, string? eTag = null, IDictionary<string, object>? uriParameters = null,
+            IDictionary<string, IEnumerable<string>>? headers = null, string? version = null,
+            CancellationToken cancellationToken = default)
+            => _halClient.DeleteAsync(requestUri, eTag, uriParameters, headers, version, cancellationToken);
+
+        /// <inheritdoc/>
+        public Task<HalResponse> GetAsync(
+            Uri requestUri, IDictionary<string, object>? uriParameters = null,
+            IDictionary<string, IEnumerable<string>>? headers = null, string? version = null,
+            CancellationToken cancellationToken = default)
+            => _halClient.GetAsync(requestUri, uriParameters, headers, version, cancellationToken);
+
+        /// <inheritdoc/>
+        public Task<HalResponse> PostAsync<TRequest>(
+            Uri requestUri, TRequest? content = default, IDictionary<string, object>? uriParameters = null,
+            IDictionary<string, IEnumerable<string>>? headers = null, string? version = null,
+            CancellationToken cancellationToken = default)
+            => _halClient.PostAsync(requestUri, content, uriParameters, headers, version, cancellationToken);
+
+        /// <inheritdoc/>
+        public Task<HalResponse> PutAsync<TRequest>(
+            Uri requestUri, TRequest? content = default, IDictionary<string, object>? uriParameters = null,
+            IDictionary<string, IEnumerable<string>>? headers = null, string? version = null,
+            CancellationToken cancellationToken = default)
+            => _halClient.PutAsync(requestUri, content, uriParameters, headers, version, cancellationToken);
+
+        /// <inheritdoc/>
+        public Task<HalResponse> SendAsync<TRequest>(
+            HttpMethod method,
+            Uri requestUri,
+            TRequest? content = default,
+            IDictionary<string, object>? uriParameters = null,
+            IDictionary<string, IEnumerable<string>>? headers = null,
+            string? version = null,
+            CancellationToken cancellationToken = default)
+            => _halClient.SendAsync(method, requestUri, content, uriParameters, headers, version, cancellationToken);
     }
 }
