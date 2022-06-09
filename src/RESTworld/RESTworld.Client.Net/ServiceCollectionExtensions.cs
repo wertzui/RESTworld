@@ -3,9 +3,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using RESTworld.Client.Net;
 using RESTworld.Common.Client;
 
-namespace RESTworld.Client.Net
+namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
     /// Contains extension methods for <see cref="IServiceCollection"/>.
