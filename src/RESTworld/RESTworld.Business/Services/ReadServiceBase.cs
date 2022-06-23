@@ -11,6 +11,7 @@ using RESTworld.EntityFrameworkCore;
 using RESTworld.EntityFrameworkCore.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -27,13 +28,8 @@ namespace RESTworld.Business.Services
         private static bool _authorizationHandlerWarningWasLogged;
 
         /// <summary>
-        /// The authorization handlers which are used for read operations.
-        /// </summary>
-        protected virtual IEnumerable<IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>> ReadAuthorizationHandlers { get; }
-
-        /// <summary>
-        /// Creates a new instance of the <see cref="CrudServiceBase{TContext, TEntity, TCreateDto,
-        /// TGetListDto, TGetFullDto, TUpdateDto}"/> class.
+        /// Creates a new instance of the
+        /// <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> class.
         /// </summary>
         /// <param name="contextFactory">The factory used to create a <see cref="DbContext"/>.</param>
         /// <param name="mapper">The AutoMapper instance which maps between DTOs and entities.</param>
@@ -55,17 +51,10 @@ namespace RESTworld.Business.Services
             LogAuthoriztaionHandlerWarningOnlyOneTimeIfNoHandlersArePresent(authorizationHandlers);
         }
 
-        private void LogAuthoriztaionHandlerWarningOnlyOneTimeIfNoHandlersArePresent(IEnumerable<IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>> authorizationHandlers)
-        {
-            if (!_authorizationHandlerWarningWasLogged && !System.Linq.Enumerable.Any(authorizationHandlers))
-            {
-                _authorizationHandlerWarningWasLogged = true;
-
-                _logger.LogWarning("No {TReadAuthorizationHandler} is configured. No authorization will be performed for any methods of {TReadServiceBase}.",
-                    $"{nameof(IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>)}<{typeof(TEntity).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}>",
-                    $"{nameof(ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>)}<{typeof(TEntity).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}>");
-            }
-        }
+        /// <summary>
+        /// The authorization handlers which are used for read operations.
+        /// </summary>
+        protected virtual IEnumerable<IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>> ReadAuthorizationHandlers { get; }
 
         /// <inheritdoc/>
         public Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListAsync(IGetListRequest<TEntity> request)
@@ -86,6 +75,25 @@ namespace RESTworld.Business.Services
                 ReadAuthorizationHandlers);
 
         /// <summary>
+        /// Gets the DB set from the context that is used when reading (not updating!). If you need
+        /// to add some custom logic on how this is generated, you can override this method.
+        /// </summary>
+        /// <returns>The DB set that is used in all other methods.</returns>
+        protected virtual IQueryable<TEntity> GetDbSetForReading() => _contextFactory.Set<TContext, TEntity>();
+
+        /// <summary>
+        /// Gets the DB set from <see cref="GetDbSetForReading"/> that is used when reading (not
+        /// updating!) and applies the given authorization filters. You can override this method if
+        /// you need to apply a custom authorization logic. If you just want to modify the DB set,
+        /// you should override <see cref="GetDbSetForReading"/> instead.
+        /// </summary>
+        /// <param name="authorizationResult">
+        /// The authorization result containing the filter that will be applied to the DB set.
+        /// </param>
+        /// <returns>The filtered DB set that is used in all other methods.</returns>
+        protected virtual IQueryable<TEntity> GetDbSetForReadingWithAuthorization(AuthorizationResult<TEntity> authorizationResult) => GetDbSetForReading().WithAuthorizationFilter(authorizationResult);
+
+        /// <summary>
         /// The method contains the business logic for the READ-List operation. It will return the
         /// items from the database as specified in the request.
         /// </summary>
@@ -102,7 +110,7 @@ namespace RESTworld.Business.Services
         {
             var request = authorizationResult.Value1;
 
-            var setForEntities = _contextFactory.Set<TContext, TEntity>().WithAuthorizationFilter(authorizationResult);
+            var setForEntities = GetDbSetForReadingWithAuthorization(authorizationResult);
 
             Task<long>? totalPagesTask = null;
             long? totalCount = null;
@@ -119,7 +127,7 @@ namespace RESTworld.Business.Services
                     if (request.FilterForTotalCount is null)
                         throw new ArgumentException($"If {nameof(authorizationResult)}{nameof(authorizationResult.Value1)}.{nameof(authorizationResult.Value1.CalculateTotalCount)} is true, {nameof(authorizationResult)}{nameof(authorizationResult.Value1)}.{nameof(authorizationResult.Value1.FilterForTotalCount)} must not be null.", nameof(authorizationResult));
 
-                    var totalPagesSet = _contextFactory.Set<TContext, TEntity>().WithAuthorizationFilter(authorizationResult);
+                    var totalPagesSet = GetDbSetForReadingWithAuthorization(authorizationResult);
                     totalPagesSet = request.FilterForTotalCount(totalPagesSet);
                     totalPagesTask = totalPagesSet.LongCountAsync();
                     tasks.Add(totalPagesTask);
@@ -155,7 +163,7 @@ namespace RESTworld.Business.Services
         {
             var id = authorizationResult.Value1;
 
-            var entity = await _contextFactory.Set<TContext, TEntity>().WithAuthorizationFilter(authorizationResult).FirstOrDefaultAsync(e => e.Id == id);
+            var entity = await GetDbSetForReadingWithAuthorization(authorizationResult).FirstOrDefaultAsync(e => e.Id == id);
 
             if (entity is null)
                 return ServiceResponse.FromStatus<TGetFullDto>(HttpStatusCode.NotFound);
@@ -168,7 +176,8 @@ namespace RESTworld.Business.Services
         }
 
         /// <summary>
-        /// This method is called after the entities have been read from the database and mapped into DTOs.
+        /// This method is called after the entities have been read from the database and mapped
+        /// into DTOs.
         /// </summary>
         /// <param name="authorizationResult">
         /// The result of the authorization which contains the filter.
@@ -193,6 +202,18 @@ namespace RESTworld.Business.Services
         protected virtual Task OnGotSingleInternalAsync(AuthorizationResult<TEntity, long> authorizationResult, TGetFullDto dto, TEntity entity)
         {
             return Task.CompletedTask;
+        }
+
+        private void LogAuthoriztaionHandlerWarningOnlyOneTimeIfNoHandlersArePresent(IEnumerable<IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>> authorizationHandlers)
+        {
+            if (!_authorizationHandlerWarningWasLogged && !System.Linq.Enumerable.Any(authorizationHandlers))
+            {
+                _authorizationHandlerWarningWasLogged = true;
+
+                _logger.LogWarning("No {TReadAuthorizationHandler} is configured. No authorization will be performed for any methods of {TReadServiceBase}.",
+                    $"{nameof(IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>)}<{typeof(TEntity).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}>",
+                    $"{nameof(ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>)}<{typeof(TEntity).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}>");
+            }
         }
     }
 }

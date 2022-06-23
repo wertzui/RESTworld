@@ -28,16 +28,8 @@ namespace RESTworld.Business.Services
         private static bool _authorizationHandlerWarningWasLogged;
 
         /// <summary>
-        /// The authorization handlers which are used for all CRUD operations.
-        /// </summary>
-        protected virtual IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> CrudAuthorizationHandlers { get; }
-
-        /// <inheritdoc/>
-        protected override IEnumerable<IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>> ReadAuthorizationHandlers => CrudAuthorizationHandlers;
-
-        /// <summary>
-        /// Creates a new instance of the <see cref="CrudServiceBase{TContext, TEntity, TCreateDto,
-        /// TGetListDto, TGetFullDto, TUpdateDto}"/> class.
+        /// Creates a new instance of the
+        /// <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> class.
         /// </summary>
         /// <param name="contextFactory">The factory used to create a <see cref="DbContext"/>.</param>
         /// <param name="mapper">The AutoMapper instance which maps between DTOs and entities.</param>
@@ -59,18 +51,13 @@ namespace RESTworld.Business.Services
             LogAuthoriztaionHandlerWarningOnlyOneTimeIfNoHandlersArePresent(authorizationHandlers);
         }
 
-        private void LogAuthoriztaionHandlerWarningOnlyOneTimeIfNoHandlersArePresent(IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> authorizationHandlers)
-        {
-            if (!_authorizationHandlerWarningWasLogged && !System.Linq.Enumerable.Any(authorizationHandlers))
-            {
-                _authorizationHandlerWarningWasLogged = true;
+        /// <summary>
+        /// The authorization handlers which are used for all CRUD operations.
+        /// </summary>
+        protected virtual IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> CrudAuthorizationHandlers { get; }
 
-                _logger.LogWarning("No {TCrudAuthorizationHandler} is configured. No authorization will be performed for any methods of {TCrudServiceBase}.",
-                    $"{nameof(ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}>",
-                    $"{nameof(CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}>");
-            }
-        }
-
+        /// <inheritdoc/>
+        protected override IEnumerable<IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>> ReadAuthorizationHandlers => CrudAuthorizationHandlers;
 
         /// <inheritdoc/>
         public Task<ServiceResponse<TGetFullDto>> CreateAsync(TCreateDto dto)
@@ -209,7 +196,7 @@ namespace RESTworld.Business.Services
 
             await using var context = _contextFactory.CreateDbContext();
 
-            var entity = await context.Set<TEntity>().WithAuthorizationFilter(authorizationResult).FirstOrDefaultAsync(e => e.Id == id);
+            var entity = await GetDbSetForUpdatingWithAuthorization(context, authorizationResult).FirstOrDefaultAsync(e => e.Id == id);
 
             if (entity is null)
                 return ServiceResponse.FromStatus<object>(HttpStatusCode.NotFound);
@@ -232,31 +219,25 @@ namespace RESTworld.Business.Services
         }
 
         /// <summary>
-        /// This method is called after SaveChangesAsync() has been called.
+        /// Gets the DB set from the context that is used when updating and deleting (not reading!).
+        /// If you need to add some custom logic on how this is generated, you can override this method.
         /// </summary>
-        /// <param name="authorizationResult">
-        /// The result of the authorization which contains the identifier and the timestamp.
-        /// </param>
-        /// <param name="entity">The entity as it has been read from the database.</param>
-        /// <returns></returns>
-        protected virtual Task OnDeletedAsync(AuthorizationResult<TEntity, long, byte[]> authorizationResult, TEntity entity)
-        {
-            return Task.CompletedTask;
-        }
+        /// <param name="context">The DB context to get the set from.</param>
+        /// <returns>The DB set that is used in all other methods.</returns>
+        protected virtual System.Linq.IQueryable<TEntity> GetDbSetForUpdating(TContext context) => context.Set<TEntity>();
 
         /// <summary>
-        /// This method is called after the entity has been removed from the context, but before SaveChangesAsync() is called.
+        /// Gets the DB set from <see cref="GetDbSetForUpdating"/> that is used when updating and
+        /// deleting (not reading!) and applies the given authorization filters. You can override
+        /// this method if you need to apply a custom authorization logic. If you just want to
+        /// modify the DB set, you should override <see cref="GetDbSetForUpdating"/> instead.
         /// </summary>
+        /// <param name="context">The DB context to get the set from.</param>
         /// <param name="authorizationResult">
-        /// The result of the authorization which contains the identifier and the timestamp.
+        /// The authorization result containing the filter that will be applied to the DB set.
         /// </param>
-        /// <param name="entity">The entity as it has been read from the database.</param>
-        /// <param name="context">The context on which the changes are done.</param>
-        /// <returns></returns>
-        protected virtual Task OnDeletingAsync(AuthorizationResult<TEntity, long, byte[]> authorizationResult, TEntity entity, TContext context)
-        {
-            return Task.CompletedTask;
-        }
+        /// <returns>The filtered DB set that is used in all other methods.</returns>
+        protected virtual System.Linq.IQueryable<TEntity> GetDbSetForUpdatingWithAuthorization(TContext context, AuthorizationResult<TEntity> authorizationResult) => GetDbSetForUpdating(context).WithAuthorizationFilter(authorizationResult);
 
         /// <summary>
         /// This method is called after SaveChangesAsync() so the entity is already persisted in the
@@ -316,6 +297,34 @@ namespace RESTworld.Business.Services
         /// <param name="entities">The entities with the modifications from the DTOs already applied.</param>
         /// <returns></returns>
         protected virtual Task OnCreatingInternalAsync(AuthorizationResult<TEntity, IReadOnlyCollection<TCreateDto>> authorizationResult, TContext context, IReadOnlyCollection<TEntity> entities)
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// This method is called after SaveChangesAsync() has been called.
+        /// </summary>
+        /// <param name="authorizationResult">
+        /// The result of the authorization which contains the identifier and the timestamp.
+        /// </param>
+        /// <param name="entity">The entity as it has been read from the database.</param>
+        /// <returns></returns>
+        protected virtual Task OnDeletedAsync(AuthorizationResult<TEntity, long, byte[]> authorizationResult, TEntity entity)
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// This method is called after the entity has been removed from the context, but before
+        /// SaveChangesAsync() is called.
+        /// </summary>
+        /// <param name="authorizationResult">
+        /// The result of the authorization which contains the identifier and the timestamp.
+        /// </param>
+        /// <param name="entity">The entity as it has been read from the database.</param>
+        /// <param name="context">The context on which the changes are done.</param>
+        /// <returns></returns>
+        protected virtual Task OnDeletingAsync(AuthorizationResult<TEntity, long, byte[]> authorizationResult, TEntity entity, TContext context)
         {
             return Task.CompletedTask;
         }
@@ -396,7 +405,7 @@ namespace RESTworld.Business.Services
 
             await using var context = _contextFactory.CreateDbContext();
 
-            var entity = await context.Set<TEntity>().WithAuthorizationFilter(authorizationResult).FirstOrDefaultAsync(e => e.Id == dto.Id);
+            var entity = await GetDbSetForUpdatingWithAuthorization(context, authorizationResult).FirstOrDefaultAsync(e => e.Id == dto.Id);
 
             if (entity is null)
                 return ServiceResponse.FromStatus<TGetFullDto>(HttpStatusCode.NotFound);
@@ -432,7 +441,7 @@ namespace RESTworld.Business.Services
             var ids = System.Linq.Enumerable.ToHashSet(System.Linq.Enumerable.Select(dtos, d => d.Id));
             await using var context = _contextFactory.CreateDbContext();
 
-            var entities = await request.Filter(System.Linq.Queryable.Where(context.Set<TEntity>().WithAuthorizationFilter(authorizationResult), e => ids.Contains(e.Id)))
+            var entities = await request.Filter(System.Linq.Queryable.Where(GetDbSetForUpdatingWithAuthorization(context, authorizationResult), e => ids.Contains(e.Id)))
                 .ToDictionaryAsync(e => e.Id);
 
             if (entities.Count != dtos.Count)
@@ -454,6 +463,18 @@ namespace RESTworld.Business.Services
             await OnUpdatedInternalAsync(authorizationResult, resultDto, entities);
 
             return ServiceResponse.FromResult(resultDto);
+        }
+
+        private void LogAuthoriztaionHandlerWarningOnlyOneTimeIfNoHandlersArePresent(IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> authorizationHandlers)
+        {
+            if (!_authorizationHandlerWarningWasLogged && !System.Linq.Enumerable.Any(authorizationHandlers))
+            {
+                _authorizationHandlerWarningWasLogged = true;
+
+                _logger.LogWarning("No {TCrudAuthorizationHandler} is configured. No authorization will be performed for any methods of {TCrudServiceBase}.",
+                    $"{nameof(ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}>",
+                    $"{nameof(CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}>");
+            }
         }
     }
 }
