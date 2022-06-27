@@ -1,6 +1,7 @@
 ﻿using HAL.AspNetCore.Forms.Abstractions;
 using Microsoft.AspNet.OData.Builder;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using RESTworld.AspNetCore;
 using RESTworld.AspNetCore.Authorization;
@@ -10,6 +11,7 @@ using RESTworld.AspNetCore.HostedServices;
 using RESTworld.Business.Authorization.Abstractions;
 using RESTworld.Business.Services.Abstractions;
 using RESTworld.EntityFrameworkCore.Models;
+using System;
 using System.Linq;
 using System.Reflection;
 
@@ -63,33 +65,34 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="configuration">
         /// The <see cref="IConfiguration"/> instance which holds the RESTWorld configuration.
         /// </param>
+        /// <param name="optionsAction">An optional custom configuration. Is none is supplied, these are applied by default: <see cref="SqlServerDbContextOptionsExtensions.UseSqlServer(DbContextOptionsBuilder, Action{SqlServerDbContextOptionsBuilder}?)"/>, <see cref="DbContextOptionsBuilder.EnableDetailedErrors(bool)"/>, <see cref="DbContextOptionsBuilder.EnableServiceProviderCaching(bool)"/></param>
+        /// <param name="sqlServerOptionsAction">An optional custom configuration for the SQL server connection. If none is supplied, <see cref="SqlServerDbContextOptionsBuilder.EnableRetryOnFailure()"/> is added as default. If an <paramref name="optionsAction"/> is provided, that this is not called by default.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
-        public static IServiceCollection AddDbContextFactoryWithDefaults<TContext>(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddDbContextFactoryWithDefaults<TContext>(this IServiceCollection services, IConfiguration configuration, Action<DbContextOptionsBuilder>? optionsAction = null, Action<SqlServerDbContextOptionsBuilder>? sqlServerOptionsAction = null)
                     where TContext : DbContext
         {
             if (services is null)
-            {
-                throw new System.ArgumentNullException(nameof(services));
-            }
+                throw new ArgumentNullException(nameof(services));
 
             if (configuration is null)
-            {
-                throw new System.ArgumentNullException(nameof(configuration));
-            }
+                throw new ArgumentNullException(nameof(configuration));
+
+            if (sqlServerOptionsAction is null)
+                sqlServerOptionsAction = optionsBuilder => optionsBuilder.EnableRetryOnFailure();
 
             var contextType = typeof(TContext);
             var contextName = contextType.Name;
 
-            services.AddPooledDbContextFactory<TContext>(builder =>
+            if (optionsAction is null)
+            {
+                optionsAction = builder =>
                 builder
-                    .UseSqlServer(
-                        configuration.GetConnectionString(contextName),
-                        optionsBuilder =>
-                        {
-                            optionsBuilder.EnableRetryOnFailure();
-                        })
+                    .UseSqlServer(configuration.GetConnectionString(contextName), sqlServerOptionsAction)
                     .EnableDetailedErrors()
-                    .EnableSensitiveDataLogging());
+                    .EnableSensitiveDataLogging();
+            }
+
+            services.AddPooledDbContextFactory<TContext>(optionsAction);
 
             services.AddHealthChecks().AddCheck<DbContextFactoryMigrationHealthCheck<TContext>>(contextName + "Migration", tags: new[] { "startup" });
             services.AddHealthChecks().AddCheck<DbContextFactoryConnectionHealthCheck<TContext>>(contextName + "Connection", tags: new[] { "ready" });
