@@ -54,9 +54,9 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
     RESTworldEditViewComponent,
     RESTWorldImageViewComponent,
     RESTWorldFileViewComponent,
+    RestworldEditFormComponent,
     SafeUrlPipe,
     AsPipe,
-    RestworldEditFormComponent
   ],
   imports: [
     CommonModule,
@@ -96,7 +96,9 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
     RESTworldEditViewComponent,
     RESTWorldImageViewComponent,
     RESTWorldFileViewComponent,
-    SafeUrlPipe
+    RestworldEditFormComponent,
+    SafeUrlPipe,
+    AsPipe
   ],
   providers: [
     RESTworldClientCollection,
