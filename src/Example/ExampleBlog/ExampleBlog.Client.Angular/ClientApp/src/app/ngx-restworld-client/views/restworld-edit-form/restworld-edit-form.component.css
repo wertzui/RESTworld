@@ -21,3 +21,11 @@
   border: 2px dashed rgb(206, 212, 218);
   margin: -2px;
 }
+
+.label-hidden {
+    visibility: hidden;
+}
+
+.label-collapsed {
+    display: none;
+}

@@ -3,7 +3,7 @@ import { OnInit } from '@angular/core';
 import { ChangeDetectorRef } from '@angular/core';
 import { Component, ContentChild, Input, TemplateRef } from '@angular/core';
 import { AbstractControl, FormArray, FormGroup } from '@angular/forms';
-import { Property, PropertyType, Resource, Template, TemplateDto } from '@wertzui/ngx-hal-client';
+import { Property, PropertyPromptDisplayType, PropertyType, Resource, Template, TemplateDto } from '@wertzui/ngx-hal-client';
 import { MessageService } from 'primeng/api';
 import { ProblemDetails } from '../../models/problem-details';
 import { FormService } from '../../services/form.service';
@@ -108,6 +108,10 @@ export class RestworldEditFormComponent implements OnInit {
 
   public get PropertyType() {
     return PropertyType;
+  }
+
+  public get PropertyPromptDisplayType() {
+    return PropertyPromptDisplayType;
   }
 
   public get dateFormat(): string {

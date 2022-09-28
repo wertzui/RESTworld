@@ -1,5 +1,5 @@
 <div *ngFor="let property of template.properties" class="grid field" [formGroup]="formGroup">
-  <label *ngIf="property.type !== PropertyType.Hidden" [attr.for]="property.name" class="col-12 mb-2 md:col-2 md:mb-0" [class.p-disabled]="property.readOnly" [class.hasChildren]="property._templates">{{property.prompt || property.name}}</label>
+  <label *ngIf="property.type !== PropertyType.Hidden" [attr.for]="property.name" class="col-12 mb-2 md:col-2 md:mb-0" [class.p-disabled]="property.readOnly" [class.hasChildren]="property._templates" [class.label-hidden]="property.promptDisplay === PropertyPromptDisplayType.Hidden" [class.label-collapsed]="property.promptDisplay === PropertyPromptDisplayType.Collapsed">{{property.prompt || property.name}}</label>
   <div class="col-12 md:col-10">
 
     <ng-template #defaultInputOptions let-property="property" let-template="template">
