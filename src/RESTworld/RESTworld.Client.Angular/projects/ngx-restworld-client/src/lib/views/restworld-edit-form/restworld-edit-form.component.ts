@@ -17,7 +17,7 @@ import { RESTworldClientCollection } from '../../services/restworld-client-colle
 })
 export class RestworldEditFormComponent implements OnInit {
   @Input()
-  formGroup!: FormGroup;
+  formGroup!: FormGroup<any>;
 
   @Input()
   template!: Template;
@@ -115,7 +115,7 @@ export class RestworldEditFormComponent implements OnInit {
   }
 
   public get dateFormat(): string {
-    return new Date(3333, 10, 22)
+    return new Date(3333, 11, 22)
       .toLocaleDateString()
       .replace("22", "dd")
       .replace("11", "mm")
@@ -123,8 +123,8 @@ export class RestworldEditFormComponent implements OnInit {
       .replace("33", "y");
   }
 
-  public FormGroup = FormGroup;
-  public FormArray = FormArray;
+  public UntypedFormGroup = FormGroup<any>;
+  public UntypedFormArray = FormArray<any>;
   public Number = Number;
 
   constructor(
@@ -170,8 +170,8 @@ export class RestworldEditFormComponent implements OnInit {
       .map(([, value]) => value);
   }
 
-  public addNewItemToCollection(property: Property, formArray: FormArray | AbstractControl): void {
-    if (!(formArray instanceof FormArray))
+  public addNewItemToCollection(property: Property, formArray: FormArray<any> | AbstractControl): void {
+    if (!(formArray instanceof FormArray<any>))
       throw new Error('formArray is not an instance of FormArray.');
 
     const maxIndex = Math.max(...Object.keys(property._templates)
@@ -188,11 +188,11 @@ export class RestworldEditFormComponent implements OnInit {
     formArray.push(this._formService.createFormGroupFromTemplate(defaultTemplate));
   }
 
-  public deleteItemFromCollection(property: Property, formArray: FormArray | AbstractControl, template: Template): void {
+  public deleteItemFromCollection(property: Property, formArray: FormArray<any> | AbstractControl, template: Template): void {
     if (!template.title)
       throw new Error(`Cannot delete the item, because the template '${template}' does not have a title.`);
 
-    if (!(formArray instanceof FormArray))
+    if (!(formArray instanceof FormArray<any>))
       throw new Error('formArray is not an instance of FormArray.');
 
     const templates = property._templates;
@@ -201,7 +201,7 @@ export class RestworldEditFormComponent implements OnInit {
     formArray.removeAt(Number.parseInt(template.title));
   }
 
-  public collectionItemDropped($event: CdkDragDrop<{ property: Property; formArray: FormArray }>) {
+  public collectionItemDropped($event: CdkDragDrop<{ property: Property; formArray: FormArray<any> }>) {
     const formArray = $event.container.data.formArray;
     const previousIndex = $event.previousIndex;
     const currentIndex = $event.currentIndex;

@@ -2,7 +2,7 @@ import { Component, Input } from '@angular/core';
 import { PropertyType, Resource, Template, Templates, FormsResource, Property } from '@wertzui/ngx-hal-client';
 import { RESTworldClient } from '../../services/restworld-client';
 import { RESTworldClientCollection } from '../../services/restworld-client-collection';
-import { AbstractControl, FormArray, FormControl, FormGroup } from '@angular/forms';
+import { AbstractControl, UntypedFormArray, UntypedFormControl, UntypedFormGroup } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
@@ -33,7 +33,7 @@ export class RESTworldEditViewComponent {
   public get formTabs() {
     return this._formTabs;
   }
-  private _formTabs: { [name: string]: FormGroup } = {};
+  private _formTabs: { [name: string]: UntypedFormGroup } = {};
 
   @Input()
   public set apiName(value: string | undefined) {
@@ -251,9 +251,9 @@ export class RESTworldEditViewComponent {
   }
 
   private static getSubControl(control: AbstractControl, pathElement: string): AbstractControl {
-    if (control instanceof FormGroup)
+    if (control instanceof UntypedFormGroup)
       return control.controls[pathElement];
-    if (control instanceof FormArray) {
+    if (control instanceof UntypedFormArray) {
       const index = Number.parseInt(pathElement);
       if (Number.isInteger(index))
         return control.controls[index];
@@ -358,7 +358,7 @@ export class RESTworldEditViewComponent {
     return formTemplates;
   }
 
-  public imageChanged(formControl: FormControl, event: { files: File[] }): void {
+  public imageChanged(formControl: UntypedFormControl, event: { files: File[] }): void {
     const file = event.files[0];
     console.log(file);
     const reader = new FileReader();

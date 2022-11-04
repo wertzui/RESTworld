@@ -35,5 +35,7 @@
       }
     }
   },
-  "defaultProject": "ngx-restworld-client"
+  "cli": {
+    "analytics": "35532d56-05f0-4d61-bedd-532327b40cf6"
+  }
 }

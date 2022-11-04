@@ -230,7 +230,7 @@
             <div class="brace">
             </div>
             <div class="w-full">
-              <rw-form [formGroup]="(formGroup.controls[property.name] | as : FormGroup)" [template]="property._templates.default" [apiName]="apiName"></rw-form>
+              <rw-form [formGroup]="(formGroup.controls[property.name] | as : UntypedFormGroup)" [template]="property._templates.default" [apiName]="apiName"></rw-form>
             </div>
           </div>
         </ng-template>
@@ -243,13 +243,13 @@
           <div class="flex align-items-center">
             <div class="brace">
             </div>
-            <div class="w-full" cdkDropList [cdkDropListData]="{ property: property, formArray: (formGroup.controls[property.name] | as : FormArray)}" (cdkDropListDropped)="collectionItemDropped($event)">
+            <div class="w-full" cdkDropList [cdkDropListData]="{ property: property, formArray: (formGroup.controls[property.name] | as : UntypedFormArray)}" (cdkDropListDropped)="collectionItemDropped($event)">
               <div *ngFor="let template of getCollectionEntryTemplates(property)" class="flex align-items-center" cdkDrag>
                 <i class="fas fa-grip-lines" cdkDragHandle></i>
                 <div class="brace">
                 </div>
                 <div class="w-full flex justify-content-end">
-                  <rw-form [formGroup]="((formGroup.controls[property.name] | as : FormArray).controls[Number.parseInt(template.title!)] | as : FormGroup)" [template]="template" [apiName]="apiName" class="w-full"></rw-form>
+                  <rw-form [formGroup]="((formGroup.controls[property.name] | as : UntypedFormArray).controls[Number.parseInt(template.title!)] | as : UntypedFormGroup)" [template]="template" [apiName]="apiName" class="w-full"></rw-form>
                   <button pButton pRipple type="button" icon="fas fa-trash" class="p-button-outlined p-button-danger ml-2 mb-3" (click)="deleteItemFromCollection(property, formGroup.controls[property.name], template)"></button>
                 </div>
               </div>

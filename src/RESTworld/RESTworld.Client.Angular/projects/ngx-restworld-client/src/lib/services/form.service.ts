@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { FormArray, FormControl, FormGroup, Validators } from '@angular/forms';
+import { UntypedFormArray, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
 import { Property, PropertyType, Template, Templates } from '@wertzui/ngx-hal-client';
 
 @Injectable({
@@ -7,7 +7,7 @@ import { Property, PropertyType, Template, Templates } from '@wertzui/ngx-hal-cl
 })
 export class FormService {
 
-  public createFormGroupsFromTemplates(templates: Templates): { [key: string]: FormGroup } {
+  public createFormGroupsFromTemplates(templates: Templates): { [key: string]: UntypedFormGroup } {
     const tabs = Object.fromEntries(Object.entries(templates).map(([name, template]) => [
       name,
       this.createFormGroupFromTemplate(template)
@@ -16,7 +16,7 @@ export class FormService {
     return tabs;
   }
 
-  private createFormGroupFromTemplates(templates: Templates, ignoredProperties: string[]): FormGroup {
+  private createFormGroupFromTemplates(templates: Templates, ignoredProperties: string[]): UntypedFormGroup {
     const controls = Object.fromEntries(
       Object.entries(templates)
         .filter(([key, ]) => !ignoredProperties.some(p => key === p))
@@ -24,36 +24,36 @@ export class FormService {
           name,
           this.createFormGroupFromTemplate(template)
         ]));
-    const formGroup = new FormGroup(controls);
+    const formGroup = new UntypedFormGroup(controls);
     return formGroup;
   }
 
-  public createFormArrayFromTemplates(templates: Templates, ignoredProperties: string[]): FormArray {
+  public createFormArrayFromTemplates(templates: Templates, ignoredProperties: string[]): UntypedFormArray {
     const controls =
       Object.entries(templates)
         .filter(([key, ]) => !ignoredProperties.some(p => key === p))
         .map(([, template]) =>
           this.createFormGroupFromTemplate(template));
-    const formArray = new FormArray(controls);
+    const formArray = new UntypedFormArray(controls);
     return formArray;
   }
 
-  public createFormGroupFromTemplate(template: Template): FormGroup {
+  public createFormGroupFromTemplate(template: Template): UntypedFormGroup {
     const controls = Object.fromEntries(template.properties.map(p => [
       p.name,
       this.createFormControl(p)
     ]));
-    const formGroup = new FormGroup(controls);
+    const formGroup = new UntypedFormGroup(controls);
     return formGroup;
   }
 
-  public createFormControl(property: Property): FormControl | FormGroup | FormArray {
+  public createFormControl(property: Property): UntypedFormControl | UntypedFormGroup | UntypedFormArray {
     if (property.type === PropertyType.Object)
       return this.createFormGroupFromTemplate(property._templates['default']);
     if (property.type === PropertyType.Collection)
       return this.createFormArrayFromTemplates(property._templates, ['default']);
 
-    const control = new FormControl(property.value);
+    const control = new UntypedFormControl(property.value);
     if (property.max)
       control.addValidators(Validators.max(property.max));
     if (property.maxLength)
