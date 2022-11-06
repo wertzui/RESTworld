@@ -1,8 +1,8 @@
 import { Component, Input } from '@angular/core';
-import { PropertyType, Resource, Template, Templates, FormsResource, Property } from '@wertzui/ngx-hal-client';
+import { PropertyType, Resource, Template, Templates, FormsResource, Property, ListResource } from '@wertzui/ngx-hal-client';
 import { RESTworldClient } from '../../services/restworld-client';
 import { RESTworldClientCollection } from '../../services/restworld-client-collection';
-import { AbstractControl, UntypedFormArray, UntypedFormControl, UntypedFormGroup } from '@angular/forms';
+import { AbstractControl, FormControl, FormGroup, UntypedFormArray, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
@@ -44,14 +44,16 @@ export class RESTworldEditViewComponent {
     return this._apiName;
   }
   private _apiName?: string;
-  //@Input()
-  //public set rel(value: string | undefined) {
-  //  this._rel = value;
-  //}
-  //public get rel(): string | undefined {
-  //  return this._rel;
-  //}
-  //private _rel?: string;
+
+  @Input()
+  public set rel(value: string | undefined) {
+    this._rel = value;
+  }
+  public get rel(): string | undefined {
+    return this._rel;
+  }
+  private _rel?: string;
+
   @Input()
   public set uri(value: string | undefined) {
     this._uri = value;
@@ -79,6 +81,12 @@ export class RESTworldEditViewComponent {
     const form = this.formTabs[templateName];
     return form && form.valid;
   }
+
+  public idNavigationForm = new FormGroup < {
+    id: FormControl<number | null>
+  }>({
+    id: new FormControl(null, Validators.compose([Validators.min(1), Validators.max(Number.MAX_SAFE_INTEGER)]))
+  });
 
   @ContentChild('extraTabs', { static: false })
   extraTabsRef?: TemplateRef<unknown>;
@@ -170,6 +178,35 @@ export class RESTworldEditViewComponent {
     private _formService: FormService,
     valdemortConfig: ValdemortConfig) {
     valdemortConfig.errorClasses = 'p-error text-sm';
+  }
+
+  public async navigateById(): Promise<void> {
+    if (!this.rel)
+      throw new Error('The "rel" must be set through the uri of this page for the ID navigation to work.');
+
+    if (!this.idNavigationForm.valid) {
+      this._messageService.add({ detail: 'You must enter a valid ID to naviage to.', severity: 'error' });
+      return;
+    }
+    var idToNavigateTo = this.idNavigationForm.controls.id.value;
+
+    var client = this.getClient();
+
+    var response = await client.getList<Resource>(this.rel, { $filter: `id eq ${idToNavigateTo}` });
+    if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body) {
+      this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the resources from the API.', data: response });
+      return;
+    }
+
+    var resource = response.body?._embedded?.items?.[0];
+    if (!resource) {
+      this._messageService.add({ severity: 'error', summary: 'Error', detail: 'No resource found with the specified ID.' });
+      return;
+    }
+
+    await this._router.navigate(['/edit', this.apiName, this.rel, resource._links.self[0].href]);
+
+    this.idNavigationForm.reset();
   }
 
   public getTooltip(resource: Resource, keysToExclude?: string[]): string {

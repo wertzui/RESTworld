@@ -14,13 +14,14 @@ export const AppRoutes: DeepLinkingRoute[] = [
     component: PostWithAuthorListComponent
   },
   {
-    path: 'edit/postWithAuthor/:apiName/:uri',
+    path: 'edit/postWithAuthor/:apiName/:rel/:uri',
     component: DeepLinkingWrapperComponent,
     wrappedComponent: PostWithAuthorComponent,
     deepLinking: {
       params: [
         { name: 'apiName', type: 'string' },
-        { name: 'uri', type: 'string' }
+        { name: 'uri', type: 'string' },
+        { name: 'rel', type: 'string' }
       ]
     }
   },
@@ -42,13 +43,14 @@ export const AppRoutes: DeepLinkingRoute[] = [
     }
   },
   {
-    path: 'edit/:apiName/:uri',
+    path: 'edit/:apiName/:rel/:uri',
     component: DeepLinkingWrapperComponent,
     wrappedComponent: RESTworldEditViewComponent,
     deepLinking: {
       params: [
         { name: 'apiName', type: 'string' },
-        { name: 'uri', type: 'string' }
+        { name: 'uri', type: 'string' },
+        { name: 'rel', type: 'string' }
       ]
     }
   }

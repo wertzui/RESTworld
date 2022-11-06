@@ -25,7 +25,7 @@
             <th>
                 <div class="flex justify-content-end">
                     <div class="mx-2">
-                        <a *ngIf="!createButtonMenu" class="p-button-success" icon="fas fa-plus" pButton [routerLink]="[editLink, apiName, newHref]" pTooltip="Create new" tooltipPosition="left"></a>
+                        <a *ngIf="!createButtonMenu" class="p-button-success" icon="fas fa-plus" pButton [routerLink]="[editLink, apiName, rel, newHref]" pTooltip="Create new" tooltipPosition="left"></a>
                         <p-splitButton *ngIf="createButtonMenu" styleClass="p-button-success" icon="fas fa-plus" pTooltip="Create new" tooltipPosition="left" (onClick)="createNew()" [model]="createButtonMenu" appendTo="body"></p-splitButton>
                     </div>
                 </div>
@@ -48,7 +48,7 @@
             </td>
             <td>
                 <div class="flex justify-content-end">
-                    <a pButton pTooltip="View/Edit" tooltipPosition="left" [routerLink]="[editLink, apiName, entity._links?.self[0].href]" icon="fas fa-edit"></a>
+                    <a pButton pTooltip="View/Edit" tooltipPosition="left" [routerLink]="[editLink, apiName, rel, entity._links?.self[0].href]" icon="fas fa-edit"></a>
                     <button pTooltip="Delete" tooltipPosition="left" pButton *ngIf="entity._links.delete" (click)="showDeleteConfirmatioModal(entity)" icon="fas fa-trash-alt" type="button" class="mx-2 p-button-danger"></button>
                 </div>
             </td>

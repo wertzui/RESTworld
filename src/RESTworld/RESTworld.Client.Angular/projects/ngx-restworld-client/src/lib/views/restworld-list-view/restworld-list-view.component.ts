@@ -138,7 +138,7 @@ export class RESTworldListViewComponent<TListDto extends ResourceDto> {
   }
 
   public createNew(): Promise<boolean> {
-    return this._router.navigate([this.editLink, this.apiName, this.newHref]);
+    return this._router.navigate([this.editLink, this.apiName, this.rel, this.newHref]);
   }
 
   private getClient(): RESTworldClient {

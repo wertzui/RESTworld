@@ -54,6 +54,15 @@ export class RESTworldClient {
     return response;
   }
 
+  public async getListAsCsv(rel: string, parameters: {}, headers?: HttpHeaders, curie?: string): Promise<HttpResponse<Blob> | undefined> {
+    const link = this.getLinkFromHome(rel, LinkNames.getList, curie);
+    const uri = link.href;
+
+    const response = await this.getListByUriAsCsv(uri, parameters, headers);
+
+    return response;
+  }
+
   public async getListByUri<TListDto extends ResourceDto>(uri: string, parameters: {}, headers?: HttpHeaders): Promise<HttpResponse<PagedListResource<TListDto> | ProblemDetails>> {
     const link = new Link();
     link.href = uri;
@@ -62,6 +71,18 @@ export class RESTworldClient {
     const combinedHeaders = RESTworldClient.combineHeaders(headers, defaultHeaders, false);
 
     const response = await this.halClient.get<PagedListResource<TListDto>, ProblemDetails>(filledUri, PagedListResource, ProblemDetails, combinedHeaders);
+
+    return response;
+  }
+
+  public async getListByUriAsCsv(uri: string, parameters: {}, headers?: HttpHeaders): Promise<HttpResponse<Blob> | undefined> {
+    const link = new Link();
+    link.href = uri;
+    const filledUri = link.fillTemplate(parameters);
+    const defaultHeaders = RESTworldClient.createHeaders('text/csv', this._options.Version);
+    const combinedHeaders = RESTworldClient.combineHeaders(headers, defaultHeaders, false);
+
+    const response = await this.halClient.httpClient.get(filledUri, { headers: combinedHeaders, responseType: 'blob', observe: 'response' }).toPromise();
 
     return response;
   }
@@ -245,7 +266,7 @@ export class RESTworldClient {
     return fullRel;
   }
 
-  private static createHeaders(mediaType?: 'application/hal+json' | 'application/prs.hal-forms+json', version?: number): HttpHeaders {
+  private static createHeaders(mediaType?: 'application/hal+json' | 'application/prs.hal-forms+json' | 'text/csv', version?: number): HttpHeaders {
     if (version)
       return new HttpHeaders({
         'Accept': `${mediaType || 'application/hal+json'}; v=${version}`,

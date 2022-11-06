@@ -1,6 +1,14 @@
 <div class="grid">
-  <div class="col">
+  <div class="col-12 md:col-10">
     <h1>Edit resource</h1>
+  </div>
+  <div class="col-12 md:col-2 align-items-center justify-content-end flex">
+    <form [formGroup]="idNavigationForm" (ngSubmit)="navigateById()" class="mr-3">
+      <div class="p-inputgroup">
+        <p-inputNumber formControlName="id" placeholder="Navigate by ID"></p-inputNumber>
+        <button type="submit" pButton pRipple icon="fa-solid fa-arrow-right"></button>
+      </div>
+    </form>
   </div>
 </div>
 
