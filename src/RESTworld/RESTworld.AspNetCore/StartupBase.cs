@@ -134,6 +134,10 @@ namespace RESTworld.AspNetCore
         /// <param name="services">The <see cref="IServiceCollection"/> instance.</param>
         public virtual void ConfigureServices(IServiceCollection services)
         {
+            var versionParameterName = Configuration.GetValue("RESTworld:Versioning:ParameterName", "v");
+            if (versionParameterName is null)
+                throw new ArgumentNullException("RESTworld:Versioning:ParameterName", "The setting for \"RESTworld: Versioning:ParameterName\" must not be null. If you want the default value (\"v\"), just leave it out.");
+
             services.AddApiVersioning(options =>
             {
                 options.AssumeDefaultVersionWhenUnspecified = true;
@@ -154,17 +158,16 @@ namespace RESTworld.AspNetCore
                 }
 
                 // Version parameter
-                var parameterName = Configuration.GetValue("RESTworld:Versioning:ParameterName", "v");
                 var allowQueryStringVersioning = Configuration.GetValue("RESTworld:Versioning:AllowQueryParameterVersioning", false);
                 if (allowQueryStringVersioning)
                 {
                     options.ApiVersionReader = ApiVersionReader.Combine(
-                        new MediaTypeApiVersionReader(parameterName),
-                        new QueryStringApiVersionReader(parameterName));
+                        new MediaTypeApiVersionReader(versionParameterName),
+                        new QueryStringApiVersionReader(versionParameterName));
                 }
                 else
                 {
-                    options.ApiVersionReader = new MediaTypeApiVersionReader(parameterName);
+                    options.ApiVersionReader = new MediaTypeApiVersionReader(versionParameterName);
                 }
             });
 
@@ -211,8 +214,7 @@ namespace RESTworld.AspNetCore
                 // Do not advertise versioning through query parameter as this is only intended for legacy clients and should not be visible as it is not considered RESTfull.
                 if (options.ApiVersionParameterSource is not MediaTypeApiVersionReader)
                 {
-                    var parameterName = Configuration.GetValue("RESTworld:Versioning:ParameterName", "v");
-                    options.ApiVersionParameterSource = new MediaTypeApiVersionReader(parameterName);
+                    options.ApiVersionParameterSource = new MediaTypeApiVersionReader(versionParameterName);
                 }
             });
 
@@ -224,10 +226,9 @@ namespace RESTworld.AspNetCore
                 options.MapType(typeof(ODataQueryOptions<>), () => new());
 
                 // Add versioning through media type.
-                var parameterName = Configuration.GetValue("RESTworld:Versioning:ParameterName", "v");
-                options.OperationFilter<SwaggerVersioningOperationFilter>(parameterName);
+                options.OperationFilter<SwaggerVersioningOperationFilter>(versionParameterName);
 
-                // Add meaningfull examples.
+                // Add meaningful examples.
                 options.OperationFilter<SwaggerExampleOperationFilter>();
             });
 

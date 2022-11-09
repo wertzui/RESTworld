@@ -50,7 +50,7 @@ namespace RESTworld.AspNetCore.Formatter
         /// <inheritdoc/>
         public override bool CanWriteResult(OutputFormatterCanWriteContext context)
         {
-            if (!context.ContentType.Value.Contains("text/csv"))
+            if (!context.ContentType.HasValue || !context.ContentType.Value.Contains("text/csv"))
                 return false;
 
             var resource = context.Object as Resource;
@@ -91,11 +91,10 @@ namespace RESTworld.AspNetCore.Formatter
             var culture = context.HttpContext.Features.Get<IRequestCultureFeature>()?.RequestCulture.Culture;
             var configuration = new CsvHelper.Configuration.CsvConfiguration(culture)
             {
-                Encoding = selectedEncoding,
-                LeaveOpen = true,
+                Encoding = selectedEncoding
             };
             await using var writer = context.WriterFactory(context.HttpContext.Response.Body, selectedEncoding);
-            await using var csv = new CsvHelper.CsvWriter(writer, configuration);
+            await using var csv = new CsvHelper.CsvWriter(writer, configuration, true);
 
             await csv.WriteRecordsAsync(states, context.HttpContext.RequestAborted);
         }

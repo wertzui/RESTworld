@@ -29,10 +29,14 @@ namespace RESTworld.AspNetCore.Filters
 
             if (context.Result is ObjectResult objectResult &&
                 context.HttpContext.Request.Headers.TryGetValue("Accept", out var accept) &&
-                objectResult.ContentTypes.Any(c => accept.Any(a => a.Contains(c))))
+                objectResult.ContentTypes.Any(c => accept.Any(a => a is not null && a.Contains(c))))
             {
-                objectResult.ContentTypes.Clear();
-                objectResult.ContentTypes.Add(accept);
+                string? acceptString = accept;
+                if (acceptString is not null)
+                {
+                    objectResult.ContentTypes.Clear();
+                    objectResult.ContentTypes.Add(acceptString);
+                }
             }
         }
     }
