@@ -1,19 +1,18 @@
-﻿using AutoMapper;
-using Microsoft.AspNet.OData.Builder;
-using Microsoft.AspNet.OData.Extensions;
-using Microsoft.AspNet.OData.Formatter;
-using Microsoft.AspNet.OData.Query;
+﻿using Asp.Versioning;
+using Asp.Versioning.ApiExplorer;
+using AutoMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.AspNetCore.Mvc.Versioning;
+using Microsoft.AspNetCore.OData;
+using Microsoft.AspNetCore.OData.Formatter;
+using Microsoft.AspNetCore.OData.Query;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using Microsoft.OData.ModelBuilder;
 using RESTworld.AspNetCore.Controller;
 using RESTworld.AspNetCore.DependencyInjection;
 using RESTworld.AspNetCore.Formatter;
@@ -118,7 +117,7 @@ namespace RESTworld.AspNetCore
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                endpoints.EnableDependencyInjection();
+                //endpoints.EnableDependencyInjection();
             });
 
             app.UseHealthChecks("/health/startup", new HealthCheckOptions { Predicate = r => r.Tags.Contains("startup"), ResponseWriter = HealthCheckHALResponseWriter.WriteResponseAsync });
@@ -138,40 +137,53 @@ namespace RESTworld.AspNetCore
             if (versionParameterName is null)
                 throw new ArgumentNullException("RESTworld:Versioning:ParameterName", "The setting for \"RESTworld: Versioning:ParameterName\" must not be null. If you want the default value (\"v\"), just leave it out.");
 
-            services.AddApiVersioning(options =>
-            {
-                options.AssumeDefaultVersionWhenUnspecified = true;
-                options.ReportApiVersions = true;
-
-                // Default version
-                var defaultVersion = Configuration.GetValue("RESTworld:Versioning:DefaultVersion", "*");
-                if (defaultVersion == "*")
+            services
+                .AddApiVersioning(options =>
                 {
-                    options.ApiVersionSelector = new LatestApiVersionSelector();
-                }
-                else
-                {
-                    if (!ApiVersion.TryParse(defaultVersion, out var parsedVersion) || parsedVersion is null)
-                        throw new ArgumentOutOfRangeException("RESTworld:Versioning:DefaultVersion", defaultVersion, "The setting for \"RESTworld:Versioning:DefaultVersion\" was neither \"*\" nor a valid API version.");
+                    options.AssumeDefaultVersionWhenUnspecified = true;
+                    options.ReportApiVersions = true;
 
-                    options.DefaultApiVersion = parsedVersion;
-                }
+                    // Default version
+                    var defaultVersion = Configuration.GetValue("RESTworld:Versioning:DefaultVersion", "*");
+                    if (defaultVersion == "*")
+                    {
+                        options.ApiVersionSelector = new LatestApiVersionSelector();
+                    }
+                    else
+                    {
+                        if (!ApiVersionParser.Default.TryParse(defaultVersion, out var parsedVersion) || parsedVersion is null)
+                            throw new ArgumentOutOfRangeException("RESTworld:Versioning:DefaultVersion", defaultVersion, "The setting for \"RESTworld:Versioning:DefaultVersion\" was neither \"*\" nor a valid API version.");
 
-                // Version parameter
-                var allowQueryStringVersioning = Configuration.GetValue("RESTworld:Versioning:AllowQueryParameterVersioning", false);
-                if (allowQueryStringVersioning)
-                {
-                    options.ApiVersionReader = ApiVersionReader.Combine(
-                        new MediaTypeApiVersionReader(versionParameterName),
-                        new QueryStringApiVersionReader(versionParameterName));
-                }
-                else
-                {
-                    options.ApiVersionReader = new MediaTypeApiVersionReader(versionParameterName);
-                }
-            });
+                        options.DefaultApiVersion = parsedVersion;
+                    }
 
-            services.AddOData();
+                    // Version parameter
+                    var allowQueryStringVersioning = Configuration.GetValue("RESTworld:Versioning:AllowQueryParameterVersioning", false);
+                    if (allowQueryStringVersioning)
+                    {
+                        options.ApiVersionReader = ApiVersionReader.Combine(
+                            // Newer Chromium based browsers are always sending "application/signed-exchange;v=b3" in the accept header which will otherwise be interpreted as an invalid version.
+                            new MediaTypeApiVersionReaderBuilder().Parameter(versionParameterName).Exclude("application/signed-exchange").Build(),
+                            new QueryStringApiVersionReader(versionParameterName));
+                    }
+                    else
+                    {
+                        options.ApiVersionReader = new MediaTypeApiVersionReader(versionParameterName);
+                    }
+                })
+                .AddApiExplorer(options =>
+                {
+                    options.GroupNameFormat = "'v'VVV";
+
+                    // Do not advertise versioning through query parameter as this is only intended for legacy clients and should not be visible as it is not considered RESTfull.
+                    if (options.ApiVersionParameterSource is not MediaTypeApiVersionReader)
+                    {
+                        options.ApiVersionParameterSource = new MediaTypeApiVersionReader(versionParameterName);
+                    }
+                })
+                .AddMvc();
+
+            //services.AddOData();
             services.AddSingleton(_ => ODataModelBuilder.GetEdmModel());
 
             services.Configure<RestWorldOptions>(Configuration.GetSection("RESTworld"));
@@ -189,6 +201,7 @@ namespace RESTworld.AspNetCore
                     manager.FeatureProviders.Add(new HomeControllerFeatureProvider());
                     manager.FeatureProviders.Add(new RestControllerFeatureProvider());
                 })
+                .AddOData()
                 .AddHALOData()
                 .AddJsonOptions(o =>
                 {
@@ -205,17 +218,6 @@ namespace RESTworld.AspNetCore
                         .AllowAnyHeader()
                         .SetIsOriginAllowed(_ => true) // allow any origin
                         .AllowCredentials()); // allow credentials
-            });
-
-            services.AddVersionedApiExplorer(options =>
-            {
-                options.GroupNameFormat = "'v'VVV";
-
-                // Do not advertise versioning through query parameter as this is only intended for legacy clients and should not be visible as it is not considered RESTfull.
-                if (options.ApiVersionParameterSource is not MediaTypeApiVersionReader)
-                {
-                    options.ApiVersionParameterSource = new MediaTypeApiVersionReader(versionParameterName);
-                }
             });
 
             services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureVersioningWithSwaggerOptions>();

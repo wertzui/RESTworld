@@ -15,7 +15,7 @@ namespace RESTworld.AspNetCore.Swagger
         /// <param name="operationFilterContext">The operation filter context.</param>
         public SwaggerOperationApiDescriptionGroupCollectionProvider(OperationFilterContext operationFilterContext)
         {
-            ApiDescriptionGroups = new ApiDescriptionGroupCollection(new[] { new ApiDescriptionGroup(operationFilterContext.ApiDescription.GroupName, new[] { operationFilterContext.ApiDescription }) }, operationFilterContext.ApiDescription.GetApiVersion().MajorVersion.GetValueOrDefault());
+            ApiDescriptionGroups = new ApiDescriptionGroupCollection(new[] { new ApiDescriptionGroup(operationFilterContext.ApiDescription.GroupName, new[] { operationFilterContext.ApiDescription }) }, (operationFilterContext.ApiDescription?.GetApiVersion()?.MajorVersion).GetValueOrDefault());
         }
 
         /// <inheritdoc/>

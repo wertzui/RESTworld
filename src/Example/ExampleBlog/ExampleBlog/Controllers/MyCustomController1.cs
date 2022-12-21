@@ -1,4 +1,5 @@
-﻿using ExampleBlog.Business;
+﻿using Asp.Versioning;
+using ExampleBlog.Business;
 using ExampleBlog.Common.Dtos;
 using HAL.AspNetCore.Abstractions;
 using HAL.AspNetCore.OData.Abstractions;

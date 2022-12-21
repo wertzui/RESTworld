@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Versioning;
+﻿using Asp.Versioning;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using RESTworld.AspNetCore.Controller;
@@ -43,7 +42,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddScoped<ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>>();
             services.AddForeignKeyForFormTo<TGetListDto>();
             RestControllerFeatureProvider.AddCrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
-            services.Configure<ApiVersioningOptions>(options =>
+            services.Configure<MvcApiVersioningOptions>(options =>
             {
                 var controllerConvention = options.Conventions.Controller<CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>>();
                 if (apiVersion is null)

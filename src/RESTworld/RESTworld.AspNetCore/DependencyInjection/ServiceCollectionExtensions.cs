@@ -1,8 +1,8 @@
 ﻿using HAL.AspNetCore.Forms.Abstractions;
-using Microsoft.AspNet.OData.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
+using Microsoft.OData.ModelBuilder;
 using RESTworld.AspNetCore;
 using RESTworld.AspNetCore.Authorization;
 using RESTworld.AspNetCore.Forms;

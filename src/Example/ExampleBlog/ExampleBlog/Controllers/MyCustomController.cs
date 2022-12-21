@@ -1,4 +1,5 @@
-﻿using ExampleBlog.Business;
+﻿using Asp.Versioning;
+using ExampleBlog.Business;
 using ExampleBlog.Common.Dtos;
 using HAL.AspNetCore.Abstractions;
 using HAL.AspNetCore.Forms.Abstractions;
@@ -51,7 +52,7 @@ namespace ExampleBlog.Controllers
 
             if (accept.Contains("hal-forms+json"))
             {
-                var result = _formFactory.CreateResourceForEndpoint(dto, HttpMethod.Get, "Read only", action: null);
+                var result = _formFactory.CreateResourceForEndpoint(dto, HttpMethod.Get, "Post", action: null);
 
                 // When getting a form, instead of a link to the author, we just add another form with the author already filled in
                 var authorLink = Url.ActionLink("Get", RestControllerNameConventionAttribute.CreateNameFromType<AuthorDto>(), new { id = dto.AuthorId }) ?? "";

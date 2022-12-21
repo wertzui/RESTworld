@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNet.OData.Query;
-using RESTworld.Business;
+﻿using Microsoft.AspNetCore.OData.Query;
 using RESTworld.Business.Models;
 using RESTworld.Business.Models.Abstractions;
 using System;

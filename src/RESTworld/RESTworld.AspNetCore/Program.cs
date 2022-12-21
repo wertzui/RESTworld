@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using System;
@@ -46,6 +47,7 @@ namespace RESTworld.AspNetCore
                         .ReadFrom.Configuration(context.Configuration)
                         .ReadFrom.Services(services)
                         .Enrich.FromLogContext())
+                .ConfigureAppConfiguration(b => b.AddUserSecrets<TStartup>())
                 .ConfigureWebHostDefaults(webBuilder => webBuilder.UseStartup<TStartup>());
     }
 }

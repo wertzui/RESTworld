@@ -1,3 +1,5 @@
+using Asp.Versioning;
+using Asp.Versioning.ApiExplorer;
 using AutoMapper;
 using ExampleBlog.Business;
 using ExampleBlog.Common.Dtos;
@@ -5,8 +7,6 @@ using ExampleBlog.Data;
 using ExampleBlog.Data.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RESTworld.EntityFrameworkCore.Models;

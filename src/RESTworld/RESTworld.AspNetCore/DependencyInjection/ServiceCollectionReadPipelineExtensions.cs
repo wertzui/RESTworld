@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Versioning;
+﻿using Asp.Versioning;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using RESTworld.AspNetCore.Controller;
@@ -41,7 +40,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddScoped<IReadServiceBase<TEntity, TGetListDto, TGetFullDto>, ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>>();
             services.AddForeignKeyForFormTo<TGetListDto>();
             RestControllerFeatureProvider.AddReadController<TEntity, TGetListDto, TGetFullDto>();
-            services.Configure<ApiVersioningOptions>(options =>
+            services.Configure<MvcApiVersioningOptions>(options =>
             {
                 var controllerConvention = options.Conventions.Controller<ReadController<TEntity, TGetListDto, TGetFullDto>>();
                 if (apiVersion is null)
