@@ -121,7 +121,7 @@ namespace RESTworld.AspNetCore.Controller
         [HttpGet]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
         [ProducesResponseType(200)]
-        [ProducesWithContentNegotiation("application/hal+json", "text/csv")]
+        [ProducesWithContentNegotiation("application/hal+json", "text/csv", "application/prs.hal-forms+json", "application/hal-forms+json")]
         public virtual async Task<ActionResult<Resource>> GetListAsync(
             [SwaggerIgnore] ODataQueryOptions<TEntity> options,
             [FromQuery(Name = "$filter")] string? filter = default,

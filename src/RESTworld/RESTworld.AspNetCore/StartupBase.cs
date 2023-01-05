@@ -158,18 +158,12 @@ namespace RESTworld.AspNetCore
                     }
 
                     // Version parameter
+                    // Newer Chromium based browsers are always sending "application/signed-exchange;v=b3" in the accept header which will otherwise be interpreted as an invalid version.
+                    options.ApiVersionReader = new MediaTypeApiVersionReaderBuilder().Parameter(versionParameterName).Exclude("application/signed-exchange").Build();
+
                     var allowQueryStringVersioning = Configuration.GetValue("RESTworld:Versioning:AllowQueryParameterVersioning", false);
                     if (allowQueryStringVersioning)
-                    {
-                        options.ApiVersionReader = ApiVersionReader.Combine(
-                            // Newer Chromium based browsers are always sending "application/signed-exchange;v=b3" in the accept header which will otherwise be interpreted as an invalid version.
-                            new MediaTypeApiVersionReaderBuilder().Parameter(versionParameterName).Exclude("application/signed-exchange").Build(),
-                            new QueryStringApiVersionReader(versionParameterName));
-                    }
-                    else
-                    {
-                        options.ApiVersionReader = new MediaTypeApiVersionReader(versionParameterName);
-                    }
+                        options.ApiVersionReader = ApiVersionReader.Combine(options.ApiVersionReader, new QueryStringApiVersionReader(versionParameterName));
                 })
                 .AddApiExplorer(options =>
                 {
