@@ -35,14 +35,25 @@ namespace RESTworld.AspNetCore.Swagger
     /// <seealso cref="IOperationFilter" />
     public class SwaggerExampleOperationFilter : IOperationFilter
     {
-        private static readonly Fixture _fixture = new();
-        private static readonly SpecimenContext _specimenContext = new(_fixture);
+        private static readonly Fixture _fixture;
+        private static readonly SpecimenContext _specimenContext;
         private readonly IApiDescriptionGroupCollectionProvider _apiExplorer;
         private readonly string _curieName;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly LinkGenerator _linkGenerator;
         private readonly IODataQueryFactory _oDataQueryFactory;
         private readonly JsonSerializerOptions _serializerOptions;
+
+        static SwaggerExampleOperationFilter()
+        {
+            _fixture = new();
+
+            // Allow recursion with depth 3
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList().ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior(3));
+
+            _specimenContext = new(_fixture);
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SwaggerExampleOperationFilter"/> class.
