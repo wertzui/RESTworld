@@ -28,6 +28,37 @@ namespace Microsoft.Extensions.DependencyInjection
         /// need to write the custom controller which will call your service yourself and put it
         /// into the /Controllers folder of your application so it gets automatically recognized.
         /// </summary>
+        /// <typeparam name="TRequest">The type of the request.</typeparam>
+        /// <typeparam name="TResponse">The type of the response.</typeparam>
+        /// <typeparam name="TService">
+        /// The type of the custom <see cref="ICrudServiceBase{TEntity, TCreateDto, TGetListDto,
+        /// TGetFullDto, TUpdateDto}"/> implementation.
+        /// </typeparam>
+        /// <typeparam name="TAuthorizationhandler">
+        /// The type of the <see cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto,
+        /// TGetFullDto, TUpdateDto}"/>.
+        /// </typeparam>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+        /// <param name="configuration">
+        /// The <see cref="IConfiguration"/> instance which holds the RESTWorld configuration.
+        /// </param>
+        /// <returns>A reference to this instance after the operation has completed.</returns>
+        public static IServiceCollection AddCustomServiceAndAuthorization<TRequest, TResponse, TService, TAuthorizationhandler>(this IServiceCollection services, IConfiguration configuration)
+            where TService : class
+            where TAuthorizationhandler : class, IBasicAuthorizationHandler<TRequest, TResponse>
+        {
+            services.AddScoped<TService>();
+            services.AddBasicAuthorizationHandler<TAuthorizationhandler, TRequest, TResponse>(configuration);
+
+            return services;
+        }
+
+        /// <summary>
+        /// Adds a custom service with basic authorization, using a custom <typeparamref
+        /// name="TService"/> and the <typeparamref name="TAuthorizationhandler"/>. Note that you
+        /// need to write the custom controller which will call your service yourself and put it
+        /// into the /Controllers folder of your application so it gets automatically recognized.
+        /// </summary>
         /// <typeparam name="TEntity">The type of the entity.</typeparam>
         /// <typeparam name="TRequest">The type of the request.</typeparam>
         /// <typeparam name="TResponse">The type of the response.</typeparam>
@@ -77,20 +108,16 @@ namespace Microsoft.Extensions.DependencyInjection
             if (configuration is null)
                 throw new ArgumentNullException(nameof(configuration));
 
-            if (sqlServerOptionsAction is null)
-                sqlServerOptionsAction = optionsBuilder => optionsBuilder.EnableRetryOnFailure();
+            sqlServerOptionsAction ??= optionsBuilder => optionsBuilder.EnableRetryOnFailure();
 
             var contextType = typeof(TContext);
             var contextName = contextType.Name;
 
-            if (optionsAction is null)
-            {
-                optionsAction = builder =>
+            optionsAction ??= builder =>
                 builder
                     .UseSqlServer(configuration.GetConnectionString(contextName), sqlServerOptionsAction)
                     .EnableDetailedErrors()
                     .EnableSensitiveDataLogging();
-            }
 
             services.AddPooledDbContextFactory<TContext>(optionsAction);
 

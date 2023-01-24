@@ -13,18 +13,51 @@ namespace Microsoft.Extensions.DependencyInjection
     public static class ServiceCollectionAuthorizationHandlerExtensions
     {
         /// <summary>
+        /// Adds an <see cref="IBasicAuthorizationHandler{TResponse}"/> which you
+        /// can use from your custom service method.
+        /// </summary>
+        /// <typeparam name="TAuthorizationhandler">The type of the authorization handler.</typeparam>
+        /// <typeparam name="TResponse">The type of the response.</typeparam>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+        /// <param name="configuration">The configuration instance which holds the RESTWorld configuration.</param>
+        /// <returns>A reference to this instance after the operation has completed.</returns>
+        public static IServiceCollection AddBasicAuthorizationHandler<TAuthorizationhandler, TResponse>(this IServiceCollection services, IConfiguration configuration)
+            where TAuthorizationhandler : class, IBasicAuthorizationHandler<TResponse>
+        {
+            if (!configuration.GetValue<bool>($"{nameof(RESTworld)}:{nameof(RestWorldOptions.DisableAuthorization)}"))
+            {
+                services.AddScoped<IBasicAuthorizationHandler<TResponse>, TAuthorizationhandler>();
+                services.AddScoped<TAuthorizationhandler>();
+            }
+
+            return services;
+        }
+
+        /// <summary>
         /// Adds an <see cref="IBasicAuthorizationHandler{TEntity, TRequest, TResponse}"/> which you
-        /// can use when calling <see cref="ServiceBase.TryExecuteWithAuthorizationAsync{TEntity,
-        /// T1, TResponse, TAuthorizationHandler}(T1,
-        /// System.Func{RESTworld.Business.Authorization.AuthorizationResult{TEntity, T1},
-        /// System.Threading.Tasks.Task{RESTworld.Business.Models.ServiceResponse{TResponse}}},
-        /// System.Func{RESTworld.Business.Authorization.AuthorizationResult{TEntity, T1},
-        /// TAuthorizationHandler,
-        /// System.Threading.Tasks.Task{RESTworld.Business.Authorization.AuthorizationResult{TEntity,
-        /// T1}}}, System.Func{RESTworld.Business.Models.ServiceResponse{TResponse},
-        /// TAuthorizationHandler,
-        /// System.Threading.Tasks.Task{RESTworld.Business.Models.ServiceResponse{TResponse}}},
-        /// System.Collections.Generic.IEnumerable{TAuthorizationHandler})"/> from your service method.
+        /// can use when calling <see cref="ServiceBase.TryExecuteWithAuthorizationAsync{T1, TResponse, TAuthorizationHandler}(T1, System.Func{RESTworld.Business.Authorization.AuthorizationResultWithoutDb{T1}, System.Threading.Tasks.Task{RESTworld.Business.Models.ServiceResponse{TResponse}}}, System.Func{RESTworld.Business.Authorization.AuthorizationResultWithoutDb{T1}, TAuthorizationHandler, System.Threading.Tasks.Task{RESTworld.Business.Authorization.AuthorizationResultWithoutDb{T1}}}, System.Func{RESTworld.Business.Models.ServiceResponse{TResponse}, TAuthorizationHandler, System.Threading.Tasks.Task{RESTworld.Business.Models.ServiceResponse{TResponse}}}, System.Collections.Generic.IEnumerable{TAuthorizationHandler})"/> from your service method.
+        /// </summary>
+        /// <typeparam name="TAuthorizationhandler">The type of the authorization handler.</typeparam>
+        /// <typeparam name="TRequest">The type of the request.</typeparam>
+        /// <typeparam name="TResponse">The type of the response.</typeparam>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+        /// <param name="configuration">The configuration instance which holds the RESTWorld configuration.</param>
+        /// <returns>A reference to this instance after the operation has completed.</returns>
+        public static IServiceCollection AddBasicAuthorizationHandler<TAuthorizationhandler, TRequest, TResponse>(this IServiceCollection services, IConfiguration configuration)
+            where TAuthorizationhandler : class, IBasicAuthorizationHandler<TRequest, TResponse>
+        {
+            if (!configuration.GetValue<bool>($"{nameof(RESTworld)}:{nameof(RestWorldOptions.DisableAuthorization)}"))
+            {
+                services.AddScoped<IBasicAuthorizationHandler<TRequest, TResponse>, TAuthorizationhandler>();
+                services.AddScoped<TAuthorizationhandler>();
+            }
+
+            return services;
+        }
+
+        /// <summary>
+        /// Adds an <see cref="IBasicAuthorizationHandler{TEntity, TRequest, TResponse}"/> which you
+        /// can use when calling <see cref="DbServiceBase{TContext}.TryExecuteWithAuthorizationAsync{TEntity, T1, TResponse, TAuthorizationHandler}(T1, System.Func{RESTworld.Business.Authorization.AuthorizationResult{TEntity, T1}, System.Threading.Tasks.Task{RESTworld.Business.Models.ServiceResponse{TResponse}}}, System.Func{RESTworld.Business.Authorization.AuthorizationResult{TEntity, T1}, TAuthorizationHandler, System.Threading.Tasks.Task{RESTworld.Business.Authorization.AuthorizationResult{TEntity, T1}}}, System.Func{RESTworld.Business.Models.ServiceResponse{TResponse}, TAuthorizationHandler, System.Threading.Tasks.Task{RESTworld.Business.Models.ServiceResponse{TResponse}}}, System.Collections.Generic.IEnumerable{TAuthorizationHandler})"/> from your service method.
         /// </summary>
         /// <typeparam name="TAuthorizationhandler">The type of the authorization handler.</typeparam>
         /// <typeparam name="TEntity">The type of the entity.</typeparam>

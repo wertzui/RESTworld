@@ -16,7 +16,7 @@ namespace RESTworld.Business.Services
     /// <summary>
     /// Serves as a base class for services.
     /// It provides logging, mapping and most important authorization logic and exception handling.
-    /// Whenever you implement your own service method, call <see cref="TryExecuteWithAuthorizationAsync{TEntity, T1, TResponse, TAuthorizationHandler}(T1, Func{AuthorizationResult{TEntity, T1}, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResult{TEntity, T1}, TAuthorizationHandler, Task{AuthorizationResult{TEntity, T1}}}, Func{ServiceResponse{TResponse}, TAuthorizationHandler, Task{ServiceResponse{TResponse}}}, IEnumerable{TAuthorizationHandler})"/> so authorization and error handling is executed.
+    /// Whenever you implement your own service method, call <see cref="TryExecuteWithAuthorizationAsync{T1, TResponse, TAuthorizationHandler}(T1, Func{AuthorizationResultWithoutDb{T1}, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResultWithoutDb{T1}, TAuthorizationHandler, Task{AuthorizationResultWithoutDb{T1}}}, Func{ServiceResponse{TResponse}, TAuthorizationHandler, Task{ServiceResponse{TResponse}}}, IEnumerable{TAuthorizationHandler})"/> so authorization and error handling is executed.
     /// </summary>
     public abstract class ServiceBase
     {
@@ -52,7 +52,6 @@ namespace RESTworld.Business.Services
         /// <summary>
         /// Calls the Handle...RequestAsync for all <paramref name="authorizationHandlers"/> with one parameter.
         /// </summary>
-        /// <typeparam name="TEntity">The type of the entity.</typeparam>
         /// <typeparam name="T1">The type of the parameter.</typeparam>
         /// <typeparam name="TAuthorizationHandler">The type of the authorization handler.</typeparam>
         /// <param name="param1">The parameter.</param>
@@ -61,13 +60,13 @@ namespace RESTworld.Business.Services
         /// <returns>
         /// The result of the authorization. May contain a failed authorization or a modified parameter.
         /// </returns>
-        protected virtual async Task<AuthorizationResult<TEntity, T1>> AuthorizeRequestAsync<TEntity, T1, TAuthorizationHandler>(
+        protected virtual async Task<AuthorizationResultWithoutDb<T1>> AuthorizeRequestAsync<T1, TAuthorizationHandler>(
             T1 param1,
-            Func<AuthorizationResult<TEntity, T1>, TAuthorizationHandler, Task<AuthorizationResult<TEntity, T1>>> authorizeRequest,
+            Func<AuthorizationResultWithoutDb<T1>, TAuthorizationHandler, Task<AuthorizationResultWithoutDb<T1>>> authorizeRequest,
             IEnumerable<TAuthorizationHandler> authorizationHandlers)
             where TAuthorizationHandler : IAuthorizationHandler
         {
-            var result = AuthorizationResult.Ok<TEntity, T1>(param1);
+            var result = AuthorizationResultWithoutDb.Ok(param1);
 
             foreach (var handler in authorizationHandlers)
             {
@@ -80,7 +79,6 @@ namespace RESTworld.Business.Services
         /// <summary>
         /// Calls the Handle...RequestAsync for all <paramref name="authorizationHandlers"/> with two parameters.
         /// </summary>
-        /// <typeparam name="TEntity">The type of the entity.</typeparam>
         /// <typeparam name="T1">The type of the first parameter.</typeparam>
         /// <typeparam name="T2">The type of the second parameter.</typeparam>
         /// <typeparam name="TAuthorizationHandler">The type of the authorization handler.</typeparam>
@@ -91,14 +89,14 @@ namespace RESTworld.Business.Services
         /// <returns>
         /// The result of the authorization. May contain a failed authorization or modified parameters.
         /// </returns>
-        protected virtual async Task<AuthorizationResult<TEntity, T1, T2>> AuthorizeRequestAsync<TEntity, T1, T2, TAuthorizationHandler>(
+        protected virtual async Task<AuthorizationResultWithoutDb<T1, T2>> AuthorizeRequestAsync<T1, T2, TAuthorizationHandler>(
             T1 param1,
             T2 param2,
-            Func<AuthorizationResult<TEntity, T1, T2>, TAuthorizationHandler, Task<AuthorizationResult<TEntity, T1, T2>>> authorizeRequest,
+            Func<AuthorizationResultWithoutDb<T1, T2>, TAuthorizationHandler, Task<AuthorizationResultWithoutDb<T1, T2>>> authorizeRequest,
             IEnumerable<TAuthorizationHandler> authorizationHandlers)
             where TAuthorizationHandler : IAuthorizationHandler
         {
-            var result = AuthorizationResult.Ok<TEntity, T1, T2>(param1, param2);
+            var result = AuthorizationResultWithoutDb.Ok(param1, param2);
 
             foreach (var handler in authorizationHandlers)
             {
@@ -166,9 +164,8 @@ namespace RESTworld.Business.Services
 
         /// <summary>
         /// Tries to execute a <paramref name="function" /> which accepts one parameter while performing <paramref name="authorizeRequest" /> before and <paramref name="authorizeResult" /> after the main invocation.
-        /// This method combines <see cref="TryExecuteAsync{T}(Func{Task{ServiceResponse{T}}})" /> with <see cref="WithAuthorizationAsync{TEntity, T1, TResponse, TAuthorizationHandler}(T1, Func{AuthorizationResult{TEntity, T1}, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResult{TEntity, T1}, TAuthorizationHandler, Task{AuthorizationResult{TEntity, T1}}}, Func{ServiceResponse{TResponse}, TAuthorizationHandler, Task{ServiceResponse{TResponse}}}, IEnumerable{TAuthorizationHandler})" />.
+        /// This method combines <see cref="TryExecuteAsync{T}(Func{Task{ServiceResponse{T}}})" /> with <see cref="WithAuthorizationAsync{T1, TResponse, TAuthorizationHandler}(T1, Func{AuthorizationResultWithoutDb{T1}, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResultWithoutDb{T1}, TAuthorizationHandler, Task{AuthorizationResultWithoutDb{T1}}}, Func{ServiceResponse{TResponse}, TAuthorizationHandler, Task{ServiceResponse{TResponse}}}, IEnumerable{TAuthorizationHandler})" />.
         /// </summary>
-        /// <typeparam name="TEntity">The type of the entity.</typeparam>
         /// <typeparam name="T1">The type of the parameter.</typeparam>
         /// <typeparam name="TResponse">The type of the response.</typeparam>
         /// <typeparam name="TAuthorizationHandler">The type of the authorization handler.</typeparam>
@@ -181,11 +178,11 @@ namespace RESTworld.Business.Services
         /// The result of the function or a <see cref="ServiceResponse{T}" /> containing a problem description.
         /// </returns>
         /// <seealso cref="TryExecuteAsync{T}(Func{Task{ServiceResponse{T}}})" />
-        /// <seealso cref="WithAuthorizationAsync{TEntity, T1, TResponse, TAuthorizationHandler}(T1, Func{AuthorizationResult{TEntity, T1}, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResult{TEntity, T1}, TAuthorizationHandler, Task{AuthorizationResult{TEntity, T1}}}, Func{ServiceResponse{TResponse}, TAuthorizationHandler, Task{ServiceResponse{TResponse}}}, IEnumerable{TAuthorizationHandler})" />
-        protected virtual Task<ServiceResponse<TResponse>> TryExecuteWithAuthorizationAsync<TEntity, T1, TResponse, TAuthorizationHandler>(
+        /// <seealso cref="WithAuthorizationAsync{T1, TResponse, TAuthorizationHandler}(T1, Func{AuthorizationResultWithoutDb{T1}, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResultWithoutDb{T1}, TAuthorizationHandler, Task{AuthorizationResultWithoutDb{T1}}}, Func{ServiceResponse{TResponse}, TAuthorizationHandler, Task{ServiceResponse{TResponse}}}, IEnumerable{TAuthorizationHandler})" />
+        protected virtual Task<ServiceResponse<TResponse>> TryExecuteWithAuthorizationAsync<T1, TResponse, TAuthorizationHandler>(
             T1 param1,
-            Func<AuthorizationResult<TEntity, T1>, Task<ServiceResponse<TResponse>>> function,
-            Func<AuthorizationResult<TEntity, T1>, TAuthorizationHandler, Task<AuthorizationResult<TEntity, T1>>> authorizeRequest,
+            Func<AuthorizationResultWithoutDb<T1>, Task<ServiceResponse<TResponse>>> function,
+            Func<AuthorizationResultWithoutDb<T1>, TAuthorizationHandler, Task<AuthorizationResultWithoutDb<T1>>> authorizeRequest,
             Func<ServiceResponse<TResponse>, TAuthorizationHandler, Task<ServiceResponse<TResponse>>> authorizeResult,
             IEnumerable<TAuthorizationHandler> authorizationHandlers)
             where TAuthorizationHandler : IAuthorizationHandler
@@ -193,9 +190,8 @@ namespace RESTworld.Business.Services
 
         /// <summary>
         /// Tries to execute a <paramref name="function" /> which accepts two parameters while performing <paramref name="authorizeRequest" /> before and <paramref name="authorizeResult" /> after the main invocation.
-        /// This method combines <see cref="TryExecuteAsync{T}(Func{Task{ServiceResponse{T}}})" /> with <see cref="WithAuthorizationAsync{TEntity, T1, T2, TResponse, TAuthorizationHandler}(T1, T2, Func{AuthorizationResult{TEntity, T1, T2}, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResult{TEntity, T1, T2}, TAuthorizationHandler, Task{AuthorizationResult{TEntity, T1, T2}}}, Func{ServiceResponse{TResponse}, TAuthorizationHandler, Task{ServiceResponse{TResponse}}}, IEnumerable{TAuthorizationHandler})" />.
+        /// This method combines <see cref="TryExecuteAsync{T}(Func{Task{ServiceResponse{T}}})" /> with <see cref="WithAuthorizationAsync{T1, T2, TResponse, TAuthorizationHandler}(T1, T2, Func{AuthorizationResultWithoutDb{T1, T2}, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResultWithoutDb{T1, T2}, TAuthorizationHandler, Task{AuthorizationResultWithoutDb{T1, T2}}}, Func{ServiceResponse{TResponse}, TAuthorizationHandler, Task{ServiceResponse{TResponse}}}, IEnumerable{TAuthorizationHandler})" />.
         /// </summary>
-        /// <typeparam name="TEntity">The type of the entity.</typeparam>
         /// <typeparam name="T1">The type of the first parameter.</typeparam>
         /// <typeparam name="T2">The type of the second parameter.</typeparam>
         /// <typeparam name="TResponse">The type of the response.</typeparam>
@@ -210,12 +206,12 @@ namespace RESTworld.Business.Services
         /// The result of the function or a <see cref="ServiceResponse{T}" /> containing a problem description.
         /// </returns>
         /// <seealso cref="TryExecuteAsync{T}(Func{Task{ServiceResponse{T}}})" />
-        /// <seealso cref="WithAuthorizationAsync{TEntity, T1, T2, TResponse, TAuthorizationHandler}(T1, T2, Func{AuthorizationResult{TEntity, T1, T2}, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResult{TEntity, T1, T2}, TAuthorizationHandler, Task{AuthorizationResult{TEntity, T1, T2}}}, Func{ServiceResponse{TResponse}, TAuthorizationHandler, Task{ServiceResponse{TResponse}}}, IEnumerable{TAuthorizationHandler})" />
-        protected virtual Task<ServiceResponse<TResponse>> TryExecuteWithAuthorizationAsync<TEntity, T1, T2, TResponse, TAuthorizationHandler>(
+        /// <seealso cref="WithAuthorizationAsync{T1, T2, TResponse, TAuthorizationHandler}(T1, T2, Func{AuthorizationResultWithoutDb{T1, T2}, Task{ServiceResponse{TResponse}}}, Func{AuthorizationResultWithoutDb{T1, T2}, TAuthorizationHandler, Task{AuthorizationResultWithoutDb{T1, T2}}}, Func{ServiceResponse{TResponse}, TAuthorizationHandler, Task{ServiceResponse{TResponse}}}, IEnumerable{TAuthorizationHandler})"/>
+        protected virtual Task<ServiceResponse<TResponse>> TryExecuteWithAuthorizationAsync<T1, T2, TResponse, TAuthorizationHandler>(
             T1 param1,
             T2 param2,
-            Func<AuthorizationResult<TEntity, T1, T2>, Task<ServiceResponse<TResponse>>> function,
-            Func<AuthorizationResult<TEntity, T1, T2>, TAuthorizationHandler, Task<AuthorizationResult<TEntity, T1, T2>>> authorizeRequest,
+            Func<AuthorizationResultWithoutDb<T1, T2>, Task<ServiceResponse<TResponse>>> function,
+            Func<AuthorizationResultWithoutDb<T1, T2>, TAuthorizationHandler, Task<AuthorizationResultWithoutDb<T1, T2>>> authorizeRequest,
             Func<ServiceResponse<TResponse>, TAuthorizationHandler, Task<ServiceResponse<TResponse>>> authorizeResult,
             IEnumerable<TAuthorizationHandler> authorizationHandlers)
             where TAuthorizationHandler : IAuthorizationHandler
@@ -224,7 +220,6 @@ namespace RESTworld.Business.Services
         /// <summary>
         /// Executes a <paramref name="function" /> which accepts one parameter while performing <paramref name="authorizeRequest" /> before and <paramref name="authorizeResult" /> after the main invocation.
         /// </summary>
-        /// <typeparam name="TEntity">The type of the entity.</typeparam>
         /// <typeparam name="T1">The type of the parameter.</typeparam>
         /// <typeparam name="TResponse">The type of the response.</typeparam>
         /// <typeparam name="TAuthorizationHandler">The type of the authorization handler.</typeparam>
@@ -236,10 +231,10 @@ namespace RESTworld.Business.Services
         /// <returns>
         /// The result of the function or a <see cref="ServiceResponse{T}" /> containing a problem description.
         /// </returns>
-        protected virtual async Task<ServiceResponse<TResponse>> WithAuthorizationAsync<TEntity, T1, TResponse, TAuthorizationHandler>(
+        protected virtual async Task<ServiceResponse<TResponse>> WithAuthorizationAsync<T1, TResponse, TAuthorizationHandler>(
             T1 param1,
-            Func<AuthorizationResult<TEntity, T1>, Task<ServiceResponse<TResponse>>> function,
-            Func<AuthorizationResult<TEntity, T1>, TAuthorizationHandler, Task<AuthorizationResult<TEntity, T1>>> authorizeRequest,
+            Func<AuthorizationResultWithoutDb<T1>, Task<ServiceResponse<TResponse>>> function,
+            Func<AuthorizationResultWithoutDb<T1>, TAuthorizationHandler, Task<AuthorizationResultWithoutDb<T1>>> authorizeRequest,
             Func<ServiceResponse<TResponse>, TAuthorizationHandler, Task<ServiceResponse<TResponse>>> authorizeResult,
             IEnumerable<TAuthorizationHandler> authorizationHandlers)
             where TAuthorizationHandler : IAuthorizationHandler
@@ -259,7 +254,6 @@ namespace RESTworld.Business.Services
         /// <summary>
         /// Executes a <paramref name="function" /> which accepts two parameters while performing <paramref name="authorizeRequest" /> before and <paramref name="authorizeResult" /> after the main invocation.
         /// </summary>
-        /// <typeparam name="TEntity">The type of the entity.</typeparam>
         /// <typeparam name="T1">The type of the first parameter.</typeparam>
         /// <typeparam name="T2">The type of the second parameter.</typeparam>
         /// <typeparam name="TResponse">The type of the response.</typeparam>
@@ -273,11 +267,11 @@ namespace RESTworld.Business.Services
         /// <returns>
         /// The result of the function or a <see cref="ServiceResponse{T}" /> containing a problem description.
         /// </returns>
-        protected virtual async Task<ServiceResponse<TResponse>> WithAuthorizationAsync<TEntity, T1, T2, TResponse, TAuthorizationHandler>(
+        protected virtual async Task<ServiceResponse<TResponse>> WithAuthorizationAsync<T1, T2, TResponse, TAuthorizationHandler>(
             T1 param1,
             T2 param2,
-            Func<AuthorizationResult<TEntity, T1, T2>, Task<ServiceResponse<TResponse>>> function,
-            Func<AuthorizationResult<TEntity, T1, T2>, TAuthorizationHandler, Task<AuthorizationResult<TEntity, T1, T2>>> authorizeRequest,
+            Func<AuthorizationResultWithoutDb<T1, T2>, Task<ServiceResponse<TResponse>>> function,
+            Func<AuthorizationResultWithoutDb<T1, T2>, TAuthorizationHandler, Task<AuthorizationResultWithoutDb<T1, T2>>> authorizeRequest,
             Func<ServiceResponse<TResponse>, TAuthorizationHandler, Task<ServiceResponse<TResponse>>> authorizeResult,
             IEnumerable<TAuthorizationHandler> authorizationHandlers)
             where TAuthorizationHandler : IAuthorizationHandler
