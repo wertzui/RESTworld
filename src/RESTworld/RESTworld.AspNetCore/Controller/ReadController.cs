@@ -1,5 +1,4 @@
 ﻿using HAL.AspNetCore.Abstractions;
-using HAL.AspNetCore.Forms.Abstractions;
 using HAL.AspNetCore.OData.Abstractions;
 using HAL.Common;
 using HAL.Common.Forms;
@@ -57,7 +56,7 @@ namespace RESTworld.AspNetCore.Controller
             IReadServiceBase<TEntity, TGetListDto, TGetFullDto> service,
             IODataResourceFactory resourceFactory,
             ILinkFactory linkFactory,
-            IFormFactory formFactory,
+            IODataFormFactory formFactory,
             IOptions<RestWorldOptions> options)
             : base(resourceFactory)
         {
@@ -73,7 +72,7 @@ namespace RESTworld.AspNetCore.Controller
         /// <summary>
         /// The form factory to generate form responses.
         /// </summary>
-        protected IFormFactory FormFactory { get; }
+        protected IODataFormFactory FormFactory { get; }
 
         /// <summary>
         /// The link factory to add links to resources.
@@ -110,6 +109,7 @@ namespace RESTworld.AspNetCore.Controller
         /// Gets a paged list of resources matching the filter criteria.
         /// </summary>
         /// <param name="options">The OData options used to filter, order an page the list.</param>
+        /// <param name="accept">The value of the Accept header.</param>
         /// <param name="filter">The filter to filter resources by.</param>
         /// <param name="orderby">
         /// The order of the resources. If none is given, the resources are returned as they appear
@@ -124,6 +124,7 @@ namespace RESTworld.AspNetCore.Controller
         [ProducesWithContentNegotiation("application/hal+json", "text/csv", "application/prs.hal-forms+json", "application/hal-forms+json")]
         public virtual async Task<ActionResult<Resource>> GetListAsync(
             [SwaggerIgnore] ODataQueryOptions<TEntity> options,
+            [FromHeader, SwaggerIgnore] string accept,
             [FromQuery(Name = "$filter")] string? filter = default,
             [FromQuery(Name = "$orderby")] string? orderby = default,
             [FromQuery(Name = "$top")] long? top = default,
@@ -134,10 +135,31 @@ namespace RESTworld.AspNetCore.Controller
 
             var response = await _readService.GetListAsync(getListrequest);
 
-            if (!response.Succeeded || response.ResponseObject is null)
+            if (!response.Succeeded)
                 return ResourceFactory.CreateError(response);
 
-            var result = ResourceFactory.CreateForOdataListEndpointUsingSkipTopPaging(response.ResponseObject.Items, _ => Common.Constants.ListItems, m => m.Id, options, options.Context.DefaultQuerySettings.MaxTop.Value, response.ResponseObject.TotalCount);
+            var result = CreateListResource(options, response, accept);
+
+            return Ok(result);
+        }
+
+        private Resource<Page> CreateListResource(ODataQueryOptions<TEntity> options, Business.Models.ServiceResponse<Business.Models.Abstractions.IReadOnlyPagedCollection<TGetListDto>> response, string accept)
+        {
+            if (!response.Succeeded)
+                throw new ArgumentException($"{nameof(CreateListResource)}() may only be called if the response succeeded.", nameof(response));
+
+            Resource<Page> result;
+
+            if (accept.Contains("hal-forms+json"))
+            {
+                result = FormFactory.CreateForODataListEndpointUsingSkipTopPaging(response.ResponseObject.Items, _ => Common.Constants.ListItems, m => m.Id, options, options.Context.DefaultQuerySettings.MaxTop ?? 50, response.ResponseObject.TotalCount);
+            }
+            else
+            {
+                result = ResourceFactory.CreateForODataListEndpointUsingSkipTopPaging(response.ResponseObject.Items, _ => Common.Constants.ListItems, m => m.Id, options, options.Context.DefaultQuerySettings.MaxTop ?? 50, response.ResponseObject.TotalCount);
+
+                LinkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
+            }
 
             if (result.Embedded is not null)
             {
@@ -153,8 +175,7 @@ namespace RESTworld.AspNetCore.Controller
             }
 
             Url.AddNewLink(result);
-
-            return Ok(result);
+            return result;
         }
 
         /// <summary>
@@ -166,6 +187,33 @@ namespace RESTworld.AspNetCore.Controller
         /// <param name="accept">The value of the Accept header.</param>
         /// <returns>Either a HAL resource, or a HAL-Forms resource</returns>
         protected virtual Resource CreateResource(TGetFullDto dto, HttpMethod method, string accept)
+        {
+            if (accept.Contains("hal-forms+json"))
+            {
+                var result = FormFactory.CreateResourceForEndpoint(dto, method, "View", routeValues: new { id = dto.Id });
+
+                MakeFormReadOnly(result);
+
+                return result;
+            }
+            else
+            {
+                var result = ResourceFactory.CreateForGetEndpoint(dto, routeValues: new { id = dto.Id });
+
+                LinkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
+
+                return result;
+            }
+        }
+        /// <summary>
+        /// Creates the result which is either a HAL resource, or a HAL-Forms resource based on the
+        /// accept header.
+        /// </summary>
+        /// <param name="dto">The DTO to return.</param>
+        /// <param name="method">The method to use when submitting the form.</param>
+        /// <param name="accept">The value of the Accept header.</param>
+        /// <returns>Either a HAL resource, or a HAL-Forms resource</returns>
+        protected virtual Resource CreateListResource(TGetFullDto dto, HttpMethod method, string accept)
         {
             if (accept.Contains("hal-forms+json"))
             {

@@ -14,6 +14,7 @@ export * from './lib/pipes/as.pipe'
 
 export * from './lib/services/avatar-generator';
 export * from './lib/services/form.service';
+export * from './lib/services/o-data.service';
 export * from './lib/services/restworld-client';
 export * from './lib/services/restworld-client-collection';
 export * from './lib/services/settings.service';

@@ -1,5 +1,4 @@
 ﻿using HAL.AspNetCore.Abstractions;
-using HAL.AspNetCore.Forms.Abstractions;
 using HAL.AspNetCore.OData.Abstractions;
 using HAL.Common;
 using Microsoft.AspNetCore.Http;
@@ -83,7 +82,7 @@ namespace RESTworld.AspNetCore.Controller
             ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> service,
             IODataResourceFactory resourceFactory,
             ILinkFactory linkFactory,
-            IFormFactory formFactory,
+            IODataFormFactory formFactory,
             IOptions<RestWorldOptions> options)
             : base(service, resourceFactory, linkFactory, formFactory, options)
         {

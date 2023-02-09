@@ -1,22 +1,63 @@
 import { HttpHeaders, HttpResponse } from '@angular/common/http';
 import * as _ from "lodash";
-import { FormsResource, HalClient, Link, PagedListResource, Resource, ResourceDto, Template } from "@wertzui/ngx-hal-client";
+import { FormsResource, HalClient, Link, PagedListResource, Property, Resource, ResourceDto, Template, Templates } from "@wertzui/ngx-hal-client";
 import { LinkNames } from "../constants/link-names";
 import { ProblemDetails } from "../models/problem-details";
 import { RESTworldOptions } from "../models/restworld-options";
+import { lastValueFrom } from 'rxjs';
 
 export class RESTworldClient {
-
-  private _homeResource?: Resource;
   private _defaultCurie?: string;
-  public get halClient() {
-    return this._halClient;
-  }
+  private _homeResource?: Resource;
 
   constructor(
     private _halClient: HalClient,
     private _options: RESTworldOptions
   ) { }
+
+  public get halClient() {
+    return this._halClient;
+  }
+
+  private static combineHeaders(originalHeaders: HttpHeaders | undefined, headersToAdd: HttpHeaders | undefined, overwriteExisting: boolean) {
+    if (!headersToAdd)
+      return originalHeaders;
+    if (!originalHeaders)
+      return headersToAdd;
+
+    let combinedHeaders = originalHeaders;
+
+    for (const key in headersToAdd.keys) {
+      if (!combinedHeaders.has(key) || overwriteExisting) {
+        const headerValuesToAdd = headersToAdd.getAll(key);
+        if (headerValuesToAdd)
+          combinedHeaders = combinedHeaders.set(key, headerValuesToAdd);
+      }
+    }
+
+    return combinedHeaders;
+  }
+
+  private static createHeaders(mediaType?: 'application/hal+json' | 'application/prs.hal-forms+json' | 'text/csv', version?: number): HttpHeaders {
+    if (version)
+      return new HttpHeaders({
+        'Accept': `${mediaType || 'application/hal+json'}; v=${version}`,
+        'Content-Type': `${mediaType || 'application/hal+json'}; v=${version}`
+      });
+    return new HttpHeaders();
+  }
+
+  public async delete(resource: Resource): Promise<HttpResponse<void | ProblemDetails>> {
+    const deleteLink = resource.findLink('delete');
+    if (!deleteLink)
+      throw new Error(`The resource ${resource} does not have a delete link.`);
+    const uri = deleteLink.href;
+    const header = RESTworldClient.createHeaders('application/hal+json', this._options.Version);
+
+    const response = await this.halClient.delete(uri, ProblemDetails, header);
+
+    return response;
+  }
 
   public async ensureHomeResourceIsSet(): Promise<void> {
     if (!this._homeResource) {
@@ -31,18 +72,101 @@ export class RESTworldClient {
     }
   }
 
-  private async getHomeForced(): Promise<HttpResponse<Resource | ProblemDetails>> {
-    const header = RESTworldClient.createHeaders('application/hal+json', this._options.Version);
-    const response = await this.halClient.get(this._options.BaseUrl, Resource, ProblemDetails, header);
+  public async getAllForms(resource: Resource): Promise<HttpResponse<FormsResource | ProblemDetails>[]> {
+    const urls = resource.getFormLinkHrefs();
+    const header = RESTworldClient.createHeaders('application/prs.hal-forms+json', this._options.Version);
+    const formsPromises = urls.map(url => this._halClient.get(url, FormsResource, ProblemDetails, header));
+    const formsAndProblems = await Promise.all(formsPromises);
+    return formsAndProblems;
+  }
+
+  public getAllLinksFromHome(): { [rel: string]: Link[] | undefined; } {
+    if (!this._homeResource)
+      throw new Error('Home resource is not set. Call ensureHomeResourceIsSet() first.');
+
+    return this._homeResource._links;
+  }
+
+  public async getAllPagesFromList<TListDto extends ResourceDto>(rel: string, parameters: {}, headers?: HttpHeaders, curie?: string): Promise<HttpResponse<PagedListResource<TListDto> | ProblemDetails>> {
+    const link = this.getLinkFromHome(rel, LinkNames.getList, curie);
+    const uri = link.href;
+
+    const response = await this.getAllPagesFromListByUri<TListDto>(uri, parameters, headers);
+
     return response;
   }
 
-  private setDefaultCurie(): void {
-    const curies = this._homeResource?._links?.curies;
-    if (!curies || curies.length === 0 || !curies[0])
-      this._defaultCurie = undefined;
-    else
-      this._defaultCurie = curies[0].name;
+  public async getAllPagesFromListByUri<TListDto extends ResourceDto>(uri: string, parameters: {}, headers?: HttpHeaders): Promise<HttpResponse<PagedListResource<TListDto> | ProblemDetails>> {
+    const response = await this.getListByUri<TListDto>(uri, parameters, headers);
+
+    if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body?._embedded?.items)
+      return response;
+
+    const items = response.body._embedded.items;
+    let lastResponse = response;
+
+    while ((lastResponse?.body?._links?.next?.length ?? 0) > 0) {
+      // Get the next response
+      const nextLinks = lastResponse.body?._links.next;
+      const nextLink = nextLinks ? nextLinks[0]: undefined;
+      const nextHref = nextLink?.href;
+      if (nextHref) {
+        lastResponse = await this.getListByUri<TListDto>(nextHref, parameters, headers);
+
+        if (!lastResponse.ok || ProblemDetails.isProblemDetails(lastResponse.body) || !lastResponse.body)
+          return lastResponse;
+
+        // Combine the embedded items
+        lastResponse.body?._embedded?.items?.forEach(r => items.push(r));
+      }
+    }
+
+    // We combined everything, so there is just one big page
+    response.body.totalPages = 1;
+    response.body._links.next = undefined;
+
+    return response;
+  }
+
+  public async getAllTemplates(resource: Resource): Promise<Templates> {
+    const formResponses = await this.getAllForms(resource);
+
+    const failedResponses = formResponses.filter(response => !response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body);
+    if (failedResponses.length !== 0) {
+      for (const response of failedResponses) {
+        throw new Error(`Error while loading the response from ${response.url}, Status ${response.status} - ${response.statusText}, Content: ${response.body}`);
+      }
+      return Promise.resolve({});
+    }
+
+    const formTemplates = Object.assign({}, ...formResponses.map(response => (response.body as FormsResource)._templates)) as Templates;
+
+    await this.setInitialSelectedOptionsElementsForTemplates(formTemplates, false);
+
+    return formTemplates;
+  }
+
+  public getLinkFromHome(rel: string, name?: string, curie?: string): Link {
+    const links = this.getLinksFromHome(rel, curie);
+
+    const link = name ? links.find(l => l.name === name) : links[0];
+
+    if (!link)
+      throw new Error(`The home resource does not have a link with the rel '${this.getFullRel(rel, curie)}' and the name '${name}'.`);
+
+    return link;
+  }
+
+  public getLinksFromHome(rel: string, curie?: string): Link[] {
+    if (!this._homeResource)
+      throw new Error('Home resource is not set. Call ensureHomeResourceIsSet() first.');
+
+    const fullRel = this.getFullRel(rel, curie);
+    const links = this._homeResource._links[fullRel];
+    if (!links || links.length === 0)
+      throw Error(`The home resource does not have a link with the rel '${fullRel}'.`);
+
+    return links;
   }
 
   public async getList<TListDto extends ResourceDto>(rel: string, parameters: {}, headers?: HttpHeaders, curie?: string): Promise<HttpResponse<PagedListResource<TListDto> | ProblemDetails>> {
@@ -82,49 +206,7 @@ export class RESTworldClient {
     const defaultHeaders = RESTworldClient.createHeaders('text/csv', this._options.Version);
     const combinedHeaders = RESTworldClient.combineHeaders(headers, defaultHeaders, false);
 
-    const response = await this.halClient.httpClient.get(filledUri, { headers: combinedHeaders, responseType: 'blob', observe: 'response' }).toPromise();
-
-    return response;
-  }
-
-  public async getAllPagesFromList<TListDto extends ResourceDto>(rel: string, parameters: {}, headers?: HttpHeaders, curie?: string): Promise<HttpResponse<PagedListResource<TListDto> | ProblemDetails>> {
-    const link = this.getLinkFromHome(rel, LinkNames.getList, curie);
-    const uri = link.href;
-
-    const response = await this.getAllPagesFromListByUri<TListDto>(uri, parameters, headers);
-
-    return response;
-  }
-
-  public async getAllPagesFromListByUri<TListDto extends ResourceDto>(uri: string, parameters: {}, headers?: HttpHeaders): Promise<HttpResponse<PagedListResource<TListDto> | ProblemDetails>> {
-    const response = await this.getListByUri<TListDto>(uri, parameters, headers);
-
-    if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body?._embedded?.items)
-      return response;
-
-
-    const items = response.body._embedded.items;
-    let lastResponse = response;
-
-    while ((lastResponse?.body?._links?.next?.length ?? 0) > 0) {
-      // Get the next response
-      const nextLinks = lastResponse.body?._links.next;
-      const nextLink = nextLinks ? nextLinks[0]: undefined;
-      const nextHref = nextLink?.href;
-      if (nextHref) {
-        lastResponse = await this.getListByUri<TListDto>(nextHref, parameters, headers);
-
-        if (!lastResponse.ok || ProblemDetails.isProblemDetails(lastResponse.body) || !lastResponse.body)
-          return lastResponse;
-
-        // Combine the embedded items
-        lastResponse.body?._embedded?.items?.forEach(r => items.push(r));
-      }
-    }
-
-    // We combined everything, so there is just one big page
-    response.body.totalPages = 1;
-    response.body._links.next = undefined;
+    const response = await lastValueFrom(this.halClient.httpClient.get(filledUri, { headers: combinedHeaders, responseType: 'blob', observe: 'response' }));
 
     return response;
   }
@@ -180,14 +262,6 @@ export class RESTworldClient {
     return response;
   }
 
-  public async getAllForms(resource: Resource): Promise<HttpResponse<FormsResource | ProblemDetails>[]> {
-    const urls = resource.getFormLinkHrefs();
-    const header = RESTworldClient.createHeaders('application/prs.hal-forms+json', this._options.Version);
-    const formsPromises = urls.map(url => this._halClient.get(url, FormsResource, ProblemDetails, header));
-    const formsAndProblems = await Promise.all(formsPromises);
-    return formsAndProblems;
-  }
-
   public async submit(template: Template, formValues: {}): Promise<HttpResponse<FormsResource | ProblemDetails>> {
     const uri = template.target || '';
     const method = template.method?.toLowerCase();
@@ -206,49 +280,6 @@ export class RESTworldClient {
     }
 
     return response;
-
-  }
-
-  public async delete(resource: Resource): Promise<HttpResponse<void | ProblemDetails>> {
-    const deleteLink = resource.findLink('delete');
-    if (!deleteLink)
-      throw new Error(`The resource ${resource} does not have a delete link.`);
-    const uri = deleteLink.href;
-    const header = RESTworldClient.createHeaders('application/hal+json', this._options.Version);
-
-    const response = await this.halClient.delete(uri, ProblemDetails, header);
-
-    return response;
-  }
-
-  public getAllLinksFromHome(): { [rel: string]: Link[] | undefined; } {
-    if (!this._homeResource)
-      throw new Error('Home resource is not set. Call ensureHomeResourceIsSet() first.');
-
-    return this._homeResource._links;
-  }
-
-  public getLinkFromHome(rel: string, name?: string, curie?: string): Link {
-    const links = this.getLinksFromHome(rel, curie);
-
-    const link = name ? links.find(l => l.name === name) : links[0];
-
-    if (!link)
-      throw new Error(`The home resource does not have a link with the rel '${this.getFullRel(rel, curie)}' and the name '${name}'.`);
-
-    return link;
-  }
-
-  public getLinksFromHome(rel: string, curie?: string): Link[] {
-    if (!this._homeResource)
-      throw new Error('Home resource is not set. Call ensureHomeResourceIsSet() first.');
-
-    const fullRel = this.getFullRel(rel, curie);
-    const links = this._homeResource._links[fullRel];
-    if (!links || links.length === 0)
-      throw Error(`The home resource does not have a link with the rel '${fullRel}'.`);
-
-    return links;
   }
 
   private getFullRel(rel: string, curie?: string): string {
@@ -266,31 +297,52 @@ export class RESTworldClient {
     return fullRel;
   }
 
-  private static createHeaders(mediaType?: 'application/hal+json' | 'application/prs.hal-forms+json' | 'text/csv', version?: number): HttpHeaders {
-    if (version)
-      return new HttpHeaders({
-        'Accept': `${mediaType || 'application/hal+json'}; v=${version}`,
-        'Content-Type': `${mediaType || 'application/hal+json'}; v=${version}`
-      });
-    return new HttpHeaders();
+  private async getHomeForced(): Promise<HttpResponse<Resource | ProblemDetails>> {
+    const header = RESTworldClient.createHeaders('application/hal+json', this._options.Version);
+    const response = await this.halClient.get(this._options.BaseUrl, Resource, ProblemDetails, header);
+    return response;
   }
 
-  private static combineHeaders(originalHeaders: HttpHeaders | undefined, headersToAdd: HttpHeaders | undefined, overwriteExisting: boolean) {
-    if (!headersToAdd)
-      return originalHeaders;
-    if (!originalHeaders)
-      return headersToAdd;
+  private setDefaultCurie(): void {
+    const curies = this._homeResource?._links?.curies;
+    if (!curies || curies.length === 0 || !curies[0])
+      this._defaultCurie = undefined;
+    else
+      this._defaultCurie = curies[0].name;
+  }
 
-    let combinedHeaders = originalHeaders;
+  private async setInitialSelectedOptionsElementForProperty(property: Property): Promise<void> {
+    const options = property?.options;
 
-    for (const key in headersToAdd.keys) {
-      if (!combinedHeaders.has(key) || overwriteExisting) {
-        const headerValuesToAdd = headersToAdd.getAll(key);
-        if (headerValuesToAdd)
-          combinedHeaders = combinedHeaders.set(key, headerValuesToAdd);
-      }
+    if (!options?.link?.href)
+      return;
+
+    const templatedUri = options.link.href;
+    const filter = `${options.valueField} eq ${property.value}`;
+    const response = await this.getListByUri(templatedUri, { $filter: filter, $top: 10 });
+    if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body) {
+      throw new Error(`An error occurred while getting the filtered items from ${response.url}, Status ${response.status} - ${response.statusText}, Content: ${response.body}`);
     }
 
-    return combinedHeaders;
+    const items = response.body._embedded.items;
+    options.inline = items;
+  }
+
+  private async setInitialSelectedOptionsElementsForTemplate(template: Template): Promise<void> {
+    const propertyPromises = template.properties
+      .filter(property => property?.options?.link?.href)
+      .map(property => this.setInitialSelectedOptionsElementForProperty(property));
+    const nestedTemplatePromised = template.properties
+      .filter(property => property?._templates)
+      .map(property => this.setInitialSelectedOptionsElementsForTemplates(property._templates, true));
+    const allPromises = propertyPromises.concat(nestedTemplatePromised);
+
+    await Promise.all(allPromises);
+  }
+
+  private async setInitialSelectedOptionsElementsForTemplates(templates: Templates, skipDefaultTemplate: boolean): Promise<void> {
+    await Promise.all(Object.entries(templates)
+      .filter(([name,]) => !skipDefaultTemplate || name !== 'default')
+      .map(([, template]) => this.setInitialSelectedOptionsElementsForTemplate(template)));
   }
 }

@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 
 namespace RESTworld.Business.Models
 {
     /// <summary>
     /// A response from a service call.
-    /// Includes the result or the error which occured during the call.
+    /// Includes the result or the error which occurred during the call.
     /// </summary>
     /// <typeparam name="T">The type of the response object.</typeparam>
     public record ServiceResponse<T>
@@ -46,6 +47,8 @@ namespace RESTworld.Business.Models
         /// <value>
         ///   <c>true</c> if succeeded; otherwise, <c>false</c>.
         /// </value>
+        [MemberNotNullWhen(true, nameof(ResponseObject))]
+        [MemberNotNullWhen(false, nameof(ProblemDetails))]
         public bool Succeeded => (int)Status >= 200 && (int)Status < 300;
 
         /// <summary>
