@@ -74,7 +74,7 @@ export class RESTworldListViewComponent<TListDto extends ResourceDto> {
   }
 
   public get columns(): Property[] {
-    return this.template.properties.filter(p => p.type !== PropertyType.Hidden);
+    return this.template?.properties.filter(p => p.type !== PropertyType.Hidden) ?? [];
   }
 
   public get dateFormat(): string {
