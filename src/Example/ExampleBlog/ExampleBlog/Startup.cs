@@ -2,6 +2,9 @@ using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 using AutoMapper;
 using ExampleBlog.Business;
+using ExampleBlog.Business.Authorization;
+using ExampleBlog.Business.Services;
+using ExampleBlog.Business.Validation;
 using ExampleBlog.Common.Dtos;
 using ExampleBlog.Data;
 using ExampleBlog.Data.Models;
@@ -47,8 +50,11 @@ namespace ExampleBlog
 
             // We are using dedicated DTOs here to give the consumer a much better experience.
             // We add our custom authorization too. Get Post 42, or any post with a valid HTTP status code as id to test it!
-            // We also add our own service to populate the Image and Attachement properties which do not come from the database.
+            // We also add our own service to populate the Image and Attachment properties which do not come from the database.
             services.AddCrudPipelineWithCustomServiceAndAuthorization<BlogDatabase, Post, PostCreateDto, PostListDto, PostGetFullDto, PostUpdateDto, PostService, BlogpostAuthorizationHandler>(Configuration);
+
+            // We also add some custom validation logic whenever a Post is created or updated
+            services.AddValidator<PostValidatior, PostCreateDto, PostUpdateDto, Post>();
 
             // Statistics can only be read, but not written so we use a read-only pipeline.
             // Most times read-only will go hand in hand with a custom service.

@@ -1,5 +1,5 @@
 ﻿using Asp.Versioning;
-using ExampleBlog.Business;
+using ExampleBlog.Business.Services;
 using ExampleBlog.Common.Dtos;
 using HAL.AspNetCore.Abstractions;
 using HAL.AspNetCore.Forms.Abstractions;
@@ -8,9 +8,11 @@ using HAL.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using RESTworld.AspNetCore.Controller;
+using RESTworld.AspNetCore.Errors.Abstractions;
 using RESTworld.AspNetCore.Swagger;
 using System;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ExampleBlog.Controllers
@@ -22,29 +24,35 @@ namespace ExampleBlog.Controllers
         private readonly MyCustomService _service;
         private readonly ILinkFactory _linkFactory;
         private readonly IFormFactory _formFactory;
+        private readonly IErrorResultFactory _errorResultFactory;
 
         public MyCustomController(
             MyCustomService service,
             IODataResourceFactory resourceFactory,
             ILinkFactory linkFactory,
-            IFormFactory formFactory)
+            IFormFactory formFactory,
+            IErrorResultFactory errorResultFactory)
             : base(resourceFactory)
         {
             _service = service ?? throw new ArgumentNullException(nameof(service));
             _linkFactory = linkFactory ?? throw new ArgumentNullException(nameof(linkFactory));
-            _formFactory = formFactory;
+            _formFactory = formFactory ?? throw new ArgumentNullException(nameof(formFactory));
+            _errorResultFactory = errorResultFactory ?? throw new ArgumentNullException(nameof(errorResultFactory));
         }
 
         [HttpGet("{id:long}")]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
         [ProducesResponseType(200)]
         [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<Resource<PostWithAuthorDto>>> GetPostWithAuthorAsync(long id, [FromHeader, SwaggerIgnore] string accept)
+        public async Task<ActionResult<Resource<PostWithAuthorDto>>> GetPostWithAuthorAsync(
+            long id,
+            [FromHeader, SwaggerIgnore] string accept,
+            CancellationToken cancellationToken)
         {
-            var response = await _service.GetPostWithAuthor(id);
+            var response = await _service.GetPostWithAuthorAsync(id, cancellationToken);
 
             if (!response.Succeeded)
-                return ResourceFactory.CreateError(response);
+                return _errorResultFactory.CreateError(response);
 
             var dto = response.ResponseObject;
             if (dto is null)

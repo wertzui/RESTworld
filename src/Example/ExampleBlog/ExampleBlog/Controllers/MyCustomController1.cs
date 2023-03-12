@@ -1,5 +1,5 @@
 ﻿using Asp.Versioning;
-using ExampleBlog.Business;
+using ExampleBlog.Business.Services;
 using ExampleBlog.Common.Dtos;
 using HAL.AspNetCore.Abstractions;
 using HAL.AspNetCore.OData.Abstractions;
@@ -7,7 +7,9 @@ using HAL.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using RESTworld.AspNetCore.Controller;
+using RESTworld.AspNetCore.Errors.Abstractions;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ExampleBlog.Controllers
@@ -18,27 +20,32 @@ namespace ExampleBlog.Controllers
     {
         private readonly MyCustomService _service;
         private readonly ILinkFactory _linkFactory;
+        private readonly IErrorResultFactory _errorResultFactory;
 
         public MyCustomController1(
             MyCustomService service,
             IODataResourceFactory resourceFactory,
-            ILinkFactory linkFactory)
+            ILinkFactory linkFactory,
+            IErrorResultFactory errorResultFactory)
             : base(resourceFactory)
         {
             _service = service ?? throw new ArgumentNullException(nameof(service));
             _linkFactory = linkFactory ?? throw new ArgumentNullException(nameof(linkFactory));
+            _errorResultFactory = errorResultFactory ?? throw new ArgumentNullException(nameof(errorResultFactory));
         }
 
         [HttpGet("postwithauthor/{id:long}")]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
         [ProducesResponseType(200)]
         [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<Resource<PostWithAuthorDto>>> GetPostWithAuthorAsync(long id)
+        public async Task<ActionResult<Resource<PostWithAuthorDto>>> GetPostWithAuthorAsync(
+            long id,
+            CancellationToken cancellationToken)
         {
-            var response = await _service.GetPostWithAuthor(id);
+            var response = await _service.GetPostWithAuthorAsync(id, cancellationToken);
 
             if (!response.Succeeded)
-                return ResourceFactory.CreateError(response);
+                return _errorResultFactory.CreateError(response);
 
             var result = ResourceFactory.CreateForGetEndpoint(response.ResponseObject, null);
             var authorId = result.State?.AuthorId;

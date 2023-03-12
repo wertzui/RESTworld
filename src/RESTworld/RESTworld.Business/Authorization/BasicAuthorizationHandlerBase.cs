@@ -1,5 +1,6 @@
 ﻿using RESTworld.Business.Authorization.Abstractions;
 using RESTworld.Business.Models;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RESTworld.Business.Authorization
@@ -16,10 +17,10 @@ namespace RESTworld.Business.Authorization
     public abstract class BasicAuthorizationHandlerBase<TRequest, TResponse> : IBasicAuthorizationHandler<TRequest, TResponse>
     {
         /// <inheritdoc/>
-        public virtual Task<AuthorizationResultWithoutDb<TRequest>> HandleRequestAsync(AuthorizationResultWithoutDb<TRequest> previousResult) => Task.FromResult(previousResult);
+        public virtual Task<AuthorizationResultWithoutDb<TRequest>> HandleRequestAsync(AuthorizationResultWithoutDb<TRequest> previousResult, CancellationToken cancellationToken) => Task.FromResult(previousResult);
 
         /// <inheritdoc/>
-        public virtual Task<ServiceResponse<TResponse>> HandleResponseAsync(ServiceResponse<TResponse> previousResponse) => Task.FromResult(previousResponse);
+        public virtual Task<ServiceResponse<TResponse>> HandleResponseAsync(ServiceResponse<TResponse> previousResponse, CancellationToken cancellationToken) => Task.FromResult(previousResponse);
     }
 
     /// <summary>
@@ -36,9 +37,9 @@ namespace RESTworld.Business.Authorization
     public abstract class BasicAuthorizationHandlerBase<TEntity, TRequest, TResponse> : IBasicAuthorizationHandler<TEntity, TRequest, TResponse>
     {
         /// <inheritdoc/>
-        public virtual Task<AuthorizationResult<TEntity, TRequest>> HandleRequestAsync(AuthorizationResult<TEntity, TRequest> previousResult) => Task.FromResult(previousResult);
+        public virtual Task<AuthorizationResult<TEntity, TRequest>> HandleRequestAsync(AuthorizationResult<TEntity, TRequest> previousResult, CancellationToken cancellationToken) => Task.FromResult(previousResult);
 
         /// <inheritdoc/>
-        public virtual Task<ServiceResponse<TResponse>> HandleResponseAsync(ServiceResponse<TResponse> previousResponse) => Task.FromResult(previousResponse);
+        public virtual Task<ServiceResponse<TResponse>> HandleResponseAsync(ServiceResponse<TResponse> previousResponse, CancellationToken cancellationToken) => Task.FromResult(previousResponse);
     }
 }

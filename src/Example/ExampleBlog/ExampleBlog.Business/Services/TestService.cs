@@ -11,9 +11,10 @@ using RESTworld.EntityFrameworkCore.Models;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
-namespace ExampleBlog.Business
+namespace ExampleBlog.Business.Services
 {
     public class TestService : ServiceBase, ICrudServiceBase<ConcurrentEntityBase, TestDto, TestDto, TestDto, TestDto>
     {
@@ -29,7 +30,7 @@ namespace ExampleBlog.Business
             _fixture = new Fixture();
         }
 
-        public Task<ServiceResponse<TestDto>> CreateAsync(TestDto dto)
+        public Task<ServiceResponse<TestDto>> CreateAsync(TestDto dto, CancellationToken cancellationToken)
         {
             dto.Id = 1;
 
@@ -38,7 +39,7 @@ namespace ExampleBlog.Business
             return Task.FromResult(ServiceResponse.FromResult(dto));
         }
 
-        public Task<ServiceResponse<IReadOnlyCollection<TestDto>>> CreateAsync(IReadOnlyCollection<TestDto> dtos)
+        public Task<ServiceResponse<IReadOnlyCollection<TestDto>>> CreateAsync(IReadOnlyCollection<TestDto> dtos, CancellationToken cancellationToken)
         {
             var id = 1;
             foreach (var dto in dtos)
@@ -52,14 +53,14 @@ namespace ExampleBlog.Business
             return Task.FromResult(ServiceResponse.FromResult(dtos));
         }
 
-        public Task<ServiceResponse<object>> DeleteAsync(long id, byte[] timestamp)
+        public Task<ServiceResponse<object>> DeleteAsync(long id, byte[] timestamp, CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Deleted {id}");
 
             return Task.FromResult(ServiceResponse.FromStatus<object>(System.Net.HttpStatusCode.OK));
         }
 
-        public Task<ServiceResponse<IReadOnlyPagedCollection<TestDto>>> GetListAsync(IGetListRequest<ConcurrentEntityBase> request)
+        public Task<ServiceResponse<IReadOnlyPagedCollection<TestDto>>> GetListAsync(IGetListRequest<ConcurrentEntityBase> request, CancellationToken cancellationToken)
         {
             var totalCount = 10;
             var dtos = _fixture.CreateMany<TestDto>(totalCount).ToList();
@@ -68,7 +69,7 @@ namespace ExampleBlog.Business
             return Task.FromResult(ServiceResponse.FromResult(page));
         }
 
-        public Task<ServiceResponse<TestDto>> GetSingleAsync(long id)
+        public Task<ServiceResponse<TestDto>> GetSingleAsync(long id, CancellationToken cancellationToken)
         {
             var dto = _fixture.Create<TestDto>();
             dto.Id = id;
@@ -77,14 +78,14 @@ namespace ExampleBlog.Business
             return Task.FromResult(ServiceResponse.FromResult(dto));
         }
 
-        public Task<ServiceResponse<TestDto>> UpdateAsync(TestDto dto)
+        public Task<ServiceResponse<TestDto>> UpdateAsync(TestDto dto, CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Updated {JsonSerializer.Serialize(dto, _jsonOptions)}");
 
             return Task.FromResult(ServiceResponse.FromResult(dto));
         }
 
-        public Task<ServiceResponse<IReadOnlyCollection<TestDto>>> UpdateAsync(IUpdateMultipleRequest<TestDto, ConcurrentEntityBase> request)
+        public Task<ServiceResponse<IReadOnlyCollection<TestDto>>> UpdateAsync(IUpdateMultipleRequest<TestDto, ConcurrentEntityBase> request, CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Updated {JsonSerializer.Serialize(request.Dtos, _jsonOptions)}");
 

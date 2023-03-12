@@ -157,13 +157,18 @@ export class RESTworldEditViewComponent {
   }
 
   private static getSubControl(control: AbstractControl, pathElement: string): AbstractControl {
+    if (pathElement === "")
+      return control;
+
     if (control instanceof UntypedFormGroup)
       return control.controls[pathElement];
+
     if (control instanceof UntypedFormArray) {
       const index = Number.parseInt(pathElement);
       if (Number.isInteger(index))
         return control.controls[index];
     }
+
     return control;
   }
 

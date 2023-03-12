@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using ExampleBlog.Business.Authorization;
 using ExampleBlog.Common.Dtos;
 using ExampleBlog.Data;
 using ExampleBlog.Data.Models;
@@ -12,9 +13,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 
-namespace ExampleBlog.Business
+namespace ExampleBlog.Business.Services
 {
     public class MyCustomServiceV1 : DbServiceBase<BlogDatabase>
     {
@@ -31,27 +33,28 @@ namespace ExampleBlog.Business
             _authorizationHandlers = authorizationHandlers ?? throw new ArgumentNullException(nameof(authorizationHandlers));
         }
 
-        public Task<ServiceResponse<PostWithAuthorDtoV1>> GetPostWithAuthor(long postId)
+        public Task<ServiceResponse<PostWithAuthorDtoV1>> GetPostWithAuthor(long postId, CancellationToken cancellationToken)
             => TryExecuteWithAuthorizationAsync<Post, long, PostWithAuthorDtoV1, MyCustomAuthorizationHandlerV1>(
                 postId,
-                result => GetPostWithAuthorInternalAsync(result),
-                (result, handler) => handler.HandleRequestAsync(result),
-                (response, handler) => handler.HandleResponseAsync(response),
-                _authorizationHandlers);
+                (result, token) => GetPostWithAuthorInternalAsync(result, token),
+                (result, handler, token) => handler.HandleRequestAsync(result, token),
+                (response, handler, token) => handler.HandleResponseAsync(response, token),
+                _authorizationHandlers,
+                cancellationToken);
 
-        private async Task<ServiceResponse<PostWithAuthorDtoV1>> GetPostWithAuthorInternalAsync(AuthorizationResult<Post, long> result)
+        private async Task<ServiceResponse<PostWithAuthorDtoV1>> GetPostWithAuthorInternalAsync(AuthorizationResult<Post, long> result, CancellationToken cancellationToken)
         {
             var postId = result.Value1;
 
             // Get the values from the database.
             var postTask = _contextFactory.Parallel().Set<Post>()
                 .WithAuthorizationFilter(result)
-                .SingleOrDefaultAsync(p => p.Id == postId);
+                .SingleOrDefaultAsync(p => p.Id == postId, cancellationToken);
             var authorTask = _contextFactory.Parallel().Set<Post>()
                 .WithAuthorizationFilter(result)
                 .Where(p => p.Id == postId)
                 .Select(p => p.Author)
-                .SingleOrDefaultAsync();
+                .SingleOrDefaultAsync(cancellationToken);
 
             await Task.WhenAll(postTask, authorTask);
 

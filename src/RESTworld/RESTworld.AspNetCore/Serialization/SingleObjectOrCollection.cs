@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace RESTworld.AspNetCore.Serialization
@@ -41,11 +42,13 @@ namespace RESTworld.AspNetCore.Serialization
         /// <summary>
         /// Returns a value telling you if this instance holds a collection.
         /// </summary>
+        [MemberNotNullWhen(true, nameof(Collection))]
         public bool ContainsCollection => Collection != default;
 
         /// <summary>
         /// Returns a value telling you if this instance holds a single object.
         /// </summary>
+        [MemberNotNullWhen(true, nameof(SingleObject))]
         public bool ContainsSingleObject => !ContainsCollection;
     }
 }

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using RESTworld.AspNetCore.DependencyInjection;
+using RESTworld.AspNetCore.Errors.Abstractions;
 using RESTworld.AspNetCore.Serialization;
 using RESTworld.AspNetCore.Swagger;
 using RESTworld.Business.Models;
@@ -21,6 +22,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RESTworld.AspNetCore.Controller
@@ -75,6 +77,7 @@ namespace RESTworld.AspNetCore.Controller
         /// </param>
         /// <param name="linkFactory"></param>
         /// <param name="formFactory">The form factory which created HAL-Form resources.</param>
+        /// <param name="errorResultFactory">The factory to create error results.</param>
         /// <param name="options">
         /// The options which are used to determine the max number of entries for the List endpoint.
         /// </param>
@@ -83,8 +86,9 @@ namespace RESTworld.AspNetCore.Controller
             IODataResourceFactory resourceFactory,
             ILinkFactory linkFactory,
             IODataFormFactory formFactory,
+            IErrorResultFactory errorResultFactory,
             IOptions<RestWorldOptions> options)
-            : base(service, resourceFactory, linkFactory, formFactory, options)
+            : base(service, resourceFactory, linkFactory, formFactory, errorResultFactory, options)
         {
             _crudService = service ?? throw new ArgumentNullException(nameof(service));
         }
@@ -101,6 +105,7 @@ namespace RESTworld.AspNetCore.Controller
         /// The current timestamp of the resource. This comes from the "If-Match" header. If that
         /// header is present, it will be used for the timestamp.
         /// </param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>An empty response.</returns>
         [HttpDelete("{id:long}")]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Delete))]
@@ -110,7 +115,8 @@ namespace RESTworld.AspNetCore.Controller
         public virtual async Task<IActionResult> DeleteAsync(
             long id,
             [FromQuery] string? timestamp,
-            [FromHeader(Name = "If-Match")] byte[]? timestampFromHeader)
+            [FromHeader(Name = "If-Match")] byte[]? timestampFromHeader,
+            CancellationToken cancellationToken)
         {
             var timestampBytes = timestampFromHeader;
 
@@ -130,10 +136,10 @@ namespace RESTworld.AspNetCore.Controller
                 }
             }
 
-            var response = await _crudService.DeleteAsync(id, timestampBytes);
+            var response = await _crudService.DeleteAsync(id, timestampBytes, cancellationToken);
 
             if (!response.Succeeded)
-                return ResourceFactory.CreateError(response);
+                return ErrorResultFactory.CreateError(response);
 
             return Ok();
 
@@ -156,11 +162,12 @@ namespace RESTworld.AspNetCore.Controller
         /// Returns an empty resource which can be used as a template when creating a new resource.
         /// </summary>
         /// <param name="accept">The Accept header.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>An empty resource.</returns>
         [HttpGet("new")]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
         [ProducesResponseType(200)]
-        public virtual Task<ActionResult<Resource<TCreateDto>>> NewAsync([FromHeader, SwaggerIgnore] string accept)
+        public virtual Task<ActionResult<Resource<TCreateDto>>> NewAsync([FromHeader, SwaggerIgnore] string accept, CancellationToken cancellationToken)
         {
             var result = CreateEmpty();
 
@@ -172,21 +179,26 @@ namespace RESTworld.AspNetCore.Controller
         /// </summary>
         /// <param name="dto">The resource(s) to create. Supply either a single object or a collection.</param>
         /// <param name="accept">The Accept header.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>The full resource(s) as stored in the database.</returns>
         [HttpPost]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Post))]
         [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status409Conflict)]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(Resource), StatusCodes.Status201Created)]
-        public virtual async Task<ActionResult<Resource<TGetFullDto>>> PostAsync([FromBody] SingleObjectOrCollection<TCreateDto> dto, [FromHeader, SwaggerIgnore] string accept)
+        public virtual async Task<ActionResult<Resource<TGetFullDto>>> PostAsync(
+            [FromBody] SingleObjectOrCollection<TCreateDto> dto,
+            [FromHeader, SwaggerIgnore] string accept,
+            CancellationToken cancellationToken)
         {
             if (dto == null || (dto.ContainsCollection && dto.Collection is null) || (dto.ContainsSingleObject && dto.SingleObject is null))
-                return ResourceFactory.CreateError(StatusCodes.Status400BadRequest, "Unable to read either a collection or a single object from the request body.");
+                return ErrorResultFactory.CreateError(StatusCodes.Status400BadRequest, "Unable to read either a collection or a single object from the request body.");
 
             if (dto.ContainsCollection)
-                return await PostMultipleAsync(dto.Collection!);
+                return await PostMultipleAsync(dto.Collection, cancellationToken);
             else
-                return await PostSingleAsync(dto.SingleObject!, accept);
+                return await PostSingleAsync(dto.SingleObject!, accept, cancellationToken);
+
         }
 
         /// <summary>
@@ -198,6 +210,7 @@ namespace RESTworld.AspNetCore.Controller
         /// </param>
         /// <param name="dto">Updated values for the resource(s).</param>
         /// <param name="accept">The value of the Accept header.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>The full resource(s) as stored in the database.</returns>
         [HttpPut("{id:long?}")]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Put))]
@@ -205,24 +218,28 @@ namespace RESTworld.AspNetCore.Controller
         [ProducesResponseType(typeof(Resource), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status409Conflict)]
-        public virtual async Task<ActionResult<Resource<TGetFullDto>>> PutAsync(long? id, [FromBody] SingleObjectOrCollection<TUpdateDto> dto, [FromHeader, SwaggerIgnore] string accept)
+        public virtual async Task<ActionResult<Resource<TGetFullDto>>> PutAsync(
+            long? id,
+            [FromBody] SingleObjectOrCollection<TUpdateDto> dto,
+            [FromHeader, SwaggerIgnore] string accept,
+            CancellationToken cancellationToken)
         {
             if (dto == null || (dto.ContainsCollection && dto.Collection is null) || (dto.ContainsSingleObject && dto.SingleObject is null))
-                return ResourceFactory.CreateError(StatusCodes.Status400BadRequest, "Unable to read either a collection or a single object from the request body.");
+                return ErrorResultFactory.CreateError(StatusCodes.Status400BadRequest, "Unable to read either a collection or a single object from the request body.");
 
             if (dto.ContainsCollection)
             {
                 if (id.HasValue)
-                    return ResourceFactory.CreateError(StatusCodes.Status400BadRequest, "The URL must not contain an ID when the request body contains a collection.");
+                    return ErrorResultFactory.CreateError(StatusCodes.Status400BadRequest, "The URL must not contain an ID when the request body contains a collection.");
 
-                return await PutMultipleAsync(dto.Collection!);
+                return await PutMultipleAsync(dto.Collection, cancellationToken);
             }
             else
             {
                 if (id != dto.SingleObject?.Id)
-                    return ResourceFactory.CreateError(StatusCodes.Status400BadRequest, "The URL must contain the same ID as the object in the request body when the request body contains a single object.");
+                    return ErrorResultFactory.CreateError(StatusCodes.Status400BadRequest, "The URL must contain the same ID as the object in the request body when the request body contains a single object.");
 
-                return await PutSingleAsync(dto.SingleObject!, accept);
+                return await PutSingleAsync(dto.SingleObject!, accept, cancellationToken);
             }
         }
 
@@ -339,16 +356,17 @@ namespace RESTworld.AspNetCore.Controller
 
         /// <summary>
         /// Creates the given new resources. This method is called when
-        /// <see cref="PostAsync(SingleObjectOrCollection{TCreateDto}, string)"/> is called with a collection.
+        /// <see cref="PostAsync(SingleObjectOrCollection{TCreateDto}, string, CancellationToken)"/> is called with a collection.
         /// </summary>
         /// <param name="dtos">The resources to create.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>The full resources as stored in the database.</returns>
-        protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PostMultipleAsync(IReadOnlyCollection<TCreateDto> dtos)
+        protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PostMultipleAsync(IReadOnlyCollection<TCreateDto> dtos, CancellationToken cancellationToken)
         {
-            var response = await _crudService.CreateAsync(dtos);
+            var response = await _crudService.CreateAsync(dtos, cancellationToken);
 
             if (!response.Succeeded)
-                return ResourceFactory.CreateError(response);
+                return ErrorResultFactory.CreateError(response);
 
             var responseObject = response.ResponseObject ?? Array.Empty<TGetFullDto>();
 
@@ -376,20 +394,21 @@ namespace RESTworld.AspNetCore.Controller
 
         /// <summary>
         /// Creates the given new resource. This method is called when
-        /// <see cref="PostAsync(SingleObjectOrCollection{TCreateDto}, string)"/> is called with a single object.
+        /// <see cref="PostAsync(SingleObjectOrCollection{TCreateDto}, string, CancellationToken)"/> is called with a single object.
         /// </summary>
         /// <param name="dto">The resource to create.</param>
         /// <param name="accept">The value of the Accept header.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>The full resource as stored in the database.</returns>
-        protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PostSingleAsync(TCreateDto dto, string accept)
+        protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PostSingleAsync(TCreateDto dto, string accept, CancellationToken cancellationToken)
         {
-            var response = await _crudService.CreateAsync(dto);
+            var response = await _crudService.CreateAsync(dto, cancellationToken);
 
             if (!response.Succeeded)
-                return ResourceFactory.CreateError(response);
+                return ErrorResultFactory.CreateError(response);
 
             if (response.ResponseObject is null)
-                return ResourceFactory.CreateError(StatusCodes.Status500InternalServerError, "The service did return null for the created object.");
+                return ErrorResultFactory.CreateError(StatusCodes.Status500InternalServerError, "The service did return null for the created object.");
 
             var resource = ResourceFactory.CreateForGetEndpoint(response.ResponseObject, routeValues: new { id = response.ResponseObject.Id });
             Url.AddSaveAndDeleteLinks(resource);
@@ -399,17 +418,18 @@ namespace RESTworld.AspNetCore.Controller
 
         /// <summary>
         /// Updates the given resources with new values. This method is called
-        /// when <see cref="PutAsync(long?, SingleObjectOrCollection{TUpdateDto}, string)"/> is called with a collection.
+        /// when <see cref="PutAsync(long?, SingleObjectOrCollection{TUpdateDto}, string, CancellationToken)"/> is called with a collection.
         /// </summary>
         /// <param name="dtos">Updated values for the resources.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>The full resources as stored in the database.</returns>
-        protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PutMultipleAsync(IReadOnlyCollection<TUpdateDto> dtos)
+        protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PutMultipleAsync(IReadOnlyCollection<TUpdateDto> dtos, CancellationToken cancellationToken)
         {
             var request = new UpdateMultipleRequest<TUpdateDto, TEntity>(dtos, x => x);
-            var response = await _crudService.UpdateAsync(request);
+            var response = await _crudService.UpdateAsync(request, cancellationToken);
 
             if (!response.Succeeded)
-                return ResourceFactory.CreateError(response);
+                return ErrorResultFactory.CreateError(response);
 
             var responseObject = response.ResponseObject ?? Array.Empty<TGetFullDto>();
 
@@ -437,17 +457,18 @@ namespace RESTworld.AspNetCore.Controller
 
         /// <summary>
         /// Updates the given resource with new values. This method is called
-        /// when <see cref="PutAsync(long?, SingleObjectOrCollection{TUpdateDto}, string)"/> is called with a single object.
+        /// when <see cref="PutAsync(long?, SingleObjectOrCollection{TUpdateDto}, string, CancellationToken)"/> is called with a single object.
         /// </summary>
         /// <param name="dto">Updated values for the resource.</param>
         /// <param name="accept">The Accept header.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>The full resource as stored in the database.</returns>
-        protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PutSingleAsync(TUpdateDto dto, string accept)
+        protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PutSingleAsync(TUpdateDto dto, string accept, CancellationToken cancellationToken)
         {
-            var response = await _crudService.UpdateAsync(dto);
+            var response = await _crudService.UpdateAsync(dto, cancellationToken);
 
             if (!response.Succeeded || response.ResponseObject is null)
-                return ResourceFactory.CreateError(response);
+                return ErrorResultFactory.CreateError(response);
 
             return Ok(response.ResponseObject, HttpMethod.Put, accept);
         }

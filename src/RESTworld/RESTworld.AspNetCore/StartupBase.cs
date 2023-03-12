@@ -4,7 +4,6 @@ using AutoMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.OData;
 using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
@@ -19,7 +18,6 @@ using RESTworld.AspNetCore.Formatter;
 using RESTworld.AspNetCore.Health;
 using RESTworld.AspNetCore.Serialization;
 using RESTworld.AspNetCore.Swagger;
-using RESTworld.AspNetCore.Validation;
 using RESTworld.AspNetCore.Versioning;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
@@ -228,7 +226,7 @@ namespace RESTworld.AspNetCore
                 options.OperationFilter<SwaggerExampleOperationFilter>();
             });
 
-            services.AddSingleton<ProblemDetailsFactory, RestWorldProblemDetailsFactory>();
+            services.AddValidationAndErrorHandling();
 
             services.AddAutoMapper(ConfigureAutomapper);
 

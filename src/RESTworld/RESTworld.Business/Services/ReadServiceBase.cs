@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RESTworld.Business.Services
@@ -57,22 +58,24 @@ namespace RESTworld.Business.Services
         protected virtual IEnumerable<IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>> ReadAuthorizationHandlers { get; }
 
         /// <inheritdoc/>
-        public Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListAsync(IGetListRequest<TEntity> request)
+        public Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListAsync(IGetListRequest<TEntity> request, CancellationToken cancellationToken)
             => TryExecuteWithAuthorizationAsync<TEntity, IGetListRequest<TEntity>, IReadOnlyPagedCollection<TGetListDto>, IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>>(
                 request,
-                result => GetListInternalAsync(result),
-                (result, handler) => handler.HandleGetListRequestAsync(result),
-                (response, handler) => handler.HandleGetListResponseAsync(response),
-                ReadAuthorizationHandlers);
+                (result, token) => GetListInternalAsync(result, token),
+                (result, handler, token) => handler.HandleGetListRequestAsync(result, token),
+                (response, handler, token) => handler.HandleGetListResponseAsync(response, token),
+                ReadAuthorizationHandlers,
+                cancellationToken);
 
         /// <inheritdoc/>
-        public Task<ServiceResponse<TGetFullDto>> GetSingleAsync(long id)
+        public Task<ServiceResponse<TGetFullDto>> GetSingleAsync(long id, CancellationToken cancellationToken)
             => TryExecuteWithAuthorizationAsync<TEntity, long, TGetFullDto, IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>>(
                 id,
-                result => GetSingleInternalAsync(result),
-                (result, handler) => handler.HandleGetSingleRequestAsync(result),
-                (response, handler) => handler.HandleGetSingleResponseAsync(response),
-                ReadAuthorizationHandlers);
+                (result, token) => GetSingleInternalAsync(result, token),
+                (result, handler, token) => handler.HandleGetSingleRequestAsync(result, token),
+                (response, handler, token) => handler.HandleGetSingleResponseAsync(response, token),
+                ReadAuthorizationHandlers,
+                cancellationToken);
 
         /// <summary>
         /// Gets the DB set from the context that is used when reading (not updating!). If you need
@@ -102,11 +105,12 @@ namespace RESTworld.Business.Services
         /// which items to return. The filter is normally mapped from the OData parameters that
         /// where passed into the controller ($filter, $orderby, $top, $skip).
         /// </param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>All items as specified in the request with paging options if specified.</returns>
         /// <exception cref="ArgumentException">
         /// If request.CalculateTotalCount is true, request.FilterForTotalCount must not be null.
         /// </exception>
-        protected virtual async Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListInternalAsync(AuthorizationResult<TEntity, IGetListRequest<TEntity>> authorizationResult)
+        protected virtual async Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListInternalAsync(AuthorizationResult<TEntity, IGetListRequest<TEntity>> authorizationResult, CancellationToken cancellationToken)
         {
             var request = authorizationResult.Value1;
 
@@ -129,12 +133,12 @@ namespace RESTworld.Business.Services
 
                     var totalPagesSet = GetDbSetForReadingWithAuthorization(authorizationResult);
                     totalPagesSet = request.FilterForTotalCount(totalPagesSet);
-                    totalPagesTask = totalPagesSet.LongCountAsync();
+                    totalPagesTask = totalPagesSet.LongCountAsync(cancellationToken);
                     tasks.Add(totalPagesTask);
                 }
             }
 
-            var entitiesTask = setForEntities.ToListAsync();
+            var entitiesTask = setForEntities.ToListAsync(cancellationToken);
             tasks.Add(entitiesTask);
 
             await Task.WhenAll(tasks);
@@ -146,7 +150,7 @@ namespace RESTworld.Business.Services
 
             IReadOnlyPagedCollection<TGetListDto> pagedCollection = new ReadOnlyPagedCollection<TGetListDto>(dtos, totalCount);
 
-            await OnGotListInternalAsync(authorizationResult, pagedCollection, entitiesTask.Result);
+            await OnGotListInternalAsync(authorizationResult, pagedCollection, entitiesTask.Result, cancellationToken);
 
             return ServiceResponse.FromResult(pagedCollection);
         }
@@ -156,21 +160,22 @@ namespace RESTworld.Business.Services
         /// item with the specified ID from the database.
         /// </summary>
         /// <param name="authorizationResult">
-        /// TThe result of the authorization which contains the identifier of the item.
+        /// The result of the authorization which contains the identifier of the item.
         /// </param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>The item with the specified ID, or 404 (Not Found).</returns>
-        protected virtual async Task<ServiceResponse<TGetFullDto>> GetSingleInternalAsync(AuthorizationResult<TEntity, long> authorizationResult)
+        protected virtual async Task<ServiceResponse<TGetFullDto>> GetSingleInternalAsync(AuthorizationResult<TEntity, long> authorizationResult, CancellationToken cancellationToken)
         {
             var id = authorizationResult.Value1;
 
-            var entity = await GetDbSetForReadingWithAuthorization(authorizationResult).FirstOrDefaultAsync(e => e.Id == id);
+            var entity = await GetDbSetForReadingWithAuthorization(authorizationResult).FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
 
             if (entity is null)
                 return ServiceResponse.FromStatus<TGetFullDto>(HttpStatusCode.NotFound);
 
             var dto = _mapper.Map<TGetFullDto>(entity);
 
-            await OnGotSingleInternalAsync(authorizationResult, dto, entity);
+            await OnGotSingleInternalAsync(authorizationResult, dto, entity, cancellationToken);
 
             return ServiceResponse.FromResult(dto);
         }
@@ -184,8 +189,9 @@ namespace RESTworld.Business.Services
         /// </param>
         /// <param name="pagedCollection">The DTOs which have been mapped from the entities.</param>
         /// <param name="entities">The entity as they have been read from the database.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns></returns>
-        protected virtual Task OnGotListInternalAsync(AuthorizationResult<TEntity, IGetListRequest<TEntity>> authorizationResult, IReadOnlyPagedCollection<TGetListDto> pagedCollection, IReadOnlyCollection<TEntity> entities)
+        protected virtual Task OnGotListInternalAsync(AuthorizationResult<TEntity, IGetListRequest<TEntity>> authorizationResult, IReadOnlyPagedCollection<TGetListDto> pagedCollection, IReadOnlyCollection<TEntity> entities, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }
@@ -198,8 +204,9 @@ namespace RESTworld.Business.Services
         /// </param>
         /// <param name="dto">The DTO which was mapped from the entity.</param>
         /// <param name="entity">The entity as it has been read from the database.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns></returns>
-        protected virtual Task OnGotSingleInternalAsync(AuthorizationResult<TEntity, long> authorizationResult, TGetFullDto dto, TEntity entity)
+        protected virtual Task OnGotSingleInternalAsync(AuthorizationResult<TEntity, long> authorizationResult, TGetFullDto dto, TEntity entity, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }

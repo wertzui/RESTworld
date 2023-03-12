@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.Extensions.Options;
 using RESTworld.AspNetCore.DependencyInjection;
+using RESTworld.AspNetCore.Errors.Abstractions;
 using RESTworld.AspNetCore.Filters;
 using RESTworld.AspNetCore.Swagger;
 using RESTworld.Business.Services.Abstractions;
@@ -16,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RESTworld.AspNetCore.Controller
@@ -40,8 +42,8 @@ namespace RESTworld.AspNetCore.Controller
         private readonly IReadServiceBase<TEntity, TGetListDto, TGetFullDto> _readService;
 
         /// <summary>
-        /// Creates a new instance of the <see cref="CrudController{TEntity, TCreateDto,
-        /// TGetListDto, TGetFullDto, TUpdateDto}"/> class.
+        /// Creates a new instance of the
+        /// <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> class.
         /// </summary>
         /// <param name="service">The service which handles the business operations.</param>
         /// <param name="resourceFactory">
@@ -49,6 +51,7 @@ namespace RESTworld.AspNetCore.Controller
         /// </param>
         /// <param name="linkFactory"></param>
         /// <param name="formFactory">The form factory which created HAL-Form resources.</param>
+        /// <param name="errorResultFactory">The factory to create error results.</param>
         /// <param name="options">
         /// The options which are used to determine the max number of entries for the List endpoint.
         /// </param>
@@ -57,6 +60,7 @@ namespace RESTworld.AspNetCore.Controller
             IODataResourceFactory resourceFactory,
             ILinkFactory linkFactory,
             IODataFormFactory formFactory,
+            IErrorResultFactory errorResultFactory,
             IOptions<RestWorldOptions> options)
             : base(resourceFactory)
         {
@@ -67,7 +71,13 @@ namespace RESTworld.AspNetCore.Controller
             _readService = service ?? throw new ArgumentNullException(nameof(service));
             LinkFactory = linkFactory ?? throw new ArgumentNullException(nameof(linkFactory));
             FormFactory = formFactory ?? throw new ArgumentNullException(nameof(formFactory));
+            ErrorResultFactory = errorResultFactory ?? throw new ArgumentNullException(nameof(errorResultFactory));
         }
+
+        /// <summary>
+        /// The factory to generate error results.
+        /// </summary>
+        protected IErrorResultFactory ErrorResultFactory { get; }
 
         /// <summary>
         /// The form factory to generate form responses.
@@ -89,18 +99,19 @@ namespace RESTworld.AspNetCore.Controller
         /// </summary>
         /// <param name="id">The ID of the resource.</param>
         /// <param name="accept">The Accept header.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>The full representation for the requested resource.</returns>
         [HttpGet("{id:long}")]
         [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
         [ProducesResponseType(200)]
         [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
         [ProducesWithContentNegotiation("application/hal+json", "application/prs.hal-forms+json", "application/hal-forms+json")]
-        public virtual async Task<ActionResult<Resource<TGetFullDto>>> GetAsync(long id, [FromHeader, SwaggerIgnore] string accept)
+        public virtual async Task<ActionResult<Resource<TGetFullDto>>> GetAsync(long id, [FromHeader, SwaggerIgnore] string accept, CancellationToken cancellationToken)
         {
-            var response = await _readService.GetSingleAsync(id);
+            var response = await _readService.GetSingleAsync(id, cancellationToken);
 
             if (!response.Succeeded || response.ResponseObject is null)
-                return ResourceFactory.CreateError(response);
+                return ErrorResultFactory.CreateError(response);
 
             return Ok(response.ResponseObject, id == 0 ? HttpMethod.Post : HttpMethod.Put, accept);
         }
@@ -110,6 +121,7 @@ namespace RESTworld.AspNetCore.Controller
         /// </summary>
         /// <param name="options">The OData options used to filter, order an page the list.</param>
         /// <param name="accept">The value of the Accept header.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <param name="filter">The filter to filter resources by.</param>
         /// <param name="orderby">
         /// The order of the resources. If none is given, the resources are returned as they appear
@@ -125,6 +137,7 @@ namespace RESTworld.AspNetCore.Controller
         public virtual async Task<ActionResult<Resource>> GetListAsync(
             [SwaggerIgnore] ODataQueryOptions<TEntity> options,
             [FromHeader, SwaggerIgnore] string accept,
+            CancellationToken cancellationToken,
             [FromQuery(Name = "$filter")] string? filter = default,
             [FromQuery(Name = "$orderby")] string? orderby = default,
             [FromQuery(Name = "$top")] long? top = default,
@@ -133,14 +146,111 @@ namespace RESTworld.AspNetCore.Controller
             options.Context.DefaultQuerySettings.MaxTop = Options.MaxNumberForListEndpoint;
             var getListrequest = options.ToListRequest(Options.CalculateTotalCountForListEndpoint);
 
-            var response = await _readService.GetListAsync(getListrequest);
+            var response = await _readService.GetListAsync(getListrequest, cancellationToken);
 
             if (!response.Succeeded)
-                return ResourceFactory.CreateError(response);
+                return ErrorResultFactory.CreateError(response);
 
             var result = CreateListResource(options, response, accept);
 
             return Ok(result);
+        }
+
+        /// <summary>
+        /// Creates the result which is either a HAL resource, or a HAL-Forms resource based on the
+        /// accept header.
+        /// </summary>
+        /// <param name="dto">The DTO to return.</param>
+        /// <param name="method">The method to use when submitting the form.</param>
+        /// <param name="accept">The value of the Accept header.</param>
+        /// <returns>Either a HAL resource, or a HAL-Forms resource</returns>
+        protected virtual Resource CreateListResource(TGetFullDto dto, HttpMethod method, string accept)
+        {
+            if (accept.Contains("hal-forms+json"))
+            {
+                var result = FormFactory.CreateResourceForEndpoint(dto, method, "View", routeValues: new { id = dto.Id });
+
+                MakeFormReadOnly(result);
+
+                return result;
+            }
+            else
+            {
+                var result = ResourceFactory.CreateForGetEndpoint(dto, routeValues: new { id = dto.Id });
+
+                LinkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
+
+                return result;
+            }
+        }
+
+        /// <summary>
+        /// Creates the result which is either a HAL resource, or a HAL-Forms resource based on the
+        /// accept header.
+        /// </summary>
+        /// <param name="dto">The DTO to return.</param>
+        /// <param name="method">The method to use when submitting the form.</param>
+        /// <param name="accept">The value of the Accept header.</param>
+        /// <returns>Either a HAL resource, or a HAL-Forms resource</returns>
+        protected virtual Resource CreateResource(TGetFullDto dto, HttpMethod method, string accept)
+        {
+            if (accept.Contains("hal-forms+json"))
+            {
+                var result = FormFactory.CreateResourceForEndpoint(dto, method, "View", routeValues: new { id = dto.Id });
+
+                MakeFormReadOnly(result);
+
+                return result;
+            }
+            else
+            {
+                var result = ResourceFactory.CreateForGetEndpoint(dto, routeValues: new { id = dto.Id });
+
+                LinkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
+
+                return result;
+            }
+        }
+
+        /// <summary>
+        /// Creates an Microsoft.AspNetCore.Mvc.OkObjectResult object that produces an
+        /// Microsoft.AspNetCore.Http.StatusCodes.Status200OK response.
+        /// </summary>
+        /// <param name="dto">The DTO to return.</param>
+        /// <param name="method">The method to use when submitting the form.</param>
+        /// <param name="accept">The value of the Accept header.</param>
+        /// <returns>The created Microsoft.AspNetCore.Mvc.OkObjectResult for the response.</returns>
+        protected virtual OkObjectResult Ok(TGetFullDto dto, HttpMethod method, string accept)
+            => Ok(CreateResource(dto, method, accept));
+
+        /// <summary>
+        /// Since this is a read-only controller, every property is also read only.
+        /// <see cref="CreateResource(TGetFullDto, HttpMethod, string)"/> is overridden in the
+        /// <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
+        /// and there the form is kept as it is.
+        /// </summary>
+        /// <param name="form">The HAL-Form to make read-only</param>
+        private static void MakeFormReadOnly(FormsResource? form)
+        {
+            MakeFormReadOnly(form?.Templates);
+        }
+
+        private static void MakeFormReadOnly(IDictionary<string, FormTemplate>? templates)
+        {
+            if (templates is null)
+                return;
+
+            foreach (var template in templates.Values)
+            {
+                if (template.Properties is not null)
+                {
+                    foreach (var property in template.Properties)
+                    {
+                        property.ReadOnly = true;
+                        MakeFormReadOnly(property.Templates);
+                    }
+                }
+            }
         }
 
         private Resource<Page> CreateListResource(ODataQueryOptions<TEntity> options, Business.Models.ServiceResponse<Business.Models.Abstractions.IReadOnlyPagedCollection<TGetListDto>> response, string accept)
@@ -177,100 +287,5 @@ namespace RESTworld.AspNetCore.Controller
             Url.AddNewLink(result);
             return result;
         }
-
-        /// <summary>
-        /// Creates the result which is either a HAL resource, or a HAL-Forms resource based on the
-        /// accept header.
-        /// </summary>
-        /// <param name="dto">The DTO to return.</param>
-        /// <param name="method">The method to use when submitting the form.</param>
-        /// <param name="accept">The value of the Accept header.</param>
-        /// <returns>Either a HAL resource, or a HAL-Forms resource</returns>
-        protected virtual Resource CreateResource(TGetFullDto dto, HttpMethod method, string accept)
-        {
-            if (accept.Contains("hal-forms+json"))
-            {
-                var result = FormFactory.CreateResourceForEndpoint(dto, method, "View", routeValues: new { id = dto.Id });
-
-                MakeFormReadOnly(result);
-
-                return result;
-            }
-            else
-            {
-                var result = ResourceFactory.CreateForGetEndpoint(dto, routeValues: new { id = dto.Id });
-
-                LinkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
-
-                return result;
-            }
-        }
-        /// <summary>
-        /// Creates the result which is either a HAL resource, or a HAL-Forms resource based on the
-        /// accept header.
-        /// </summary>
-        /// <param name="dto">The DTO to return.</param>
-        /// <param name="method">The method to use when submitting the form.</param>
-        /// <param name="accept">The value of the Accept header.</param>
-        /// <returns>Either a HAL resource, or a HAL-Forms resource</returns>
-        protected virtual Resource CreateListResource(TGetFullDto dto, HttpMethod method, string accept)
-        {
-            if (accept.Contains("hal-forms+json"))
-            {
-                var result = FormFactory.CreateResourceForEndpoint(dto, method, "View", routeValues: new { id = dto.Id });
-
-                MakeFormReadOnly(result);
-
-                return result;
-            }
-            else
-            {
-                var result = ResourceFactory.CreateForGetEndpoint(dto, routeValues: new { id = dto.Id });
-
-                LinkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
-
-                return result;
-            }
-        }
-
-        /// <summary>
-        /// Since this is a read-only controller, every property is also read only.
-        /// <see cref="CreateResource(TGetFullDto, HttpMethod, string)"/> is overridden in the <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
-        /// and there the form is kept as it is.
-        /// </summary>
-        /// <param name="form">The HAL-Form to make read-only</param>
-        private static void MakeFormReadOnly(FormsResource? form)
-        {
-            MakeFormReadOnly(form?.Templates);
-        }
-
-        private static void MakeFormReadOnly(IDictionary<string, FormTemplate>? templates)
-        {
-            if (templates is null)
-                return;
-
-            foreach (var template in templates.Values)
-            {
-                if (template.Properties is not null)
-                {
-                    foreach (var property in template.Properties)
-                    {
-                        property.ReadOnly = true;
-                        MakeFormReadOnly(property.Templates);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Creates an Microsoft.AspNetCore.Mvc.OkObjectResult object that produces an
-        /// Microsoft.AspNetCore.Http.StatusCodes.Status200OK response.
-        /// </summary>
-        /// <param name="dto">The DTO to return.</param>
-        /// <param name="method">The method to use when submitting the form.</param>
-        /// <param name="accept">The value of the Accept header.</param>
-        /// <returns>The created Microsoft.AspNetCore.Mvc.OkObjectResult for the response.</returns>
-        protected virtual OkObjectResult Ok(TGetFullDto dto, HttpMethod method, string accept)
-            => Ok(CreateResource(dto, method, accept));
     }
 }

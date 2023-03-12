@@ -51,8 +51,7 @@ namespace RESTworld.AspNetCore.Controller
             _resourceFactory = resourceFactory ?? throw new ArgumentNullException(nameof(resourceFactory));
             _linkFactory = linkFactory ?? throw new ArgumentNullException(nameof(linkFactory));
 
-            if (_state is null)
-                _state = CreateState(apiExplorer);
+            _state ??= CreateState(apiExplorer);
         }
 
         /// <summary>
@@ -80,7 +79,7 @@ namespace RESTworld.AspNetCore.Controller
             return Ok(resource);
         }
 
-        private HomeDto CreateState(IApiDescriptionGroupCollectionProvider apiExplorer)
+        private static HomeDto CreateState(IApiDescriptionGroupCollectionProvider apiExplorer)
         {
             var descriptorGroups = apiExplorer.ApiDescriptionGroups.Items;
 

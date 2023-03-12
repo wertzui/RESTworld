@@ -1,4 +1,5 @@
 ﻿using RESTworld.Business.Models;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RESTworld.Business.Authorization.Abstractions
@@ -19,16 +20,18 @@ namespace RESTworld.Business.Authorization.Abstractions
         /// Use it if you want to modify the query BEFORE it is executed.
         /// </summary>
         /// <param name="previousResult">The result from the handler which was executed before this one, or an initial unmodified result.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>A result which might be modified depending on its internal authorization logic.</returns>
-        Task<AuthorizationResultWithoutDb> HandleRequestAsync(AuthorizationResultWithoutDb previousResult);
+        Task<AuthorizationResultWithoutDb> HandleRequestAsync(AuthorizationResultWithoutDb previousResult, CancellationToken cancellationToken);
 
         /// <summary>
         /// This method is called AFTER the request has been executed on the database.
         /// Use it if you want to modify the result AFTER it has been retrieved from the database.
         /// </summary>
         /// <param name="previousResponse">The response from the handler which was executed before this one, or an initial unmodified response.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>A response which might be modified depending on its internal authorization logic.</returns>
-        Task<ServiceResponse<TResponse>> HandleResponseAsync(ServiceResponse<TResponse> previousResponse);
+        Task<ServiceResponse<TResponse>> HandleResponseAsync(ServiceResponse<TResponse> previousResponse, CancellationToken cancellationToken);
     }
 
     /// <summary>
@@ -48,16 +51,18 @@ namespace RESTworld.Business.Authorization.Abstractions
         /// Use it if you want to modify the query BEFORE it is executed.
         /// </summary>
         /// <param name="previousResult">The result from the handler which was executed before this one, or an initial unmodified result.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>A result which might be modified depending on its internal authorization logic.</returns>
-        Task<AuthorizationResultWithoutDb<TRequest>> HandleRequestAsync(AuthorizationResultWithoutDb<TRequest> previousResult);
+        Task<AuthorizationResultWithoutDb<TRequest>> HandleRequestAsync(AuthorizationResultWithoutDb<TRequest> previousResult, CancellationToken cancellationToken);
 
         /// <summary>
         /// This method is called AFTER the request has been executed on the database.
         /// Use it if you want to modify the result AFTER it has been retrieved from the database.
         /// </summary>
         /// <param name="previousResponse">The response from the handler which was executed before this one, or an initial unmodified response.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>A response which might be modified depending on its internal authorization logic.</returns>
-        Task<ServiceResponse<TResponse>> HandleResponseAsync(ServiceResponse<TResponse> previousResponse);
+        Task<ServiceResponse<TResponse>> HandleResponseAsync(ServiceResponse<TResponse> previousResponse, CancellationToken cancellationToken);
     }
 
     /// <summary>
@@ -78,16 +83,18 @@ namespace RESTworld.Business.Authorization.Abstractions
         /// Use it if you want to modify the query BEFORE it is executed.
         /// </summary>
         /// <param name="previousResult">The result from the handler which was executed before this one, or an initial unmodified result.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>A result which might be modified depending on its internal authorization logic.</returns>
-        Task<AuthorizationResult<TEntity, TRequest>> HandleRequestAsync(AuthorizationResult<TEntity, TRequest> previousResult);
+        Task<AuthorizationResult<TEntity, TRequest>> HandleRequestAsync(AuthorizationResult<TEntity, TRequest> previousResult, CancellationToken cancellationToken);
 
         /// <summary>
         /// This method is called AFTER the request has been executed on the database.
         /// Use it if you want to modify the result AFTER it has been retrieved from the database.
         /// </summary>
         /// <param name="previousResponse">The response from the handler which was executed before this one, or an initial unmodified response.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>A response which might be modified depending on its internal authorization logic.</returns>
-        Task<ServiceResponse<TResponse>> HandleResponseAsync(ServiceResponse<TResponse> previousResponse);
+        Task<ServiceResponse<TResponse>> HandleResponseAsync(ServiceResponse<TResponse> previousResponse, CancellationToken cancellationToken);
 
     }
 }

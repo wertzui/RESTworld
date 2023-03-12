@@ -3,7 +3,6 @@ using HAL.Common;
 using Microsoft.Extensions.Logging;
 using RESTworld.Common.Client;
 using RESTworld.Common.Dtos;
-using System.Text.Json;
 
 namespace RESTworld.Client.Net
 {
@@ -14,10 +13,9 @@ namespace RESTworld.Client.Net
     {
         private readonly IHalClient _halClient;
         private readonly ILogger<RestWorldClient> _logger;
-        private Resource<HomeDto> _homeResource;
+        private readonly Resource<HomeDto> _homeResource;
         private readonly ApiUrl _apiUrl;
-        private string? _defaultCurie;
-        private static readonly JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        private readonly string? _defaultCurie;
 
         /// <summary>
         /// Creates a new client for the given <paramref name="apiUrl"/>.
@@ -124,11 +122,8 @@ namespace RESTworld.Client.Net
             string? version = default,
             CancellationToken cancellationToken = default)
         {
-            var link = GetLinkFromHome(rel, Common.Constants.GetListLinkName, curie);
-
-            if (link is null)
-                throw new ArgumentException($"Unable to find a link with the rel {rel} and the curie {curie ?? "null"}", nameof(rel));
-
+            var link = GetLinkFromHome(rel, Common.Constants.GetListLinkName, curie)
+                ?? throw new ArgumentException($"Unable to find a link with the rel {rel} and the curie {curie ?? "null"}", nameof(rel));
             var response = await link.FollowGetAsync<Page>(_halClient, uriParameters, headers, version, cancellationToken);
 
             return response;
@@ -151,8 +146,7 @@ namespace RESTworld.Client.Net
             if (!response.Succeeded || response.Resource is null || response.Resource.Embedded is null || !response.Resource.Embedded.TryGetValue(Common.Constants.ListItems, out var items))
                 return response;
 
-            if (items is null)
-                items = new List<Resource>();
+            items ??= new List<Resource>();
 
             var lastResponse = response;
 
@@ -190,8 +184,7 @@ namespace RESTworld.Client.Net
                 return rel;
 
             // No curie given => use default curie.
-            if (curie is null)
-                curie = _defaultCurie;
+            curie ??= _defaultCurie;
 
             // Combine curie and rel
             var fullRel = string.Concat(curie, ":", rel);

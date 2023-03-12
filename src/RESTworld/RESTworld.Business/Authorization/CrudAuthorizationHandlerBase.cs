@@ -3,6 +3,7 @@ using RESTworld.Business.Models;
 using RESTworld.Business.Models.Abstractions;
 using RESTworld.Business.Services.Abstractions;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RESTworld.Business.Authorization
@@ -22,33 +23,33 @@ namespace RESTworld.Business.Authorization
     public abstract class CrudAuthorizationHandlerBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> : ReadAuthorizationHandlerBase<TEntity, TGetListDto, TGetFullDto>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
     {
         /// <inheritdoc/>
-        public virtual Task<AuthorizationResult<TEntity, TCreateDto>> HandleCreateRequestAsync(AuthorizationResult<TEntity, TCreateDto> previousResult) => Task.FromResult(previousResult);
+        public virtual Task<AuthorizationResult<TEntity, TCreateDto>> HandleCreateRequestAsync(AuthorizationResult<TEntity, TCreateDto> previousResult, CancellationToken cancellationToken) => Task.FromResult(previousResult);
 
         /// <inheritdoc/>
-        public virtual Task<AuthorizationResult<TEntity, IReadOnlyCollection<TCreateDto>>> HandleCreateRequestAsync(AuthorizationResult<TEntity, IReadOnlyCollection<TCreateDto>> previousResult) => Task.FromResult(previousResult);
+        public virtual Task<AuthorizationResult<TEntity, IReadOnlyCollection<TCreateDto>>> HandleCreateRequestAsync(AuthorizationResult<TEntity, IReadOnlyCollection<TCreateDto>> previousResult, CancellationToken cancellationToken) => Task.FromResult(previousResult);
 
         /// <inheritdoc/>
-        public virtual Task<ServiceResponse<TGetFullDto>> HandleCreateResponseAsync(ServiceResponse<TGetFullDto> previousResponse) => Task.FromResult(previousResponse);
+        public virtual Task<ServiceResponse<TGetFullDto>> HandleCreateResponseAsync(ServiceResponse<TGetFullDto> previousResponse, CancellationToken cancellationToken) => Task.FromResult(previousResponse);
 
         /// <inheritdoc/>
-        public virtual Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> HandleCreateResponseAsync(ServiceResponse<IReadOnlyCollection<TGetFullDto>> previousResponse) => Task.FromResult(previousResponse);
+        public virtual Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> HandleCreateResponseAsync(ServiceResponse<IReadOnlyCollection<TGetFullDto>> previousResponse, CancellationToken cancellationToken) => Task.FromResult(previousResponse);
 
         /// <inheritdoc/>
-        public virtual Task<AuthorizationResult<TEntity, long, byte[]>> HandleDeleteRequestAsync(AuthorizationResult<TEntity, long, byte[]> previousResult) => Task.FromResult(previousResult);
+        public virtual Task<AuthorizationResult<TEntity, long, byte[]>> HandleDeleteRequestAsync(AuthorizationResult<TEntity, long, byte[]> previousResult, CancellationToken cancellationToken) => Task.FromResult(previousResult);
 
         /// <inheritdoc/>
-        public virtual Task<ServiceResponse<object>> HandleDeleteResponseAsync(ServiceResponse<object> previousResponse) => Task.FromResult(previousResponse);
+        public virtual Task<ServiceResponse<object>> HandleDeleteResponseAsync(ServiceResponse<object> previousResponse, CancellationToken cancellationToken) => Task.FromResult(previousResponse);
 
         /// <inheritdoc/>
-        public virtual Task<AuthorizationResult<TEntity, TUpdateDto>> HandleUpdateRequestAsync(AuthorizationResult<TEntity, TUpdateDto> previousResult) => Task.FromResult(previousResult);
+        public virtual Task<AuthorizationResult<TEntity, TUpdateDto>> HandleUpdateRequestAsync(AuthorizationResult<TEntity, TUpdateDto> previousResult, CancellationToken cancellationToken) => Task.FromResult(previousResult);
 
         /// <inheritdoc/>
-        public virtual Task<AuthorizationResult<TEntity, IUpdateMultipleRequest<TUpdateDto, TEntity>>> HandleUpdateRequestAsync(AuthorizationResult<TEntity, IUpdateMultipleRequest<TUpdateDto, TEntity>> previousResult) => Task.FromResult(previousResult);
+        public virtual Task<AuthorizationResult<TEntity, IUpdateMultipleRequest<TUpdateDto, TEntity>>> HandleUpdateRequestAsync(AuthorizationResult<TEntity, IUpdateMultipleRequest<TUpdateDto, TEntity>> previousResult, CancellationToken cancellationToken) => Task.FromResult(previousResult);
 
         /// <inheritdoc/>
-        public virtual Task<ServiceResponse<TGetFullDto>> HandleUpdateResponseAsync(ServiceResponse<TGetFullDto> previousResponse) => Task.FromResult(previousResponse);
+        public virtual Task<ServiceResponse<TGetFullDto>> HandleUpdateResponseAsync(ServiceResponse<TGetFullDto> previousResponse, CancellationToken cancellationToken) => Task.FromResult(previousResponse);
 
         /// <inheritdoc/>
-        public virtual Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> HandleUpdateResponseAsync(ServiceResponse<IReadOnlyCollection<TGetFullDto>> previousResponse) => Task.FromResult(previousResponse);
+        public virtual Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> HandleUpdateResponseAsync(ServiceResponse<IReadOnlyCollection<TGetFullDto>> previousResponse, CancellationToken cancellationToken) => Task.FromResult(previousResponse);
     }
 }

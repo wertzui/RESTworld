@@ -21,7 +21,14 @@ namespace ExampleBlog.Common.Dtos
         public virtual AuthorDto? Author { get; set; }
         [JsonIgnore]
         public virtual BlogDto? Blog { get; set; }
-        [DataType(DataType.ImageUrl)]
+        [RestWorldImage(
+            AspectRatio = 120.0 / 40.0,
+            ContainWithinAspectRatio = true,
+            MaintainAspectRatio = true,
+            OnlyScaleDown = false,
+            ResizeToHeight = 40,
+            ResizeToWidth = 120
+            )]
         public HalFile? Image { get; set; }
         [DataType(DataType.Upload)]
         public HalFile? Attachement { get; set; }

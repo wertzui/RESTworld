@@ -6,12 +6,16 @@ using RESTworld.Business.Authorization.Abstractions;
 using RESTworld.Business.Models;
 using RESTworld.Business.Models.Abstractions;
 using RESTworld.Business.Services.Abstractions;
+using RESTworld.Business.Validation;
+using RESTworld.Business.Validation.Abstractions;
 using RESTworld.Common.Dtos;
 using RESTworld.EntityFrameworkCore;
 using RESTworld.EntityFrameworkCore.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RESTworld.Business.Services
@@ -36,18 +40,20 @@ namespace RESTworld.Business.Services
         /// <param name="authorizationHandlers">
         /// All AuthorizationHandlers which will be called during authorization.
         /// </param>
+        /// <param name="validationService">The complete validator holding all registered validators.</param>
         /// <param name="userAccessor">The user accessor which gets the user of the current request.</param>
         /// <param name="logger">The logger.</param>
         public CrudServiceBase(
             IDbContextFactory<TContext> contextFactory,
             IMapper mapper,
             IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> authorizationHandlers,
+            IValidationService<TCreateDto, TUpdateDto, TEntity>? validationService,
             IUserAccessor userAccessor,
             ILogger<CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> logger)
             : base(contextFactory, mapper, authorizationHandlers, userAccessor, logger)
         {
             CrudAuthorizationHandlers = authorizationHandlers ?? throw new ArgumentNullException(nameof(authorizationHandlers));
-
+            ValidationService = validationService;
             LogAuthoriztaionHandlerWarningOnlyOneTimeIfNoHandlersArePresent(authorizationHandlers);
         }
 
@@ -59,51 +65,62 @@ namespace RESTworld.Business.Services
         /// <inheritdoc/>
         protected override IEnumerable<IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>> ReadAuthorizationHandlers => CrudAuthorizationHandlers;
 
+        /// <summary>
+        /// The validation service which is used to validate create and update operations.
+        /// It holds all registered validators from the service collection.
+        /// </summary>
+        protected virtual IValidationService<TCreateDto, TUpdateDto, TEntity>? ValidationService { get; }
+
         /// <inheritdoc/>
-        public Task<ServiceResponse<TGetFullDto>> CreateAsync(TCreateDto dto)
+        public Task<ServiceResponse<TGetFullDto>> CreateAsync(TCreateDto dto, CancellationToken cancellationToken)
             => TryExecuteWithAuthorizationAsync<TEntity, TCreateDto, TGetFullDto, ICreateAuthorizationHandler<TEntity, TCreateDto, TGetFullDto>>(
                 dto,
-                result => CreateInternalAsync(result),
-                (result, handler) => handler.HandleCreateRequestAsync(result),
-                (response, handler) => handler.HandleCreateResponseAsync(response),
-                CrudAuthorizationHandlers);
+                (result, token) => CreateInternalAsync(result, token),
+                (result, handler, token) => handler.HandleCreateRequestAsync(result, token),
+                (response, handler, token) => handler.HandleCreateResponseAsync(response, token),
+                CrudAuthorizationHandlers,
+                cancellationToken);
 
         /// <inheritdoc/>
-        public Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> CreateAsync(IReadOnlyCollection<TCreateDto> dtos)
+        public Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> CreateAsync(IReadOnlyCollection<TCreateDto> dtos, CancellationToken cancellationToken)
             => TryExecuteWithAuthorizationAsync<TEntity, IReadOnlyCollection<TCreateDto>, IReadOnlyCollection<TGetFullDto>, ICreateAuthorizationHandler<TEntity, TCreateDto, TGetFullDto>>(
                 dtos,
-                result => CreateInternalAsync(result),
-                (result, handler) => handler.HandleCreateRequestAsync(result),
-                (response, handler) => handler.HandleCreateResponseAsync(response),
-                CrudAuthorizationHandlers);
+                (result, token) => CreateInternalAsync(result, token),
+                (result, handler, token) => handler.HandleCreateRequestAsync(result, token),
+                (response, handler, token) => handler.HandleCreateResponseAsync(response, token),
+                CrudAuthorizationHandlers,
+                cancellationToken);
 
         /// <inheritdoc/>
-        public Task<ServiceResponse<object>> DeleteAsync(long id, byte[] timestamp)
+        public Task<ServiceResponse<object>> DeleteAsync(long id, byte[] timestamp, CancellationToken cancellationToken)
             => TryExecuteWithAuthorizationAsync<TEntity, long, byte[], object, IDeleteAuthorizationHandler<TEntity>>(
                 id,
                 timestamp,
-                result => DeleteInternalAsync(result),
-                (result, handler) => handler.HandleDeleteRequestAsync(result),
-                (response, handler) => handler.HandleDeleteResponseAsync(response),
-                CrudAuthorizationHandlers);
+                (result, token) => DeleteInternalAsync(result, token),
+                (result, handler, token) => handler.HandleDeleteRequestAsync(result, token),
+                (response, handler, token) => handler.HandleDeleteResponseAsync(response, token),
+                CrudAuthorizationHandlers,
+                cancellationToken);
 
         /// <inheritdoc/>
-        public Task<ServiceResponse<TGetFullDto>> UpdateAsync(TUpdateDto dto)
+        public Task<ServiceResponse<TGetFullDto>> UpdateAsync(TUpdateDto dto, CancellationToken cancellationToken)
             => TryExecuteWithAuthorizationAsync<TEntity, TUpdateDto, TGetFullDto, IUpdateAuthorizationHandler<TEntity, TUpdateDto, TGetFullDto>>(
                 dto,
-                result => UpdateInternalAsync(result),
-                (result, handler) => handler.HandleUpdateRequestAsync(result),
-                (response, handler) => handler.HandleUpdateResponseAsync(response),
-                CrudAuthorizationHandlers);
+                (result, token) => UpdateInternalAsync(result, token),
+                (result, handler, token) => handler.HandleUpdateRequestAsync(result, token),
+                (response, handler, token) => handler.HandleUpdateResponseAsync(response, token),
+                CrudAuthorizationHandlers,
+                cancellationToken);
 
         /// <inheritdoc/>
-        public Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> UpdateAsync(IUpdateMultipleRequest<TUpdateDto, TEntity> request)
+        public Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> UpdateAsync(IUpdateMultipleRequest<TUpdateDto, TEntity> request, CancellationToken cancellationToken)
             => TryExecuteWithAuthorizationAsync<TEntity, IUpdateMultipleRequest<TUpdateDto, TEntity>, IReadOnlyCollection<TGetFullDto>, IUpdateAuthorizationHandler<TEntity, TUpdateDto, TGetFullDto>>(
                 request,
-                result => UpdateInternalAsync(result),
-                (result, handler) => handler.HandleUpdateRequestAsync(result),
-                (response, handler) => handler.HandleUpdateResponseAsync(response),
-                CrudAuthorizationHandlers);
+                (result, token) => UpdateInternalAsync(result, token),
+                (result, handler, token) => handler.HandleUpdateRequestAsync(result, token),
+                (response, handler, token) => handler.HandleUpdateResponseAsync(response, token),
+                CrudAuthorizationHandlers,
+                cancellationToken);
 
         /// <summary>
         /// Sets the OriginalValue of the timestamp if the timestamp exists on the entity. If it is
@@ -127,24 +144,33 @@ namespace RESTworld.Business.Services
         /// <param name="authorizationResult">
         /// The result of the authorization which contains the DTO to insert into the database.
         /// </param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>A response containing the DTO as it is in the database.</returns>
-        protected virtual async Task<ServiceResponse<TGetFullDto>> CreateInternalAsync(AuthorizationResult<TEntity, TCreateDto> authorizationResult)
+        protected virtual async Task<ServiceResponse<TGetFullDto>> CreateInternalAsync(AuthorizationResult<TEntity, TCreateDto> authorizationResult, CancellationToken cancellationToken)
         {
             var dto = authorizationResult.Value1;
 
-            var entity = _mapper.Map<TEntity>(dto);
-
             await using var context = _contextFactory.CreateDbContext();
+
+            var validationResultsBeforeCreate = ValidationService is null ? SuccessfullValidationResults.Instance : await ValidationService.ValidateAllBeforeCreateAsync(dto, cancellationToken);
+            if (!validationResultsBeforeCreate.ValidationSucceeded)
+                return ServiceResponse.FromFailedValidation<TGetFullDto>(validationResultsBeforeCreate);
+
+            var entity = _mapper.Map<TEntity>(dto);
 
             context.Add(entity);
 
-            await OnCreatingInternalAsync(authorizationResult, context, entity);
+            var validationResultsAfterCreate = ValidationService is null ? SuccessfullValidationResults.Instance : await ValidationService.ValidateAllAfterCreateAsync(dto, entity, cancellationToken);
+            if (!validationResultsAfterCreate.ValidationSucceeded)
+                return ServiceResponse.FromFailedValidation<TGetFullDto>(validationResultsAfterCreate);
 
-            await context.SaveChangesAsync(GetCurrentUsersName());
+            await OnCreatingInternalAsync(authorizationResult, context, entity, cancellationToken);
+
+            await context.SaveChangesAsync(GetCurrentUsersName(), cancellationToken);
 
             var resultDto = _mapper.Map<TGetFullDto>(entity);
 
-            await OnCreatedInternalAsync(authorizationResult, resultDto, entity);
+            await OnCreatedInternalAsync(authorizationResult, resultDto, entity, cancellationToken);
 
             return ServiceResponse.FromResult(resultDto);
         }
@@ -156,24 +182,33 @@ namespace RESTworld.Business.Services
         /// <param name="authorizationResult">
         /// The result of the authorization which contains the DTOs to insert into the database.
         /// </param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>A response containing the DTOs as it is in the database.</returns>
-        protected virtual async Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> CreateInternalAsync(AuthorizationResult<TEntity, IReadOnlyCollection<TCreateDto>> authorizationResult)
+        protected virtual async Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> CreateInternalAsync(AuthorizationResult<TEntity, IReadOnlyCollection<TCreateDto>> authorizationResult, CancellationToken cancellationToken)
         {
             var dtos = authorizationResult.Value1;
 
-            var entities = _mapper.Map<IReadOnlyCollection<TEntity>>(dtos);
-
             await using var context = _contextFactory.CreateDbContext();
+
+            var validationResultsBeforeCreate = ValidationService is null ? SuccessfullValidationResults.Instance : await ValidationService.ValidateAllCollectionsBeforeCreateAsync(dtos, cancellationToken);
+            if (!validationResultsBeforeCreate.ValidationSucceeded)
+                return ServiceResponse.FromFailedValidation<IReadOnlyCollection<TGetFullDto>>(validationResultsBeforeCreate);
+
+            var entities = _mapper.Map<IReadOnlyCollection<TEntity>>(dtos);
 
             context.AddRange(entities);
 
-            await OnCreatingInternalAsync(authorizationResult, context, entities);
+            var validationResultsAfterCreate = ValidationService is null ? SuccessfullValidationResults.Instance : await ValidationService.ValidateAllCollectionsAfterCreateAsync(dtos.Zip(entities), cancellationToken);
+            if (!validationResultsAfterCreate.ValidationSucceeded)
+                return ServiceResponse.FromFailedValidation<IReadOnlyCollection<TGetFullDto>>(validationResultsAfterCreate);
 
-            await context.SaveChangesAsync(GetCurrentUsersName());
+            await OnCreatingInternalAsync(authorizationResult, context, entities, cancellationToken);
+
+            await context.SaveChangesAsync(GetCurrentUsersName(), cancellationToken);
 
             var resultDto = _mapper.Map<IReadOnlyCollection<TGetFullDto>>(entities);
 
-            await OnCreatedInternalAsync(authorizationResult, resultDto, entities);
+            await OnCreatedInternalAsync(authorizationResult, resultDto, entities, cancellationToken);
 
             return ServiceResponse.FromResult(resultDto);
         }
@@ -185,18 +220,19 @@ namespace RESTworld.Business.Services
         /// <param name="authorizationResult">
         /// The result of the authorization which contains the identifier and the timestamp.
         /// </param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>
         /// An empty 200 (Ok) response, or a problem response with either 404 (Not found) if the ID
         /// does not exist or 409 (Conflict) if the timestamp does not match.
         /// </returns>
-        protected virtual async Task<ServiceResponse<object>> DeleteInternalAsync(AuthorizationResult<TEntity, long, byte[]> authorizationResult)
+        protected virtual async Task<ServiceResponse<object>> DeleteInternalAsync(AuthorizationResult<TEntity, long, byte[]> authorizationResult, CancellationToken cancellationToken)
         {
             var id = authorizationResult.Value1;
             var timestamp = authorizationResult.Value2;
 
             await using var context = _contextFactory.CreateDbContext();
 
-            var entity = await GetDbSetForUpdatingWithAuthorization(context, authorizationResult).FirstOrDefaultAsync(e => e.Id == id);
+            var entity = await GetDbSetForUpdatingWithAuthorization(context, authorizationResult).FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
 
             if (entity is null)
                 return ServiceResponse.FromStatus<object>(HttpStatusCode.NotFound);
@@ -205,15 +241,15 @@ namespace RESTworld.Business.Services
                 return ServiceResponse.FromProblem<object>(HttpStatusCode.Conflict, "You must provide a timestamp.");
 
             if (entity.Timestamp is not null && !System.Linq.Enumerable.SequenceEqual(entity.Timestamp, timestamp))
-                return ServiceResponse.FromProblem<object>(HttpStatusCode.Conflict, "The entity was modfied.");
+                return ServiceResponse.FromProblem<object>(HttpStatusCode.Conflict, "The entity was modified.");
 
             context.Remove(entity);
 
-            await OnDeletingAsync(authorizationResult, entity, context);
+            await OnDeletingAsync(authorizationResult, entity, context, cancellationToken);
 
-            await context.SaveChangesAsync(GetCurrentUsersName());
+            await context.SaveChangesAsync(GetCurrentUsersName(), cancellationToken);
 
-            await OnDeletedAsync(authorizationResult, entity);
+            await OnDeletedAsync(authorizationResult, entity, cancellationToken);
 
             return ServiceResponse.FromStatus<object>(HttpStatusCode.OK);
         }
@@ -248,8 +284,9 @@ namespace RESTworld.Business.Services
         /// </param>
         /// <param name="resultDto">The resulting DTO which was mapped from the persisted entity.</param>
         /// <param name="entity">The entity as it has been persisted in the database.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns></returns>
-        protected virtual Task OnCreatedInternalAsync(AuthorizationResult<TEntity, TCreateDto> authorizationResult, TGetFullDto resultDto, TEntity entity)
+        protected virtual Task OnCreatedInternalAsync(AuthorizationResult<TEntity, TCreateDto> authorizationResult, TGetFullDto resultDto, TEntity entity, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }
@@ -265,8 +302,9 @@ namespace RESTworld.Business.Services
         /// The resulting DTOs which have been mapped from the persisted entity.
         /// </param>
         /// <param name="entities">The entities as they have been persisted in the database.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns></returns>
-        protected virtual Task OnCreatedInternalAsync(AuthorizationResult<TEntity, IReadOnlyCollection<TCreateDto>> authorizationResult, IReadOnlyCollection<TGetFullDto> resultDto, IReadOnlyCollection<TEntity> entities)
+        protected virtual Task OnCreatedInternalAsync(AuthorizationResult<TEntity, IReadOnlyCollection<TCreateDto>> authorizationResult, IReadOnlyCollection<TGetFullDto> resultDto, IReadOnlyCollection<TEntity> entities, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }
@@ -280,8 +318,9 @@ namespace RESTworld.Business.Services
         /// </param>
         /// <param name="context">The context on which the changes are done.</param>
         /// <param name="entity">The entity with the modification from the DTO already applied.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns></returns>
-        protected virtual Task OnCreatingInternalAsync(AuthorizationResult<TEntity, TCreateDto> authorizationResult, TContext context, TEntity entity)
+        protected virtual Task OnCreatingInternalAsync(AuthorizationResult<TEntity, TCreateDto> authorizationResult, TContext context, TEntity entity, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }
@@ -295,8 +334,9 @@ namespace RESTworld.Business.Services
         /// </param>
         /// <param name="context">The context on which the changes are done.</param>
         /// <param name="entities">The entities with the modifications from the DTOs already applied.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns></returns>
-        protected virtual Task OnCreatingInternalAsync(AuthorizationResult<TEntity, IReadOnlyCollection<TCreateDto>> authorizationResult, TContext context, IReadOnlyCollection<TEntity> entities)
+        protected virtual Task OnCreatingInternalAsync(AuthorizationResult<TEntity, IReadOnlyCollection<TCreateDto>> authorizationResult, TContext context, IReadOnlyCollection<TEntity> entities, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }
@@ -308,8 +348,9 @@ namespace RESTworld.Business.Services
         /// The result of the authorization which contains the identifier and the timestamp.
         /// </param>
         /// <param name="entity">The entity as it has been read from the database.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns></returns>
-        protected virtual Task OnDeletedAsync(AuthorizationResult<TEntity, long, byte[]> authorizationResult, TEntity entity)
+        protected virtual Task OnDeletedAsync(AuthorizationResult<TEntity, long, byte[]> authorizationResult, TEntity entity, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }
@@ -323,8 +364,9 @@ namespace RESTworld.Business.Services
         /// </param>
         /// <param name="entity">The entity as it has been read from the database.</param>
         /// <param name="context">The context on which the changes are done.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns></returns>
-        protected virtual Task OnDeletingAsync(AuthorizationResult<TEntity, long, byte[]> authorizationResult, TEntity entity, TContext context)
+        protected virtual Task OnDeletingAsync(AuthorizationResult<TEntity, long, byte[]> authorizationResult, TEntity entity, TContext context, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }
@@ -338,8 +380,9 @@ namespace RESTworld.Business.Services
         /// </param>
         /// <param name="resultDto">The resulting DTO which was mapped from the persisted entity.</param>
         /// <param name="entity">The entity as it has been persisted in the database.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns></returns>
-        protected virtual Task OnUpdatedInternalAsync(AuthorizationResult<TEntity, TUpdateDto> authorizationResult, TGetFullDto resultDto, TEntity entity)
+        protected virtual Task OnUpdatedInternalAsync(AuthorizationResult<TEntity, TUpdateDto> authorizationResult, TGetFullDto resultDto, TEntity entity, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }
@@ -355,8 +398,9 @@ namespace RESTworld.Business.Services
         /// The resulting DTOs which have been mapped from the persisted entity.
         /// </param>
         /// <param name="entities">The entities as they have been persisted in the database.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns></returns>
-        protected virtual Task OnUpdatedInternalAsync(AuthorizationResult<TEntity, IUpdateMultipleRequest<TUpdateDto, TEntity>> authorizationResult, IReadOnlyCollection<TGetFullDto> resultDto, Dictionary<long, TEntity> entities)
+        protected virtual Task OnUpdatedInternalAsync(AuthorizationResult<TEntity, IUpdateMultipleRequest<TUpdateDto, TEntity>> authorizationResult, IReadOnlyCollection<TGetFullDto> resultDto, Dictionary<long, TEntity> entities, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }
@@ -370,8 +414,9 @@ namespace RESTworld.Business.Services
         /// </param>
         /// <param name="context">The context on which the changes are done.</param>
         /// <param name="entity">The entity with the modification from the DTO already applied.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns></returns>
-        protected virtual Task OnUpdatingInternalAsync(AuthorizationResult<TEntity, TUpdateDto> authorizationResult, TContext context, TEntity entity)
+        protected virtual Task OnUpdatingInternalAsync(AuthorizationResult<TEntity, TUpdateDto> authorizationResult, TContext context, TEntity entity, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }
@@ -385,8 +430,9 @@ namespace RESTworld.Business.Services
         /// </param>
         /// <param name="context">The context on which the changes are done.</param>
         /// <param name="entities">The entities with the modifications from the DTOs already applied.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns></returns>
-        protected virtual Task OnUpdatingInternalAsync(AuthorizationResult<TEntity, IUpdateMultipleRequest<TUpdateDto, TEntity>> authorizationResult, TContext context, IDictionary<long, TEntity> entities)
+        protected virtual Task OnUpdatingInternalAsync(AuthorizationResult<TEntity, IUpdateMultipleRequest<TUpdateDto, TEntity>> authorizationResult, TContext context, IDictionary<long, TEntity> entities, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }
@@ -398,29 +444,38 @@ namespace RESTworld.Business.Services
         /// <param name="authorizationResult">
         /// The result of the authorization which contains the DTO which contains updated values.
         /// </param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>The item as it is stored in the database after the update operation.</returns>
-        protected virtual async Task<ServiceResponse<TGetFullDto>> UpdateInternalAsync(AuthorizationResult<TEntity, TUpdateDto> authorizationResult)
+        protected virtual async Task<ServiceResponse<TGetFullDto>> UpdateInternalAsync(AuthorizationResult<TEntity, TUpdateDto> authorizationResult, CancellationToken cancellationToken)
         {
             var dto = authorizationResult.Value1;
 
             await using var context = _contextFactory.CreateDbContext();
 
-            var entity = await GetDbSetForUpdatingWithAuthorization(context, authorizationResult).FirstOrDefaultAsync(e => e.Id == dto.Id);
+            var entity = await GetDbSetForUpdatingWithAuthorization(context, authorizationResult).FirstOrDefaultAsync(e => e.Id == dto.Id, cancellationToken);
 
             if (entity is null)
                 return ServiceResponse.FromStatus<TGetFullDto>(HttpStatusCode.NotFound);
+
+            var validationResultsBeforeCreate = ValidationService is null ? SuccessfullValidationResults.Instance : await ValidationService.ValidateAllBeforeUpdateAsync(dto, entity, cancellationToken);
+            if (!validationResultsBeforeCreate.ValidationSucceeded)
+                return ServiceResponse.FromFailedValidation<TGetFullDto>(validationResultsBeforeCreate);
 
             SetTimestampOriginalValue(dto, context, entity);
 
             _mapper.Map(dto, entity);
 
-            await OnUpdatingInternalAsync(authorizationResult, context, entity);
+            var validationResultsAfterCreate = ValidationService is null ? SuccessfullValidationResults.Instance : await ValidationService.ValidateAllAfterUpdateAsync(dto, entity, cancellationToken);
+            if (!validationResultsAfterCreate.ValidationSucceeded)
+                return ServiceResponse.FromFailedValidation<TGetFullDto>(validationResultsAfterCreate);
 
-            await context.SaveChangesAsync(GetCurrentUsersName());
+            await OnUpdatingInternalAsync(authorizationResult, context, entity, cancellationToken);
+
+            await context.SaveChangesAsync(GetCurrentUsersName(), cancellationToken);
 
             var resultDto = _mapper.Map<TGetFullDto>(entity);
 
-            await OnUpdatedInternalAsync(authorizationResult, resultDto, entity);
+            await OnUpdatedInternalAsync(authorizationResult, resultDto, entity, cancellationToken);
 
             return ServiceResponse.FromResult(resultDto);
         }
@@ -432,8 +487,9 @@ namespace RESTworld.Business.Services
         /// <param name="authorizationResult">
         /// The result of the authorization which contains the DTOs which contain updated values.
         /// </param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>The items as stored in the database after the update operation.</returns>
-        protected virtual async Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> UpdateInternalAsync(AuthorizationResult<TEntity, IUpdateMultipleRequest<TUpdateDto, TEntity>> authorizationResult)
+        protected virtual async Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> UpdateInternalAsync(AuthorizationResult<TEntity, IUpdateMultipleRequest<TUpdateDto, TEntity>> authorizationResult, CancellationToken cancellationToken)
         {
             var request = authorizationResult.Value1;
             var dtos = request.Dtos;
@@ -442,10 +498,14 @@ namespace RESTworld.Business.Services
             await using var context = _contextFactory.CreateDbContext();
 
             var entities = await request.Filter(System.Linq.Queryable.Where(GetDbSetForUpdatingWithAuthorization(context, authorizationResult), e => ids.Contains(e.Id)))
-                .ToDictionaryAsync(e => e.Id);
+                .ToDictionaryAsync(e => e.Id, cancellationToken);
 
             if (entities.Count != dtos.Count)
                 return ServiceResponse.FromStatus<IReadOnlyCollection<TGetFullDto>>(HttpStatusCode.NotFound);
+
+            var validationResultsBeforeUpdate = ValidationService is null ? SuccessfullValidationResults.Instance : await ValidationService.ValidateAllCollectionsBeforeUpdateAsync(dtos.Select(d => (d, entities[d.Id])), cancellationToken);
+            if (!validationResultsBeforeUpdate.ValidationSucceeded)
+                return ServiceResponse.FromFailedValidation<IReadOnlyCollection<TGetFullDto>>(validationResultsBeforeUpdate);
 
             foreach (var dto in dtos)
             {
@@ -454,13 +514,17 @@ namespace RESTworld.Business.Services
                 _mapper.Map(dto, entity);
             }
 
-            await OnUpdatingInternalAsync(authorizationResult, context, entities);
+            var validationResultsAfterUpdate = ValidationService is null ? SuccessfullValidationResults.Instance : await ValidationService.ValidateAllCollectionsAfterUpdateAsync(dtos.Select(d => (d, entities[d.Id])), cancellationToken);
+            if (!validationResultsAfterUpdate.ValidationSucceeded)
+                return ServiceResponse.FromFailedValidation<IReadOnlyCollection<TGetFullDto>>(validationResultsAfterUpdate);
 
-            await context.SaveChangesAsync(GetCurrentUsersName());
+            await OnUpdatingInternalAsync(authorizationResult, context, entities, cancellationToken);
+
+            await context.SaveChangesAsync(GetCurrentUsersName(), cancellationToken);
 
             var resultDto = _mapper.Map<IReadOnlyCollection<TGetFullDto>>(entities.Values);
 
-            await OnUpdatedInternalAsync(authorizationResult, resultDto, entities);
+            await OnUpdatedInternalAsync(authorizationResult, resultDto, entities, cancellationToken);
 
             return ServiceResponse.FromResult(resultDto);
         }

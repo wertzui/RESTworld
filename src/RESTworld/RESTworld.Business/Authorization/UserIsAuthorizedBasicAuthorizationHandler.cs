@@ -3,6 +3,7 @@ using RESTworld.Business.Models;
 using System;
 using System.Net;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RESTworld.Business.Authorization
@@ -36,25 +37,25 @@ namespace RESTworld.Business.Authorization
         protected IUserAccessor UserAccessor { get; }
 
         /// <inheritdoc/>
-        public override Task<AuthorizationResultWithoutDb<TRequest>> HandleRequestAsync(AuthorizationResultWithoutDb<TRequest> previousResult)
+        public override Task<AuthorizationResultWithoutDb<TRequest>> HandleRequestAsync(AuthorizationResultWithoutDb<TRequest> previousResult, CancellationToken cancellationToken)
         {
             var user = GetUser();
 
             if (user is null || user.Identity is null || !user.Identity.IsAuthenticated)
                 return Task.FromResult(previousResult.WithStatus(HttpStatusCode.Unauthorized));
 
-            return HandleRequestWithUserAsync(previousResult, user);
+            return HandleRequestWithUserAsync(previousResult, user, cancellationToken);
         }
 
         /// <inheritdoc/>
-        public override Task<ServiceResponse<TResponse>> HandleResponseAsync(ServiceResponse<TResponse> previousResponse)
+        public override Task<ServiceResponse<TResponse>> HandleResponseAsync(ServiceResponse<TResponse> previousResponse, CancellationToken cancellationToken)
         {
             var user = GetUser();
 
             if (user is null || user.Identity is null || !user.Identity.IsAuthenticated)
                 return Task.FromResult(ServiceResponse.FromStatus<TResponse>(HttpStatusCode.Unauthorized));
 
-            return HandleResponseWithUserAsync(previousResponse, user);
+            return HandleResponseWithUserAsync(previousResponse, user, cancellationToken);
         }
 
         /// <summary>
@@ -64,25 +65,27 @@ namespace RESTworld.Business.Authorization
         protected virtual ClaimsPrincipal? GetUser() => UserAccessor.User;
 
         /// <summary>
-        /// This method is the same as <see cref="HandleRequestAsync(AuthorizationResultWithoutDb{TRequest})" /> but also gives access to the current <paramref name="user" />.
+        /// This method is the same as <see cref="HandleRequestAsync(AuthorizationResultWithoutDb{TRequest}, CancellationToken)" /> but also gives access to the current <paramref name="user" />.
         /// </summary>
         /// <param name="previousResult">The previous result.</param>
         /// <param name="user">The user.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns></returns>
-        protected virtual Task<AuthorizationResultWithoutDb<TRequest>> HandleRequestWithUserAsync(AuthorizationResultWithoutDb<TRequest> previousResult, ClaimsPrincipal user)
+        protected virtual Task<AuthorizationResultWithoutDb<TRequest>> HandleRequestWithUserAsync(AuthorizationResultWithoutDb<TRequest> previousResult, ClaimsPrincipal user, CancellationToken cancellationToken)
         {
-            return base.HandleRequestAsync(previousResult);
+            return base.HandleRequestAsync(previousResult, cancellationToken);
         }
 
         /// <summary>
-        /// This method is the same as <see cref="HandleResponseAsync(ServiceResponse{TResponse})" /> but also gives access to the current <paramref name="user" />.
+        /// This method is the same as <see cref="HandleResponseAsync(ServiceResponse{TResponse}, CancellationToken)" /> but also gives access to the current <paramref name="user" />.
         /// </summary>
         /// <param name="previousResponse">The previous response.</param>
         /// <param name="user">The user.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns></returns>
-        protected virtual Task<ServiceResponse<TResponse>> HandleResponseWithUserAsync(ServiceResponse<TResponse> previousResponse, ClaimsPrincipal user)
+        protected virtual Task<ServiceResponse<TResponse>> HandleResponseWithUserAsync(ServiceResponse<TResponse> previousResponse, ClaimsPrincipal user, CancellationToken cancellationToken)
         {
-            return base.HandleResponseAsync(previousResponse);
+            return base.HandleResponseAsync(previousResponse, cancellationToken);
         }
     }
 
@@ -116,25 +119,25 @@ namespace RESTworld.Business.Authorization
         protected IUserAccessor UserAccessor { get; }
 
         /// <inheritdoc/>
-        public override Task<AuthorizationResult<TEntity, TRequest>> HandleRequestAsync(AuthorizationResult<TEntity, TRequest> previousResult)
+        public override Task<AuthorizationResult<TEntity, TRequest>> HandleRequestAsync(AuthorizationResult<TEntity, TRequest> previousResult, CancellationToken cancellationToken)
         {
             var user = GetUser();
 
             if (user is null || user.Identity is null || !user.Identity.IsAuthenticated)
                 return Task.FromResult(previousResult.WithStatus(HttpStatusCode.Unauthorized));
 
-            return HandleRequestWithUserAsync(previousResult, user);
+            return HandleRequestWithUserAsync(previousResult, user, cancellationToken);
         }
 
         /// <inheritdoc/>
-        public override Task<ServiceResponse<TResponse>> HandleResponseAsync(ServiceResponse<TResponse> previousResponse)
+        public override Task<ServiceResponse<TResponse>> HandleResponseAsync(ServiceResponse<TResponse> previousResponse, CancellationToken cancellationToken)
         {
             var user = GetUser();
 
             if (user is null || user.Identity is null || !user.Identity.IsAuthenticated)
                 return Task.FromResult(ServiceResponse.FromStatus<TResponse>(HttpStatusCode.Unauthorized));
 
-            return HandleResponseWithUserAsync(previousResponse, user);
+            return HandleResponseWithUserAsync(previousResponse, user, cancellationToken);
         }
 
         /// <summary>
@@ -144,25 +147,27 @@ namespace RESTworld.Business.Authorization
         protected virtual ClaimsPrincipal? GetUser() => UserAccessor.User;
 
         /// <summary>
-        /// This method is the same as <see cref="HandleRequestAsync(AuthorizationResult{TEntity, TRequest})" /> but also gives access to the current <paramref name="user" />.
+        /// This method is the same as <see cref="HandleRequestAsync(AuthorizationResult{TEntity, TRequest}, CancellationToken)" /> but also gives access to the current <paramref name="user" />.
         /// </summary>
         /// <param name="previousResult">The previous result.</param>
         /// <param name="user">The user.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns></returns>
-        protected virtual Task<AuthorizationResult<TEntity, TRequest>> HandleRequestWithUserAsync(AuthorizationResult<TEntity, TRequest> previousResult, ClaimsPrincipal user)
+        protected virtual Task<AuthorizationResult<TEntity, TRequest>> HandleRequestWithUserAsync(AuthorizationResult<TEntity, TRequest> previousResult, ClaimsPrincipal user, CancellationToken cancellationToken)
         {
-            return base.HandleRequestAsync(previousResult);
+            return base.HandleRequestAsync(previousResult, cancellationToken);
         }
 
         /// <summary>
-        /// This method is the same as <see cref="HandleResponseAsync(ServiceResponse{TResponse})" /> but also gives access to the current <paramref name="user" />.
+        /// This method is the same as <see cref="HandleResponseAsync(ServiceResponse{TResponse}, CancellationToken)" /> but also gives access to the current <paramref name="user" />.
         /// </summary>
         /// <param name="previousResponse">The previous response.</param>
         /// <param name="user">The user.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns></returns>
-        protected virtual Task<ServiceResponse<TResponse>> HandleResponseWithUserAsync(ServiceResponse<TResponse> previousResponse, ClaimsPrincipal user)
+        protected virtual Task<ServiceResponse<TResponse>> HandleResponseWithUserAsync(ServiceResponse<TResponse> previousResponse, ClaimsPrincipal user, CancellationToken cancellationToken)
         {
-            return base.HandleResponseAsync(previousResponse);
+            return base.HandleResponseAsync(previousResponse, cancellationToken);
         }
     }
 }

@@ -2,6 +2,7 @@
 using RESTworld.Business.Models.Abstractions;
 using RESTworld.Common.Dtos;
 using RESTworld.EntityFrameworkCore.Models;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RESTworld.Business.Services.Abstractions
@@ -22,17 +23,19 @@ namespace RESTworld.Business.Services.Abstractions
 
         /// <summary>
         /// Gets multiple entries from the database, filtered and paged as defined in the <paramref name="request"/>.
-        /// Depending on the DTO, the result might not have all possible properties which are returned when <see cref="GetSingleAsync(long)"/> is called.
+        /// Depending on the DTO, the result might not have all possible properties which are returned when <see cref="GetSingleAsync(long, CancellationToken)"/> is called.
         /// </summary>
         /// <param name="request">Specifies filtering, paging and ordering through its Filter and if the total count shall be returned.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns></returns>
-        Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListAsync(IGetListRequest<TEntity> request);
+        Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListAsync(IGetListRequest<TEntity> request, CancellationToken cancellationToken);
 
         /// <summary>
         /// Gets a single entry, defined by the <paramref name="id"/>.
         /// </summary>
         /// <param name="id">The ID of the entity.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>The DTO as it is stored in the database.</returns>
-        Task<ServiceResponse<TGetFullDto>> GetSingleAsync(long id);
+        Task<ServiceResponse<TGetFullDto>> GetSingleAsync(long id, CancellationToken cancellationToken);
     }
 }

@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Options;
 using RESTworld.AspNetCore.Serialization;
+using RESTworld.AspNetCore.Validation.Abstractions;
+using RESTworld.Business.Validation.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,16 +15,14 @@ using System.Linq;
 
 namespace RESTworld.AspNetCore.Validation
 {
-    /// <summary>
-    /// A factory to fix JSON naming of property keys and to fix the handling of <see cref="SingleObjectOrCollection{T}"/>.
-    /// </summary>
+    /// <inheritdoc/>
     /// <remarks>Partly from https://github.com/dotnet/aspnetcore/blob/main/src/Mvc/Mvc.Core/src/Infrastructure/DefaultProblemDetailsFactory.cs</remarks>
-    public class RestWorldProblemDetailsFactory : ProblemDetailsFactory
+    public class RestWorldProblemDetailsFactory : ProblemDetailsFactory, IRestWorldProblemDetailsFactory
     {
+        private readonly IActionContextAccessor _actionContextAccessor;
         private readonly ApiBehaviorOptions _apiBehaviorOptions;
         private readonly JsonOptions _jsonOptions;
         private readonly LinkGenerator _linkGenerator;
-        private readonly IActionContextAccessor _actionContextAccessor;
 
         /// <summary>
         /// Creates a new instance of the <see cref="RestWorldProblemDetailsFactory"/>.
@@ -63,6 +63,48 @@ namespace RESTworld.AspNetCore.Validation
                 Detail = detail,
                 Instance = instance
             };
+
+            ApplyProblemDetailsDefaults(httpContext, problemDetails, statusCode.Value);
+
+            return problemDetails;
+        }
+
+        /// <inheritdoc/>
+        public ValidationProblemDetails CreateValidationProblemDetails(
+            HttpContext httpContext,
+            IValidationResults validationResults,
+            int? statusCode = null,
+            string? title = null,
+            string? type = null,
+            string? detail = null,
+            string? instance = null)
+        {
+            if (validationResults == null)
+            {
+                throw new ArgumentNullException(nameof(validationResults));
+            }
+
+            statusCode ??= 400;
+
+            var errors = validationResults
+                .ToDictionary(
+                kvp => CreateKey(kvp.Key),
+                kvp => kvp.Value.ToArray()
+            );
+
+            var problemDetails = new ValidationProblemDetails(errors)
+            {
+                Status = statusCode,
+                Type = type,
+                Detail = detail,
+                Instance = instance,
+            };
+
+            if (title != null)
+            {
+                // For validation problem details, don't overwrite the default title with null.
+                problemDetails.Title = title;
+            }
 
             ApplyProblemDetailsDefaults(httpContext, problemDetails, statusCode.Value);
 
@@ -112,6 +154,41 @@ namespace RESTworld.AspNetCore.Validation
             return problemDetails;
         }
 
+        private static string RemovePrefix(string key, string prefix)
+        {
+            if (!key.StartsWith(prefix))
+                return key;
+
+            if (key == prefix)
+                return "";
+
+            // If the prefix ends with a ., remove that too. Keep it otherwise, like in array[42]
+            // where just the "array" and not the "[" should be removed.
+            var prefixWithDotLength = prefix.Length + (key[prefix.Length] == '.' ? 1 : 0);
+            var keyWithoutPrefix = key[prefixWithDotLength..];
+
+            return keyWithoutPrefix;
+        }
+
+        private void AddSelfLink(ProblemDetails problemDetails)
+        {
+            var httpContext = (_actionContextAccessor.ActionContext?.HttpContext) ?? throw new Exception("Cannot add the self link to the problem details, because the HttpContext is null.");
+            var path = _linkGenerator.GetUriByAction(httpContext);
+            QueryString queryString = httpContext.Request.QueryString;
+            var link = new Link(path + queryString) { Name = Constants.SelfLinkName };
+
+            problemDetails.Extensions["_links"] = new Dictionary<string, ICollection<Link>>
+            {
+                {
+                    Constants.SelfLinkName,
+                    new List<Link>
+                    {
+                        link
+                    }
+                }
+            };
+        }
+
         private void ApplyProblemDetailsDefaults(HttpContext httpContext, ProblemDetails problemDetails, int statusCode)
         {
             problemDetails.Status ??= statusCode;
@@ -138,44 +215,6 @@ namespace RESTworld.AspNetCore.Validation
             var casedKey = _jsonOptions?.JsonSerializerOptions?.PropertyNamingPolicy?.ConvertName(keyWithoutCollectionPrefix) ?? keyWithoutCollectionPrefix;
 
             return casedKey;
-        }
-
-        private static string RemovePrefix(string key, string prefix)
-        {
-            if (!key.StartsWith(prefix))
-                return key;
-
-            if (key == prefix)
-                return "";
-
-            // If the prefix ends with a ., remove that too.
-            // Keep it otherwise, like in array[42] where just the "array" and not the "[" should be removed.
-            var prefixWithDotLength = prefix.Length + (key[prefix.Length] == '.' ? 1 : 0);
-            var keyWithoutPrefix = key[prefixWithDotLength..];
-
-            return keyWithoutPrefix;
-        }
-
-        private void AddSelfLink(ProblemDetails problemDetails)
-        {
-            var httpContext = _actionContextAccessor.ActionContext?.HttpContext;
-            if (httpContext is null)
-                throw new Exception("Cannot add the self link to the problem details, because the HttpContext is null.");
-
-            var path = _linkGenerator.GetUriByAction(httpContext);
-            QueryString queryString = httpContext.Request.QueryString;
-            var link = new Link(path + queryString) { Name = Constants.SelfLinkName };
-
-            problemDetails.Extensions["_links"] = new Dictionary<string, ICollection<Link>>
-            {
-                {
-                    Constants.SelfLinkName,
-                    new List<Link>
-                    {
-                        link
-                    }
-                }
-            };
         }
     }
 }

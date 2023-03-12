@@ -1,3 +1,11 @@
+
+<div class="grid field">
+  <div class="col-12 md:col-10 md:col-offset-2">
+    <val-errors [control]="formGroup">
+      <ng-template valError="remote" let-error="error">{{ error }}</ng-template>
+    </val-errors>
+  </div>
+</div>
 <div *ngFor="let property of template.properties" class="grid field" [formGroup]="formGroup">
   <label *ngIf="property.type !== PropertyType.Hidden" [attr.for]="property.name" class="col-12 mb-2 md:col-2 md:mb-0" [class.p-disabled]="property.readOnly" [class.hasChildren]="property._templates" [class.label-hidden]="property.promptDisplay === PropertyPromptDisplayType.Hidden" [class.label-collapsed]="property.promptDisplay === PropertyPromptDisplayType.Collapsed">{{property.prompt || property.name}}</label>
   <div class="col-12 md:col-10">
@@ -186,31 +194,30 @@
 
 
         <ng-template #defaultInputImage let-property="property" let-template="template">
-          <rw-image
-                    [formControlName]="property.name"
-                    [accept]="property.restWorldImage.accept ?? property.placeholder ?? 'image/*'"
-                    [alignImage]="property.restWorldImage.alignImage"
+          <rw-image [formControlName]="property.name"
+                    [accept]="property.restWorldImage?.accept ?? property.placeholder ?? 'image/*'"
+                    [alignImage]="property.restWorldImage?.alignImage"
                     [alt]="property.prompt ?? property.name"
-                    [aspectRatio]="property.restWorldImage.aspectRatio"
-                    [backgroundColor]="property.restWorldImage.backgroundColor"
-                    [canvasRotation]="property.restWorldImage.canvasRotation"
-                    [containWithinAspectRatio]="property.restWorldImage.containWithinAspectRatio"
-                    [cropper]="property.restWorldImage.cropper"
-                    [cropperMaxHeight]="property.restWorldImage.cropperMaxHeight"
-                    [cropperMaxWidth]="property.restWorldImage.cropperMaxWidth"
-                    [cropperMinHeight]="property.restWorldImage.cropperMinHeight"
-                    [cropperMinWidth]="property.restWorldImage.cropperMinWidth"
-                    [cropperStaticHeight]="property.restWorldImage.cropperStaticHeight"
-                    [cropperStaticWidth]="property.restWorldImage.cropperStaticWidth"
-                    [fileName]="property.name + '.' + (property.restWorldImage.format ?? 'png')"
-                    [format]="property.restWorldImage.format"
-                    [imageQuality]="property.restWorldImage.imageQuality"
-                    [initialStepSize]="property.restWorldImage.initialStepSize"
-                    [maintainAspectRatio]="property.restWorldImage.maintainAspectRatio"
-                    [onlyScaleDown]="property.restWorldImage.onlyScaleDown"
-                    [resizeToWidth]="property.restWorldImage.resizeToWidth"
-                    [resizeToHeight]="property.restWorldImage.resizeToHeight"
-                    [roundCropper]="property.restWorldImage.roundCropper"></rw-image>
+                    [aspectRatio]="property.restWorldImage?.aspectRatio"
+                    [backgroundColor]="property.restWorldImage?.backgroundColor"
+                    [canvasRotation]="property.restWorldImage?.canvasRotation"
+                    [containWithinAspectRatio]="property.restWorldImage?.containWithinAspectRatio"
+                    [cropper]="property.restWorldImage?.cropper"
+                    [cropperMaxHeight]="property.restWorldImage?.cropperMaxHeight"
+                    [cropperMaxWidth]="property.restWorldImage?.cropperMaxWidth"
+                    [cropperMinHeight]="property.restWorldImage?.cropperMinHeight"
+                    [cropperMinWidth]="property.restWorldImage?.cropperMinWidth"
+                    [cropperStaticHeight]="property.restWorldImage?.cropperStaticHeight"
+                    [cropperStaticWidth]="property.restWorldImage?.cropperStaticWidth"
+                    [fileName]="property.name + '.' + (property.restWorldImage?.format ?? 'png')"
+                    [format]="property.restWorldImage?.format"
+                    [imageQuality]="property.restWorldImage?.imageQuality"
+                    [initialStepSize]="property.restWorldImage?.initialStepSize"
+                    [maintainAspectRatio]="property.restWorldImage?.maintainAspectRatio"
+                    [onlyScaleDown]="property.restWorldImage?.onlyScaleDown"
+                    [resizeToWidth]="property.restWorldImage?.resizeToWidth"
+                    [resizeToHeight]="property.restWorldImage?.resizeToHeight"
+                    [roundCropper]="property.restWorldImage?.roundCropper"></rw-image>
         </ng-template>
         <ng-container *ngSwitchCase="PropertyType.Image">
           <ng-container *ngTemplateOutlet="inputImageRef || defaultInputImage; context: { property: property, template: template, formGroup: formGroup, apiName: apiName }"></ng-container>

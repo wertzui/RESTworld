@@ -3,6 +3,7 @@ using RESTworld.Business.Models.Abstractions;
 using RESTworld.Common.Dtos;
 using RESTworld.EntityFrameworkCore.Models;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RESTworld.Business.Services.Abstractions
@@ -27,36 +28,41 @@ namespace RESTworld.Business.Services.Abstractions
         /// Creates the given DTO as an entity in the database.
         /// </summary>
         /// <param name="dto">The type of the DTO.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>The DTO as it is stored in the database.</returns>
-        Task<ServiceResponse<TGetFullDto>> CreateAsync(TCreateDto dto);
+        Task<ServiceResponse<TGetFullDto>> CreateAsync(TCreateDto dto, CancellationToken cancellationToken);
 
         /// <summary>
         /// Creates the given DTOs as an entities in the database.
         /// </summary>
         /// <param name="dtos">The type of the DTOs.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>The DTOs as they are stored in the database.</returns>
-        Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> CreateAsync(IReadOnlyCollection<TCreateDto> dtos);
+        Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> CreateAsync(IReadOnlyCollection<TCreateDto> dtos, CancellationToken cancellationToken);
 
         /// <summary>
         /// Deletes the entity with the given <paramref name="id"/> and <paramref name="timestamp"/> from the database.
         /// </summary>
         /// <param name="id">The ID of the entity to delete.</param>
         /// <param name="timestamp">The current timestamp of the entity to delete.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>An empty ServiceResponse, stating success or failure.</returns>
-        Task<ServiceResponse<object>> DeleteAsync(long id, byte[] timestamp);
+        Task<ServiceResponse<object>> DeleteAsync(long id, byte[] timestamp, CancellationToken cancellationToken);
 
         /// <summary>
         /// Updates the entity with new properties as defined in the given DTO.
         /// </summary>
         /// <param name="dto">The new properties which are used to update the existing entity in the database.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>The DTO as it is stored in the database.</returns>
-        Task<ServiceResponse<TGetFullDto>> UpdateAsync(TUpdateDto dto);
+        Task<ServiceResponse<TGetFullDto>> UpdateAsync(TUpdateDto dto, CancellationToken cancellationToken);
 
         /// <summary>
         /// Updates the entities with new properties as defined in the given DTOs.
         /// </summary>
         /// <param name="request">Specifies the DTOs to update and optional filtering.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
         /// <returns>The DTOs as they are stored in the database.</returns>
-        Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> UpdateAsync(IUpdateMultipleRequest<TUpdateDto, TEntity> request);
+        Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> UpdateAsync(IUpdateMultipleRequest<TUpdateDto, TEntity> request, CancellationToken cancellationToken);
     }
 }

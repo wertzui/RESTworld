@@ -10,9 +10,10 @@ using RESTworld.Business.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
-namespace ExampleBlog.Business
+namespace ExampleBlog.Business.Services
 {
     public class AuthorStatisticsService : ReadServiceBase<BlogDatabase, Author, AuthorStatisticsListDto, AuthorStatisticsFullDto>
     {
@@ -26,13 +27,13 @@ namespace ExampleBlog.Business
         {
         }
 
-        protected override async Task OnGotSingleInternalAsync(AuthorizationResult<Author, long> authorizationResult, AuthorStatisticsFullDto dto, Author entity)
+        protected override async Task OnGotSingleInternalAsync(AuthorizationResult<Author, long> authorizationResult, AuthorStatisticsFullDto dto, Author entity, CancellationToken cancellationToken)
         {
             var authorId = entity.Id;
             var postDates = await _contextFactory.Parallel().Set<Post>()
                 .Where(p => p.AuthorId == authorId && p.CreatedAt.HasValue)
-                .Select(p => p.CreatedAt.Value)
-                .ToListAsync();
+                .Select(p => p.CreatedAt!.Value)
+                .ToListAsync(cancellationToken);
 
             dto.TotalPosts = postDates.Count;
             dto.PostsPerMonth = postDates.GroupBy(p => new DateTimeOffset(p.Year, p.Month, 1, 0, 0, 0, p.Offset)).ToDictionary(g => g.Key, g => g.LongCount());

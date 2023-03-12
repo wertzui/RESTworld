@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using RESTworld.Business.Authorization.Abstractions;
 using RESTworld.Business.Services;
+using RESTworld.Business.Validation.Abstractions;
 using RESTworld.Common.Dtos;
 using RESTworld.Testing;
 using System.Collections.Generic;
@@ -123,6 +124,7 @@ namespace RESTworld.Tests.Business
                 .WithInMemoryDatabase<TestDatabase>()
                 .WithAutomapper(cfg => { })
                 .WithoutUser()
+                .WithValidation()
                 .Build<MyService>();
 
             // Act
@@ -158,6 +160,7 @@ namespace RESTworld.Tests.Business
                 .WithInMemoryDatabase<TestDatabase>()
                 .WithAutomapper(cfg => { })
                 .WithoutUser()
+                .WithValidation()
                 .WithCrudService<TestDatabase, TestModel, TestDto>()
                 .BuildWithServiceAsSut();
 
@@ -215,7 +218,14 @@ namespace RESTworld.Tests.Business
 
     public class MyService : CrudServiceBase<TestDatabase, TestModel, TestDto, TestDto, TestDto, TestDto>
     {
-        public MyService(IDbContextFactory<TestDatabase> contextFactory, IMapper mapper, IEnumerable<ICrudAuthorizationHandler<TestModel, TestDto, TestDto, TestDto, TestDto>> authorizationHandlers, IUserAccessor userAccessor, ILogger<CrudServiceBase<TestDatabase, TestModel, TestDto, TestDto, TestDto, TestDto>> logger) : base(contextFactory, mapper, authorizationHandlers, userAccessor, logger)
+        public MyService(
+            IDbContextFactory<TestDatabase> contextFactory,
+            IMapper mapper,
+            IEnumerable<ICrudAuthorizationHandler<TestModel, TestDto, TestDto, TestDto, TestDto>> authorizationHandlers,
+            IValidationService<TestDto, TestDto, TestModel> validators,
+            IUserAccessor userAccessor,
+            ILogger<CrudServiceBase<TestDatabase, TestModel, TestDto, TestDto, TestDto, TestDto>> logger) :
+            base(contextFactory, mapper, authorizationHandlers, validators, userAccessor, logger)
         {
         }
     }
