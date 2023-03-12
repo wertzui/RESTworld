@@ -72,6 +72,11 @@ namespace ExampleBlog
             // A pipeline which uses a service that just generates random test data.
             services.AddCrudPipelineWithCustomService<BlogDatabase, ConcurrentEntityBase, TestDto, TestDto, TestDto, TestDto, TestService>();
 
+            // A simple pipeline that will return a users photo which can then be displayed in the frontend in the list views
+            // The PhotoController is automatically added, we only need to add the service.
+            services.AddHttpClient();
+            services.AddScoped<IPhotoService, PhotoService>();
+
             base.ConfigureServices(services);
         }
 

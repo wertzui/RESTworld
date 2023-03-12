@@ -27,6 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="ClientApp\src\app\ngx-restworld-client\NewFolder\" />
     <Folder Include="logs\" />
   </ItemGroup>
 

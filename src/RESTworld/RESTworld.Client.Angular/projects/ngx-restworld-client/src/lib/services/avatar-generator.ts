@@ -1,31 +1,31 @@
 import { Injectable, Input } from '@angular/core';
+import { SafeUrl } from '@angular/platform-browser';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AvatarGenerator {
   private static _nonWordRegex = new RegExp('\\W');
-  private static _imageCache: Map<string, string> = new Map<string, string>();
+  private static _imageCache: Map<string, SafeUrl> = new Map<string, SafeUrl>();
 
-  @Input()
-  public getImageOverride: (nameOrEmail: string) => string = () => '';
+  public getImageAsyncOverride: (nameOrEmail: string) => Promise<SafeUrl | null | undefined> = () => Promise.resolve(undefined);
 
-  public getImage(nameOrEmail: string): string {
-    let uri = AvatarGenerator._imageCache.get(nameOrEmail);
+  public async getImageAsync(nameOrEmail: string): Promise<SafeUrl | null | undefined> {
+    let promise = AvatarGenerator._imageCache.get(nameOrEmail);
 
-    if (!uri) {
-      uri = this.getImageOverride(nameOrEmail);
-      AvatarGenerator._imageCache.set(nameOrEmail, uri);
+    if (promise === undefined) {
+      promise = this.getImageAsyncOverride(nameOrEmail);
+      AvatarGenerator._imageCache.set(nameOrEmail, promise);
     }
 
-    return uri;
+    return promise;
   }
 
-  public getLabel(nameOrEmail: string): string {
+  public async getLabelAsync(nameOrEmail: string): Promise<string> {
     if (!nameOrEmail)
       return '';
 
-    if (this.getImage(nameOrEmail))
+    if (await this.getImageAsync(nameOrEmail))
       return '';
 
     const name = AvatarGenerator.getLocalPartOfEmailAddress(nameOrEmail);
@@ -34,8 +34,8 @@ export class AvatarGenerator {
     return initials;
   }
 
-  public getStyle(nameOrEmail: string,): '' | { 'background-color': string; color: string } {
-    if (this.getImage(nameOrEmail))
+  public async getStyleAsync(nameOrEmail: string,): Promise<'' | { 'background-color': string; color: string }> {
+    if (await this.getImageAsync(nameOrEmail))
       return '';
 
     const foregroundColor = '#ffffff';

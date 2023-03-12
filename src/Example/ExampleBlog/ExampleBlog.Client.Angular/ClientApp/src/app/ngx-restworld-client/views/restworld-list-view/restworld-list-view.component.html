@@ -37,7 +37,7 @@
         <tr>
             <td [ngSwitch]="col.type" *ngFor="let col of columns">
                 <ng-container *ngSwitchCase="PropertyType.Text">
-                    <p-avatar *ngIf="col.name === 'createdBy' || col.name === 'lastChangedBy'" [pTooltip]="entity[col.name]" tooltipPosition="top" [image]="avatarGenerator.getImage(entity[col.name])" [label]="avatarGenerator.getLabel(entity[col.name])" [style]="avatarGenerator.getStyle(entity[col.name])" shape="circle"></p-avatar>
+                    <rw-avatar *ngIf="col.name === 'createdBy' || col.name === 'lastChangedBy'" [user]="entity[col.name]"></rw-avatar>
                     <span *ngIf="col.name !== 'createdBy' && col.name !== 'lastChangedBy'">{{entity[col.name]}}</span>
                 </ng-container>
                 <span *ngSwitchCase="PropertyType.Number" class="flex justify-content-end">{{entity[col.name]}}</span>

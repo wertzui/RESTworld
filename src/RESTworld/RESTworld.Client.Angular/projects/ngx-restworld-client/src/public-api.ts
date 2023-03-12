@@ -4,6 +4,8 @@
 
 export * from './lib/constants/link-names';
 
+export * from './lib/components/restworld-avatar/restworld-avatar.component'
+
 export * from './lib/models/api-url';
 export * from './lib/models/client-settings';
 export * from './lib/models/problem-details';

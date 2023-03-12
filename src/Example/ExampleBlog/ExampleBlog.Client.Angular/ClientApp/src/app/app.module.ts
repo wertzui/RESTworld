@@ -19,6 +19,8 @@ import { PostWithAuthorComponent } from './blog-posts/post-with-author.component
 import { ApplicationinsightsAngularpluginErrorService } from '@microsoft/applicationinsights-angularplugin-js';
 import { PostWithAuthorListComponent } from './blog-posts/post-with-autor-list.component';
 import { DialogModule } from 'primeng/dialog';
+import { AvatarGenerator } from './ngx-restworld-client/services/avatar-generator';
+import { ExampleAvatarGenerator } from './ExampleAvatarGenerator';
 
 @NgModule({
   declarations: [
@@ -43,6 +45,10 @@ import { DialogModule } from 'primeng/dialog';
     RestworldClientModule,
   ],
   providers: [
+    {
+      provide: AvatarGenerator,
+      useClass: ExampleAvatarGenerator
+    }
     //{
     //  provide: ErrorHandler,
     //  useClass: ApplicationinsightsAngularpluginErrorService

@@ -149,5 +149,8 @@
       }
     }
   },
-  "defaultProject": "ExampleBlog.Client.Angular"
+  "defaultProject": "ExampleBlog.Client.Angular",
+  "cli": {
+    "analytics": false
+  }
 }

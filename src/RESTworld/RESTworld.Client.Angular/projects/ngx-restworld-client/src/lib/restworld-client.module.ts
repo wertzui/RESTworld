@@ -43,6 +43,7 @@ import { RestworldEditFormComponent } from './views/restworld-edit-form/restworl
 import { FormService } from './services/form.service';
 import { AsPipe } from './pipes/as.pipe';
 import { SplitButtonModule } from 'primeng/splitbutton';
+import { RestWorldAvatarComponent } from './components/restworld-avatar/restworld-avatar.component';
 
 export function initializeSettings(settingsService: SettingsService): () => Promise<void> {
   return async () => await settingsService.ensureInitialized();
@@ -55,8 +56,10 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
     RESTWorldImageViewComponent,
     RESTWorldFileViewComponent,
     RestworldEditFormComponent,
+    RestWorldAvatarComponent,
     SafeUrlPipe,
     AsPipe,
+    RestWorldAvatarComponent,
   ],
   imports: [
     CommonModule,
@@ -90,6 +93,7 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
     ColorPickerModule,
     DragDropModule,
     SplitButtonModule,
+    AvatarModule
   ],
   exports: [
     RESTworldListViewComponent,
@@ -97,6 +101,7 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
     RESTWorldImageViewComponent,
     RESTWorldFileViewComponent,
     RestworldEditFormComponent,
+    RestWorldAvatarComponent,
     SafeUrlPipe,
     AsPipe
   ],
