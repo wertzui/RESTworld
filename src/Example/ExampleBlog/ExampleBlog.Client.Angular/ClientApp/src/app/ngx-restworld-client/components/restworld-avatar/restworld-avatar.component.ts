@@ -11,12 +11,13 @@ export class RestWorldAvatarComponent implements OnInit{
   @Input()
   user?: string;
 
-  private _image?: SafeUrl;
-  public get image(): SafeUrl | undefined { return this._image; }
-  private _label?: string;
-  public get label(): string | undefined { return this._label; }
-  private _style?: '' | { 'background-color': string; color: string };
-  public get style(): '' | { 'background-color': string; color: string } | undefined { return this._style; }
+  private _image: SafeUrl = '';
+  public get image(): string { return this._image as string; }
+  private _label: string = '';
+  public get label(): string { return this._label; }
+  private _style: '' | { 'background-color': string; color: string } = '';
+  public get style(): '' | { 'background-color': string; color: string; } { return this._style; }
+  public get tooltip(): string { return this.user ?? ''; }
 
   constructor(
     private readonly _generator: AvatarGenerator
@@ -28,7 +29,7 @@ export class RestWorldAvatarComponent implements OnInit{
     if(this.user === undefined || this.user === null)
       return;
 
-    this._image = (await this._generator.getImageAsync(this.user)) ?? undefined;
+    this._image = await this._generator.getImageAsync(this.user);
     this._label = await this._generator.getLabelAsync(this.user);
     this._style = await this._generator.getStyleAsync(this.user);
   }

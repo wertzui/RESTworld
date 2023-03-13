@@ -8,9 +8,9 @@ export class AvatarGenerator {
   private static _nonWordRegex = new RegExp('\\W');
   private static _imageCache: Map<string, SafeUrl> = new Map<string, SafeUrl>();
 
-  public getImageAsyncOverride: (nameOrEmail: string) => Promise<SafeUrl | null | undefined> = () => Promise.resolve(undefined);
+  public getImageAsyncOverride: (nameOrEmail: string) => Promise<SafeUrl> = () => Promise.resolve('');
 
-  public async getImageAsync(nameOrEmail: string): Promise<SafeUrl | null | undefined> {
+  public async getImageAsync(nameOrEmail: string): Promise<SafeUrl> {
     let promise = AvatarGenerator._imageCache.get(nameOrEmail);
 
     if (promise === undefined) {
