@@ -3,6 +3,7 @@ using AutoFixture.Kernel;
 using HAL.AspNetCore;
 using HAL.AspNetCore.Abstractions;
 using HAL.AspNetCore.OData;
+using HAL.AspNetCore.OData.Abstractions;
 using HAL.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -37,6 +38,7 @@ namespace RESTworld.AspNetCore.Swagger
     {
         private static readonly Fixture _fixture;
         private static readonly SpecimenContext _specimenContext;
+        private static readonly ODataRawQueryOptions _oDataRawQueryOptions;
         private readonly IApiDescriptionGroupCollectionProvider _apiExplorer;
         private readonly string _curieName;
         private readonly IHttpContextAccessor _httpContextAccessor;
@@ -53,6 +55,10 @@ namespace RESTworld.AspNetCore.Swagger
             _fixture.Behaviors.Add(new OmitOnRecursionBehavior(3));
 
             _specimenContext = new(_fixture);
+
+            _oDataRawQueryOptions = new ODataRawQueryOptions();
+            typeof(ODataRawQueryOptions).GetProperty(nameof(_oDataRawQueryOptions.Skip))!.SetValue(_oDataRawQueryOptions, "2");
+            typeof(ODataRawQueryOptions).GetProperty(nameof(_oDataRawQueryOptions.Top))!.SetValue(_oDataRawQueryOptions, "3");
         }
 
         /// <summary>
@@ -198,7 +204,7 @@ namespace RESTworld.AspNetCore.Swagger
             {
                 var tListDto = controllerType.GenericTypeArguments[indexOfListDtoType];
                 var embedded = Enumerable.Repeat<object?>(null, 3).Select(_ => _fixture.Create(tListDto, _specimenContext)).ToList();
-                var resource = resourceFactory.CreateForODataListEndpointUsingSkipTopPaging(embedded, _ => "List", e => ((DtoBase)e).Id, _oDataQueryFactory.GetListNavigation(embedded, new ODataRawQueryOptions(), linkFactory.Create(action: actionName, controller: controllerName).Href, 3, 3, 10), new Page { CurrentPage = 2, TotalPages = 4 }, controllerName);
+                var resource = resourceFactory.CreateForODataListEndpointUsingSkipTopPaging(embedded, _ => "List", e => ((DtoBase)e).Id, _oDataRawQueryOptions, 50, 10, controllerName);
                 type.Example = CreateExample(resource);
             }
             else if (actionName == "Get" || actionName == "Post" || actionName == "Put" || actionName == "New")

@@ -1,0 +1,6 @@
+<label 
+    *ngIf="property.type !== PropertyType.Hidden" 
+    [attr.for]="property.name"
+    [class.p-disabled]="property.readOnly">
+    {{property.prompt ?? property.name}}
+</label>

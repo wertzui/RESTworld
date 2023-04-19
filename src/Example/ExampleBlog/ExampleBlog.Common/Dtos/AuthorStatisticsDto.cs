@@ -6,10 +6,10 @@ namespace ExampleBlog.Common.Dtos
 {
     public class AuthorStatisticsFullDto : DtoBase
     {
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public IDictionary<DateTimeOffset, long> PostsPerMonth { get; set; }
-        public IDictionary<DateTimeOffset, long> PostsPerYear { get; set; }
+        public required string FirstName { get; set; }
+        public required string LastName { get; set; }
+        public required IDictionary<DateTimeOffset, long> PostsPerMonth { get; set; }
+        public required IDictionary<DateTimeOffset, long> PostsPerYear { get; set; }
         public long TotalPosts { get; set; }
     }
 }

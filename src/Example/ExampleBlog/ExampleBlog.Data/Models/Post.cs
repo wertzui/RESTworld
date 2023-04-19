@@ -5,12 +5,12 @@ namespace ExampleBlog.Data.Models
 {
     public class Post : ChangeTrackingEntityBase
     {
-        public virtual Author Author { get; set; }
+        public virtual Author Author { get; set; } = default!;
         public long AuthorId { get; set; }
-        public virtual Blog Blog { get; set; }
+        public virtual Blog Blog { get; set; } = default!;
         public long BlogId { get; set; }
-        public string Headline { get; set; }
+        public required string Headline { get; set; }
         public PostState State { get; set; }
-        public string Text { get; set; }
+        public required string Text { get; set; }
     }
 }

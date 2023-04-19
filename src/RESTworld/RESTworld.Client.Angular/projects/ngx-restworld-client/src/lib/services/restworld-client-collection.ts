@@ -1,14 +1,14 @@
 import { Injectable } from "@angular/core";
 import { HalClient } from "@wertzui/ngx-hal-client";
-import { RESTworldOptions } from "../models/restworld-options";
-import { RESTworldClient } from "./restworld-client";
+import { RestWorldOptions } from "../models/restworld-options";
+import { RestWorldClient } from "./restworld-client";
 
 @Injectable({
   providedIn: 'root'
 })
-export class RESTworldClientCollection {
+export class RestWorldClientCollection {
   private readonly _clients: {
-    [name: string]: RESTworldClient;
+    [name: string]: RestWorldClient;
   };
   constructor(private _halClient: HalClient) {
     this._clients = {};
@@ -18,17 +18,17 @@ export class RESTworldClientCollection {
     return Object.keys(this._clients).includes(name);
   }
 
-  public async addOrGetExistingClient(name: string, options: RESTworldOptions): Promise<RESTworldClient> {
+  public async addOrGetExistingClient(name: string, options: RestWorldOptions): Promise<RestWorldClient> {
     if (Object.keys(this._clients).includes(name))
       return this.getClient(name);
 
-    const client = new RESTworldClient(this._halClient, options);
+    const client = new RestWorldClient(this._halClient, options);
     await client.ensureHomeResourceIsSet();
     this._clients[name] = client;
     return client;
   }
 
-  public getClient(name: string): RESTworldClient {
+  public getClient(name: string): RestWorldClient {
     const client = this._clients[name];
     if (!client)
       throw new Error(`No client with the name '${name}' exists.`);
@@ -36,7 +36,7 @@ export class RESTworldClientCollection {
     return client;
   }
 
-  public get all(): { [name: string]: RESTworldClient } {
+  public get all(): { [name: string]: RestWorldClient } {
     return this._clients;
   }
 }

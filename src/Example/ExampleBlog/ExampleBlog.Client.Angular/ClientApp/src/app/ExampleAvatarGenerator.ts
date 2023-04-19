@@ -4,7 +4,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { Link } from '@wertzui/ngx-hal-client';
 import { lastValueFrom } from 'rxjs';
 import { AvatarGenerator } from './ngx-restworld-client/services/avatar-generator';
-import { RESTworldClientCollection } from './ngx-restworld-client/services/restworld-client-collection';
+import { RestWorldClientCollection } from './ngx-restworld-client/services/restworld-client-collection';
 
 @Injectable({
   providedIn: 'root',
@@ -15,7 +15,7 @@ export class ExampleAvatarGenerator extends AvatarGenerator {
     private _photoLink: Link;
 
   constructor(
-    clients: RESTworldClientCollection,
+    clients: RestWorldClientCollection,
     private readonly _sanitizer: DomSanitizer
     ) {
     super();

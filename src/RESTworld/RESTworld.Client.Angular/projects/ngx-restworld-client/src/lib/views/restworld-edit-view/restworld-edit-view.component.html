@@ -3,18 +3,13 @@
     <h1>Edit resource</h1>
   </div>
   <div class="col-12 md:col-2 align-items-center justify-content-end flex">
-    <form [formGroup]="idNavigationForm" (ngSubmit)="navigateById()" class="mr-3">
-      <div class="p-inputgroup">
-        <p-inputNumber formControlName="id" placeholder="Navigate by ID"></p-inputNumber>
-        <button type="submit" pButton pRipple icon="fa-solid fa-arrow-right"></button>
-      </div>
-    </form>
+    <rw-id-navigation [apiName]="apiName" [rel]="rel"></rw-id-navigation>
   </div>
 </div>
 
 <p-tabView>
 
-  <p-tabPanel *ngIf="isLoadingForTheFirstTime" header="Loading">
+  <p-tabPanel *ngIf="isLoading; else tabs" header="Loading">
     <div *ngFor="let i of [1, 2, 3, 4, 5]" class="grid field">
       <p-skeleton class="col-12 mb-2 md:col-2 md:mb-0" height="39px"></p-skeleton>
       <div class="col-12 md:col-10">
@@ -32,31 +27,11 @@
     </div>
   </p-tabPanel>
 
-  <p-tabPanel *ngFor="let item of templates | keyvalue" [header]="item.value.title || item.key" [disabled]="isLoading">
-    <form [formGroup]="formTabs[item.key]" (ngSubmit)="submit(item.key, item.value, formTabs[item.key].value)">
-      <div class="blockable-container">
-        <div class="blockable-element">
-          <rw-form [formGroup]="formTabs[item.key]" [template]="item.value" [apiName]="apiName"></rw-form>
-        </div>
-        <div class="blockable-overlay" *ngIf="isLoading">
-          <p-progressSpinner></p-progressSpinner>
-        </div>
-      </div>
-
-      <div class="grid">
-        <div class="col">
-          <div class="flex justify-content-end w-full">
-            <ng-template #defaultButtons>
-              <button pButton pRipple type="submit" label="Save" icon="far fa-save" class="mx-2 p-button-success" [disabled]="isLoading || !canSubmit(item.key)"></button>
-              <button pButton pRipple type="button" label="Reload" icon="fas fa-redo" class="mx-2 p-button-info" (click)="load()" [disabled]="isLoading"></button>
-              <button pButton pRipple type="button" label="Delete" icon="far fa-trash-alt" class="ml-2 p-button-danger" (click)="showDeleteConfirmatioModal()" [disabled]="!resource || isLoading || !canDelete"></button>
-            </ng-template>
-            <ng-container *ngTemplateOutlet="buttonsRef || defaultButtons"></ng-container>
-          </div>
-        </div>
-      </div>
-    </form>
-  </p-tabPanel>
+  <ng-template #tabs>
+    <p-tabPanel *ngFor="let template of templates" [header]="template.title ?? ''" [disabled]="isLoading">
+      <rw-form [template]="template" [apiName]="apiName"></rw-form>
+    </p-tabPanel>
+</ng-template>
 
   <ng-template #defaultExtraTabs>
   </ng-template>

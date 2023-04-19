@@ -10,6 +10,9 @@ export class PostWithAuthorComponent implements OnInit {
   public apiName?: string
 
   @Input()
+  public rel?: string;
+
+  @Input()
   public get uri() {
     return PostWithAuthorComponent.unModifyUri(this.modifiedUri);
   }

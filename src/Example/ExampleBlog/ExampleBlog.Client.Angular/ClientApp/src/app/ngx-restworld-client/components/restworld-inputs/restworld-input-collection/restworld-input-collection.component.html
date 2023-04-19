@@ -1,0 +1,18 @@
+<div class="flex align-items-center">
+    <div class="brace">
+    </div>
+    <div class="w-full" cdkDropList (cdkDropListDropped)="collectionItemDropped($event)">
+        <div *ngFor="let template of templates" class="flex align-items-center" cdkDrag>
+            <i class="fas fa-grip-lines" cdkDragHandle></i>
+            <div class="brace">
+            </div>
+            <div class="w-full flex justify-content-end">
+                <rw-input-template [formGroup]="innerFormArray.controls[template.title]" [template]="defaultTemplate" [apiName]="apiName" class="w-full"></rw-input-template>
+                <button pButton pRipple type="button" icon="fas fa-trash" class="p-button-outlined p-button-danger ml-2 mb-3" (click)="deleteItemFromCollection(template)"></button>
+            </div>
+        </div>
+        <div class="flex justify-content-end w-full">
+            <button pButton pRipple type="button" icon="fas fa-plus" class="p-button-outlined p-button-info" (click)="addNewItemToCollection()"></button>
+        </div>
+    </div>
+</div>

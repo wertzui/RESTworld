@@ -29,21 +29,28 @@ import { ValdemortModule } from 'ngx-valdemort';
 import { ImageCropperModule } from 'ngx-image-cropper';
 import { DialogModule } from 'primeng/dialog';
 import { ColorPickerModule } from 'primeng/colorpicker';
+import { ContextMenuModule } from 'primeng/contextmenu';
 
 import { RESTworldListViewComponent } from './views/restworld-list-view/restworld-list-view.component';
 import { RESTworldEditViewComponent } from './views/restworld-edit-view/restworld-edit-view.component';
-import { RESTworldClientCollection } from './services/restworld-client-collection';
+import { RestWorldClientCollection } from './services/restworld-client-collection';
 import { AvatarGenerator } from './services/avatar-generator';
 import { SettingsService } from './services/settings.service';
-import { RESTWorldImageViewComponent } from './views/restworld-image-view/restworld-image-view.component';
+import { RestWorldImageComponent } from './components/restworld-image/restworld-image.component';
 import { ButtonModule } from 'primeng/button';
-import { RESTWorldFileViewComponent } from './views/restworld-file-view/restworld-file-view.component';
+import { RestWorldFileComponent } from './components/restworld-file/restworld-file.component';
 import { SafeUrlPipe } from './pipes/safe-url.pipe';
-import { RestworldEditFormComponent } from './views/restworld-edit-form/restworld-edit-form.component'
 import { FormService } from './services/form.service';
 import { AsPipe } from './pipes/as.pipe';
 import { SplitButtonModule } from 'primeng/splitbutton';
 import { RestWorldAvatarComponent } from './components/restworld-avatar/restworld-avatar.component';
+import { RestWorldLabelComponent } from './components/restworld-label/restworld-label.component';
+import { RestWorldValidationErrorsComponent } from './components/restworld-validation-errors/restworld-validation-errors.component';
+import { RestWorldFormComponent } from './components/restworld-form/restworld-form.component';
+import { RestWorldTableComponent } from './components/restworld-table/restworld-table.component';
+import { RestWorldMenuButtonComponent } from './components/restworld-menu-button/restworld-menu-button.component';
+import { RestWorldIdNavigationComponent } from './components/restworld-id-navigation/restworld-id-navigation.component';
+import { RestWorldFormElementComponent, RestWorldInputCollectionComponent, RestWorldInputComponent, RestWorldInputDropdownComponent, RestWorldInputObjectComponent, RestWorldInputSimpleComponent, RestWorldInputTemplateComponent } from './components/restworld-inputs/restworld-inputs';
 
 export function initializeSettings(settingsService: SettingsService): () => Promise<void> {
   return async () => await settingsService.ensureInitialized();
@@ -53,13 +60,25 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
   declarations: [
     RESTworldListViewComponent,
     RESTworldEditViewComponent,
-    RESTWorldImageViewComponent,
-    RESTWorldFileViewComponent,
-    RestworldEditFormComponent,
+    RestWorldImageComponent,
+    RestWorldFileComponent,
     RestWorldAvatarComponent,
     SafeUrlPipe,
     AsPipe,
     RestWorldAvatarComponent,
+    RestWorldInputComponent,
+    RestWorldLabelComponent,
+    RestWorldFormElementComponent,
+    RestWorldInputDropdownComponent,
+    RestWorldInputCollectionComponent,
+    RestWorldInputObjectComponent,
+    RestWorldInputSimpleComponent,
+    RestWorldValidationErrorsComponent,
+    RestWorldInputTemplateComponent,
+    RestWorldFormComponent,
+    RestWorldTableComponent,
+    RestWorldMenuButtonComponent,
+    RestWorldIdNavigationComponent,
   ],
   imports: [
     CommonModule,
@@ -93,20 +112,33 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
     ColorPickerModule,
     DragDropModule,
     SplitButtonModule,
-    AvatarModule
+    AvatarModule,
+    ContextMenuModule,
   ],
   exports: [
     RESTworldListViewComponent,
     RESTworldEditViewComponent,
-    RESTWorldImageViewComponent,
-    RESTWorldFileViewComponent,
-    RestworldEditFormComponent,
+    RestWorldImageComponent,
+    RestWorldFileComponent,
     RestWorldAvatarComponent,
     SafeUrlPipe,
-    AsPipe
+    AsPipe,
+    RestWorldInputComponent,
+    RestWorldLabelComponent,
+    RestWorldFormElementComponent,
+    RestWorldInputDropdownComponent,
+    RestWorldInputCollectionComponent,
+    RestWorldInputObjectComponent,
+    RestWorldInputSimpleComponent,
+    RestWorldValidationErrorsComponent,
+    RestWorldInputTemplateComponent,
+    RestWorldFormComponent,
+    RestWorldTableComponent,
+    RestWorldMenuButtonComponent,
+    RestWorldIdNavigationComponent
   ],
   providers: [
-    RESTworldClientCollection,
+    RestWorldClientCollection,
     AvatarGenerator,
     ConfirmationService,
     FormService,

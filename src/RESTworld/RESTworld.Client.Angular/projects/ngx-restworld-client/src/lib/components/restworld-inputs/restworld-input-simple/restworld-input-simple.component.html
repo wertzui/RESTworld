@@ -1,0 +1,49 @@
+<div [ngSwitch]="property.type">
+
+    <input *ngSwitchCase="PropertyType.Hidden" [formControlName]="property.name" [id]="property.name" type="hidden" [value]="property.value" />
+  
+    <input *ngSwitchCase="PropertyType.Text" [formControlName]="property.name" [id]="property.name" type="text" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+   
+    <textarea *ngSwitchCase="PropertyType.Textarea" [formControlName]="property.name" [id]="property.name" pInputTextarea class="w-full p-inputtextarea p-inputtext p-component p-element" [class.p-disabled]="property.readOnly" [cols]="property.cols" [rows]="property.rows"></textarea>
+   
+    <input *ngSwitchCase="PropertyType.Search" [formControlName]="property.name" [id]="property.name" type="search" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+   
+    <input *ngSwitchCase="PropertyType.Tel" [formControlName]="property.name" [id]="property.name" type="tel" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+   
+    <input *ngSwitchCase="PropertyType.Url" [formControlName]="property.name" [id]="property.name" type="url" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+   
+    <input *ngSwitchCase="PropertyType.Email" [formControlName]="property.name" [id]="property.name" type="email" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+   
+    <input *ngSwitchCase="PropertyType.Password" [formControlName]="property.name" [id]="property.name" type="password" pPassword class="w-full" [class.p-disabled]="property.readOnly" />
+   
+    <p-calendar *ngSwitchCase="PropertyType.Date" [formControlName]="property.name" [id]="property.name" [dateFormat]="dateFormat" [showWeek]="true" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-calendar>
+   
+    <p-calendar *ngSwitchCase="PropertyType.Month" [formControlName]="property.name" [id]="property.name" [dateFormat]="dateFormat" [showWeek]="false" view="month" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-calendar>
+    
+    <input *ngSwitchCase="PropertyType.Week" [formControlName]="property.name" [id]="property.name" type="week" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+   
+    <p-calendar *ngSwitchCase="PropertyType.Time" [formControlName]="property.name" [id]="property.name" [dateFormat]="dateFormat" [showTime]="true" [timeOnly]="true" [showWeek]="false" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-calendar>
+    
+    <p-calendar *ngSwitchCase="PropertyType.DatetimeLocal" [formControlName]="property.name" [id]="property.name" [dateFormat]="dateFormat" [showTime]="true" [showWeek]="false" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-calendar>
+    
+    <p-inputNumber *ngSwitchCase="PropertyType.Number" [formControlName]="property.name" [id]="property.name" mode="decimal" [showButtons]="!property.readOnly" class="w-full" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-inputNumber>
+    
+    <input *ngSwitchCase="PropertyType.Range" [formControlName]="property.name" [id]="property.name" type="range" [min]="property.min" [max]="property.max" [step]="property.step" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+    
+    <input *ngSwitchCase="PropertyType.Color" [formControlName]="property.name" [id]="property.name" type="color" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+   
+    <ng-container *ngSwitchCase="PropertyType.Bool">
+        <p-checkbox *ngIf="property.required" [binary]="true" [formControl]="formControl" [id]="property.name" [readonly]="property.readOnly!"></p-checkbox>
+        <p-triStateCheckbox *ngIf="!property.required" [formControl]="formControl" [id]="property.name" [readonly]="property.readOnly!"></p-triStateCheckbox>
+    </ng-container>
+    
+    <p-calendar *ngSwitchCase="PropertyType.DatetimeOffset" [formControlName]="property.name" [id]="property.name" [dateFormat]="dateFormat" [showTime]="true" [showWeek]="false" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-calendar>
+    
+    <p-calendar *ngSwitchCase="PropertyType.Duration" [formControlName]="property.name" [id]="property.name" [dateFormat]="dateFormat" [showTime]="true" [timeOnly]="true" [showWeek]="false" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-calendar>
+
+    <rw-image *ngSwitchCase="PropertyType.Image" [formControlName]="property.name" [property]="property | as:PropertyWithImage"></rw-image>
+
+    <rw-file *ngSwitchCase="PropertyType.File" [formControlName]="property.name" [fileName]="property.name" [accept]="property.placeholder"></rw-file>
+
+    <input *ngSwitchDefault [formControlName]="property.name" [id]="property.name" type="text" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
+</div>

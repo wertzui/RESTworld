@@ -5,7 +5,7 @@ namespace ExampleBlog.Data.Models
 {
     public class Blog : ChangeTrackingEntityBase
     {
-        public string Name { get; set; }
+        public required string Name { get; set; }
         public virtual ICollection<Post> Posts { get; set; } = new HashSet<Post>();
     }
 }

@@ -143,7 +143,7 @@ namespace RESTworld.AspNetCore.Controller
             [FromQuery(Name = "$top")] long? top = default,
             [FromQuery(Name = "$skip")] long? skip = default)
         {
-            options.Context.DefaultQuerySettings.MaxTop = Options.MaxNumberForListEndpoint;
+            options.Context.DefaultQueryConfigurations.MaxTop = Options.MaxNumberForListEndpoint;
             var getListrequest = options.ToListRequest(Options.CalculateTotalCountForListEndpoint);
 
             var response = await _readService.GetListAsync(getListrequest, cancellationToken);
@@ -262,11 +262,11 @@ namespace RESTworld.AspNetCore.Controller
 
             if (accept.Contains("hal-forms+json"))
             {
-                result = FormFactory.CreateForODataListEndpointUsingSkipTopPaging(response.ResponseObject.Items, _ => Common.Constants.ListItems, m => m.Id, options, options.Context.DefaultQuerySettings.MaxTop ?? 50, response.ResponseObject.TotalCount);
+                result = FormFactory.CreateForODataListEndpointUsingSkipTopPaging(response.ResponseObject.Items, _ => Common.Constants.ListItems, m => m.Id, options.RawValues, options.Context.DefaultQueryConfigurations.MaxTop ?? 50, response.ResponseObject.TotalCount);
             }
             else
             {
-                result = ResourceFactory.CreateForODataListEndpointUsingSkipTopPaging(response.ResponseObject.Items, _ => Common.Constants.ListItems, m => m.Id, options, options.Context.DefaultQuerySettings.MaxTop ?? 50, response.ResponseObject.TotalCount);
+                result = ResourceFactory.CreateForODataListEndpointUsingSkipTopPaging(response.ResponseObject.Items, _ => Common.Constants.ListItems, m => m.Id, options.RawValues, options.Context.DefaultQueryConfigurations.MaxTop ?? 50, response.ResponseObject.TotalCount);
 
                 LinkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
             }

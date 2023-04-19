@@ -1,8 +1,8 @@
 import { HttpBackend, HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { ClientSettings } from "../models/client-settings";
-import { RESTworldOptions } from "../models/restworld-options";
-import { RESTworldClientCollection } from "./restworld-client-collection";
+import { RestWorldOptions } from "../models/restworld-options";
+import { RestWorldClientCollection } from "./restworld-client-collection";
 
 @Injectable({
   providedIn: 'root'
@@ -17,7 +17,7 @@ export class SettingsService {
   private initialized = false;
 
   constructor(
-    private _clients: RESTworldClientCollection) {
+    private _clients: RestWorldClientCollection) {
   }
 
   public async ensureInitialized(): Promise<void> {
@@ -36,23 +36,23 @@ export class SettingsService {
 
   /**
    * Call this method in your main.ts before calling bootstrapModule(...)
-   * 
+   *
    * Example:
    * async function main() {
    *   try {
    *     await SettingsService.ensureSettingsAreLoaded();
-   * 
+   *
    *     const providers : StaticProvider[] = [
    *       { provide: 'BASE_URL', useFactory: getBaseUrl, deps: [] }
    *     ];
-   * 
+   *
    *     await platformBrowserDynamic(providers).bootstrapModule(AppModule);
    *   }
    *   catch (e) {
    *     console.error(e);
    *   }
    * }
-   * 
+   *
    * main();
    * */
   public static async ensureSettingsAreLoaded(): Promise<void> {
@@ -68,7 +68,7 @@ export class SettingsService {
       return;
 
     await Promise.all(this.settings.apiUrls
-      .map(api =>  this._clients.addOrGetExistingClient(api.name, new RESTworldOptions(api.url, api.version))));
+      .map(api =>  this._clients.addOrGetExistingClient(api.name, new RestWorldOptions(api.url, api.version))));
   }
 
 }

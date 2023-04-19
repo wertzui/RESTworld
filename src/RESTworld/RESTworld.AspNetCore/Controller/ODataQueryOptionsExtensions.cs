@@ -40,8 +40,8 @@ namespace RESTworld.AspNetCore.Controller
         /// <returns>A request which can be used to call the service.</returns>
         public static IGetListRequest<TEntity> ToListRequest<TEntity>(this ODataQueryOptions<TEntity> oDataQueryOptions, bool calculateTotalCount)
         {
-            Func<IQueryable<TEntity>, IQueryable<TEntity>> filter = oDataQueryOptions.Context.DefaultQuerySettings.MaxTop.HasValue ?
-                source => oDataQueryOptions.ApplyTo<TEntity>(source).Take(oDataQueryOptions.Context.DefaultQuerySettings.MaxTop.Value) :
+            Func<IQueryable<TEntity>, IQueryable<TEntity>> filter = oDataQueryOptions.Context.DefaultQueryConfigurations.MaxTop.HasValue ?
+                source => oDataQueryOptions.ApplyTo<TEntity>(source).Take(oDataQueryOptions.Context.DefaultQueryConfigurations.MaxTop.Value) :
                 source => oDataQueryOptions.ApplyTo<TEntity>(source);
 
             if (calculateTotalCount)

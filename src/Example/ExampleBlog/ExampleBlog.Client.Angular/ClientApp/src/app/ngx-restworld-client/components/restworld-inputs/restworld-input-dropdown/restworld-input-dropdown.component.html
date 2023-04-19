@@ -1,0 +1,41 @@
+<ng-template #defaultInputOptionsSingle let-property="property" let-template="template">
+    <p-dropdown 
+    [formControlName]="property.name" 
+    [id]="property.name" 
+    [options]="property.options.inline" 
+    [filterBy]="(property.options.promptField ?? 'prompt') + ',' + (property.options.valueField ?? 'value')" 
+    [optionValue]="property.options.valueField ?? 'value'" 
+    [readonly]="property.readOnly" 
+    [required]="property.required || property.options.minItems > 0" 
+    [filter]="true" 
+    [autoDisplayFirst]="false" 
+    [showClear]="!property.required || property.options.minItems <= 0" 
+    (onFilter)="onOptionsFiltered(property, $event)" 
+    styleClass="w-full" 
+    [filterPlaceholder]="property?.options?.link?.href ? 'search for more results' : ''">
+        <ng-template let-item pTemplate="selectedItem">
+            <span [pTooltip]="getDropdownElementTooltip(item, [property.options.promptField ?? 'prompt', property.options.valueField ?? 'value'])">{{item[property.options.promptField ?? 'prompt']}} ({{item[property.options.valueField ?? 'value']}})</span>
+        </ng-template>
+        <ng-template let-item pTemplate="item">
+            <span [pTooltip]="getDropdownElementTooltip(item, [property.options.promptField ?? 'prompt', property.options.valueField ?? 'value'])">{{item[property.options.promptField ?? 'prompt']}} ({{item[property.options.valueField ?? 'value']}})</span>
+        </ng-template>
+    </p-dropdown>
+</ng-template>
+<ng-container *ngIf="!property.options.maxItems || property.options.maxItems == 1">
+    <ng-container *ngTemplateOutlet="inputOptionsSingleRef ?? defaultInputOptionsSingle; context: { property: property, apiName: apiName }"></ng-container>
+</ng-container>
+
+<ng-template #defaultInputOptionsMultiple let-property="property" let-template="template">
+    <p-multiSelect 
+    [formControlName]="property.name" 
+    [id]="property.name" 
+    [options]="property.options.inline" 
+    [optionLabel]="property.options.promptField ?? 'prompt'" 
+    [optionValue]="property.options.valueField ?? 'value'" 
+    [readonly]="property.readOnly" 
+    [selectionLimit]="property.options.maxItems" 
+    [required]="property.required || property.options.minItems > 0"></p-multiSelect>
+</ng-template>
+<ng-container *ngIf="(property.options.maxItems ?? 0) > 1">
+    <ng-container *ngTemplateOutlet="inputOptionsMultipleRef ?? defaultInputOptionsMultiple; context: { property: property, apiName: apiName }"></ng-container>
+</ng-container>

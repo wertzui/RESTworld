@@ -1,0 +1,6 @@
+<form [formGroup]="idNavigationForm" (ngSubmit)="navigateById()" class="mr-3">
+  <div class="p-inputgroup">
+    <p-inputNumber formControlName="id" placeholder="Navigate by ID"></p-inputNumber>
+    <button type="submit" pButton pRipple icon="fa-solid fa-arrow-right"></button>
+  </div>
+</form>

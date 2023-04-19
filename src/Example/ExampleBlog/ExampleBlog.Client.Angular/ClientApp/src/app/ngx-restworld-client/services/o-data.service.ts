@@ -16,9 +16,9 @@ export class ODataService {
       case 'not contains':
       case 'startswith':
       case 'endswith':
-        return `${oDataOperator}(${property}, ${comparisonValue})`;
+        return `${oDataOperator}(${property.name}, ${comparisonValue})`;
       default:
-        return `${property} ${oDataOperator} ${comparisonValue}`;
+        return `${property.name} ${oDataOperator} ${comparisonValue}`;
     }
   }
 
@@ -92,10 +92,13 @@ export class ODataService {
         return `cast(${(value as Date).toISOString()}, Edm.DateTime)`;
       case PropertyType.DatetimeOffset:
         return `cast(${(value as Date).toISOString()}, Edm.DateTimeOffset)`;
-        case PropertyType.Time:
-          return `cast(${(value as Date).toISOString()}, Edm.TimeOnly)`;
-          case PropertyType.Duration:
-            return `cast(${(value as Date).toISOString()}, Edm.TimeSpan)`;
+      case PropertyType.Time:
+        return `cast(${(value as Date).toISOString()}, Edm.TimeOnly)`;
+      case PropertyType.Duration:
+        return `cast(${(value as Date).toISOString()}, Edm.TimeSpan)`;
+      case PropertyType.Bool:
+      case PropertyType.Number:
+        return '' + value;
       default:
         return `'${value}'`;
     }

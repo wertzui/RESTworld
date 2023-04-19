@@ -1,0 +1,11 @@
+<rw-input-dropdown *ngIf="property.options" [apiName]="apiName" [property]="property | as:PropertyWithOptions"></rw-input-dropdown>
+
+<ng-container *ngIf="!property.options">
+    <ng-container [ngSwitch]="property.type">
+        <rw-input-object *ngSwitchCase="PropertyType.Object" [apiName]="apiName" [property]="property"></rw-input-object>
+        <rw-input-collection *ngSwitchCase="PropertyType.Collection" [apiName]="apiName" [property]="property"></rw-input-collection>
+        <rw-input-simple *ngSwitchDefault [property]="property"></rw-input-simple>
+    </ng-container>
+</ng-container>
+
+<rw-validation-errors [property]="property"></rw-validation-errors>

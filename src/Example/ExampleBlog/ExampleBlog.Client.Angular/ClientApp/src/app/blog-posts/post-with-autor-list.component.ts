@@ -12,12 +12,6 @@ export class PostWithAuthorListComponent {
     this.display = true;
   }
 
-  @Input()
-  public sortField?: string;
-
-  @Input()
-  public sortOrder?: number;
-
   public menu: MenuItem[] = [
     {
       routerLink: ['/'],

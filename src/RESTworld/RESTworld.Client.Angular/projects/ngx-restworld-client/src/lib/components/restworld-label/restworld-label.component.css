@@ -1,0 +1,7 @@
+.label-hidden {
+    visibility: hidden;
+}
+
+.label-collapsed {
+    display: none;
+}
