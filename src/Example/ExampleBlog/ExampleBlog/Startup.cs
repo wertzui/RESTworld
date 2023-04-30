@@ -37,6 +37,7 @@ namespace ExampleBlog
 
             // Add the database to the services and create an OData context out of it which can be used for querying..
             services.AddDbContextFactoryWithDefaults<BlogDatabase>(Configuration);
+            services.AddDbContextFactoryWithDefaults<BlogDatabase>(Configuration);
             services.AddODataModelForDbContext<BlogDatabase>();
             services.MigrateDatabaseDuringStartup<BlogDatabase>();
 

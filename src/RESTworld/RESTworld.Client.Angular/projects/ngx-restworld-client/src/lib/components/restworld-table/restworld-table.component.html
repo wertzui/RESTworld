@@ -45,10 +45,13 @@
             <span *ngSwitchCase="PropertyType.Number" class="flex justify-content-end">{{entity[col.name]}}</span>
             <span *ngSwitchCase="PropertyType.Bool" class="flex justify-content-center"><p-triStateCheckbox [(ngModel)]="entity[col.name]" [readonly]="true"></p-triStateCheckbox></span>
             <span *ngSwitchCase="PropertyType.Date" [pTooltip]="entity[col.name]">{{entity[col.name] | date:dateFormat}}</span>
+            <span *ngSwitchCase="PropertyType.Time" [pTooltip]="entity[col.name]">{{entity[col.name] | date:timeFormat}}</span>
+            <span *ngSwitchCase="PropertyType.Duration" [pTooltip]="entity[col.name]">{{entity[col.name] | date:timeFormat}}</span>
             <span *ngSwitchCase="PropertyType.DatetimeLocal" [pTooltip]="entity[col.name]">{{entity[col.name] | date:dateFormat}}</span>
             <span *ngSwitchCase="PropertyType.DatetimeOffset" [pTooltip]="entity[col.name]">{{entity[col.name] | date:dateFormat}}</span>
             <span *ngSwitchCase="PropertyType.Collection" class="flex justify-content-end"><p *ngFor="let arrayElement of entity[col.name]">{{arrayElement | json}}</p></span>
             <span *ngSwitchCase="PropertyType.Object" class="flex justify-content-end">{{entity[col.name] | json}}</span>
+            <span *ngSwitchDefault [pTooltip]="entity[col.name]">{{entity[col.name]}}</span>
         </td>
         <td *ngIf="showMenuColumn" class="flex justify-content-end">
           <rw-menu-button *ngIf="showRowMenuAsColumn" [items]="rowMenus[rowIndex - table.first]"></rw-menu-button>

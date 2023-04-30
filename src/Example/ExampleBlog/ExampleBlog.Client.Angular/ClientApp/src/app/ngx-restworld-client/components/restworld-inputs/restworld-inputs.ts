@@ -307,13 +307,25 @@ export class RestWorldInputSimpleComponent<T> implements OnInit {
     return PropertyType;
   }
 
+  private static readonly _dateFormat = new Date(3333, 10, 22) // months start at 0 in JS
+    .toLocaleDateString()
+    .replace("22", "dd")
+    .replace("11", "mm")
+    .replace("3333", "yy")
+    .replace("33", "y");
+
   public get dateFormat(): string {
-    return new Date(3333, 11, 22)
-      .toLocaleDateString()
-      .replace("22", "dd")
-      .replace("11", "mm")
-      .replace("3333", "yy")
-      .replace("33", "y");
+    return RestWorldInputSimpleComponent._dateFormat;
+  }
+
+  private static readonly _timeFormat = new Date(1, 1, 1, 22, 33, 44)
+    .toLocaleTimeString()
+    .replace("22", "hh")
+    .replace("33", "mm")
+    .replace("44", "ss");
+
+  public get timeFormat() {
+    return RestWorldInputSimpleComponent._timeFormat;
   }
 
   private _formControl?: FormControl<T>;

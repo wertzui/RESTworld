@@ -50,6 +50,12 @@ namespace RESTworld.AspNetCore.Swagger
         {
             _fixture = new();
 
+            // AutoFixture cannot create DateOnly on its own
+            _fixture.Customize<DateOnly>(composer => composer.FromFactory<DateTime>(DateOnly.FromDateTime));
+
+            // Otherwise these will be really small
+            _fixture.Customize<TimeOnly>(composer => composer.FromFactory<DateTime>(TimeOnly.FromDateTime));
+
             // Allow recursion with depth 3
             _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList().ForEach(b => _fixture.Behaviors.Remove(b));
             _fixture.Behaviors.Add(new OmitOnRecursionBehavior(3));

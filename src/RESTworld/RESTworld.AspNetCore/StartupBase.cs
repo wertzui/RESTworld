@@ -197,7 +197,6 @@ namespace RESTworld.AspNetCore
                 .AddHALOData()
                 .AddJsonOptions(o =>
                 {
-                    o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
                     o.JsonSerializerOptions.Converters.Add(new JsonStringEnumMemberConverter(JsonNamingPolicy.CamelCase));
                     o.JsonSerializerOptions.Converters.Add(new SingleObjectOrCollectionJsonConverterFactory());
                 });

@@ -121,15 +121,25 @@ export class RestWorldTableComponent<TListDto> {
     return this._columns;
   }
 
-  private static readonly _dateFormat = new Date(3333, 10, 22)
+  private static readonly _dateFormat = new Date(3333, 10, 22) // months start at 0 in JS
     .toLocaleDateString()
     .replace("22", "dd")
     .replace("11", "MM")
-    .replace("3333", "y")
-    .replace("33", "yy");
+    .replace("3333", "yy")
+    .replace("33", "y");
 
-  public get dateFormat() {
+  public get dateFormat(): string {
     return RestWorldTableComponent._dateFormat;
+  }
+
+  private static readonly _timeFormat = new Date(1, 1, 1, 22, 33, 44)
+    .toLocaleTimeString()
+    .replace("22", "hh")
+    .replace("33", "mm")
+    .replace("44", "ss");
+
+  public get timeFormat() {
+    return RestWorldTableComponent._timeFormat;
   }
 
   public get PropertyType(): typeof PropertyType {

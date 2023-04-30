@@ -8,6 +8,7 @@ using RESTworld.Business.Models.Abstractions;
 using RESTworld.Business.Services;
 using RESTworld.Business.Services.Abstractions;
 using RESTworld.EntityFrameworkCore.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -28,6 +29,12 @@ namespace ExampleBlog.Business.Services
             : base(mapper, userAccessor, logger)
         {
             _fixture = new Fixture();
+
+            // AutoFixture cannot create DateOnly on its own
+            _fixture.Customize<DateOnly>(composer => composer.FromFactory<DateTime>(DateOnly.FromDateTime));
+
+            // Otherwise these will be really small
+            _fixture.Customize<TimeOnly>(composer => composer.FromFactory<DateTime>(TimeOnly.FromDateTime));
         }
 
         public Task<ServiceResponse<TestDto>> CreateAsync(TestDto dto, CancellationToken cancellationToken)

@@ -1,5 +1,6 @@
 ﻿using HAL.Common.Converters;
 using RESTworld.Common.Dtos;
+using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
@@ -16,6 +17,9 @@ namespace ExampleBlog.Common.Dtos
         public char? MyNullableChar { get; set; }
         public bool? MyNullableBool { get; set; }
         public decimal? MyNullableDecimal { get; set; }
+        public DateTimeOffset MyDateTimeOffset { get; set; }
+        public DateOnly MyDateOnly { get; set; }
+        public TimeOnly MyTimeOnly { get; set; }
         public ICollection<ListTestDto> MyCollection { get; set; } = new HashSet<ListTestDto>();
         public ICollection<ListChangeTrackingDto>? MyNullCollection { get; set; }
         [JsonConverter(typeof(KeyValueDictionaryConverterFactory))]

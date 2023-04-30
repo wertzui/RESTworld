@@ -6,5 +6,5 @@ export class PropertyWithImage extends Property {
 }
 
 export class PropertyWithOptions extends Property {
-  options!: Options;
+  declare options: Options;
 }

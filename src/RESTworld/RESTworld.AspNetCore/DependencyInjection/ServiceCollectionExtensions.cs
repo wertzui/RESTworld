@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OData.ModelBuilder;
 using RESTworld.AspNetCore;
 using RESTworld.AspNetCore.Authorization;
@@ -121,8 +122,25 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddPooledDbContextFactory<TContext>(optionsAction);
 
-            services.AddHealthChecks().AddCheck<DbContextFactoryMigrationHealthCheck<TContext>>(contextName + "Migration", tags: new[] { "startup" });
-            services.AddHealthChecks().AddCheck<DbContextFactoryConnectionHealthCheck<TContext>>(contextName + "Connection", tags: new[] { "ready" });
+            // Add health checks only if they do not already exist.
+            // Fixes https://github.com/wertzui/RESTworld/issues/1
+            var healthChecksBuilder = services.AddHealthChecks();
+            var healthChecksServices = healthChecksBuilder.Services;
+            healthChecksServices.Configure<HealthCheckServiceOptions>(o =>
+            {
+                var migrationCheckName = contextName + "Migration";
+                var connectionCheckname = contextName + "Connection";
+
+                if (!o.Registrations.Any(r => r.Name == migrationCheckName))
+                {
+                    o.Registrations.Add(new HealthCheckRegistration(migrationCheckName, ActivatorUtilities.GetServiceOrCreateInstance<DbContextFactoryMigrationHealthCheck<TContext>>, null, new[] { "startup" }));
+                }
+
+                if (!o.Registrations.Any(r => r.Name == connectionCheckname))
+                {
+                    o.Registrations.Add(new HealthCheckRegistration(connectionCheckname, ActivatorUtilities.GetServiceOrCreateInstance<DbContextFactoryConnectionHealthCheck<TContext>>, null, new[] { "ready" }));
+                }
+            });
 
             return services;
         }
