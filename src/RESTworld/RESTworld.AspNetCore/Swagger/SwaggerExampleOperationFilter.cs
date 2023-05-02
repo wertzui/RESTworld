@@ -392,7 +392,7 @@ namespace RESTworld.AspNetCore.Swagger
                 {
                     if (type.Example is null)
                     {
-                        var typeId = type.Schema.Reference.Id;
+                        var typeId = type.Schema.Reference?.Id;
                         if (typeId == "ProblemDetailsResource")
                         {
                             AddExampleForProblemResponse(statusCodeInt, response, type);
