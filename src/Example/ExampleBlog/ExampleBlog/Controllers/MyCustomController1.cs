@@ -45,7 +45,7 @@ namespace ExampleBlog.Controllers
             var response = await _service.GetPostWithAuthorAsync(id, cancellationToken);
 
             if (!response.Succeeded)
-                return _errorResultFactory.CreateError(response);
+                return _errorResultFactory.CreateError(response, "Get");
 
             var result = ResourceFactory.CreateForGetEndpoint(response.ResponseObject, null);
             var authorId = result.State?.AuthorId;

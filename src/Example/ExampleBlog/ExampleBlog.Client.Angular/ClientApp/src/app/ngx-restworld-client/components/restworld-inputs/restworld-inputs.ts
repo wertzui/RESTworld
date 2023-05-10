@@ -1,7 +1,7 @@
 import { CdkDragDrop } from '@angular/cdk/drag-drop';
 import { ChangeDetectorRef, Component, ContentChild, Input, OnInit, TemplateRef } from '@angular/core';
 import { AbstractControl, ControlContainer, FormArray, FormControl, FormGroup, FormGroupDirective } from '@angular/forms';
-import { NumberTemplate, Options, Property, PropertyType, Resource, Template, TemplateDto } from '@wertzui/ngx-hal-client';
+import { NumberTemplate, Options, Property, PropertyType, ResourceDto, ResourceOfDto, Template, TemplateDto } from '@wertzui/ngx-hal-client';
 import { FormService } from '../../services/form.service';
 import { MessageService } from 'primeng/api';
 import { ProblemDetails } from '../../models/problem-details';
@@ -9,6 +9,7 @@ import { PropertyTemplateContext } from '../../models/templating';
 import { RestWorldClient } from '../../services/restworld-client';
 import { RestWorldClientCollection } from '../../services/restworld-client-collection';
 import { PropertyWithOptions, PropertyWithImage } from '../../models/special-properties'
+import * as _ from 'lodash';
 
 /**
  * A form element with a label that is automatically created from a property in a form template.
@@ -176,7 +177,7 @@ export class RestWorldInputCollectionComponent<T extends { [K in keyof T]: Abstr
   styleUrls: ['./restworld-input-dropdown/restworld-input-dropdown.component.css'],
   viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }]
 })
-export class RestWorldInputDropdownComponent {
+export class RestWorldInputDropdownComponent<T> implements OnInit {
   @Input()
   property!: Property & { options: Options };
 
@@ -189,41 +190,136 @@ export class RestWorldInputDropdownComponent {
   @ContentChild('inputOptionsMultiple', { static: false })
   inputOptionsMultipleRef?: TemplateRef<PropertyTemplateContext>;
 
+  private _formControl!: AbstractControl<T, T>;
+
+  private get valueField(): string {
+    return this.property.options.valueField ?? "value";
+  }
+
+  private get promptField(): string {
+    return this.property.options.promptField ?? "prompt";
+  }
+
   constructor (
     private readonly _messageService: MessageService,
-    private readonly _clients: RestWorldClientCollection
+    private readonly _clients: RestWorldClientCollection,
+    private readonly _controlContainer: ControlContainer
   ) {
   }
 
-  public getDropdownElementTooltip(resource: Resource, keysToExclude?: string[]): string {
-    const tooltip = Object.entries(resource)
-      .filter(([key]) => !(key.startsWith('_') || ['createdAt', 'createdBy', 'lastChangedAt', 'lastChangedBy', 'timestamp'].includes(key) || keysToExclude?.includes(key)))
+  async ngOnInit(): Promise<void> {
+    const formGroup = this._controlContainer.control as FormGroup<any>;
+    this._formControl = formGroup.controls[this.property.name] as AbstractControl<T>;
+    await this.setInitialSelectedOptionsElementForProperty();
+  }
+
+  public getValue(item: T): any {
+    if(item === undefined || item === null || !item.hasOwnProperty(this.valueField))
+      return null;
+
+    return item[this.valueField as keyof T];
+  }
+
+  public getPrompt(item: T): string {
+    if(item === undefined || item === null || !item.hasOwnProperty(this.promptField))
+      return "";
+
+    return item[this.promptField as keyof T] as string;
+  }
+
+  public getLabel(item: T): string {
+    if(item === undefined || item === null)
+      return "";
+
+    const label = `${this.getPrompt(item)} (${this.getValue(item)})`;
+
+    return label;
+  }
+
+  public getTooltip(item: T): string {
+    if(item === undefined || item === null)
+      return "";
+
+    const tooltip = Object.entries(item)
+      .filter(([key]) => !(key.startsWith('_') || ['createdAt', 'createdBy', 'lastChangedAt', 'lastChangedBy', 'timestamp', this.promptField, this.valueField].includes(key)))
       .reduce((prev, [key, value], index) => `${prev}${index === 0 ? '' : '\n'}${key}: ${RestWorldInputDropdownComponent.jsonStringifyWithElipsis(value)}`, '');
 
     return tooltip;
   }
 
-  public async onOptionsFiltered(property: Property, event: { originalEvent: unknown; filter: string | null }) {
-    const options = property?.options;
+  public getItemByValue(value: any): T {
+    return this.property.options.inline.find(item => this.getValue(item as T) === value) as T;
+  }
+
+  public removeByValue(value: any): void {
+    const formValue = this._formControl.value as unknown[];
+    const newValue = formValue.filter(i => i !== value) as T;
+    this._formControl.setValue(newValue);
+  }
+
+  public async onOptionsFiltered(event: { originalEvent: unknown; filter: string | null }) {
+    const options = this.property?.options;
 
     if (!options?.link?.href || !event.filter || event.filter === '')
       return;
 
 
-    const templatedUri = options.link.href;
+    // const templatedUri = options.link.href;
     let filter = `contains(${options.promptField}, '${event.filter}')`;
     if (options.valueField?.toLowerCase() === 'id' && !Number.isNaN(Number.parseInt(event.filter)))
       filter = `(${options.valueField} eq ${event.filter})  or (${filter})`;
 
-    const response = await this.getClient().getListByUri(templatedUri, { $filter: filter, $top: 10 });
-    if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body) {
-      const message = `An error occurred while getting the filtered items.`;
-      this._messageService.add({ severity: 'error', summary: 'Error', detail: message, data: response, sticky: true });
+      await this.SetInlineOptionsFromFilter(filter);
+  }
+
+  private async setInitialSelectedOptionsElementForProperty(): Promise<void> {
+    const options = this.property.options;
+
+    if (!options.link?.href || !options.selectedValues) {
+      if (!_.isArray(options.inline) || options.inline.length === 0)
+        options.inline = [];
       return;
     }
 
-    const items = response.body._embedded.items;
-    options.inline = items;
+    const filter = `${options.valueField} in (${options.selectedValues})`;
+    await this.SetInlineOptionsFromFilter(filter);
+  }
+
+  private async SetInlineOptionsFromFilter(filter: string) {
+    const options = this.property.options;
+    if  (!options.link?.href)
+      throw new Error('The property does not have a link href.');
+
+    const templatedUri = options.link.href;
+    const response = await this.getClient().getListByUri(templatedUri, { $filter: filter, $top: 10 });
+    if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body) {
+      const message = `An error occurred while getting the initial selected items for the property ${this.property.name}.`;
+      this._messageService.add({ severity: 'error', summary: 'Error', detail: message, data: response, sticky: true });
+    }
+
+    const items = response.body!._embedded.items;
+    const newItems = this.combineInlineWithSelected(items);
+    options.inline = newItems;
+  }
+
+  private combineInlineWithSelected(items: ResourceOfDto<ResourceDto>[]): unknown[] {
+    const oldInline = this.property.options.inline as ResourceOfDto<ResourceDto>[];
+    if (!oldInline)
+      return items;
+
+    const selectedValues = this.getSelectedValues();
+    const itemsToKeep = oldInline.filter(i => selectedValues.includes(this.getValue(i as T)));
+    const newItems = _.uniqBy(items.concat(itemsToKeep), i => this.getValue(i as T));
+
+    return newItems;
+  }
+
+  private getSelectedValues(): unknown[] {
+    const value = this._formControl.value;
+    if (_.isArray(value))
+      return value
+
+    return [value];
   }
 
   private getClient(): RestWorldClient {

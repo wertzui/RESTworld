@@ -139,7 +139,7 @@ namespace RESTworld.AspNetCore.Controller
             var response = await _crudService.DeleteAsync(id, timestampBytes, cancellationToken);
 
             if (!response.Succeeded)
-                return ErrorResultFactory.CreateError(response);
+                return ErrorResultFactory.CreateError(response, "Delete");
 
             return Ok();
 
@@ -192,7 +192,7 @@ namespace RESTworld.AspNetCore.Controller
             CancellationToken cancellationToken)
         {
             if (dto == null || (dto.ContainsCollection && dto.Collection is null) || (dto.ContainsSingleObject && dto.SingleObject is null))
-                return ErrorResultFactory.CreateError(StatusCodes.Status400BadRequest, "Unable to read either a collection or a single object from the request body.");
+                return ErrorResultFactory.CreateError(StatusCodes.Status400BadRequest, "Unable to read either a collection or a single object from the request body.", "Post");
 
             if (dto.ContainsCollection)
                 return await PostMultipleAsync(dto.Collection, cancellationToken);
@@ -225,19 +225,19 @@ namespace RESTworld.AspNetCore.Controller
             CancellationToken cancellationToken)
         {
             if (dto == null || (dto.ContainsCollection && dto.Collection is null) || (dto.ContainsSingleObject && dto.SingleObject is null))
-                return ErrorResultFactory.CreateError(StatusCodes.Status400BadRequest, "Unable to read either a collection or a single object from the request body.");
+                return ErrorResultFactory.CreateError(StatusCodes.Status400BadRequest, "Unable to read either a collection or a single object from the request body.", "Put");
 
             if (dto.ContainsCollection)
             {
                 if (id.HasValue)
-                    return ErrorResultFactory.CreateError(StatusCodes.Status400BadRequest, "The URL must not contain an ID when the request body contains a collection.");
+                    return ErrorResultFactory.CreateError(StatusCodes.Status400BadRequest, "The URL must not contain an ID when the request body contains a collection.", "Put");
 
                 return await PutMultipleAsync(dto.Collection, cancellationToken);
             }
             else
             {
                 if (id != dto.SingleObject?.Id)
-                    return ErrorResultFactory.CreateError(StatusCodes.Status400BadRequest, "The URL must contain the same ID as the object in the request body when the request body contains a single object.");
+                    return ErrorResultFactory.CreateError(StatusCodes.Status400BadRequest, "The URL must contain the same ID as the object in the request body when the request body contains a single object.", "Put");
 
                 return await PutSingleAsync(dto.SingleObject!, accept, cancellationToken);
             }
@@ -366,7 +366,7 @@ namespace RESTworld.AspNetCore.Controller
             var response = await _crudService.CreateAsync(dtos, cancellationToken);
 
             if (!response.Succeeded)
-                return ErrorResultFactory.CreateError(response);
+                return ErrorResultFactory.CreateError(response, "Post");
 
             var responseObject = response.ResponseObject ?? Array.Empty<TGetFullDto>();
 
@@ -405,10 +405,10 @@ namespace RESTworld.AspNetCore.Controller
             var response = await _crudService.CreateAsync(dto, cancellationToken);
 
             if (!response.Succeeded)
-                return ErrorResultFactory.CreateError(response);
+                return ErrorResultFactory.CreateError(response, "Post");
 
             if (response.ResponseObject is null)
-                return ErrorResultFactory.CreateError(StatusCodes.Status500InternalServerError, "The service did return null for the created object.");
+                return ErrorResultFactory.CreateError(StatusCodes.Status500InternalServerError, "The service did return null for the created object.", "Post");
 
             var resource = ResourceFactory.CreateForGetEndpoint(response.ResponseObject, routeValues: new { id = response.ResponseObject.Id });
             Url.AddSaveAndDeleteLinks(resource);
@@ -429,7 +429,7 @@ namespace RESTworld.AspNetCore.Controller
             var response = await _crudService.UpdateAsync(request, cancellationToken);
 
             if (!response.Succeeded)
-                return ErrorResultFactory.CreateError(response);
+                return ErrorResultFactory.CreateError(response, "Put");
 
             var responseObject = response.ResponseObject ?? Array.Empty<TGetFullDto>();
 
@@ -468,7 +468,7 @@ namespace RESTworld.AspNetCore.Controller
             var response = await _crudService.UpdateAsync(dto, cancellationToken);
 
             if (!response.Succeeded || response.ResponseObject is null)
-                return ErrorResultFactory.CreateError(response);
+                return ErrorResultFactory.CreateError(response, "Put");
 
             return Ok(response.ResponseObject, HttpMethod.Put, accept);
         }

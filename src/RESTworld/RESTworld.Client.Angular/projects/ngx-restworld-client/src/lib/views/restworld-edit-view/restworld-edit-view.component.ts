@@ -89,10 +89,11 @@ export class RESTworldEditViewComponent {
 
   private async getAllTemplates(resource: Resource): Promise<Templates> {
     try {
-      return this.getClient().getAllTemplates(resource);
+      const templates = await this.getClient().getAllTemplates(resource);
+      return templates;
     }
     catch (e: unknown) {
-      this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the templates from the API. ' + e, data: e });
+      this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the templates from the API. ' + e, data: e , sticky: true});
       return {};
     }
   }

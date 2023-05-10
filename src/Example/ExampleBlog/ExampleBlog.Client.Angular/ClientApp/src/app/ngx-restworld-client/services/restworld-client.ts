@@ -139,14 +139,12 @@ export class RestWorldClient {
     const failedResponses = formResponses.filter(response => !response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body);
     if (failedResponses.length !== 0) {
       for (const response of failedResponses) {
-        throw new Error(`Error while loading the response from ${response.url}, Status ${response.status} - ${response.statusText}, Content: ${response.body}`);
+        throw new Error(`Error while loading the response from ${response.url}, Status ${response.status} - ${response.statusText}, Content: ${JSON.stringify(response.body)}`);
       }
       return Promise.resolve({});
     }
 
     const formTemplates = Object.assign({}, ...formResponses.map(response => (response.body as FormsResource)._templates)) as Templates;
-
-    await this.setInitialSelectedOptionsElementsForTemplates(formTemplates, false);
 
     return formTemplates;
   }
@@ -310,42 +308,6 @@ export class RestWorldClient {
     else
       this._defaultCurie = curies[0].name;
   }
-
-  private async setInitialSelectedOptionsElementForProperty(property: Property): Promise<void> {
-    const options = property?.options;
-
-    if (!options?.link?.href)
-      return;
-
-    const templatedUri = options.link.href;
-    const filter = `${options.valueField} eq ${property.value}`;
-    const response = await this.getListByUri(templatedUri, { $filter: filter, $top: 10 });
-    if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body) {
-      throw new Error(`An error occurred while getting the filtered items from ${response.url}, Status ${response.status} - ${response.statusText}, Content: ${response.body}`);
-    }
-
-    const items = response.body._embedded.items;
-    options.inline = items;
-  }
-
-  private async setInitialSelectedOptionsElementsForTemplate(template: Template): Promise<void> {
-    const propertyPromises = template.properties
-      .filter(property => property?.options?.link?.href)
-      .map(property => this.setInitialSelectedOptionsElementForProperty(property));
-    const nestedTemplatePromised = template.properties
-      .filter(property => property?._templates)
-      .map(property => this.setInitialSelectedOptionsElementsForTemplates(property._templates, true));
-    const allPromises = propertyPromises.concat(nestedTemplatePromised);
-
-    await Promise.all(allPromises);
-  }
-
-  private async setInitialSelectedOptionsElementsForTemplates(templates: Templates, skipDefaultTemplate: boolean): Promise<void> {
-    await Promise.all(Object.entries(templates)
-      .filter(([name,]) => !skipDefaultTemplate || name !== 'default')
-      .map(([, template]) => this.setInitialSelectedOptionsElementsForTemplate(template)));
-  }
-
 
   public async deleteByTemplateAndForm(template: Template, formGroup: FormGroup<{timestamp: AbstractControl<string>}>): Promise<HttpResponse<void | ProblemDetails>> {
     const url = template.target;

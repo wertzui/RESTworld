@@ -1,0 +1,16 @@
+::ng-deep .p-multiselect-label {
+  display: inline-flex !important;
+}
+
+::ng-deep .p-multiselect-label-empty {
+  height: 36px;
+}
+
+::ng-deep .p-chip {
+  background-color: #EFF6FF;
+  color: #1D4ED8;
+}
+
+::ng-deep .pi-chip-remove-icon:hover {
+  filter: brightness(.6);
+}

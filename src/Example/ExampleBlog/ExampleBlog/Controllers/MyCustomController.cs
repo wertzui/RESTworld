@@ -52,7 +52,7 @@ namespace ExampleBlog.Controllers
             var response = await _service.GetPostWithAuthorAsync(id, cancellationToken);
 
             if (!response.Succeeded)
-                return _errorResultFactory.CreateError(response);
+                return _errorResultFactory.CreateError(response, "Get");
 
             var dto = response.ResponseObject;
             if (dto is null)

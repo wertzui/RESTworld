@@ -111,7 +111,7 @@ namespace RESTworld.AspNetCore.Controller
             var response = await _readService.GetSingleAsync(id, cancellationToken);
 
             if (!response.Succeeded || response.ResponseObject is null)
-                return ErrorResultFactory.CreateError(response);
+                return ErrorResultFactory.CreateError(response, "Get");
 
             return Ok(response.ResponseObject, id == 0 ? HttpMethod.Post : HttpMethod.Put, accept);
         }
@@ -149,7 +149,7 @@ namespace RESTworld.AspNetCore.Controller
             var response = await _readService.GetListAsync(getListrequest, cancellationToken);
 
             if (!response.Succeeded)
-                return ErrorResultFactory.CreateError(response);
+                return ErrorResultFactory.CreateError(response, "GetList");
 
             var result = CreateListResource(options, response, accept);
 

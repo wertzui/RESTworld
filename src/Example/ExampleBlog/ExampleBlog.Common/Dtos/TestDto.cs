@@ -2,12 +2,20 @@
 using RESTworld.Common.Dtos;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
 namespace ExampleBlog.Common.Dtos
 {
     public class TestDto : ConcurrentDtoBase
     {
+        [ForeignKey(nameof(Blogs))]
+        [DisplayName("Blogs")]
+        public required IReadOnlyCollection<long> BlogIds { get; set; }
+        [Display(Name = "Post")]
+        public required long PostId { get; set; }
         public string MyString { get; set; } = default!;
         public int MyInt { get; set; }
         public char MyChar { get; set; }
@@ -25,6 +33,12 @@ namespace ExampleBlog.Common.Dtos
         [JsonConverter(typeof(KeyValueDictionaryConverterFactory))]
         public IDictionary<string, DictionaryTestDto> MyDictionary { get; set; } = new Dictionary<string, DictionaryTestDto>();
         public NestedTestDto? MyNestedObject { get; set; }
+
+        [JsonIgnore]
+        public virtual ICollection<BlogDto>? Blogs { get; }
+
+        [JsonIgnore]
+        public virtual PostListDto? Post { get; }
     }
 
     public class NestedTestDto

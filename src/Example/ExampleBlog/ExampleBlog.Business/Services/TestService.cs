@@ -81,6 +81,7 @@ namespace ExampleBlog.Business.Services
             var dto = _fixture.Create<TestDto>();
             dto.Id = id;
             dto.MyNullCollection = null;
+            dto.BlogIds = new HashSet<long> { 2, 3 };
 
             return Task.FromResult(ServiceResponse.FromResult(dto));
         }

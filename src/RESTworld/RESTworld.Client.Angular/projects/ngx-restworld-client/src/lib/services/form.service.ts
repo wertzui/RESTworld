@@ -1,6 +1,7 @@
 import { Injectable } from "@angular/core";
 import { UntypedFormArray, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
 import { Property, PropertyType, Template, Templates } from '@wertzui/ngx-hal-client';
+import * as _ from "lodash";
 
 @Injectable({
   providedIn: 'root'
@@ -19,7 +20,7 @@ export class FormService {
   private createFormGroupFromTemplates(templates: Templates, ignoredProperties: string[]): UntypedFormGroup {
     const controls = Object.fromEntries(
       Object.entries(templates)
-        .filter(([key, ]) => !ignoredProperties.some(p => key === p))
+        .filter(([key,]) => !ignoredProperties.some(p => key === p))
         .map(([name, template]) => [
           name,
           this.createFormGroupFromTemplate(template)
@@ -31,7 +32,7 @@ export class FormService {
   public createFormArrayFromTemplates(templates: Templates, ignoredProperties: string[]): UntypedFormArray {
     const controls =
       Object.entries(templates)
-        .filter(([key, ]) => !ignoredProperties.some(p => key === p))
+        .filter(([key,]) => !ignoredProperties.some(p => key === p))
         .map(([, template]) =>
           this.createFormGroupFromTemplate(template));
     const formArray = new UntypedFormArray(controls);
@@ -53,7 +54,9 @@ export class FormService {
     if (property.type === PropertyType.Collection)
       return this.createFormArrayFromTemplates(property._templates, ['default']);
 
-    const control = new UntypedFormControl(property.value);
+    const value = FormService.getPropertyValue(property);
+    const control = new UntypedFormControl(value);
+
     if (property.max)
       control.addValidators(Validators.max(property.max));
     if (property.maxLength)
@@ -70,5 +73,16 @@ export class FormService {
       control.addValidators(Validators.email);
 
     return control;
+  }
+
+  private static getPropertyValue(property: Property): unknown | unknown[] {
+    if(property.options && _.isArray(property.options.selectedValues) && property.options.selectedValues.length > 0) {
+      if(property.options.maxItems !== undefined && property.options.maxItems > 1)
+        return property.options.selectedValues;
+
+      return property.options.selectedValues[0];
+    }
+
+    return property.value;
   }
 }

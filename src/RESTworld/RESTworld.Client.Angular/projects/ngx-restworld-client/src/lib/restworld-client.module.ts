@@ -30,6 +30,7 @@ import { ImageCropperModule } from 'ngx-image-cropper';
 import { DialogModule } from 'primeng/dialog';
 import { ColorPickerModule } from 'primeng/colorpicker';
 import { ContextMenuModule } from 'primeng/contextmenu';
+import { ChipModule } from 'primeng/chip';
 
 import { RESTworldListViewComponent } from './views/restworld-list-view/restworld-list-view.component';
 import { RESTworldEditViewComponent } from './views/restworld-edit-view/restworld-edit-view.component';
@@ -114,6 +115,7 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
     SplitButtonModule,
     AvatarModule,
     ContextMenuModule,
+    ChipModule,
   ],
   exports: [
     RESTworldListViewComponent,

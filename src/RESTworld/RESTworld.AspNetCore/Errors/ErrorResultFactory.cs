@@ -32,31 +32,33 @@ namespace RESTworld.AspNetCore.Errors
         }
 
         /// <inheritdoc/>
-        public ObjectResult CreateError<T>(ServiceResponse<T> response)
+        public ObjectResult CreateError<T>(ServiceResponse<T> response, string action)
         {
             ArgumentNullException.ThrowIfNull(response);
 
             if (!response.ValidationSucceded)
-                return CreateError(_problemDetailsFactory.CreateValidationProblemDetails(GetHttpContext(), response.ValidationResults));
+                return CreateError(_problemDetailsFactory.CreateValidationProblemDetails(GetHttpContext(), response.ValidationResults), action);
 
-            return CreateError((int)response.Status, response.ProblemDetails);
+            return CreateError((int)response.Status, response.ProblemDetails, action);
         }
 
         /// <inheritdoc/>
-        public ObjectResult CreateError(int status, string? problemDetails)
+        public ObjectResult CreateError(int status, string? problemDetails, string action)
         {
-            var result = CreateError(new ProblemDetails { Title = Enum.GetName(typeof(HttpStatusCode), status), Status = status, Detail = problemDetails });
+            var result = CreateError(new ProblemDetails { Title = Enum.GetName(typeof(HttpStatusCode), status), Status = status, Detail = problemDetails }, action);
 
             return result;
         }
 
         /// <inheritdoc/>
-        public ObjectResult CreateError<TProblemDetails>(TProblemDetails problemDetails)
+        public ObjectResult CreateError<TProblemDetails>(TProblemDetails problemDetails, string action)
             where TProblemDetails : ProblemDetails
         {
             ArgumentNullException.ThrowIfNull(problemDetails);
 
-            var result = new ObjectResult(problemDetails) { StatusCode = problemDetails.Status };
+            var resource = _resourceFactory.CreateForGetEndpoint(problemDetails, action);
+
+            var result = new ObjectResult(resource) { StatusCode = problemDetails.Status };
             return result;
         }
 
