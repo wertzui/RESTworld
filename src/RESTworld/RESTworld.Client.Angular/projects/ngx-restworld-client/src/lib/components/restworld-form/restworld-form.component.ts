@@ -68,7 +68,9 @@ export class RestWorldFormComponent implements OnInit{
   public get canSubmit() : boolean {
     return this.allowSubmit &&
       this.template.target !== undefined &&
-      !this.isLoading;
+      !this.isLoading &&
+      this.formGroup !== undefined &&
+      this.formGroup.valid;
   }
 
   public get canDelete(): boolean {
@@ -155,8 +157,10 @@ export class RestWorldFormComponent implements OnInit{
               if (path.length > 0 && path[0] === '$')
                 path.shift();
               const formControl = path.reduce<AbstractControl>(RestWorldFormComponent.getSubControl, this.formGroup!);
-              formControl.setErrors({ ...formControl.errors, ...{ remote: errorsForKey } });
-              formControl.markAsTouched();
+              if (formControl) {
+                formControl.setErrors({ ...formControl.errors, ...{ remote: errorsForKey } });
+                formControl.markAsTouched();
+              }
             }
           }
         }
@@ -194,7 +198,7 @@ export class RestWorldFormComponent implements OnInit{
     this.afterDelete.emit();
   }
 
-  private static getSubControl(control: AbstractControl, pathElement: string): AbstractControl {
+  private static getSubControl(control: AbstractControl, pathElement: string): AbstractControl | undefined {
     if (pathElement === "")
       return control;
 

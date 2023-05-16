@@ -12,12 +12,12 @@ import { RestWorldClientCollection } from './ngx-restworld-client/services/restw
 export class ExampleAvatarGenerator extends AvatarGenerator {
 
   private readonly _client: HttpClient;
-    private _photoLink: Link;
+  private _photoLink: Link;
 
   constructor(
     clients: RestWorldClientCollection,
     private readonly _sanitizer: DomSanitizer
-    ) {
+  ) {
     super();
     this.getImageAsyncOverride = this.getPhotoAsync;
     const client = clients.getClient("ExampleBlog");
@@ -27,14 +27,19 @@ export class ExampleAvatarGenerator extends AvatarGenerator {
 
   async getPhotoAsync(email: string): Promise<SafeUrl> {
     const uri = this._photoLink.fillTemplate({ email: email });
-    const response = await lastValueFrom(this._client.get(uri, { responseType: 'blob', observe: 'response' }));
+    try {
+      const response = await lastValueFrom(this._client.get(uri, { responseType: 'blob', observe: 'response' }));
 
-    if (!response.ok)
+      if (!response.ok)
+        return undefined;
+
+      const unsafeUrl = window.URL.createObjectURL(response.body);
+      const safeUrl = this._sanitizer.bypassSecurityTrustUrl(unsafeUrl);
+
+      return safeUrl;
+    }
+    catch (error) {
       return undefined;
-
-    const unsafeUrl = window.URL.createObjectURL(response.body);
-    const safeUrl = this._sanitizer.bypassSecurityTrustUrl(unsafeUrl);
-
-    return safeUrl;
+    }
   }
 }

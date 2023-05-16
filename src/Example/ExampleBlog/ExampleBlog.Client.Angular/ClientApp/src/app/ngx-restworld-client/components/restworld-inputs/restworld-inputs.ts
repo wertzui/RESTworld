@@ -191,6 +191,11 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
   inputOptionsMultipleRef?: TemplateRef<PropertyTemplateContext>;
 
   private _formControl!: AbstractControl<T, T>;
+  private _filterValue?: string;
+
+  public get filterValue(): string | undefined {
+    return this._filterValue;
+  }
 
   private get valueField(): string {
     return this.property.options.valueField ?? "value";
@@ -203,7 +208,8 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
   constructor (
     private readonly _messageService: MessageService,
     private readonly _clients: RestWorldClientCollection,
-    private readonly _controlContainer: ControlContainer
+    private readonly _controlContainer: ControlContainer,
+    private readonly _changeDetector: ChangeDetectorRef
   ) {
   }
 
@@ -269,7 +275,7 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
     if (options.valueField?.toLowerCase() === 'id' && !Number.isNaN(Number.parseInt(event.filter)))
       filter = `(${options.valueField} eq ${event.filter})  or (${filter})`;
 
-      await this.SetInlineOptionsFromFilter(filter);
+    await this.SetInlineOptionsFromFilter(filter, event.filter);
   }
 
   private async setInitialSelectedOptionsElementForProperty(): Promise<void> {
@@ -285,7 +291,7 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
     await this.SetInlineOptionsFromFilter(filter);
   }
 
-  private async SetInlineOptionsFromFilter(filter: string) {
+  private async SetInlineOptionsFromFilter(filter: string, eventFilter?: string) {
     const options = this.property.options;
     if  (!options.link?.href)
       throw new Error('The property does not have a link href.');
@@ -300,6 +306,9 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
     const items = response.body!._embedded.items;
     const newItems = this.combineInlineWithSelected(items);
     options.inline = newItems;
+
+    // The multiselect component does not update the options when the inline options are updated, so we need to trigger a change detection.
+    this._filterValue = eventFilter;
   }
 
   private combineInlineWithSelected(items: ResourceOfDto<ResourceDto>[]): unknown[] {
