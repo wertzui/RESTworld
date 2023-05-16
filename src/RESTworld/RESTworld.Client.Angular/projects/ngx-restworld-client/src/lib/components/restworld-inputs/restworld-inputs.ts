@@ -191,17 +191,17 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
   inputOptionsMultipleRef?: TemplateRef<PropertyTemplateContext>;
 
   private _formControl!: AbstractControl<T, T>;
-  private _filterValue?: string;
+  private _filterValue: string = "";
 
-  public get filterValue(): string | undefined {
+  public get filterValue(): string {
     return this._filterValue;
   }
 
-  private get valueField(): string {
+  public get valueField(): string {
     return this.property.options.valueField ?? "value";
   }
 
-  private get promptField(): string {
+  public get promptField(): string {
     return this.property.options.promptField ?? "prompt";
   }
 
@@ -209,7 +209,6 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
     private readonly _messageService: MessageService,
     private readonly _clients: RestWorldClientCollection,
     private readonly _controlContainer: ControlContainer,
-    private readonly _changeDetector: ChangeDetectorRef
   ) {
   }
 
@@ -288,10 +287,10 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
     }
 
     const filter = `${options.valueField} in (${options.selectedValues})`;
-    await this.SetInlineOptionsFromFilter(filter);
+    await this.SetInlineOptionsFromFilter(filter, "");
   }
 
-  private async SetInlineOptionsFromFilter(filter: string, eventFilter?: string) {
+  private async SetInlineOptionsFromFilter(filter: string, eventFilter: string) {
     const options = this.property.options;
     if  (!options.link?.href)
       throw new Error('The property does not have a link href.');

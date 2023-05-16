@@ -156,7 +156,7 @@ export class RestWorldFormComponent implements OnInit{
               // The path might start with a $, indicating the root.
               if (path.length > 0 && path[0] === '$')
                 path.shift();
-              const formControl = path.reduce<AbstractControl>(RestWorldFormComponent.getSubControl, this.formGroup!);
+              const formControl = path.reduce<AbstractControl | undefined>(RestWorldFormComponent.getSubControl, this.formGroup);
               if (formControl) {
                 formControl.setErrors({ ...formControl.errors, ...{ remote: errorsForKey } });
                 formControl.markAsTouched();
@@ -198,7 +198,7 @@ export class RestWorldFormComponent implements OnInit{
     this.afterDelete.emit();
   }
 
-  private static getSubControl(control: AbstractControl, pathElement: string): AbstractControl | undefined {
+  private static getSubControl(control: AbstractControl | undefined, pathElement: string): AbstractControl | undefined {
     if (pathElement === "")
       return control;
 
