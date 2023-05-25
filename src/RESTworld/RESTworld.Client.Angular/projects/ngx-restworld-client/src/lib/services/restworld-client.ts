@@ -39,13 +39,36 @@ export class RestWorldClient {
     return combinedHeaders;
   }
 
-  private static createHeaders(mediaType?: 'application/hal+json' | 'application/prs.hal-forms+json' | 'text/csv', version?: number): HttpHeaders {
+  private static createHeadersWithoutBody(
+    version?: number,
+    accept?: string)
+    : HttpHeaders {
     if (version)
       return new HttpHeaders({
-        'Accept': `${mediaType || 'application/hal+json'}; v=${version}`,
-        'Content-Type': `${mediaType || 'application/hal+json'}; v=${version}`
+        'Accept': `${accept ?? 'application/hal+json'}; v=${version}`,
+        'Content-Type': `v=${version}`
       });
-    return new HttpHeaders();
+
+      return new HttpHeaders({
+        'Accept': `${accept ?? 'application/hal+json'};`,
+      });
+  }
+
+  private static createHeadersWithBody(
+    version?: number,
+    accept?: string,
+    contentType?: string)
+    : HttpHeaders {
+    if (version)
+      return new HttpHeaders({
+        'Accept': `${accept ?? 'application/hal+json'}; v=${version}`,
+        'Content-Type': `${contentType ?? 'application/json'}; v=${version}`
+      });
+
+      return new HttpHeaders({
+        'Accept': `${accept ?? 'application/hal+json'};`,
+        'Content-Type': `${contentType ?? 'application/json'};`
+      });
   }
 
   public async delete(resource: Resource): Promise<HttpResponse<void | ProblemDetails>> {
@@ -53,7 +76,7 @@ export class RestWorldClient {
     if (!deleteLink)
       throw new Error(`The resource ${resource} does not have a delete link.`);
     const uri = deleteLink.href;
-    const header = RestWorldClient.createHeaders('application/hal+json', this._options.Version);
+    const header = RestWorldClient.createHeadersWithoutBody(this._options.Version, 'application/hal+json');
 
     const response = await this.halClient.delete(uri, ProblemDetails, header);
 
@@ -81,7 +104,7 @@ export class RestWorldClient {
   }
 
   public async getForm(url: string): Promise<HttpResponse<FormsResource | ProblemDetails>> {
-    const header = RestWorldClient.createHeaders('application/prs.hal-forms+json', this._options.Version);
+    const header = RestWorldClient.createHeadersWithoutBody(this._options.Version, 'application/prs.hal-forms+json');
     return this._halClient.get(url, FormsResource, ProblemDetails, header);
   }
 
@@ -113,7 +136,7 @@ export class RestWorldClient {
     while ((lastResponse?.body?._links?.next?.length ?? 0) > 0) {
       // Get the next response
       const nextLinks = lastResponse.body?._links.next;
-      const nextLink = nextLinks ? nextLinks[0]: undefined;
+      const nextLink = nextLinks ? nextLinks[0] : undefined;
       const nextHref = nextLink?.href;
       if (nextHref) {
         lastResponse = await this.getListByUri<TListDto>(nextHref, parameters, headers);
@@ -194,7 +217,7 @@ export class RestWorldClient {
     const link = new Link();
     link.href = uri;
     const filledUri = link.fillTemplate(parameters);
-    const defaultHeaders = RestWorldClient.createHeaders('application/hal+json', this._options.Version);
+    const defaultHeaders = RestWorldClient.createHeadersWithoutBody(this._options.Version);
     const combinedHeaders = RestWorldClient.combineHeaders(headers, defaultHeaders, false);
 
     const response = await this.halClient.get<PagedListResource<TListDto>, ProblemDetails>(filledUri, PagedListResource, ProblemDetails, combinedHeaders);
@@ -206,10 +229,22 @@ export class RestWorldClient {
     const link = new Link();
     link.href = uri;
     const filledUri = link.fillTemplate(parameters);
-    const defaultHeaders = RestWorldClient.createHeaders('text/csv', this._options.Version);
+    const defaultHeaders = RestWorldClient.createHeadersWithoutBody(this._options.Version, 'text/csv');
     const combinedHeaders = RestWorldClient.combineHeaders(headers, defaultHeaders, false);
 
     const response = await lastValueFrom(this.halClient.httpClient.get(filledUri, { headers: combinedHeaders, responseType: 'blob', observe: 'response' }));
+
+    return response;
+  }
+
+  public async postListByUriAsCsv(uri: string, parameters: {}, body?: any, headers?: HttpHeaders): Promise<HttpResponse<Blob> | undefined> {
+    const link = new Link();
+    link.href = uri;
+    const filledUri = link.fillTemplate(parameters);
+    const defaultHeaders = RestWorldClient.createHeadersWithBody(this._options.Version, 'text/csv');
+    const combinedHeaders = RestWorldClient.combineHeaders(headers, defaultHeaders, false);
+
+    const response = await lastValueFrom(this.halClient.httpClient.post(filledUri, body, { headers: combinedHeaders, responseType: 'blob', observe: 'response' }));
 
     return response;
   }
@@ -227,7 +262,7 @@ export class RestWorldClient {
   }
 
   public async getSingleByUri(uri: string, headers?: HttpHeaders): Promise<HttpResponse<Resource | ProblemDetails>> {
-    const defaultHeaders = RestWorldClient.createHeaders('application/hal+json', this._options.Version);
+    const defaultHeaders = RestWorldClient.createHeadersWithoutBody(this._options.Version);
     const combinedHeaders = RestWorldClient.combineHeaders(headers, defaultHeaders, false);
     const response = await this.halClient.get(uri, Resource, ProblemDetails, combinedHeaders);
 
@@ -243,7 +278,7 @@ export class RestWorldClient {
 
     const uri = saveLink.href;
     const method = saveLink.name.toLowerCase();
-    const header = RestWorldClient.createHeaders('application/hal+json', this._options.Version);
+    const header = RestWorldClient.createHeadersWithBody(this._options.Version);
 
     let response;
     switch (method) {
@@ -263,7 +298,7 @@ export class RestWorldClient {
   public async submit(template: Template, formValues: {}): Promise<HttpResponse<FormsResource | ProblemDetails>> {
     const uri = template.target || '';
     const method = template.method?.toLowerCase();
-    const header = RestWorldClient.createHeaders('application/prs.hal-forms+json', this._options.Version);
+    const header = RestWorldClient.createHeadersWithBody(this._options.Version, 'application/prs.hal-forms+json');
 
     let response;
     switch (method) {
@@ -296,7 +331,7 @@ export class RestWorldClient {
   }
 
   private async getHomeForced(): Promise<HttpResponse<Resource | ProblemDetails>> {
-    const header = RestWorldClient.createHeaders('application/hal+json', this._options.Version);
+    const header = RestWorldClient.createHeadersWithoutBody(this._options.Version);
     const response = await this.halClient.get(this._options.BaseUrl, Resource, ProblemDetails, header);
     return response;
   }
@@ -309,9 +344,9 @@ export class RestWorldClient {
       this._defaultCurie = curies[0].name;
   }
 
-  public async deleteByTemplateAndForm(template: Template, formGroup: FormGroup<{timestamp: AbstractControl<string>}>): Promise<HttpResponse<void | ProblemDetails>> {
+  public async deleteByTemplateAndForm(template: Template, formGroup: FormGroup<{ timestamp: AbstractControl<string> }>): Promise<HttpResponse<void | ProblemDetails>> {
     const url = template.target;
-    if(url === undefined)
+    if (url === undefined)
       throw new Error("The target of the given template cannot be undefined.");
 
     const timestamp = formGroup.value.timestamp
@@ -320,7 +355,7 @@ export class RestWorldClient {
   }
 
   public async deleteByUrl(url: string, timestamp?: string): Promise<HttpResponse<void | ProblemDetails>> {
-    let header = RestWorldClient.createHeaders('application/hal+json', this._options.Version);
+    let header = RestWorldClient.createHeadersWithoutBody(this._options.Version);
 
     if (timestamp !== undefined)
       header = header.append("ETag", timestamp);

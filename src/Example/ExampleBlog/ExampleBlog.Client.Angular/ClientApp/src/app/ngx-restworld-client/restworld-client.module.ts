@@ -52,6 +52,7 @@ import { RestWorldTableComponent } from './components/restworld-table/restworld-
 import { RestWorldMenuButtonComponent } from './components/restworld-menu-button/restworld-menu-button.component';
 import { RestWorldIdNavigationComponent } from './components/restworld-id-navigation/restworld-id-navigation.component';
 import { RestWorldFormElementComponent, RestWorldInputCollectionComponent, RestWorldInputComponent, RestWorldInputDropdownComponent, RestWorldInputObjectComponent, RestWorldInputSimpleComponent, RestWorldInputTemplateComponent } from './components/restworld-inputs/restworld-inputs';
+import { HalClientModule } from '@wertzui/ngx-hal-client';
 
 export function initializeSettings(settingsService: SettingsService): () => Promise<void> {
   return async () => await settingsService.ensureInitialized();
@@ -116,6 +117,7 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
     AvatarModule,
     ContextMenuModule,
     ChipModule,
+    HalClientModule,
   ],
   exports: [
     RESTworldListViewComponent,
