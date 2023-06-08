@@ -1,6 +1,6 @@
 {
   "name": "@wertzui/ngx-restworld-client",
-  "version": "9.0.0",
+  "version": "9.1.0",
   "author": "wertzui",
   "description": "An Angular client to consume a RESTworld service that serves application/hal+json or hal-forms+json.",
   "publishConfig": {
@@ -27,16 +27,16 @@
     "tslib": "^2.4.1"
   },
   "peerDependencies": {
-    "@angular/animations": "^15",
-    "@angular/cdk": "^15",
-    "@angular/common": "^15",
-    "@angular/compiler": "^15",
-    "@angular/core": "^15",
-    "@angular/forms": "^15",
-    "@angular/platform-browser": "^15",
-    "@angular/platform-browser-dynamic": "^15",
-    "@angular/platform-server": "^15",
-    "@angular/router": "^15",
+    "@angular/animations": "^15.2.1",
+    "@angular/cdk": "^15.2.1",
+    "@angular/common": "^15.2.1",
+    "@angular/compiler": "^15.2.1",
+    "@angular/core": "^15.2.1",
+    "@angular/forms": "^15.2.1",
+    "@angular/platform-browser": "^15.2.1",
+    "@angular/platform-browser-dynamic": "^15.2.1",
+    "@angular/platform-server": "^15.2.1",
+    "@angular/router": "^15.2.1",
     "@fortawesome/fontawesome-free": "^6",
     "@jdrks/ngx-deep-linking": "^1.0.8",
     "@wertzui/ngx-hal-client": "^5.0.0",
@@ -47,18 +47,18 @@
     "ngx-valdemort": "^9",
     "primeflex": "^3.3.0",
     "primeicons": "^6",
-    "primeng": "^15",
+    "primeng": "^15.4",
     "rxjs": "^7.6.0",
     "uri-templates-es": "^1",
     "zone.js": "^0.12.0"
   },
   "overrides": {
     "@jdrks/ngx-deep-linking": {
-      "@angular/cdk": "^15",
-      "@angular/common": "^15",
-      "@angular/core": "^15",
-      "@angular/platform-browser-dynamic": "^15",
-      "@angular/router": "^15"
+      "@angular/cdk": "^15.2.1",
+      "@angular/common": "^15.2.1",
+      "@angular/core": "^15.2.1",
+      "@angular/platform-browser-dynamic": "^15.2.1",
+      "@angular/router": "^15.2.1"
     }
   },
   "devDependencies": {

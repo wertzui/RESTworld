@@ -53,6 +53,8 @@ import { RestWorldMenuButtonComponent } from './components/restworld-menu-button
 import { RestWorldIdNavigationComponent } from './components/restworld-id-navigation/restworld-id-navigation.component';
 import { RestWorldFormElementComponent, RestWorldInputCollectionComponent, RestWorldInputComponent, RestWorldInputDropdownComponent, RestWorldInputObjectComponent, RestWorldInputSimpleComponent, RestWorldInputTemplateComponent } from './components/restworld-inputs/restworld-inputs';
 import { HalClientModule } from '@wertzui/ngx-hal-client';
+import { SearchIcon } from 'primeng/icons/search';
+import { SpinnerIcon } from 'primeng/icons/spinner';
 
 export function initializeSettings(settingsService: SettingsService): () => Promise<void> {
   return async () => await settingsService.ensureInitialized();
@@ -118,6 +120,8 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
     ContextMenuModule,
     ChipModule,
     HalClientModule,
+    SearchIcon,
+    SpinnerIcon,
   ],
   exports: [
     RESTworldListViewComponent,

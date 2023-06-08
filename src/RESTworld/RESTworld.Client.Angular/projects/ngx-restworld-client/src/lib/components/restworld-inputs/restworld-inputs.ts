@@ -73,7 +73,7 @@ export class RestWorldInputComponent {
   styleUrls: ['./restworld-input-collection/restworld-input-collection.component.css'],
   viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }]
 })
-export class RestWorldInputCollectionComponent<T extends { [K in keyof T]: AbstractControl<any, any>; }> implements OnInit{
+export class RestWorldInputCollectionComponent<T extends { [K in keyof T]: AbstractControl<any, any>; }> implements OnInit {
 
   @Input()
   property!: Property;
@@ -92,7 +92,7 @@ export class RestWorldInputCollectionComponent<T extends { [K in keyof T]: Abstr
 
   private _defaultTemplate?: Template;
   public get defaultTemplate(): Template {
-    if(this._defaultTemplate === undefined)
+    if (this._defaultTemplate === undefined)
       throw new Error("No default template found.");
 
     return this._defaultTemplate;
@@ -106,7 +106,7 @@ export class RestWorldInputCollectionComponent<T extends { [K in keyof T]: Abstr
     return this._innerFormArray;
   }
 
-  constructor (
+  constructor(
     private readonly _controlContainer: ControlContainer,
     private readonly _formService: FormService,
     private readonly _changeDetectorRef: ChangeDetectorRef,
@@ -148,7 +148,7 @@ export class RestWorldInputCollectionComponent<T extends { [K in keyof T]: Abstr
     this.innerFormArray.removeAt(template.title);
   }
 
-  public collectionItemDropped($event: CdkDragDrop<{ }>) {
+  public collectionItemDropped($event: CdkDragDrop<{}>) {
     const previousIndex = $event.previousIndex;
     const currentIndex = $event.currentIndex;
     const movementDirection = currentIndex > previousIndex ? 1 : -1;
@@ -191,10 +191,18 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
   inputOptionsMultipleRef?: TemplateRef<PropertyTemplateContext>;
 
   private _formControl!: AbstractControl<T, T>;
+
+  private _lastFilterValue: string = "";
   private _filterValue: string = "";
 
   public get filterValue(): string {
     return this._filterValue;
+  }
+
+  private _loading = false;
+
+  public get loading(): boolean {
+    return this._loading;
   }
 
   public get valueField(): string {
@@ -205,7 +213,7 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
     return this.property.options.promptField ?? "prompt";
   }
 
-  constructor (
+  constructor(
     private readonly _messageService: MessageService,
     private readonly _clients: RestWorldClientCollection,
     private readonly _controlContainer: ControlContainer,
@@ -219,21 +227,21 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
   }
 
   public getValue(item: T): any {
-    if(item === undefined || item === null || !item.hasOwnProperty(this.valueField))
+    if (item === undefined || item === null || !item.hasOwnProperty(this.valueField))
       return null;
 
     return item[this.valueField as keyof T];
   }
 
   public getPrompt(item: T): string {
-    if(item === undefined || item === null || !item.hasOwnProperty(this.promptField))
+    if (item === undefined || item === null || !item.hasOwnProperty(this.promptField))
       return "";
 
     return item[this.promptField as keyof T] as string;
   }
 
   public getLabel(item: T): string {
-    if(item === undefined || item === null)
+    if (item === undefined || item === null)
       return "";
 
     const label = `${this.getPrompt(item)} (${this.getValue(item)})`;
@@ -242,7 +250,7 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
   }
 
   public getTooltip(item: T): string {
-    if(item === undefined || item === null)
+    if (item === undefined || item === null)
       return "";
 
     const tooltip = Object.entries(item)
@@ -262,19 +270,26 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
     this._formControl.setValue(newValue);
   }
 
-  public async onOptionsFiltered(event: { originalEvent: unknown; filter: string | null }) {
-    const options = this.property?.options;
+  public onOptionsFiltered = _.debounce(this.onOptionsFilteredInternal, 200);
 
-    if (!options?.link?.href || !event.filter || event.filter === '')
-      return;
+  public async onOptionsFilteredInternal(event: { originalEvent: unknown; filter: string | null }) {
+    this._loading = true;
 
+    try {
+      const options = this.property?.options;
 
-    // const templatedUri = options.link.href;
-    let filter = `contains(${options.promptField}, '${event.filter}')`;
-    if (options.valueField?.toLowerCase() === 'id' && !Number.isNaN(Number.parseInt(event.filter)))
-      filter = `(${options.valueField} eq ${event.filter})  or (${filter})`;
+      if (!options?.link?.href || !event.filter || event.filter === '')
+        return;
 
-    await this.SetInlineOptionsFromFilter(filter, event.filter);
+      let filter = `contains(${options.promptField}, '${event.filter}')`;
+      if (options.valueField?.toLowerCase() === 'id' && !Number.isNaN(Number.parseInt(event.filter)))
+        filter = `(${options.valueField} eq ${event.filter})  or (${filter})`;
+
+      await this.SetInlineOptionsFromFilter(filter, event.filter);
+    }
+    finally {
+      this._loading = false;
+    }
   }
 
   private async setInitialSelectedOptionsElementForProperty(): Promise<void> {
@@ -292,8 +307,10 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
 
   private async SetInlineOptionsFromFilter(filter: string, eventFilter: string) {
     const options = this.property.options;
-    if  (!options.link?.href)
+    if (!options.link?.href)
       throw new Error('The property does not have a link href.');
+
+    //this._lastFilterValue = eventFilter;
 
     const templatedUri = options.link.href;
     const response = await this.getClient().getListByUri(templatedUri, { $filter: filter, $top: 10 });
@@ -380,7 +397,7 @@ export class RestWorldInputObjectComponent<T extends { [K in keyof T]: AbstractC
     return this._innerFormGroup;
   }
 
-  constructor (
+  constructor(
     private readonly _controlContainer: ControlContainer
   ) {
   }
@@ -445,7 +462,7 @@ export class RestWorldInputSimpleComponent<T> implements OnInit {
     return PropertyWithImage;
   }
 
-  constructor (
+  constructor(
     private readonly _controlContainer: ControlContainer
   ) {
   }

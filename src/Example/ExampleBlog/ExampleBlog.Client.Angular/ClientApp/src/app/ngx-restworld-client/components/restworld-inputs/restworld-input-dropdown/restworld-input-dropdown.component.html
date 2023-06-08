@@ -14,13 +14,19 @@
       [showClear]="!property.required || property.options.minItems <= 0"
       (onFilter)="onOptionsFiltered($event)"
       styleClass="w-full"
+      [panelStyleClass]="loading ? 'loading' : ''"
       [filterPlaceholder]="property?.options?.link?.href ? 'search for more results' : ''"
+      [emptyFilterMessage]="loading ? 'Loading...' : ''"
     >
         <ng-template let-item pTemplate="selectedItem">
           <span [pTooltip]="getTooltip(item)">{{getLabel(item)}}</span>
         </ng-template>
         <ng-template let-item pTemplate="item">
           <span [pTooltip]="getTooltip(item)">{{getLabel(item)}}</span>
+        </ng-template>
+        <ng-template pTemplate="filtericon">
+          <SearchIcon *ngIf="!loading"></SearchIcon>
+          <SpinnerIcon *ngIf="loading" [spin]="true"></SpinnerIcon>
         </ng-template>
     </p-dropdown>
 </ng-template>
@@ -44,7 +50,9 @@
       [showToggleAll]="true"
       (onFilter)="onOptionsFiltered($event)"
       styleClass="w-full"
+      [panelStyleClass]="loading ? 'loading' : ''"
       [filterPlaceHolder]="property?.options?.link?.href ? 'search for more results' : ''"
+      [emptyFilterMessage]="loading ? 'Loading...' : ''"
       [selectionLimit]="property.options.maxItems"
       display="chip"
     >
@@ -60,6 +68,10 @@
     </ng-template>
     <ng-template let-item pTemplate="item">
         <span [pTooltip]="getTooltip(item)">{{getLabel(item)}}</span>
+    </ng-template>
+    <ng-template pTemplate="filtericon">
+      <SearchIcon *ngIf="!loading"></SearchIcon>
+      <SpinnerIcon *ngIf="loading" [spin]="true"></SpinnerIcon>
     </ng-template>
   </p-multiSelect>
 </ng-template>
