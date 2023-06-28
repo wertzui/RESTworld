@@ -1,6 +1,6 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { ErrorHandler, NgModule } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -21,6 +21,7 @@ import { PostWithAuthorListComponent } from './blog-posts/post-with-autor-list.c
 import { DialogModule } from 'primeng/dialog';
 import { AvatarGenerator } from './ngx-restworld-client/services/avatar-generator';
 import { ExampleAvatarGenerator } from './ExampleAvatarGenerator';
+import { PostsForBlogComponent } from './posts-for-blog/posts-for-blog.component';
 
 @NgModule({
   declarations: [
@@ -28,7 +29,8 @@ import { ExampleAvatarGenerator } from './ExampleAvatarGenerator';
     HomeComponent,
     NavigationComponent,
     PostWithAuthorComponent,
-    PostWithAuthorListComponent
+    PostWithAuthorListComponent,
+    PostsForBlogComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -43,6 +45,7 @@ import { ExampleAvatarGenerator } from './ExampleAvatarGenerator';
     BrowserAnimationsModule,
     DialogModule,
     RestworldClientModule,
+    ReactiveFormsModule,
   ],
   providers: [
     {

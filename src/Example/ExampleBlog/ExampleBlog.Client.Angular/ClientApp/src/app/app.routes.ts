@@ -5,9 +5,21 @@ import { RESTworldEditViewComponent } from "./ngx-restworld-client/views/restwor
 import { PostWithAuthorComponent } from "./blog-posts/post-with-author.component";
 import { HomeComponent } from "./home/home.component";
 import { PostWithAuthorListComponent } from './blog-posts/post-with-autor-list.component';
+import { PostsForBlogComponent } from "./posts-for-blog/posts-for-blog.component";
 
 export const AppRoutes: DeepLinkingRoute[] = [
   { path: '', component: HomeComponent, pathMatch: 'full' },
+  {
+    path: 'edit/postsForBlog/:apiName/:rel',
+    component: DeepLinkingWrapperComponent,
+    wrappedComponent: PostsForBlogComponent,
+    deepLinking: {
+      params: [
+        { name: 'apiName', type: 'string' },
+        { name: 'rel', type: 'string' }
+      ]
+    }
+  },
   {
     path: 'list/postWithAuthor',
     runGuardsAndResolvers: 'always',
@@ -87,6 +99,10 @@ export const AppMenu: MenuItem[] = [
       {
         label: "TestEntries",
         routerLink: ['list', 'ExampleBlog', 'MyEx:Test']
+      },
+      {
+        label: "Bulk edit Posts",
+        routerLink: ['edit', 'postsForBlog', 'ExampleBlog', 'MyEx:Post'],
       }
     ]
   }];

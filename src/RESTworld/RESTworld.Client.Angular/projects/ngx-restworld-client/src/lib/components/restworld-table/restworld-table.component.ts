@@ -1,10 +1,12 @@
-import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
-import { Property, PropertyType, Template } from '@wertzui/ngx-hal-client';
+import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { NumberTemplate, Property, PropertyType, Template } from '@wertzui/ngx-hal-client';
 import * as _ from 'lodash';
 import { LazyLoadEvent, MenuItem } from 'primeng/api';
 import { ODataParameters } from '../../models/o-data';
 import { ODataService } from '../../services/o-data.service';
 import { ContextMenu } from 'primeng/contextmenu';
+import { AbstractControl, ControlContainer, FormArray, FormGroup, FormGroupDirective, FormRecord, UntypedFormArray, UntypedFormGroup } from '@angular/forms';
+import { FormService } from '../../services/form.service';
 
 enum ColumnFilterType {
   text = 'text',
@@ -16,22 +18,48 @@ enum ColumnFilterType {
 @Component({
   selector: 'rw-table',
   templateUrl: './restworld-table.component.html',
-  styleUrls: ['./restworld-table.component.css']
+  styleUrls: ['./restworld-table.component.css'],
+  viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }]
 })
-export class RestWorldTableComponent<TListDto> {
+export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
   @Input()
-  public api?: string;
+  public apiName?: string;
 
-  private _template?: Template;
+  public get formArray(): FormArray<UntypedFormGroup> | undefined {
+    return this._controlContainer.control as FormArray<UntypedFormGroup> | undefined;
+  }
+
+  private _searchTemplate?: Template;
   @Input()
-  public set template(value: Template | undefined){
-    this._template = value;
+  public set searchTemplate(value: Template | undefined){
+    this._searchTemplate = value;
     this._columns = value?.properties.filter(p => p.type !== PropertyType.Hidden) ?? [];
     this.setSortFieldAndSortOrder(value)
   }
 
-  public get template() {
-    return this._template;
+  public get searchTemplate() {
+    return this._searchTemplate;
+  }
+
+  private _editTemplate?: Template;
+  @Input()
+  public set editTemplate(value: Template | undefined){
+    this._editTemplate = value;
+    this.updateEditProperties();
+    this.updateFormArray();
+  }
+
+  public get editTemplate() {
+    return this._editTemplate;
+  }
+
+  private _editProperties: Record<string, Property> = {};
+  public get editProperties() {
+    return this._editProperties;
+  }
+
+  public get isEditable() {
+    return this.editTemplate !== undefined && this.formArray !== undefined && this.apiName;
   }
 
   private _rows: TListDto[] = [];
@@ -43,6 +71,7 @@ export class RestWorldTableComponent<TListDto> {
     this._rows = value;
     if(this.showRowMenuAsColumn)
       this._rowMenus = value.map(r => this.rowMenu(r, false));
+    this.updateFormArray();
   }
 
   @Input()
@@ -60,7 +89,7 @@ export class RestWorldTableComponent<TListDto> {
   }
 
   public get showMenuColumn() {
-    return this.headerMenu.length > 0 || this.showRowMenuAsColumn;
+    return this.headerMenu.length > 0 || (this.showRowMenuAsColumn && this.rowMenus.some(m => m.length > 0));
   }
 
   @Input()
@@ -71,6 +100,12 @@ export class RestWorldTableComponent<TListDto> {
 
   @Input()
   public totalRecords = 0;
+
+  public constructor(
+    private readonly _controlContainer: ControlContainer,
+    private readonly _formService: FormService) {
+
+  }
 
   private setSortFieldAndSortOrder(template: Template | undefined) {
     const orderBy = template?.properties?.find(p => p?.name === "$orderby")?.value;
@@ -121,6 +156,16 @@ export class RestWorldTableComponent<TListDto> {
     return this._columns;
   }
 
+  // private _editColumns: Property[] = [];
+  // public get editColumns(): Property[] {
+  //   return this._editColumns;
+  // }
+
+  private _rowsBeforeCurrentPage: number = 0;
+  public get rowsBeforeCurrentPage(): number {
+    return this._rowsBeforeCurrentPage;
+  }
+
   private static readonly _dateFormat = new Date(3333, 10, 22) // months start at 0 in JS
     .toLocaleDateString()
     .replace("22", "dd")
@@ -149,7 +194,8 @@ export class RestWorldTableComponent<TListDto> {
   public load(event: LazyLoadEvent) {
     this.sortField = event.sortField;
     this.sortOrder = event.sortOrder;
-    const parameters = ODataService.createParametersFromTableLoadEvent(event, this.template);
+    this._rowsBeforeCurrentPage = event.first ?? 0;
+    const parameters = ODataService.createParametersFromTableLoadEvent(event, this.searchTemplate);
     this.onFilterOrSortChanged.emit(parameters);
   }
 
@@ -175,5 +221,38 @@ export class RestWorldTableComponent<TListDto> {
       default:
         return ColumnFilterType.text;
     }
+  }
+
+  public showInputField(column: Property): boolean {
+    if (!this.isEditable)
+      return false;
+
+    const editProperty = this.editProperties[column.name];
+
+    return editProperty !== undefined && editProperty.type !== PropertyType.Hidden && !editProperty.readOnly;
+  }
+
+  private updateFormArray(): void {
+    if(!this.isEditable || !this.rows || !this.formArray || !this.editTemplate)
+      return;
+
+    this.formArray.clear();
+
+    const newControls = this.rows
+      .map(r => {
+        const formGroup = this._formService.createFormGroupFromTemplate(this.editTemplate!);
+        formGroup.patchValue(r);
+        return formGroup;
+      });
+
+    for (const control of newControls)
+      this.formArray.push(control);
+  }
+
+  private updateEditProperties(): void {
+    if (!this.editTemplate)
+      return;
+
+    this._editProperties = Object.fromEntries(this.editTemplate.properties.map(p => [ p.name, p ]));
   }
 }

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.Extensions.Options;
+using RESTworld.AspNetCore.Caching;
 using RESTworld.AspNetCore.DependencyInjection;
 using RESTworld.AspNetCore.Errors.Abstractions;
 using RESTworld.AspNetCore.Filters;
@@ -52,6 +53,7 @@ namespace RESTworld.AspNetCore.Controller
         /// <param name="linkFactory"></param>
         /// <param name="formFactory">The form factory which created HAL-Form resources.</param>
         /// <param name="errorResultFactory">The factory to create error results.</param>
+        /// <param name="cache">The cache for service responses.</param>
         /// <param name="options">
         /// The options which are used to determine the max number of entries for the List endpoint.
         /// </param>
@@ -61,8 +63,9 @@ namespace RESTworld.AspNetCore.Controller
             ILinkFactory linkFactory,
             IODataFormFactory formFactory,
             IErrorResultFactory errorResultFactory,
+            ICacheHelper cache,
             IOptions<RestWorldOptions> options)
-            : base(resourceFactory)
+            : base(resourceFactory, cache)
         {
             if (options is null)
                 throw new ArgumentNullException(nameof(options));
@@ -108,13 +111,14 @@ namespace RESTworld.AspNetCore.Controller
         [ProducesWithContentNegotiation("application/hal+json", "application/prs.hal-forms+json", "application/hal-forms+json")]
         public virtual async Task<ActionResult<Resource<TGetFullDto>>> GetAsync(long id, [FromHeader, SwaggerIgnore] string accept, CancellationToken cancellationToken)
         {
-            var response = await _readService.GetSingleAsync(id, cancellationToken);
+            var response = await Cache.GetOrCreateAsync(CreateCacheKeyForGet(id), nameof(CachingOptions.Get), _ => _readService.GetSingleAsync(id, cancellationToken));
 
             if (!response.Succeeded || response.ResponseObject is null)
                 return ErrorResultFactory.CreateError(response, "Get");
 
             return Ok(response.ResponseObject, id == 0 ? HttpMethod.Post : HttpMethod.Put, accept);
         }
+
 
         /// <summary>
         /// Gets a paged list of resources matching the filter criteria.
@@ -146,7 +150,7 @@ namespace RESTworld.AspNetCore.Controller
             options.Context.DefaultQueryConfigurations.MaxTop = Options.MaxNumberForListEndpoint;
             var getListrequest = options.ToListRequest(Options.CalculateTotalCountForListEndpoint);
 
-            var response = await _readService.GetListAsync(getListrequest, cancellationToken);
+            var response = await Cache.GetOrCreateAsync(CreateCacheKeyForGetList(options.RawValues), nameof(CachingOptions.GetList), _ => _readService.GetListAsync(getListrequest, cancellationToken));
 
             if (!response.Succeeded)
                 return ErrorResultFactory.CreateError(response, "GetList");
@@ -222,6 +226,36 @@ namespace RESTworld.AspNetCore.Controller
         /// <returns>The created Microsoft.AspNetCore.Mvc.OkObjectResult for the response.</returns>
         protected virtual OkObjectResult Ok(TGetFullDto dto, HttpMethod method, string accept)
             => Ok(CreateResource(dto, method, accept));
+
+        /// <summary>
+        /// Creates the cache key for <see cref="GetAsync(long, string, CancellationToken)"/>.
+        /// </summary>
+        /// <param name="id">The ID of the resource to get.</param>
+        /// <returns>The key for the cache.</returns>
+        protected static string CreateCacheKeyForGet(long id) => string.Concat(nameof(GetAsync), "_", typeof(TGetFullDto).Name, "_", id);
+
+        /// <summary>
+        /// Creates the cache key for <see cref="GetListAsync(ODataQueryOptions{TEntity}, string, CancellationToken, string?, string?, long?, long?)"/>.
+        /// </summary>
+        /// <param name="oData">The raw OData query options.</param>
+        /// <returns>The key for the cache.</returns>
+        protected static string CreateCacheKeyForGetList(ODataRawQueryOptions oData) => string.Concat(
+            nameof(GetListAsync),
+            "_",
+            typeof(TGetFullDto).Name,
+            "_Apply:", oData.Apply,
+            "_Compute:", oData.Compute,
+            "_Count:", oData.Count,
+            "_DeltaToken:", oData.DeltaToken,
+            "_Expand:", oData.Expand,
+            "_Filter:", oData.Filter,
+            "_Format:", oData.Format,
+            "_OrderBy:", oData.OrderBy,
+            "_Search:", oData.Search,
+            "_Select:", oData.Select,
+            "_Skip:", oData.Skip,
+            "_SkipToken:", oData.SkipToken,
+            "_Top:", oData.Top);
 
         /// <summary>
         /// Since this is a read-only controller, every property is also read only.

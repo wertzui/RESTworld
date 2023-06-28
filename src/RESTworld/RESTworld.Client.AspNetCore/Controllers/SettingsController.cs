@@ -2,7 +2,9 @@
 using HAL.Common;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using RESTworld.AspNetCore.Caching;
 using RESTworld.AspNetCore.Controller;
+using RESTworld.AspNetCore.DependencyInjection;
 using RESTworld.Common.Client;
 
 namespace RESTworld.Client.AspNetCore.Controllers
@@ -20,9 +22,10 @@ namespace RESTworld.Client.AspNetCore.Controllers
         /// </summary>
         /// <param name="options">RestWorldOptions from the app config.</param>
         /// <param name="resourceFactory">The resource factory.</param>
+        /// <param name="cache">The cache.</param>
         /// <exception cref="System.ArgumentNullException"></exception>
-        public SettingsController(IOptions<RestWorldClientOptions> options, IODataResourceFactory resourceFactory)
-            : base(resourceFactory)
+        public SettingsController(IOptions<RestWorldClientOptions> options, IODataResourceFactory resourceFactory, ICacheHelper cache)
+            : base(resourceFactory, cache)
         {
             _options = options ?? throw new System.ArgumentNullException(nameof(options));
         }
@@ -35,7 +38,7 @@ namespace RESTworld.Client.AspNetCore.Controllers
         [ProducesResponseType(200)]
         public ActionResult<Resource<ClientSettings?>> Get()
         {
-            var resource = ResourceFactory.CreateForGetEndpoint(_options.Value.ClientSettings);
+            var resource = Cache.GetOrCreate("ClientSettings", nameof(CachingOptions.Get), _ => ResourceFactory.CreateForGetEndpoint(_options.Value.ClientSettings));
 
             return resource;
         }

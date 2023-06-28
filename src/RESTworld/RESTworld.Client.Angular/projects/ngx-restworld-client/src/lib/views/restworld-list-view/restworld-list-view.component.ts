@@ -14,7 +14,7 @@ import { ODataParameters } from '../../models/o-data';
   templateUrl: './restworld-list-view.component.html',
   styleUrls: ['./restworld-list-view.component.css']
 })
-export class RESTworldListViewComponent<TListDto extends ResourceDto> {
+export class RESTworldListViewComponent<TListDto extends ResourceDto & Record<string, unknown>> {
 
   @Input()
   public createButtonMenu?: MenuItem[];

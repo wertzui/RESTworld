@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
+using RESTworld.AspNetCore.Caching;
 using RESTworld.AspNetCore.DependencyInjection;
 using RESTworld.AspNetCore.Errors.Abstractions;
 using RESTworld.AspNetCore.Serialization;
@@ -78,6 +79,7 @@ namespace RESTworld.AspNetCore.Controller
         /// <param name="linkFactory"></param>
         /// <param name="formFactory">The form factory which created HAL-Form resources.</param>
         /// <param name="errorResultFactory">The factory to create error results.</param>
+        /// <param name="cache">The cache for service responses.</param>
         /// <param name="options">
         /// The options which are used to determine the max number of entries for the List endpoint.
         /// </param>
@@ -87,8 +89,9 @@ namespace RESTworld.AspNetCore.Controller
             ILinkFactory linkFactory,
             IODataFormFactory formFactory,
             IErrorResultFactory errorResultFactory,
+            ICacheHelper cache,
             IOptions<RestWorldOptions> options)
-            : base(service, resourceFactory, linkFactory, formFactory, errorResultFactory, options)
+            : base(service, resourceFactory, linkFactory, formFactory, errorResultFactory, cache, options)
         {
             _crudService = service ?? throw new ArgumentNullException(nameof(service));
         }
@@ -140,6 +143,8 @@ namespace RESTworld.AspNetCore.Controller
 
             if (!response.Succeeded)
                 return ErrorResultFactory.CreateError(response, "Delete");
+
+            Cache.Remove(CreateCacheKeyForGet(id));
 
             return Ok();
 
@@ -368,6 +373,11 @@ namespace RESTworld.AspNetCore.Controller
             if (!response.Succeeded)
                 return ErrorResultFactory.CreateError(response, "Post");
 
+            foreach (var dto in response.ResponseObject)
+            {
+                Cache.Set(CreateCacheKeyForGet(dto.Id), nameof(CachingOptions.Get), dto);
+            }
+
             var responseObject = response.ResponseObject ?? Array.Empty<TGetFullDto>();
 
             var resource = ResourceFactory.CreateForListEndpoint(responseObject, _ => "items", m => m.Id);
@@ -410,6 +420,8 @@ namespace RESTworld.AspNetCore.Controller
             if (response.ResponseObject is null)
                 return ErrorResultFactory.CreateError(StatusCodes.Status500InternalServerError, "The service did return null for the created object.", "Post");
 
+            Cache.Set(CreateCacheKeyForGet(response.ResponseObject.Id), nameof(CachingOptions.Get), response.ResponseObject);
+
             var resource = ResourceFactory.CreateForGetEndpoint(response.ResponseObject, routeValues: new { id = response.ResponseObject.Id });
             Url.AddSaveAndDeleteLinks(resource);
 
@@ -430,6 +442,11 @@ namespace RESTworld.AspNetCore.Controller
 
             if (!response.Succeeded)
                 return ErrorResultFactory.CreateError(response, "Put");
+
+            foreach (var dto in response.ResponseObject)
+            {
+                Cache.Set(CreateCacheKeyForGet(dto.Id), nameof(CachingOptions.Get), dto);
+            }
 
             var responseObject = response.ResponseObject ?? Array.Empty<TGetFullDto>();
 
@@ -469,6 +486,8 @@ namespace RESTworld.AspNetCore.Controller
 
             if (!response.Succeeded || response.ResponseObject is null)
                 return ErrorResultFactory.CreateError(response, "Put");
+
+            Cache.Set(CreateCacheKeyForGet(response.ResponseObject.Id), nameof(CachingOptions.Get), response.ResponseObject);
 
             return Ok(response.ResponseObject, HttpMethod.Put, accept);
         }

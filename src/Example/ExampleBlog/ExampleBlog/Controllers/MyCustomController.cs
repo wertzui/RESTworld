@@ -7,7 +7,9 @@ using HAL.AspNetCore.OData.Abstractions;
 using HAL.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using RESTworld.AspNetCore.Caching;
 using RESTworld.AspNetCore.Controller;
+using RESTworld.AspNetCore.DependencyInjection;
 using RESTworld.AspNetCore.Errors.Abstractions;
 using RESTworld.AspNetCore.Swagger;
 using System;
@@ -31,8 +33,9 @@ namespace ExampleBlog.Controllers
             IODataResourceFactory resourceFactory,
             ILinkFactory linkFactory,
             IFormFactory formFactory,
-            IErrorResultFactory errorResultFactory)
-            : base(resourceFactory)
+            IErrorResultFactory errorResultFactory,
+            ICacheHelper cache)
+            : base(resourceFactory, cache)
         {
             _service = service ?? throw new ArgumentNullException(nameof(service));
             _linkFactory = linkFactory ?? throw new ArgumentNullException(nameof(linkFactory));
@@ -49,7 +52,7 @@ namespace ExampleBlog.Controllers
             [FromHeader, SwaggerIgnore] string accept,
             CancellationToken cancellationToken)
         {
-            var response = await _service.GetPostWithAuthorAsync(id, cancellationToken);
+            var response = await Cache.GetOrCreateAsync(nameof(GetPostWithAuthorAsync) + "_" + id, nameof(CachingOptions.Get), _ => _service.GetPostWithAuthorAsync(id, cancellationToken));
 
             if (!response.Succeeded)
                 return _errorResultFactory.CreateError(response, "Get");

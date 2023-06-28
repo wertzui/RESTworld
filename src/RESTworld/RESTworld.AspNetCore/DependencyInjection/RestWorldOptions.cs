@@ -39,6 +39,11 @@ namespace RESTworld.AspNetCore.DependencyInjection
         public VersioningOptions? Versioning { get; set; }
 
         /// <summary>
+        /// Options to configure the caching behavior of RESTWorld.
+        /// </summary>
+        public CachingOptions Caching { get; set; } = new();
+
+        /// <summary>
         /// Gets the curie if set, or default which is the upper case letters of the entry assembly as lower case (MyEntryAssembly => "mea").
         /// </summary>
         /// <returns></returns>

@@ -37,7 +37,11 @@
 
   <ng-template pTemplate="body" let-entity let-columns="columns" let-rowIndex="rowIndex">
     <tr (contextmenu)="openContextMenu($event, entity)">
-        <td [ngSwitch]="col.type" *ngFor="let col of columns">
+      <td [ngSwitch]="col.type" *ngFor="let col of columns">
+          <ng-container *ngIf="showInputField(col); else textField" [formGroup]="formArray!.controls[rowIndex - rowsBeforeCurrentPage]" >
+            <rw-input [apiName]="apiName!" [property]="editProperties[col.name]"></rw-input>
+          </ng-container>
+          <ng-template #textField>
             <ng-container *ngSwitchCase="PropertyType.Text">
                 <rw-avatar *ngIf="col.name === 'createdBy' || col.name === 'lastChangedBy'" [user]="entity[col.name]"></rw-avatar>
                 <span *ngIf="col.name !== 'createdBy' && col.name !== 'lastChangedBy'">{{entity[col.name]}}</span>
@@ -52,6 +56,7 @@
             <span *ngSwitchCase="PropertyType.Collection" class="flex justify-content-end"><p *ngFor="let arrayElement of entity[col.name]">{{arrayElement | json}}</p></span>
             <span *ngSwitchCase="PropertyType.Object" class="flex justify-content-end">{{entity[col.name] | json}}</span>
             <span *ngSwitchDefault [pTooltip]="entity[col.name]">{{entity[col.name]}}</span>
+          </ng-template>
         </td>
         <td *ngIf="showMenuColumn" class="flex justify-content-end">
           <rw-menu-button *ngIf="showRowMenuAsColumn" [items]="rowMenus[rowIndex - table.first]"></rw-menu-button>

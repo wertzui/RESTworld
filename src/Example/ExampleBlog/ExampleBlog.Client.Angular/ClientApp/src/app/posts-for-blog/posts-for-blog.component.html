@@ -1,0 +1,13 @@
+<form [formGroup]="formArray">
+  <rw-table
+    [api]="apiName"
+    [searchTemplate]="searchTemplate"
+    [editTemplate]="editTemplate"
+    [rows]="rows"
+    [totalRecords]="totalRecords"
+    [isLoading]="isLoading"
+    (onFilterOrSortChanged)="load($event)">
+  </rw-table>
+</form>
+
+<pre>{{formArray.value | json}}</pre>

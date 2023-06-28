@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.OData.ModelBuilder;
+using RESTworld.AspNetCore.Caching;
 using RESTworld.AspNetCore.Controller;
 using RESTworld.AspNetCore.DependencyInjection;
 using RESTworld.AspNetCore.Formatter;
@@ -179,6 +180,8 @@ namespace RESTworld.AspNetCore
             services.AddSingleton(_ => ODataModelBuilder.GetEdmModel());
 
             services.Configure<RestWorldOptions>(Configuration.GetSection("RESTworld"));
+
+            services.AddSingleton<ICacheHelper, CacheHelper>();
 
             services
                 .AddControllers(options =>

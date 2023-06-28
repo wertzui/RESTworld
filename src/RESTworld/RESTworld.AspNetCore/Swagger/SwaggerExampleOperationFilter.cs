@@ -181,20 +181,28 @@ namespace RESTworld.AspNetCore.Swagger
         private void AddExampleForSuccessfullUnknownResourceResponse(OpenApiMediaType type, Type resourceType, ODataResourceFactory resourceFactory, ILinkFactory linkFactory, ControllerActionDescriptor? controllerActionDescriptor = null)
         {
             Resource resource;
+            object? routeValues = null;
             if (resourceType.IsGenericType)
             {
                 var stateType = resourceType.GenericTypeArguments[0];
                 var state = _fixture.Create(stateType, _specimenContext);
-                object? routeValues = null;
                 if (state is DtoBase dtoBase)
                     routeValues = new { id = dtoBase.Id };
 
-                resource = resourceFactory.CreateForGetEndpoint(state, controllerActionDescriptor?.ActionName ?? "Get", controllerActionDescriptor?.ControllerName, routeValues);
+                resource = resourceFactory.Create(state);
             }
             else
             {
                 resource = resourceFactory.Create();
-                linkFactory.AddSelfLinkTo(resource, controllerActionDescriptor?.ActionName ?? "Get", controllerActionDescriptor?.ControllerName);
+            }
+
+            try
+            {
+                linkFactory.AddSelfLinkTo(resource, controllerActionDescriptor?.ActionName ?? "Get", controllerActionDescriptor?.ControllerName, routeValues);
+            }
+            catch
+            {
+                // Creating the self link may fail if the route expects parameters that are not the Id of the resource.
             }
 
             type.Example = CreateExample(resource);
