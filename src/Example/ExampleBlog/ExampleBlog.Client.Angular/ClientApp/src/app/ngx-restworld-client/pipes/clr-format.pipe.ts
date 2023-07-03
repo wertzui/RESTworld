@@ -7,13 +7,20 @@ import * as clrFormat from 'clr-format';
 })
 export class ClrFormatPipe implements PipeTransform {
 
+  private static readonly formatFunction = ClrFormatPipe.getFormatFunction();
+
   constructor() {
   }
 
-  transform(value: any, format?: string): string {
+  public transform(value: any, format?: string): string {
     if (format === undefined)
       return value;
 
-    return format.includes("{0") ? clrFormat(format, value) : clrFormat("{0:" + format + "}", value);
+    return format.includes("{0") ? ClrFormatPipe.formatFunction(format, value) : ClrFormatPipe.formatFunction("{0:" + format + "}", value);
+  }
+
+  private static getFormatFunction(): (format: string, value: any) => string {
+    // Depending if this is bundled with webpack or not, the default export will be different
+    return clrFormat.default ?? clrFormat;
   }
 }
