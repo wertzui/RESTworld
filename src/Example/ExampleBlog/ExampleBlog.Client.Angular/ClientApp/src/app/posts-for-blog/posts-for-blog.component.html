@@ -1,11 +1,14 @@
-<form [formGroup]="formArray">
+<form>
   <rw-table
-    [api]="apiName"
+    [formArray]="formArray"
+    [apiName]="apiName"
     [searchTemplate]="searchTemplate"
     [editTemplate]="editTemplate"
     [rows]="rows"
     [totalRecords]="totalRecords"
     [isLoading]="isLoading"
+    [rowStyleClass]="generateRowClasses"
+    [cellStyleClass]="generateCellClasses"
     (onFilterOrSortChanged)="load($event)">
   </rw-table>
 </form>

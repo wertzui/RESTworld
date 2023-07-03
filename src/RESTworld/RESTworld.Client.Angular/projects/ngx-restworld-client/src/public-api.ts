@@ -27,6 +27,8 @@ export * from './lib/models/special-properties';
 export * from './lib/models/templating';
 
 export * from './lib/pipes/as.pipe';
+export * from './lib/pipes/clr-format.pipe';
+export * from './lib/pipes/property-type-format.pipe';
 export * from './lib/pipes/safe-url.pipe';
 
 export * from './lib/services/avatar-generator';

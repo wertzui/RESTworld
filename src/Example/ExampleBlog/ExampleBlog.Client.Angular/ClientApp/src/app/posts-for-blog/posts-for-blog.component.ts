@@ -7,7 +7,7 @@ import { ODataParameters } from '../ngx-restworld-client/models/o-data';
 import { RestWorldClient } from '../ngx-restworld-client/services/restworld-client';
 import { ProblemDetails } from '../ngx-restworld-client/models/problem-details';
 import { PostListDto } from './models';
-import { PagedListResource, ResourceOfDto, Template } from '@wertzui/ngx-hal-client';
+import { PagedListResource, Property, ResourceOfDto, Template } from '@wertzui/ngx-hal-client';
 import { FormArray, FormGroup } from '@angular/forms';
 import { FormService } from '../ngx-restworld-client/services/form.service';
 
@@ -31,6 +31,7 @@ export class PostsForBlogComponent implements OnInit {
   public editTemplate: Template;
   public rows: ResourceOfDto<PostListDto>[] = [];
   public formArray: FormArray = new FormArray([]);
+  public formGroup: FormGroup = new FormGroup({blablup: this.formArray});
 
   constructor(
     private readonly _clients: RestWorldClientCollection,
@@ -80,6 +81,16 @@ export class PostsForBlogComponent implements OnInit {
     }
 
     this.isLoading = false;
+  }
+
+  public generateRowClasses(row: ResourceOfDto<PostListDto>, rowIndex: number) {
+    return rowIndex % 2 === 0 ? 'row-even' : 'row-odd';
+  }
+
+  public generateCellClasses(row: ResourceOfDto<PostListDto>, property: Property, rowIndex: number, columnIndex: number) {
+    if (row[property.name] === "Post number 1")
+      return 'special';
+    return columnIndex % 2 === 0 ? 'cell-even' : 'cell-odd';
   }
 
   private getClient(): RestWorldClient {

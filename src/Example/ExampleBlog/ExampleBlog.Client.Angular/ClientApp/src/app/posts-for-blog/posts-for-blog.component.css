@@ -1,0 +1,19 @@
+::ng-deep tr.row-even {
+  background-color: gray !important;
+}
+
+::ng-deep tr.row-odd {
+  background-color: lightgray !important;
+}
+
+::ng-deep td.cell-even {
+  color: royalblue !important;
+}
+
+::ng-deep td.cell-odd .p-inputtext {
+  color: seagreen !important;
+}
+
+::ng-deep td.special {
+  background-color: red !important;
+}

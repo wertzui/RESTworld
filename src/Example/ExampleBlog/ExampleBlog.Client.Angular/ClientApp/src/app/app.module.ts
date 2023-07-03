@@ -36,6 +36,7 @@ import { PostsForBlogComponent } from './posts-for-blog/posts-for-blog.component
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
     HttpClientModule,
     FormsModule,
+    ReactiveFormsModule,
     RouterModule.forRoot(AppRoutes, { onSameUrlNavigation: 'reload' }),
     CommonModule,
     MenubarModule,

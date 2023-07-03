@@ -29,6 +29,7 @@
     "@wertzui/ngx-hal-client": "5.0.0",
     "cldr-dates-modern": "43.0.0",
     "cldr-numbers-modern": "43.0.0",
+    "clr-format": "0.5.2",
     "lodash": "4.17.21",
     "ngx-image-cropper": "6.3.3",
     "ngx-valdemort": "9.0.0",

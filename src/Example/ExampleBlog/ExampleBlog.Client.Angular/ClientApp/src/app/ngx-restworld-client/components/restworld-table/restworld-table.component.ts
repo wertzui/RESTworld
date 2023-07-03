@@ -1,11 +1,11 @@
-import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Optional, Output, ViewChild } from '@angular/core';
 import { NumberTemplate, Property, PropertyType, Template } from '@wertzui/ngx-hal-client';
 import * as _ from 'lodash';
 import { LazyLoadEvent, MenuItem } from 'primeng/api';
 import { ODataParameters } from '../../models/o-data';
 import { ODataService } from '../../services/o-data.service';
 import { ContextMenu } from 'primeng/contextmenu';
-import { AbstractControl, ControlContainer, FormArray, FormGroup, FormGroupDirective, FormRecord, UntypedFormArray, UntypedFormGroup } from '@angular/forms';
+import { AbstractControl, ControlContainer, FormArray, FormArrayName, FormGroup, FormGroupDirective, FormRecord, UntypedFormArray, UntypedFormGroup } from '@angular/forms';
 import { FormService } from '../../services/form.service';
 
 enum ColumnFilterType {
@@ -19,14 +19,23 @@ enum ColumnFilterType {
   selector: 'rw-table',
   templateUrl: './restworld-table.component.html',
   styleUrls: ['./restworld-table.component.css'],
-  viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }]
-})
+  viewProviders: [{
+    provide: ControlContainer,
+    deps: [[Optional, FormArrayName]],
+    useFactory: (arrayName: FormArrayName) => arrayName, }]
+  })
 export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
   @Input()
   public apiName?: string;
 
+  private _formArray?: FormArray<UntypedFormGroup>;
+  @Input()
+  public set formArray(value: FormArray<UntypedFormGroup> | undefined) {
+    this._formArray = value;
+  }
+
   public get formArray(): FormArray<UntypedFormGroup> | undefined {
-    return this._controlContainer.control as FormArray<UntypedFormGroup> | undefined;
+    return this._formArray ?? this._controlContainer?.control as FormArray<UntypedFormGroup> | undefined;
   }
 
   private _searchTemplate?: Template;
@@ -69,8 +78,7 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
   @Input()
   public set rows(value: TListDto[]) {
     this._rows = value;
-    if(this.showRowMenuAsColumn)
-      this._rowMenus = value.map(r => this.rowMenu(r, false));
+    this.updateCalculatedFunctionValues(value);
     this.updateFormArray();
   }
 
@@ -80,10 +88,37 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
   @Input()
   public headerMenu: MenuItem[] = [];
 
+  private _rowMenu: (row: TListDto, openedByRightClick: boolean) => MenuItem[] = () => [];
+  public get rowMenu(): (row: TListDto, openedByRightClick: boolean) => MenuItem[] {
+    return this._rowMenu;
+  }
   @Input()
-  public rowMenu: (row: TListDto, openedByRightClick: boolean) => MenuItem[] = () => [];
+  public set rowMenu(value: (row: TListDto, openedByRightClick: boolean) => MenuItem[]) {
+    this._rowMenu = value;
+    this.updateRowMenus(this.rows);
+  }
 
   private _rowMenus: MenuItem[][] = [];
+
+  private updateCalculatedFunctionValues(value: TListDto[]) {
+    this.updateRowMenus(value);
+    this.updateRowStyles(value);
+    this.updateCellStyles(value);
+  }
+
+  private updateCellStyles(value: TListDto[]) {
+    this._cellStyleClasses = value.map((r, ri) => Object.fromEntries(this.columns.map((c, ci) => [c.name, this.cellStyleClass(r, c, ri, ci)])));
+  }
+
+  private updateRowStyles(value: TListDto[]) {
+    this._rowStyleClasses = value.map((r, i) => this.rowStyleClass(r, i));
+  }
+
+  private updateRowMenus(value: TListDto[]) {
+    if (this.showRowMenuAsColumn)
+      this._rowMenus = value.map(r => this.rowMenu(r, false));
+  }
+
   public get rowMenus() {
     return this._rowMenus;
   }
@@ -98,10 +133,41 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
   @Input()
   public showRowMenuOnRightClick = true;
 
+  private _rowStyleClass: (row: TListDto, rowIndex: number) => string = () => "";
+  public get rowStyleClass(): (row: TListDto, rowIndex: number) => string {
+    return this._rowStyleClass;
+  }
+  @Input()
+  public set rowStyleClass(value: (row: TListDto, rowIndex: number) => string) {
+    this._rowStyleClass = value;
+    this.updateRowStyles(this.rows);
+  }
+
+  private _rowStyleClasses: string[] = [];
+  public get rowStyleClasses() {
+    return this._rowStyleClasses;
+  }
+
+  private _cellStyleClass: (row: TListDto, column: Property, rowIndex: number, columnIndex: number) => string = () => "";
+  public get cellStyleClass(): (row: TListDto, column: Property, rowIndex: number, columnIndex: number) => string {
+    return this._cellStyleClass;
+  }
+  @Input()
+  public set cellStyleClass(value: (row: TListDto, column: Property, rowIndex: number, columnIndex: number) => string) {
+    this._cellStyleClass = value;
+    this.updateCellStyles(this.rows);
+  }
+
+  private _cellStyleClasses: Record<string,string>[] = [];
+  public get cellStyleClasses() {
+    return this._cellStyleClasses;
+  }
+
   @Input()
   public totalRecords = 0;
 
   public constructor(
+    // private readonly _formGroupDirective: FormGroupDirective,
     private readonly _controlContainer: ControlContainer,
     private readonly _formService: FormService) {
 

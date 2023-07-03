@@ -10,7 +10,7 @@
     <Authors>wertzui</Authors>
     <PackageProjectUrl>https://github.com/wertzui/RESTworld</PackageProjectUrl>
     <RepositoryUrl>https://github.com/wertzui/RESTworld</RepositoryUrl>
-    <VersionPrefix>5.0.4</VersionPrefix>
+    <VersionPrefix>5.1.0</VersionPrefix>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
