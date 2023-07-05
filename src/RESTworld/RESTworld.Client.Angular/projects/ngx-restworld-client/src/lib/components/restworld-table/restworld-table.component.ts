@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Optional, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, Optional, Output, ViewChild } from '@angular/core';
 import { NumberTemplate, Property, PropertyType, Template } from '@wertzui/ngx-hal-client';
 import * as _ from 'lodash';
 import { LazyLoadEvent, MenuItem } from 'primeng/api';
@@ -167,7 +167,6 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
   public totalRecords = 0;
 
   public constructor(
-    // private readonly _formGroupDirective: FormGroupDirective,
     private readonly _controlContainer: ControlContainer,
     private readonly _formService: FormService) {
 
@@ -222,11 +221,6 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
     return this._columns;
   }
 
-  // private _editColumns: Property[] = [];
-  // public get editColumns(): Property[] {
-  //   return this._editColumns;
-  // }
-
   private _rowsBeforeCurrentPage: number = 0;
   public get rowsBeforeCurrentPage(): number {
     return this._rowsBeforeCurrentPage;
@@ -277,6 +271,9 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
   public toColumnFilterType(propertyType: PropertyType) : ColumnFilterType{
     switch(propertyType) {
       case PropertyType.Number:
+      case PropertyType.Percent:
+      case PropertyType.Currency:
+      case PropertyType.Month:
         return ColumnFilterType.numeric;
       case PropertyType.Bool:
         return ColumnFilterType.boolean;
