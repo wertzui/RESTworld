@@ -98,7 +98,11 @@ export class ODataService {
         return `cast(${(value as Date).toISOString()}, Edm.TimeSpan)`;
       case PropertyType.Bool:
       case PropertyType.Number:
+      case PropertyType.Currency:
+      case PropertyType.Month:
         return '' + value;
+      case PropertyType.Percent:
+        return '' + ((value as number) / 100);
       default:
         return `'${value}'`;
     }
