@@ -19,7 +19,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RESTworld.Tests", "RESTworl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RESTworld.Testing", "RESTworld.Testing\RESTworld.Testing.csproj", "{775D5A54-25EB-4B21-91AA-56DC4795185E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTworld.Client.Net", "RESTworld.Client.Net\RESTworld.Client.Net.csproj", "{EE2E2D74-19D3-49BB-BE1C-CE74749DC82F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RESTworld.Client.Net", "RESTworld.Client.Net\RESTworld.Client.Net.csproj", "{EE2E2D74-19D3-49BB-BE1C-CE74749DC82F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
