@@ -243,12 +243,12 @@ namespace RESTworld.Client.Net
             => _halClient.SendAsync(method, requestUri, content, uriParameters, headers, version, cancellationToken);
 
         /// <inheritdoc/>
-        public Task<HttpResponseMessage> SendHttpRequestAsync<TRequest>(HttpMethod method, Uri requestUri, TRequest? content = default, IDictionary<string, object>? uriParameters = null, IDictionary<string, IEnumerable<string>>? headers = null, string? version = null, CancellationToken cancellationToken = default)
-            => _halClient.SendHttpRequestAsync(method, requestUri, content, uriParameters, headers, version, cancellationToken);
+        public Task<HttpResponseMessage> SendHttpRequestAsync<TRequest>(HttpMethod method, Uri requestUri, TRequest? content = default, IDictionary<string, object>? uriParameters = null, IDictionary<string, IEnumerable<string>>? headers = null, string? version = null, HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead, CancellationToken cancellationToken = default)
+            => _halClient.SendHttpRequestAsync(method, requestUri, content, uriParameters, headers, version, completionOption, cancellationToken);
 
         /// <inheritdoc/>
-        public Task<HttpResponseMessage> SendHttpRequestAsync<TRequest>(HttpRequestMessage request, TRequest? content = default, IDictionary<string, object>? uriParameters = null, IDictionary<string, IEnumerable<string>>? headers = null, string? version = null, CancellationToken cancellationToken = default)
-            => _halClient.SendHttpRequestAsync(request, content, uriParameters, headers, version, cancellationToken);
+        public Task<HttpResponseMessage> SendHttpRequestAsync<TRequest>(HttpRequestMessage request, TRequest? content = default, IDictionary<string, object>? uriParameters = null, IDictionary<string, IEnumerable<string>>? headers = null, string? version = null, HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead, CancellationToken cancellationToken = default)
+            => _halClient.SendHttpRequestAsync(request, content, uriParameters, headers, version, completionOption, cancellationToken);
 
         private string? GetDefaultCurie()
         {
