@@ -15,8 +15,8 @@ export class RestWorldAvatarComponent implements OnInit{
   public get image(): string { return this._image as string; }
   private _label: string = '';
   public get label(): string { return this._label; }
-  private _style: '' | { 'background-color': string; color: string } = '';
-  public get style(): '' | { 'background-color': string; color: string; } { return this._style; }
+  private _style?: Record<string, string>;
+  public get style(): Record<string, string> | undefined { return this._style; }
   public get tooltip(): string { return this.user ?? ''; }
 
   constructor(

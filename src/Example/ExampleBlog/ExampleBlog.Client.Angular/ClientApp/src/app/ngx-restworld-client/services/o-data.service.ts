@@ -1,5 +1,7 @@
 import { FilterMatchMode, FilterMetadata, LazyLoadEvent } from 'primeng/api';
 import { Property, PropertyType, Template } from '@wertzui/ngx-hal-client';
+import { TableLazyLoadEvent } from 'primeng/table';
+import { ODataParameters } from '../models/o-data';
 
 export class ODataService {
   public static createFilterForProperty(property: Property, filter: FilterMetadata): string | undefined {
@@ -34,7 +36,7 @@ export class ODataService {
     return `(${filter})`;
   }
 
-  public static createFilterFromTableLoadEvent(event: LazyLoadEvent, properties?: Property[]): string | undefined {
+  public static createFilterFromTableLoadEvent(event: TableLazyLoadEvent, properties?: Property[]): string | undefined {
     if (!event.filters || properties === undefined)
       return undefined;
 
@@ -51,7 +53,13 @@ export class ODataService {
     return `(${filter})`;
   }
 
-  public static createOrderByFromTableLoadEvent(event: LazyLoadEvent): string | undefined {
+  public static createOrderByFromTableLoadEvent(event: TableLazyLoadEvent): string | undefined {
+    if (event.multiSortMeta && event.multiSortMeta.length > 0) {
+      return event.multiSortMeta
+        .map(m => `${m.field} ${m.order > 0 ? 'asc' : 'desc'}`)
+        .join(', ');
+    }
+    
     if (event.sortField) {
       const order = !event.sortOrder || event.sortOrder > 0 ? 'asc' : 'desc';
       return `${event.sortField} ${order}`;
@@ -60,7 +68,7 @@ export class ODataService {
     return undefined;
   }
 
-  public static createParametersFromTableLoadEvent(event: LazyLoadEvent, template?: Template) {
+  public static createParametersFromTableLoadEvent(event: TableLazyLoadEvent, template?: Template): ODataParameters {
     const oDataParameters = {
       $filter: ODataService.createFilterFromTableLoadEvent(event, template?.properties),
       $orderby: ODataService.createOrderByFromTableLoadEvent(event),
@@ -71,12 +79,12 @@ export class ODataService {
     return oDataParameters;
   }
 
-  public static createSkipFromTableLoadEvent(event: LazyLoadEvent): number | undefined {
+  public static createSkipFromTableLoadEvent(event: TableLazyLoadEvent): number | undefined {
     return event.first;
   }
 
-  public static createTopFromTableLoadEvent(event: LazyLoadEvent): number | undefined {
-    return event.rows;
+  public static createTopFromTableLoadEvent(event: TableLazyLoadEvent): number | undefined {
+    return event.rows === null ? undefined : event.rows;
   }
 
   private static createComparisonValue(property: Property, value: unknown): string {

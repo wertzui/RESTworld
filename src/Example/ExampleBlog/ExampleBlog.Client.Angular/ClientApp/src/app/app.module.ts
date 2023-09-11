@@ -22,6 +22,7 @@ import { DialogModule } from 'primeng/dialog';
 import { AvatarGenerator } from './ngx-restworld-client/services/avatar-generator';
 import { ExampleAvatarGenerator } from './ExampleAvatarGenerator';
 import { PostsForBlogComponent } from './posts-for-blog/posts-for-blog.component';
+import { ToastModule } from 'primeng/toast';
 
 @NgModule({
   declarations: [
@@ -47,6 +48,7 @@ import { PostsForBlogComponent } from './posts-for-blog/posts-for-blog.component
     DialogModule,
     RestworldClientModule,
     ReactiveFormsModule,
+    ToastModule,
   ],
   providers: [
     {

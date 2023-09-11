@@ -31,7 +31,8 @@ export class PostsForBlogComponent implements OnInit {
   public editTemplate: Template;
   public rows: ResourceOfDto<PostListDto>[] = [];
   public formArray: FormArray = new FormArray([]);
-  public formGroup: FormGroup = new FormGroup({blablup: this.formArray});
+  public formGroup: FormGroup = new FormGroup({ blablup: this.formArray });
+  public selection: PostListDto[] = [];
 
   constructor(
     private readonly _clients: RestWorldClientCollection,
@@ -40,7 +41,7 @@ export class PostsForBlogComponent implements OnInit {
     private readonly _formService: FormService) {
   }
   public async ngOnInit(): Promise<void> {
-    return this.loadInternal({$top: 10});
+    return this.loadInternal({ $top: 10 });
   }
 
   public async loadInternal(parameters: ODataParameters): Promise<void> {
@@ -59,9 +60,9 @@ export class PostsForBlogComponent implements OnInit {
         this.searchTemplate = templates["Search"];
         if (this.searchTemplate === undefined)
           throw new Error("No search template found in the API response.");
-          this.editTemplate = templates["Edit"];
-          if (this.editTemplate === undefined)
-            throw new Error("No edit template found in the API response.");
+        this.editTemplate = templates["Edit"];
+        if (this.editTemplate === undefined)
+          throw new Error("No edit template found in the API response.");
       }
       catch (e: unknown) {
         this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the resources from the API. ' + e, data: e });
@@ -98,5 +99,21 @@ export class PostsForBlogComponent implements OnInit {
       throw new Error('Cannot get a client, because the apiName is not set.');
 
     return this._clients.getClient(this.apiName);
+  }
+
+  public onRowSelect(row: ResourceOfDto<PostListDto>) {
+    this._messageService.add({
+      severity: 'info',
+      summary: 'Row selected',
+      detail: row.headline
+    });
+  }
+
+  public onRowUnselect(row: ResourceOfDto<PostListDto>) {
+    this._messageService.add({
+      severity: 'info',
+      summary: 'Row unselected',
+      detail: row.headline
+    });
   }
 }

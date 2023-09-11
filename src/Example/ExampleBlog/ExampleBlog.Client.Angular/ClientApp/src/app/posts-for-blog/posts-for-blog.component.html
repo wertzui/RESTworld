@@ -9,8 +9,15 @@
     [isLoading]="isLoading"
     [rowStyleClass]="generateRowClasses"
     [cellStyleClass]="generateCellClasses"
-    (onFilterOrSortChanged)="load($event)">
+    (onFilterOrSortChanged)="load($event)"
+    (onRowSelect)="onRowSelect($event)"
+    (onRowUnselect)="onRowUnselect($event)"
+    selectionMode="multiple"
+    [(selection)]="selection"
+    [rowHover]="true">
   </rw-table>
 </form>
-
+Selection:
+<pre>{{selection | json}}</pre>
+Form value:
 <pre>{{formArray.value | json}}</pre>

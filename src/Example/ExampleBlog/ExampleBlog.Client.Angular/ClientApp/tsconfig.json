@@ -2,7 +2,7 @@
   "compileOnSave": false,
   "compilerOptions": {
     "baseUrl": "./",
-    "module": "ES2020",
+    "module": "ES2022",
     "outDir": "./dist/out-tsc",
     "sourceMap": true,
     "declaration": false,
@@ -14,7 +14,7 @@
       "node_modules/@types"
     ],
     "lib": [
-      "ES2020",
+      "ES2023",
       "dom"
     ]
   }

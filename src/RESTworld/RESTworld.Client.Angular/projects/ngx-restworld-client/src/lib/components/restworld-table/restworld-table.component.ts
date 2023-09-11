@@ -1,12 +1,13 @@
-import { Component, EventEmitter, Input, Optional, Output, ViewChild } from '@angular/core';
-import { NumberTemplate, Property, PropertyType, Template } from '@wertzui/ngx-hal-client';
+import { Component, EventEmitter, Input, Optional, Output, ViewChild, ViewContainerRef } from '@angular/core';
+import { Property, PropertyType, Template } from '@wertzui/ngx-hal-client';
 import * as _ from 'lodash';
-import { LazyLoadEvent, MenuItem } from 'primeng/api';
+import { MenuItem, SortMeta } from 'primeng/api';
 import { ODataParameters } from '../../models/o-data';
 import { ODataService } from '../../services/o-data.service';
 import { ContextMenu } from 'primeng/contextmenu';
-import { AbstractControl, ControlContainer, FormArray, FormArrayName, FormGroup, FormGroupDirective, FormRecord, UntypedFormArray, UntypedFormGroup } from '@angular/forms';
+import { ControlContainer, FormArray, FormArrayName, UntypedFormGroup } from '@angular/forms';
 import { FormService } from '../../services/form.service';
+import { TableLazyLoadEvent, TableRowSelectEvent, TableRowUnSelectEvent } from 'primeng/table';
 
 enum ColumnFilterType {
   text = 'text',
@@ -29,6 +30,7 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
   public apiName?: string;
 
   private _formArray?: FormArray<UntypedFormGroup>;
+
   @Input()
   public set formArray(value: FormArray<UntypedFormGroup> | undefined) {
     this._formArray = value;
@@ -168,8 +170,7 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
 
   public constructor(
     private readonly _controlContainer: ControlContainer,
-    private readonly _formService: FormService) {
-
+    private readonly _formService: FormService,) {
   }
 
   private setSortFieldAndSortOrder(template: Template | undefined) {
@@ -181,20 +182,17 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
     const [field, order] = orderBy.split(" ");
     const orderAsNumber = order?.toLowerCase() === "desc" ? -1 : 1;
 
-    if (this.sortField !== field)
-      this.sortField = field;
-    if (this.sortOrder !== orderAsNumber)
-      this.sortOrder = orderAsNumber;
+    if (this.multiSortMeta?.length !== 1 || this.multiSortMeta[0].field !== field || this.multiSortMeta[0].order !== orderAsNumber)
+      this.multiSortMeta = [{field: field, order: orderAsNumber}]
   }
 
-  public sortField?: string;
-  public sortOrder?: number;
+  public multiSortMeta?: SortMeta[] | null;
 
   @Input()
   public styleClass: string = "";
 
   @Input()
-  public tableStyle?: string;
+  public tableStyle?: Record<string,string>;
 
   @Input()
   public scrollable: boolean = true;
@@ -204,6 +202,30 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
 
   @Output()
   public onFilterOrSortChanged = new EventEmitter<ODataParameters>();
+
+  @Output()
+  public onRowSelect = new EventEmitter<TListDto>();
+
+  @Output()
+  public onRowUnselect = new EventEmitter<TListDto>();
+
+  @Input()
+  public selectionMode: "single" | "multiple" | null = null;
+
+  @Input()
+  public rowHover: boolean = false;
+
+  @Input()
+  public get selection(): TListDto[] {
+    return _.isArray(this._selection) ? this._selection : [this._selection];
+  }
+  public set selection(value: TListDto[]) {
+    this._selection = value;
+  }
+  public _selection: TListDto | TListDto[] = [];
+
+  @Output()
+  selectionChange: EventEmitter<TListDto[]> = new EventEmitter();
 
   @ViewChild("contextMenu")
   contextMenu?: ContextMenu;
@@ -251,9 +273,8 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
     return PropertyType;
   }
 
-  public load(event: LazyLoadEvent) {
-    this.sortField = event.sortField;
-    this.sortOrder = event.sortOrder;
+  public load(event: TableLazyLoadEvent) {
+    this.multiSortMeta = event.multiSortMeta;
     this._rowsBeforeCurrentPage = event.first ?? 0;
     const parameters = ODataService.createParametersFromTableLoadEvent(event, this.searchTemplate);
     this.onFilterOrSortChanged.emit(parameters);
@@ -266,6 +287,18 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
     this._contextMenuItems = this.rowMenu(row, true);
     this.contextMenu.show(event);
     event.stopPropagation();
+  }
+
+  public onRowSelectInternal(event: TableRowSelectEvent): void {
+    this.onRowSelect.emit(event.data);
+  }
+
+  public onRowUnselectInternal(event: TableRowUnSelectEvent): void {
+    this.onRowUnselect.emit(event.data);
+  }
+
+  public onSelectionChangeInternal(event: TListDto | TListDto[]): void {
+    this.selectionChange.emit(_.isArray(event) ? event : [event]);
   }
 
   public toColumnFilterType(propertyType: PropertyType) : ColumnFilterType{

@@ -28,7 +28,7 @@ export class RestWorldMenuButtonComponent {
         replaceUrl: item.replaceUrl
       });
     } else if (item.command) {
-      item.command();
+      item.command({ item: item });
     }
   }
 }

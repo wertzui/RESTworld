@@ -11,12 +11,18 @@
   [rows]="rows.length"
   [totalRecords]="totalRecords"
   [loading]="isLoading"
-  [sortField]="sortField!"
-  [sortOrder]="sortOrder!"
+  sortMode="multiple"
+  [multiSortMeta]="multiSortMeta"
   [styleClass]="styleClass"
   [tableStyle]="tableStyle"
   [scrollable]="scrollable"
-  [scrollHeight]="scrollHeight">
+  [scrollHeight]="scrollHeight"
+  [selectionMode]="selectionMode"
+  (onRowSelect)="onRowSelectInternal($event)"
+  (onRowUnselect)="onRowUnselectInternal($event)"
+  [rowHover]="rowHover"
+  [(selection)]="_selection"
+  (selectionChange)="onSelectionChangeInternal($event)">
 
   <ng-template pTemplate="header" let-columns>
     <tr>
@@ -36,9 +42,9 @@
   </ng-template>
 
   <ng-template pTemplate="body" let-entity let-columns="columns" let-rowIndex="rowIndex">
-    <tr (contextmenu)="openContextMenu($event, entity)" [className]="rowStyleClasses[rowIndex - table.first]">
-      <td [ngSwitch]="col.type" *ngFor="let col of columns" [className]="cellStyleClasses[rowIndex - table.first][col.name]">
-          <ng-container *ngIf="showInputField(col); else textField" [formGroup]="formArray!.controls[rowIndex - table.first]" >
+    <tr (contextmenu)="openContextMenu($event, entity)" [pSelectableRow]="entity" [pSelectableRowDisabled]="selectionMode === null" [className]="rowStyleClasses[rowIndex - (table.first ?? 0)]">
+      <td [ngSwitch]="col.type" *ngFor="let col of columns" [className]="cellStyleClasses[rowIndex - (table.first ?? 0)][col.name]">
+          <ng-container *ngIf="showInputField(col); else textField" [formGroup]="formArray!.controls[rowIndex - (table.first ?? 0)]" >
             <rw-input [apiName]="apiName!" [property]="editProperties[col.name]"></rw-input>
           </ng-container>
           <ng-template #textField>
@@ -61,7 +67,7 @@
           </ng-template>
         </td>
         <td *ngIf="showMenuColumn" class="flex justify-content-end">
-          <rw-menu-button *ngIf="showRowMenuAsColumn" [items]="rowMenus[rowIndex - table.first]"></rw-menu-button>
+          <rw-menu-button *ngIf="showRowMenuAsColumn" [items]="rowMenus[rowIndex - (table.first ?? 0)]"></rw-menu-button>
         </td>
     </tr>
   </ng-template>

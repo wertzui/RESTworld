@@ -34,16 +34,16 @@ export class AvatarGenerator {
     return initials;
   }
 
-  public async getStyleAsync(nameOrEmail: string,): Promise<'' | { 'background-color': string; color: string }> {
+  public async getStyleAsync(nameOrEmail: string,): Promise<{ 'background-color': string; 'color': string } | undefined> {
     if (await this.getImageAsync(nameOrEmail))
-      return '';
+      return undefined;
 
     const foregroundColor = '#ffffff';
     const backgroundColor = AvatarGenerator.getBackgroundColor(nameOrEmail);
 
     const style = {
       'background-color': backgroundColor,
-      color: foregroundColor,
+      'color': foregroundColor,
     };
 
     return style;
