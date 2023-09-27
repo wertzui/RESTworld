@@ -1,24 +1,19 @@
 import { MenuItem } from "primeng/api";
-import { DeepLinkingRoute, DeepLinkingWrapperComponent } from '@jdrks/ngx-deep-linking';
 import { RESTworldListViewComponent } from "./ngx-restworld-client/views/restworld-list-view/restworld-list-view.component";
 import { RESTworldEditViewComponent } from "./ngx-restworld-client/views/restworld-edit-view/restworld-edit-view.component";
 import { PostWithAuthorComponent } from "./blog-posts/post-with-author.component";
 import { HomeComponent } from "./home/home.component";
 import { PostWithAuthorListComponent } from './blog-posts/post-with-autor-list.component';
 import { PostsForBlogComponent } from "./posts-for-blog/posts-for-blog.component";
+import { Route } from "@angular/router";
 
-export const AppRoutes: DeepLinkingRoute[] = [
-  { path: '', component: HomeComponent, pathMatch: 'full' },
+export const AppRoutes: Route[] = [
+  {
+    path: '',
+    component: HomeComponent, pathMatch: 'full' },
   {
     path: 'edit/postsForBlog/:apiName/:rel',
-    component: DeepLinkingWrapperComponent,
-    wrappedComponent: PostsForBlogComponent,
-    deepLinking: {
-      params: [
-        { name: 'apiName', type: 'string' },
-        { name: 'rel', type: 'string' }
-      ]
-    }
+    component: PostsForBlogComponent,
   },
   {
     path: 'list/postWithAuthor',
@@ -27,43 +22,16 @@ export const AppRoutes: DeepLinkingRoute[] = [
   },
   {
     path: 'edit/postWithAuthor/:apiName/:rel/:uri',
-    component: DeepLinkingWrapperComponent,
-    wrappedComponent: PostWithAuthorComponent,
-    deepLinking: {
-      params: [
-        { name: 'apiName', type: 'string' },
-        { name: 'uri', type: 'string' },
-        { name: 'rel', type: 'string' }
-      ]
-    }
+    component: PostWithAuthorComponent,
   },
   {
     path: 'list/:apiName/:rel',
     runGuardsAndResolvers: 'always',
-    component: DeepLinkingWrapperComponent,
-    wrappedComponent: RESTworldListViewComponent,
-    deepLinking: {
-      params: [
-        { name: 'apiName', type: 'string' },
-        { name: 'rel', type: 'string' }
-      ],
-      queryParams: [
-        { name: 'editLink', type: 'string' },
-        { name: 'orderBy', type: 'string' }
-      ]
-    }
+    component: RESTworldListViewComponent,
   },
   {
     path: 'edit/:apiName/:rel/:uri',
-    component: DeepLinkingWrapperComponent,
-    wrappedComponent: RESTworldEditViewComponent,
-    deepLinking: {
-      params: [
-        { name: 'apiName', type: 'string' },
-        { name: 'uri', type: 'string' },
-        { name: 'rel', type: 'string' }
-      ]
-    }
+    component: RESTworldEditViewComponent,
   }
 ];
 

@@ -7,7 +7,7 @@
             <div class="brace">
             </div>
             <div class="w-full flex justify-content-end">
-                <rw-input-template [formGroup]="innerFormArray.controls[template.title]" [template]="defaultTemplate" [apiName]="apiName" class="w-full"></rw-input-template>
+                <rw-input-template [formGroup]="innerFormArray.controls[template.title!]" [template]="defaultTemplate" [apiName]="apiName" class="w-full"></rw-input-template>
                 <button pButton pRipple type="button" icon="fas fa-trash" class="p-button-outlined p-button-danger ml-2 mb-3" (click)="deleteItemFromCollection(template)"></button>
             </div>
         </div>

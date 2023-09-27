@@ -1,10 +1,16 @@
-import { Property, Options } from '@wertzui/ngx-hal-client'
+import { Property, Options, SimpleValue } from '@wertzui/ngx-hal-client'
 import { RestWorldImage } from './restworld-image';
 
-export class PropertyWithImage extends Property {
-  restWorldImage!: RestWorldImage;
+/**
+ * A property that represents an image.
+ */
+export class PropertyWithImage extends Property<string, never, never>  { 
+    restWorldImage!: RestWorldImage 
 }
 
-export class PropertyWithOptions extends Property {
-  declare options: Options;
-}
+/**
+ * A property that represents a dropdown.
+ */
+export class PropertyWithOptions<TValue extends SimpleValue = SimpleValue, OptionsPromptField extends string = "prompt", OptionsValueField extends string = "value"> extends Property<TValue, OptionsPromptField, OptionsValueField> { 
+    declare options: Options<TValue, OptionsPromptField, OptionsValueField> 
+};

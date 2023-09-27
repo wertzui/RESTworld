@@ -1,4 +1,4 @@
-<val-errors *ngIf="property" [controlName]="property.name ?? null">
+<val-errors *ngIf="property && property.type !== PropertyType.Hidden" [controlName]="property.name">
     <ng-template valError="required">The field '{{property.prompt ?? property.name}}' is required.</ng-template>
     <ng-template valError="email">The email must be a valid email address.</ng-template>
     <ng-template valError="min" let-error="error">'{{property.prompt ?? property.name}}' must be equal or greater than or equal to {{ error.min }}.</ng-template>

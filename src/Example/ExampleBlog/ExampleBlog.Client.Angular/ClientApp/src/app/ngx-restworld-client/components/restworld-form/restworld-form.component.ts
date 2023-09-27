@@ -1,10 +1,7 @@
 import { Component, ContentChild, EventEmitter, Input, OnInit, Output, TemplateRef } from '@angular/core';
 import { AbstractControl, FormGroup, UntypedFormArray, UntypedFormGroup } from '@angular/forms';
-import { Router } from '@angular/router';
-import { FormsResource, Template } from '@wertzui/ngx-hal-client';
+import { FormService, FormsResource, ProblemDetails, PropertyDto, SimpleValue, Template } from '@wertzui/ngx-hal-client';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { ProblemDetails } from '../../models/problem-details';
-import { FormService } from '../../services/form.service';
 import { RestWorldClient } from '../../services/restworld-client';
 import { RestWorldClientCollection } from '../../services/restworld-client-collection';
 
@@ -18,31 +15,52 @@ import { RestWorldClientCollection } from '../../services/restworld-client-colle
   templateUrl: './restworld-form.component.html',
   styleUrls: ['./restworld-form.component.css']
 })
-export class RestWorldFormComponent implements OnInit{
-  @Input()
-  template!: Template;
+export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<PropertyDto<SimpleValue, string, string>>> implements OnInit{
+  /**
+   * The template used to render the form.
+   */
+  @Input({ required: true })
+  template!: Template<TPropertyDtos>;
 
-  @Input()
+  @Input({ required: true })
   apiName!: string;
 
-  @Input()
+  @Input({ required: true })
   rel!: string;
 
+  /**
+   * Determines whether to enable the submit button.
+  */
   @Input()
   allowSubmit = true;
 
+  /**
+   * Determines whether to enable the delete button.
+  */
   @Input()
   allowDelete = true;
 
+  /**
+   * Determines whether to enable the reload button.
+  */
   @Input()
   allowReload = true;
 
+  /**
+   * Determines whether to show the submit button.
+  */
   @Input()
   showSubmit = true;
 
+  /**
+   * Determines whether to show the delete button.
+  */
   @Input()
   showDelete = true;
 
+  /**
+   * Determines whether to show the reload button.
+  */
   @Input()
   showReload = true;
 
@@ -52,6 +70,9 @@ export class RestWorldFormComponent implements OnInit{
   @Output()
   afterSubmit = new EventEmitter<{old: Template, new: Template}>();
 
+  /**
+   * A reference to a template that can be used to render custom buttons for the form.
+  */
   @ContentChild('buttons', { static: false })
   buttonsRef?: TemplateRef<unknown>;
 
@@ -60,8 +81,8 @@ export class RestWorldFormComponent implements OnInit{
     return this._isLoading;
   }
 
-  private _formGroup?: FormGroup<{timestamp: AbstractControl<string>}>;
-  public get formGroup(): FormGroup<{timestamp: AbstractControl<string>}> | undefined {
+  private _formGroup?: FormGroup<any>;
+  public get formGroup(): FormGroup<any> | undefined {
     return this._formGroup;
   }
 
@@ -112,7 +133,7 @@ export class RestWorldFormComponent implements OnInit{
         this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the resource from the API.', data: response, sticky: true });
       }
       else {
-        this.template = response.body.getTemplateByTitle(this.template.title!);
+        this.template = response.body.getTemplateByTitle(this.template.title!) as Template<TPropertyDtos>;
         this._formGroup = this._formService.createFormGroupFromTemplate(this.template);
       }
     }
@@ -170,11 +191,12 @@ export class RestWorldFormComponent implements OnInit{
       else {
         const templateBeforeSubmit = this.template;
         const responseResource = (response.body as FormsResource);
-        const templateAfterSubmit = responseResource.getTemplateByTitle(this.template.title!);
+        this.template = responseResource.getTemplateByTitle(this.template.title!) as Template<TPropertyDtos>;
+        this._formGroup = this._formService.createFormGroupFromTemplate(this.template);
 
         this._messageService.add({ severity: 'success', summary: 'Saved', detail: 'The resource has been saved.' });
 
-        this.afterSubmit.emit({old: templateBeforeSubmit, new: templateAfterSubmit});
+        this.afterSubmit.emit({old: templateBeforeSubmit, new: this.template});
       }
     }
     catch (e: unknown) {

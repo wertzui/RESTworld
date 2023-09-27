@@ -4,12 +4,27 @@ import { SafeUrl } from '@angular/platform-browser';
 @Injectable({
   providedIn: 'root',
 })
+/**
+ * A class that generates avatars based on a given name or email.
+ */
 export class AvatarGenerator {
   private static _nonWordRegex = new RegExp('\\W');
   private static _imageCache: Map<string, SafeUrl> = new Map<string, SafeUrl>();
 
+  /**
+   * Override this method to provide a custom implementation for retrieving the image for a user.
+   * If this method is not overridden, the image will always be empty, resulting in the avatar always be shown as label.
+   * @param nameOrEmail The name or email of the user whose image should be retrieved.
+   * @returns A Promise that resolves with a SafeUrl object representing the user's image, or an empty string if no image is available.
+   */
   public getImageAsyncOverride: (nameOrEmail: string) => Promise<SafeUrl> = () => Promise.resolve('');
 
+  /**
+   * Retrieves the image for the given name or email address from the cache if it exists,
+   * otherwise retrieves it from the server and caches it for future use.
+   * @param nameOrEmail The name or email address of the user to retrieve the image for.
+   * @returns A Promise that resolves to a SafeUrl representing the retrieved image.
+   */
   public async getImageAsync(nameOrEmail: string): Promise<SafeUrl> {
     let promise = AvatarGenerator._imageCache.get(nameOrEmail);
 
@@ -21,6 +36,14 @@ export class AvatarGenerator {
     return promise;
   }
 
+  /**
+   * Gets the label for the avatar based on the given name or email.
+   * If an image is available for the given name or email, an empty string is returned.
+   * Otherwise, the label is generated from the name or email.
+   * The label always consists of 2 uppercase letters.
+   * @param nameOrEmail The name or email to generate the label from.
+   * @returns The label for the avatar.
+   */
   public async getLabelAsync(nameOrEmail: string): Promise<string> {
     if (!nameOrEmail)
       return '';
@@ -34,6 +57,12 @@ export class AvatarGenerator {
     return initials;
   }
 
+  /**
+   * Gets the style object for the avatar based on the given name or email.
+   * @param nameOrEmail - The name or email of the user.
+   * @returns A Promise that resolves to the style object containing the background color and foreground color of the avatar.
+   * If the image for the user is found, returns undefined.
+   */
   public async getStyleAsync(nameOrEmail: string,): Promise<{ 'background-color': string; 'color': string } | undefined> {
     if (await this.getImageAsync(nameOrEmail))
       return undefined;

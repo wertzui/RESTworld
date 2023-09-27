@@ -1,10 +1,9 @@
 import { CdkDragDrop } from '@angular/cdk/drag-drop';
-import { ChangeDetectorRef, Component, ContentChild, Input, OnInit, TemplateRef } from '@angular/core';
+import { ChangeDetectorRef, Component, ContentChild, EventEmitter, Input, OnInit, Output, TemplateRef } from '@angular/core';
 import { AbstractControl, ControlContainer, FormArray, FormControl, FormGroup, FormGroupDirective } from '@angular/forms';
-import { NumberTemplate, Options, Property, PropertyType, ResourceDto, ResourceOfDto, Template, TemplateDto } from '@wertzui/ngx-hal-client';
-import { FormService } from '../../services/form.service';
+import { FormService, NumberTemplate, Options, OptionsItemDto, ProblemDetails, Property, PropertyType, ResourceDto, ResourceOfDto, SimpleValue, Template, TemplateDto } from '@wertzui/ngx-hal-client';
 import { MessageService } from 'primeng/api';
-import { ProblemDetails } from '../../models/problem-details';
+import { DropdownChangeEvent } from '../../models/events';
 import { PropertyTemplateContext } from '../../models/templating';
 import { RestWorldClient } from '../../services/restworld-client';
 import { RestWorldClientCollection } from '../../services/restworld-client-collection';
@@ -22,11 +21,11 @@ import * as _ from 'lodash';
   styleUrls: ['./restworld-form-element/restworld-form-element.component.css'],
   viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }]
 })
-export class RestWorldFormElementComponent<T extends { [K in keyof T]: AbstractControl<any, any>; }> {
-  @Input()
-  property!: Property;
+export class RestWorldFormElementComponent<TProperty extends Property<SimpleValue, string, string>> {
+  @Input({ required: true })
+  property!: TProperty;
 
-  @Input()
+  @Input({ required: true })
   apiName!: string;
 }
 
@@ -43,12 +42,12 @@ export class RestWorldFormElementComponent<T extends { [K in keyof T]: AbstractC
   styleUrls: ['./restworld-input/restworld-input.component.css'],
   viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }]
 })
-export class RestWorldInputComponent {
+export class RestWorldInputComponent<TProperty extends Property<SimpleValue, string, string>> {
 
-  @Input()
-  property!: Property;
+  @Input({ required: true })
+  property!: TProperty;
 
-  @Input()
+  @Input({ required: true })
   apiName!: string;
 
   public get PropertyType() {
@@ -56,7 +55,7 @@ export class RestWorldInputComponent {
   }
 
   public get PropertyWithOptions() {
-    return PropertyWithOptions;
+    return PropertyWithOptions<SimpleValue, string, string>;
   }
 }
 
@@ -64,7 +63,7 @@ export class RestWorldInputComponent {
 /**
  * A collection that is automatically created from the given property.
  * The collection supports drag & drop to re order the elements and can also be nested.
- * It is advised to use RestWorldInputComponent <rw-input> and control the rendered inputs with the passed in property
+ * @remarks It is advised to use RestWorldInputComponent <rw-input> and control the rendered inputs with the passed in property
  * instead of using this component directly.
  */
 @Component({
@@ -75,10 +74,10 @@ export class RestWorldInputComponent {
 })
 export class RestWorldInputCollectionComponent<T extends { [K in keyof T]: AbstractControl<any, any>; }> implements OnInit {
 
-  @Input()
-  property!: Property;
+  @Input({ required: true })
+  property!: Property & {_templates: { default: Template }};
 
-  @Input()
+  @Input({ required: true })
   apiName!: string;
 
   @ContentChild('inputCollection', { static: false })
@@ -140,10 +139,13 @@ export class RestWorldInputCollectionComponent<T extends { [K in keyof T]: Abstr
     copiedTemplate.title = nextIndex;
 
     this.templates[copiedTemplate.title] = copiedTemplate;
-    this.innerFormArray.push(this._formService.createFormGroupFromTemplate(this.defaultTemplate));
+    this.innerFormArray.push(this._formService.createFormGroupFromTemplate(this.defaultTemplate) as unknown as FormGroup<T>);
   }
 
   public deleteItemFromCollection(template: NumberTemplate): void {
+    if (template.title === undefined)
+      throw new Error("Cannot delete a template without a title.");
+
     delete this.templates[template.title];
     this.innerFormArray.removeAt(template.title);
   }
@@ -166,9 +168,17 @@ export class RestWorldInputCollectionComponent<T extends { [K in keyof T]: Abstr
 }
 
 /**
+ * This helper type converts a Property<X, Y, Z> to an OptionsItemDto<X, Y, Z> and preserves the generic parameters.
+ */
+export type ExtractGenericOptionsItemType<TProperty> = TProperty extends Property<infer X, infer Y, infer Z> ? OptionsItemDto<X, Y, Z> : never
+export type ExtractGenericOptionsSelectedValuesType<TProperty> = TProperty extends Property<infer X, infer Y, infer Z> ? Options<X, Y, Z>["selectedValues"] : never
+export type ExtractValueType<TProperty> = TProperty extends Property<infer X, infer Y, infer Z> ? X : never
+
+/**
  * A dropdown that is automatically created from the given property.
- * The dropdown supports searching through a RESTWorld list endpoint on the backend.
- * It is advised to use RestWorldInputComponent <rw-input> and control the rendered inputs with the passed in property
+ * The dropdown supports searching through a RESTWorld list endpoint on the backend if the `link` of the options is set.
+ * Otherwise the dropdown will use the `inline` of the options.
+ * @remarks It is advised to use RestWorldInputComponent <rw-input> and control the rendered inputs with the passed in property
  * instead of using this component directly.
  */
 @Component({
@@ -177,12 +187,32 @@ export class RestWorldInputCollectionComponent<T extends { [K in keyof T]: Abstr
   styleUrls: ['./restworld-input-dropdown/restworld-input-dropdown.component.css'],
   viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }]
 })
-export class RestWorldInputDropdownComponent<T> implements OnInit {
-  @Input()
-  property!: Property & { options: Options };
+export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleValue, string, string> & { options: Options<SimpleValue, string, string> }, TOptionsItem extends ExtractGenericOptionsItemType<TProperty> = ExtractGenericOptionsItemType<TProperty>> implements OnInit {
+  @Input({ required: true })
+  property!: TProperty;
 
-  @Input()
+  @Input({ required: true })
   apiName!: string;
+
+  /**
+   * A function that returns the label for the given item.
+   * The default returns the prompt and optionally the value in brackets.
+   * The value in brackets will only be displayed if the `cols` field of the property is undefined or greater than 1.
+   * Overwrite this function to change the label.
+   * @param item The item to get the label for.
+   */
+  @Input()
+  getLabel: (item: TOptionsItem) => string = this.getLabelInternal;
+
+  /**
+   * A function that returns the tooltip for the given item.
+   * The default returns all properties of the item except the ones that start with an underscore or the ones that are in the list of default properties to exclude.
+   * The default properties to exclude are: createdAt, createdBy, lastChangedAt, lastChangedBy, timestamp, promptField, valueField.
+   * Overwrite this function to change the tooltip.
+   * @param item The item to get the label for.
+   */
+  @Input()
+  getTooltip: (item: TOptionsItem) => string = this.getTooltipInternal;
 
   @ContentChild('inputOptionsSingle', { static: false })
   inputOptionsSingleRef?: TemplateRef<PropertyTemplateContext>;
@@ -190,9 +220,14 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
   @ContentChild('inputOptionsMultiple', { static: false })
   inputOptionsMultipleRef?: TemplateRef<PropertyTemplateContext>;
 
-  private _formControl!: AbstractControl<T, T>;
+  /**
+   * An event that is emitted when the selected value changes.
+   */
+  @Output()
+  public onChange = new EventEmitter<DropdownChangeEvent<TOptionsItem>>();
 
-  private _lastFilterValue: string = "";
+  private _formControl!: AbstractControl<ExtractGenericOptionsSelectedValuesType<TProperty>>;
+
   private _filterValue: string = "";
 
   public get filterValue(): string {
@@ -222,34 +257,36 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
 
   async ngOnInit(): Promise<void> {
     const formGroup = this._controlContainer.control as FormGroup<any>;
-    this._formControl = formGroup.controls[this.property.name] as AbstractControl<T>;
+    this._formControl = formGroup.controls[this.property.name] as AbstractControl<ExtractGenericOptionsSelectedValuesType<TProperty>>;
     await this.setInitialSelectedOptionsElementForProperty();
   }
 
-  public getValue(item: T): any {
+  public getValue(item: TOptionsItem): ExtractValueType<TProperty> {
     if (item === undefined || item === null || !item.hasOwnProperty(this.valueField))
-      return null;
+      throw new Error(`The item does not have a property ${this.valueField}.`);
 
-    return item[this.valueField as keyof T];
+    return item[this.valueField as keyof TOptionsItem] as ExtractValueType<TProperty>;
   }
 
-  public getPrompt(item: T): string {
+  public getPrompt(item: TOptionsItem): string {
     if (item === undefined || item === null || !item.hasOwnProperty(this.promptField))
       return "";
 
-    return item[this.promptField as keyof T] as string;
+    return item[this.promptField as keyof TOptionsItem] as string;
   }
 
-  public getLabel(item: T): string {
+  public getLabelInternal(item: TOptionsItem): string {
     if (item === undefined || item === null)
       return "";
 
-    const label = `${this.getPrompt(item)} (${this.getValue(item)})`;
+    let label = this.getPrompt(item);
+    if (this.property.cols === undefined || this.property.cols > 1)
+      label += ` (${this.getValue(item)})`;
 
     return label;
   }
 
-  public getTooltip(item: T): string {
+  private getTooltipInternal(item: TOptionsItem): string {
     if (item === undefined || item === null)
       return "";
 
@@ -260,13 +297,19 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
     return tooltip;
   }
 
-  public getItemByValue(value: any): T {
-    return this.property.options.inline.find(item => this.getValue(item as T) === value) as T;
+  public getItemByValue(value: ExtractValueType<TProperty>): TOptionsItem {
+    if(this.property.options.inline === undefined || this.property.options.inline === null)
+      throw new Error('The property does not have any inline options.');
+
+    return this.property.options.inline.find(item => this.getValue(item as TOptionsItem) === value) as TOptionsItem;
   }
 
-  public removeByValue(value: any): void {
-    const formValue = this._formControl.value as unknown[];
-    const newValue = formValue.filter(i => i !== value) as T;
+  public removeByValue(value: ExtractValueType<TProperty>): void {
+    if (this._formControl.value === undefined || this._formControl.value === null)
+      return;
+
+    const formValue = this._formControl.value;
+    const newValue = formValue.filter(i => i !== value) as ExtractGenericOptionsSelectedValuesType<TProperty>;
     this._formControl.setValue(newValue);
   }
 
@@ -292,6 +335,10 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
     }
   }
 
+  public onOptionsChanged(event: DropdownChangeEvent<TOptionsItem>) {
+    this.onChange.emit(event);
+  }
+
   private async setInitialSelectedOptionsElementForProperty(): Promise<void> {
     const options = this.property.options;
 
@@ -313,13 +360,13 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
     //this._lastFilterValue = eventFilter;
 
     const templatedUri = options.link.href;
-    const response = await this.getClient().getListByUri(templatedUri, { $filter: filter, $top: 10 });
+    const response = await this.getClient().getListByUri<TOptionsItem>(templatedUri, { $filter: filter, $top: 10 });
     if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body) {
       const message = `An error occurred while getting the initial selected items for the property ${this.property.name}.`;
       this._messageService.add({ severity: 'error', summary: 'Error', detail: message, data: response, sticky: true });
     }
 
-    const items = response.body!._embedded.items;
+    const items = response.body!._embedded.items as ResourceOfDto<TOptionsItem>[];
     const newItems = this.combineInlineWithSelected(items);
     options.inline = newItems;
 
@@ -327,14 +374,14 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
     this._filterValue = eventFilter;
   }
 
-  private combineInlineWithSelected(items: ResourceOfDto<ResourceDto>[]): unknown[] {
-    const oldInline = this.property.options.inline as ResourceOfDto<ResourceDto>[];
+  private combineInlineWithSelected(items: ResourceOfDto<TOptionsItem>[]): TOptionsItem[] {
+    const oldInline = this.property.options.inline as ResourceOfDto<TOptionsItem>[];
     if (!oldInline)
       return items;
 
     const selectedValues = this.getSelectedValues();
-    const itemsToKeep = oldInline.filter(i => selectedValues.includes(this.getValue(i as T)));
-    const newItems = _.uniqBy(items.concat(itemsToKeep), i => this.getValue(i as T));
+    const itemsToKeep = oldInline.filter(i => selectedValues.includes(this.getValue(i as TOptionsItem)));
+    const newItems = _.uniqBy(items.concat(itemsToKeep), i => this.getValue(i as TOptionsItem));
 
     return newItems;
   }
@@ -368,7 +415,7 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
 /**
  * A complex object with multiple properties that is automatically created from the given property.
  * The object can also be nested.
- * It is advised to use RestWorldInputComponent <rw-input> and control the rendered inputs with the passed in property
+ * @remarks It is advised to use RestWorldInputComponent <rw-input> and control the rendered inputs with the passed in property
  * instead of using this component directly.
  */
 @Component({
@@ -379,10 +426,10 @@ export class RestWorldInputDropdownComponent<T> implements OnInit {
 })
 export class RestWorldInputObjectComponent<T extends { [K in keyof T]: AbstractControl<any, any>; }> implements OnInit {
 
-  @Input()
-  property!: Property;
+  @Input({ required: true })
+  property!: Property<null, never, never> & { _templates: { default: Template } };
 
-  @Input()
+  @Input({ required: true })
   apiName!: string;
 
   @ContentChild('inputObject', { static: false })
@@ -409,8 +456,8 @@ export class RestWorldInputObjectComponent<T extends { [K in keyof T]: AbstractC
 }
 
 /**
- * A simple input element, like a text, or a number that is automatically created from the given property.
- * It is advised to use RestWorldInputComponent <rw-input> and control the rendered inputs with the passed in property
+ * A simple input element, like a string, a number or a Date that is automatically created from the given property.
+ * @remarks It is advised to use RestWorldInputComponent <rw-input> and control the rendered inputs with the passed in property
  * instead of using this component directly.
  */
 @Component({
@@ -419,10 +466,10 @@ export class RestWorldInputObjectComponent<T extends { [K in keyof T]: AbstractC
   styleUrls: ['./restworld-input-simple/restworld-input-simple.component.css'],
   viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }]
 })
-export class RestWorldInputSimpleComponent<T> implements OnInit {
+export class RestWorldInputSimpleComponent<TProperty extends Property<SimpleValue, string, string>> implements OnInit {
 
-  @Input()
-  property!: Property;
+  @Input({ required: true })
+  property!: TProperty;
 
   public get PropertyType() {
     return PropertyType;
@@ -449,7 +496,7 @@ export class RestWorldInputSimpleComponent<T> implements OnInit {
     return RestWorldInputSimpleComponent._timeFormat;
   }
 
-  private _formControl?: FormControl<T>;
+  private _formControl?: FormControl<SimpleValue | SimpleValue[]>;
 
   public get formControl() {
     if (this._formControl === undefined)
@@ -469,7 +516,7 @@ export class RestWorldInputSimpleComponent<T> implements OnInit {
 
   ngOnInit(): void {
     const formGroup = this._controlContainer.control as FormGroup<any>;
-    this._formControl = formGroup.controls[this.property.name] as FormControl<T>;
+    this._formControl = formGroup.controls[this.property.name] as FormControl<SimpleValue | SimpleValue[]>;
   }
 }
 
@@ -485,9 +532,9 @@ export class RestWorldInputSimpleComponent<T> implements OnInit {
   viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }]
 })
 export class RestWorldInputTemplateComponent<T extends { [K in keyof T]: AbstractControl<any, any>; }> {
-  @Input()
+  @Input({ required: true })
   apiName!: string;
 
-  @Input()
+  @Input({ required: true })
   template!: Template;
 }

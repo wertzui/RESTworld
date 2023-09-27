@@ -2,6 +2,10 @@ import { Component, forwardRef, Input, QueryList, ViewChildren } from '@angular/
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { FileUpload } from 'primeng/fileupload';
 
+/**
+ * Represents a component for uploading files in the RESTworld Angular client.
+ * Implements the ControlValueAccessor interface to enable two-way data binding.
+ */
 @Component({
   selector: 'rw-file',
   templateUrl: './restworld-file.component.html',
@@ -15,15 +19,26 @@ import { FileUpload } from 'primeng/fileupload';
 export class RestWorldFileComponent implements ControlValueAccessor {
   private onChange?: Function;
   @Input()
+  /**
+   * The file types that the component should accept.
+   * This is a comma-separated list of MIME types or file extensions.
+   * If not specified, all file types are accepted.
+   */
   public accept?: string;
 
   @Input()
+  /**
+   * The name of the file to be uploaded.
+   */
   public fileName?: string;
 
   @ViewChildren(FileUpload)
   fileUploads?: QueryList<FileUpload>;
 
   public disabled = false;
+  /**
+   * The URI of the file.
+   */
   public uri?: string;
 
   writeValue(obj?: string): void {

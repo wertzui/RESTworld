@@ -25,7 +25,7 @@ namespace RESTworld.AspNetCore.Caching
         /// <typeparam name="TDto">The type of the DTO to return. In case of a custom controller this may also be the controller type.</typeparam>
         /// <typeparam name="TParam">The type of the parameter to differentiate DTOs. Normally this is some kind of ID.</typeparam>
         /// <returns>The key for the cache.</returns>
-        public static string CreateCacheKeyForGet<TDto, TParam>(TParam parameter, [CallerMemberName] string? action = null) => string.Concat(action, "_", typeof(TDto).Name, "_", parameter);
+        public static string CreateCacheKeyForGet<TDto, TParam>(TParam parameter, [CallerMemberName] string? action = null) => string.Concat(action, "_", typeof(TDto).FullName, "_", parameter);
 
         /// <summary>
         /// Creates the cache key for a get list operation.
@@ -38,7 +38,7 @@ namespace RESTworld.AspNetCore.Caching
             => string.Concat(
             action,
             "_",
-            typeof(TDto).Name,
+            typeof(TDto).FullName,
             "_Apply:", oDataQueryOptions.Apply,
             "_Compute:", oDataQueryOptions.Compute,
             "_Count:", oDataQueryOptions.Count,
@@ -60,6 +60,7 @@ namespace RESTworld.AspNetCore.Caching
         /// <param name="oDataQueryOptions">The raw OData query options.</param>
         /// <param name="action">The calling method. This is automatically filled out.</param>
         /// <typeparam name="TDto">The type of the DTO to return. In case of a custom controller this may also be the controller type.</typeparam>
+        /// <typeparam name="TParam">The type of the parameter to differentiate DTOs. Normally this is some kind of ID.</typeparam>
         /// <returns>The key for the cache.</returns>
         public static string CreateCacheKeyForGetList<TDto, TParam>(TParam parameter, ODataRawQueryOptions oDataQueryOptions, [CallerMemberName] string? action = null)
             => string.Concat(CreateCacheKeyForGetList<TDto>(oDataQueryOptions, action), "_", parameter);

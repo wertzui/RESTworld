@@ -1,6 +1,6 @@
 {
   "name": "@wertzui/ngx-restworld-client",
-  "version": "11.0.0",
+  "version": "12.0.0",
   "author": "wertzui",
   "description": "An Angular client to consume a RESTworld service that serves application/hal+json or hal-forms+json.",
   "publishConfig": {
@@ -27,19 +27,18 @@
     "tslib": "^2.6.2"
   },
   "peerDependencies": {
-    "@angular/animations": "^16.2.3",
-    "@angular/cdk": "^16.2.2",
-    "@angular/common": "^16.2.3",
-    "@angular/compiler": "^16.2.3",
-    "@angular/core": "^16.2.3",
-    "@angular/forms": "^16.2.3",
-    "@angular/platform-browser": "^16.2.3",
-    "@angular/platform-browser-dynamic": "^16.2.3",
-    "@angular/platform-server": "^16.2.3",
-    "@angular/router": "^16.2.3",
+    "@angular/animations": "^16.2.6",
+    "@angular/cdk": "^16.2.5",
+    "@angular/common": "^16.2.6",
+    "@angular/compiler": "^16.2.6",
+    "@angular/core": "^16.2.6",
+    "@angular/forms": "^16.2.6",
+    "@angular/platform-browser": "^16.2.6",
+    "@angular/platform-browser-dynamic": "^16.2.6",
+    "@angular/platform-server": "^16.2.6",
+    "@angular/router": "^16.2.6",
     "@fortawesome/fontawesome-free": "^6.4.2",
-    "@jdrks/ngx-deep-linking": "^1.0.8",
-    "@wertzui/ngx-hal-client": "^6.0.0",
+    "@wertzui/ngx-hal-client": "^10.0.0",
     "cldr-dates-modern": "^43.1.0",
     "cldr-numbers-modern": "^43.1.0",
     "clr-format": "^0.5.2",
@@ -53,17 +52,8 @@
     "uri-templates-es": "^1.0.0",
     "zone.js": "^0.13.1"
   },
-  "overrides": {
-    "@jdrks/ngx-deep-linking": {
-      "@angular/cdk": "^16",
-      "@angular/common": "^16",
-      "@angular/core": "^16",
-      "@angular/platform-browser-dynamic": "^16",
-      "@angular/router": "^16"
-    }
-  },
   "devDependencies": {
     "@types/uri-templates": "0.1.32",
-    "@types/lodash": "4.14.198"
+    "@types/lodash": "4.14.199"
   }
 }

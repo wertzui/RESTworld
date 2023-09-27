@@ -1,12 +1,11 @@
-import { Component, EventEmitter, Input, Optional, Output, ViewChild, ViewContainerRef } from '@angular/core';
-import { Property, PropertyType, Template } from '@wertzui/ngx-hal-client';
+import { Component, EventEmitter, Input, Optional, Output, ViewChild } from '@angular/core';
+import { FormService, Property, PropertyType, SimpleValue, Template } from '@wertzui/ngx-hal-client';
 import * as _ from 'lodash';
 import { MenuItem, SortMeta } from 'primeng/api';
 import { ODataParameters } from '../../models/o-data';
 import { ODataService } from '../../services/o-data.service';
 import { ContextMenu } from 'primeng/contextmenu';
-import { ControlContainer, FormArray, FormArrayName, UntypedFormGroup } from '@angular/forms';
-import { FormService } from '../../services/form.service';
+import { AbstractControl, ControlContainer, FormArray, FormArrayName, FormGroup } from '@angular/forms';
 import { TableLazyLoadEvent, TableRowSelectEvent, TableRowUnSelectEvent } from 'primeng/table';
 
 enum ColumnFilterType {
@@ -16,6 +15,42 @@ enum ColumnFilterType {
   date = 'date'
 }
 
+/**
+ * Displays a table based on a search-, an edit-template and a list of items.
+ * The search-template is required and used to display the table columns and to filter and sort the items.
+ * The edit-template is optional and used to edit the items. For the edit capability, the table must be part of a reactive form.
+ * The items are displayed as table rows.
+ * The table supports lazy loading, row selection, row menus, and context menus.
+ * 
+ * @example
+ * <rw-table
+ *   [apiName]="apiName"
+ *   [searchTemplate]="searchTemplate"
+ *   [editTemplate]="editTemplate"
+ *   [rows]="rows"
+ *   [rowsPerPageOptions]="[10, 25, 50]"
+ *   [headerMenu]="headerMenu"
+ *   [rowMenu]="rowMenu"
+ *   [rowStyleClass]="rowStyleClass"
+ *   [cellStyleClass]="cellStyleClass"
+ *   [totalRecords]="totalRecords"
+ *   [multiSortMeta]="multiSortMeta"
+ *   [styleClass]="styleClass"
+ *   [tableStyle]="tableStyle"
+ *   [scrollable]="scrollable"
+ *   [scrollHeight]="scrollHeight"
+ *   [selectionMode]="selectionMode"
+ *   [rowHover]="rowHover"
+ *   [selection]="selection"
+ *   [contextMenuItems]="contextMenuItems"
+ *   [isLoading]="isLoading"
+ *   (onFilterOrSortChanged)="onFilterOrSortChanged($event)"
+ *   (onRowSelect)="onRowSelect($event)"
+ *   (onRowUnselect)="onRowUnselect($event)"
+ *   (selectionChange)="selectionChange($event)">
+ * </rw-table>
+ * 
+ */
 @Component({
   selector: 'rw-table',
   templateUrl: './restworld-table.component.html',
@@ -25,24 +60,40 @@ enum ColumnFilterType {
     deps: [[Optional, FormArrayName]],
     useFactory: (arrayName: FormArrayName) => arrayName, }]
   })
-export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
+export class RestWorldTableComponent<TListItem extends Record<string, any>> {
+  /**
+   * The name of the api.
+   * For the editing capability, you must also set the editTemplate and the formArray.
+   */
   @Input()
   public apiName?: string;
 
-  private _formArray?: FormArray<UntypedFormGroup>;
+  private _formArray?: FormArray<FormGroup<{[K in keyof TListItem] : AbstractControl<unknown>}>>;
 
+  /**
+   * The form array that contains the form groups for the items.
+   * Bind this to the form array that contains the form groups for the items.
+   * Each entry in the array represents one row in the currently displayed page of the table.
+   * For the editing capability, you must also set the apiName and the editTemplate.
+   */
   @Input()
-  public set formArray(value: FormArray<UntypedFormGroup> | undefined) {
+  public set formArray(value: FormArray<FormGroup<{[K in keyof TListItem] : AbstractControl<unknown>}>> | undefined) {
     this._formArray = value;
   }
 
-  public get formArray(): FormArray<UntypedFormGroup> | undefined {
-    return this._formArray ?? this._controlContainer?.control as FormArray<UntypedFormGroup> | undefined;
+  public get formArray(): FormArray<FormGroup<{[K in keyof TListItem] : AbstractControl<unknown>}>> | undefined {
+    return this._formArray ?? this._controlContainer?.control as FormArray<FormGroup<{[K in keyof TListItem] : AbstractControl<unknown>}>> | undefined;
   }
 
-  private _searchTemplate?: Template;
-  @Input()
-  public set searchTemplate(value: Template | undefined){
+  private _searchTemplate: Template = new Template({properties: []});
+
+  /**
+   * The template that is used to display the table columns and to filter and sort the items.
+   * Bind this to the template that is used to display the table columns and to filter and sort the items.
+   * Normally this is returned from the backend as part of the hal-forms resource from a list endpoint.
+   */
+  @Input({ required: true })
+  public set searchTemplate(value: Template){
     this._searchTemplate = value;
     this._columns = value?.properties.filter(p => p.type !== PropertyType.Hidden) ?? [];
     this.setSortFieldAndSortOrder(value)
@@ -53,6 +104,13 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
   }
 
   private _editTemplate?: Template;
+
+  /**
+   * The template that is used to edit the items.
+   * Bind this to the template that is used to edit the items.
+   * Normally this is returned from the backend as part of the hal-forms resource from a list endpoint.
+   * For the editing capability, you must also set the apiName and the formArray.
+   */
   @Input()
   public set editTemplate(value: Template | undefined){
     this._editTemplate = value;
@@ -64,7 +122,7 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
     return this._editTemplate;
   }
 
-  private _editProperties: Record<string, Property> = {};
+  private _editProperties: Record<string, Property<SimpleValue, string, string>> = {};
   public get editProperties() {
     return this._editProperties;
   }
@@ -73,50 +131,76 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
     return this.editTemplate !== undefined && this.formArray !== undefined && this.apiName;
   }
 
-  private _rows: TListDto[] = [];
+  private _rows: TListItem[] = [];
   public get rows() {
     return this._rows;
   }
-  @Input()
-  public set rows(value: TListDto[]) {
+
+  /**
+   * The items that are displayed as table rows.
+   * Bind this to the items that are displayed as table rows.
+   * Normally this is returned from the backend as part of the hal-forms resource from a list endpoint.
+   */
+  @Input({ required: true })
+  public set rows(value: TListItem[]) {
     this._rows = value;
     this.updateCalculatedFunctionValues(value);
     this.updateFormArray();
   }
 
+  /**
+   * The possible values for the number of rows per page.
+   * The default is [10, 25, 50].
+   */
   @Input()
   public rowsPerPageOptions = [10, 25, 50];
 
+  /**
+   * An optional menu that is displayed at the top right of the table.
+   * @see RestWorldMenuButtonComponent
+   */
   @Input()
   public headerMenu: MenuItem[] = [];
 
-  private _rowMenu: (row: TListDto, openedByRightClick: boolean) => MenuItem[] = () => [];
-  public get rowMenu(): (row: TListDto, openedByRightClick: boolean) => MenuItem[] {
+  private _rowMenu: (row: TListItem, openedByRightClick: boolean) => MenuItem[] = () => [];
+  public get rowMenu(): (row: TListItem, openedByRightClick: boolean) => MenuItem[] {
     return this._rowMenu;
   }
+
+  /**
+   * A function that returns the menu for a row.
+   * Based on the openedByRightClick parameter, the function can return different menus.
+   * The menu when it has not been opened by a right click is displayed in an extra column to the right of the table if `showRowMenuAsColumn` is `true`.
+   * The menu when it has been opened by a right click is displayed as a context menu if `showRowMenuOnRightClick` is `true`.
+   * @param row The row for which to return the menu.
+   * @param openedByRightClick Indicates whether the menu was opened by a right click.
+   * @returns The menu for the row.
+   * @see showRowMenuAsColumn
+   * @see showRowMenuOnRightClick
+   */
   @Input()
-  public set rowMenu(value: (row: TListDto, openedByRightClick: boolean) => MenuItem[]) {
+  public set rowMenu(value: (row: TListItem, openedByRightClick: boolean) => MenuItem[]) {
     this._rowMenu = value;
     this.updateRowMenus(this.rows);
   }
 
   private _rowMenus: MenuItem[][] = [];
 
-  private updateCalculatedFunctionValues(value: TListDto[]) {
+  private updateCalculatedFunctionValues(value: TListItem[]) {
     this.updateRowMenus(value);
     this.updateRowStyles(value);
     this.updateCellStyles(value);
   }
 
-  private updateCellStyles(value: TListDto[]) {
+  private updateCellStyles(value: TListItem[]) {
     this._cellStyleClasses = value.map((r, ri) => Object.fromEntries(this.columns.map((c, ci) => [c.name, this.cellStyleClass(r, c, ri, ci)])));
   }
 
-  private updateRowStyles(value: TListDto[]) {
+  private updateRowStyles(value: TListItem[]) {
     this._rowStyleClasses = value.map((r, i) => this.rowStyleClass(r, i));
   }
 
-  private updateRowMenus(value: TListDto[]) {
+  private updateRowMenus(value: TListItem[]) {
     if (this.showRowMenuAsColumn)
       this._rowMenus = value.map(r => this.rowMenu(r, false));
   }
@@ -129,18 +213,31 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
     return this.headerMenu.length > 0 || (this.showRowMenuAsColumn && this.rowMenus.some(m => m.length > 0));
   }
 
+  /**
+   * Indicates whether the row menu is displayed as a column to the right of the table.
+   */
   @Input()
   public showRowMenuAsColumn = true;
 
+  /**
+   * Indicates whether the row menu is displayed as a context menu when the user right clicks on a row.
+   */
   @Input()
   public showRowMenuOnRightClick = true;
 
-  private _rowStyleClass: (row: TListDto, rowIndex: number) => string = () => "";
-  public get rowStyleClass(): (row: TListDto, rowIndex: number) => string {
+  private _rowStyleClass: (row: TListItem, rowIndex: number) => string = () => "";
+  public get rowStyleClass(): (row: TListItem, rowIndex: number) => string {
     return this._rowStyleClass;
   }
+
+  /**
+   * A function that returns the style class for a row.
+   * @param row The row for which to return the style class.
+   * @param rowIndex The index of the row on the currently displayed page.
+   * @returns The style class for the row.
+   */
   @Input()
-  public set rowStyleClass(value: (row: TListDto, rowIndex: number) => string) {
+  public set rowStyleClass(value: (row: TListItem, rowIndex: number) => string) {
     this._rowStyleClass = value;
     this.updateRowStyles(this.rows);
   }
@@ -150,12 +247,20 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
     return this._rowStyleClasses;
   }
 
-  private _cellStyleClass: (row: TListDto, column: Property, rowIndex: number, columnIndex: number) => string = () => "";
-  public get cellStyleClass(): (row: TListDto, column: Property, rowIndex: number, columnIndex: number) => string {
+  private _cellStyleClass: (row: TListItem, column: Property<SimpleValue, string, string>, rowIndex: number, columnIndex: number) => string = () => "";
+  public get cellStyleClass(): (row: TListItem, column: Property<SimpleValue, string, string>, rowIndex: number, columnIndex: number) => string {
     return this._cellStyleClass;
   }
+  /**
+   * A function that returns the style class for a cell.
+   * @param row The row for which to return the style class.
+   * @param column The column for which to return the style class.
+   * @param rowIndex The index of the row on the currently displayed page.
+   * @param columnIndex The index of the column.
+   * @returns The style class for the cell.
+   */
   @Input()
-  public set cellStyleClass(value: (row: TListDto, column: Property, rowIndex: number, columnIndex: number) => string) {
+  public set cellStyleClass(value: (row: TListItem, column: Property<SimpleValue, string, string>, rowIndex: number, columnIndex: number) => string) {
     this._cellStyleClass = value;
     this.updateCellStyles(this.rows);
   }
@@ -188,44 +293,84 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
 
   public multiSortMeta?: SortMeta[] | null;
 
+  /**
+   * The style class for the table.
+   * The default is "".
+   */
   @Input()
   public styleClass: string = "";
 
+  /**
+   * The inline style for the table.
+   */
   @Input()
   public tableStyle?: Record<string,string>;
 
+  /**
+   * Indicates whether the table is scrollable.
+   * The default is `true`.
+   */
   @Input()
   public scrollable: boolean = true;
 
+  /**
+   * The height of the scrollable table.
+   * The default is "flex".
+   */
   @Input()
   public scrollHeight: string = "flex";
 
+  /**
+   * Emitted when the filter or sort parameters have changed.
+   * Subscribe to this event to load the items from the backend.
+   * This is one of the core features of the table.
+   */
   @Output()
   public onFilterOrSortChanged = new EventEmitter<ODataParameters>();
 
+  /**
+   * Emitted when a row has been selected.
+   */
   @Output()
-  public onRowSelect = new EventEmitter<TListDto>();
+  public onRowSelect = new EventEmitter<TListItem>();
 
+  /**
+   * Emitted when a row has been unselected.
+   */
   @Output()
-  public onRowUnselect = new EventEmitter<TListDto>();
+  public onRowUnselect = new EventEmitter<TListItem>();
 
+  /**
+   * The mode how rows can be selected.
+   * The default is `null` which means rows cannot be selected.
+   */
   @Input()
   public selectionMode: "single" | "multiple" | null = null;
 
+  /**
+   * Indicates whether the table rows are highlighted when the mouse hovers over them.
+   */
   @Input()
   public rowHover: boolean = false;
 
+  /**
+   * The currently selected rows.
+   */
   @Input()
-  public get selection(): TListDto[] {
+  public get selection(): TListItem[] {
     return _.isArray(this._selection) ? this._selection : [this._selection];
   }
-  public set selection(value: TListDto[]) {
+  public set selection(value: TListItem[]) {
     this._selection = value;
   }
-  public _selection: TListDto | TListDto[] = [];
+  public _selection: TListItem | TListItem[] = [];
 
+  /**
+   * Emitted when the selection has changed.
+   * @param event The new selection.
+   */
   @Output()
-  selectionChange: EventEmitter<TListDto[]> = new EventEmitter();
+  selectionChange: EventEmitter<TListItem[]> = new EventEmitter();
 
   @ViewChild("contextMenu")
   contextMenu?: ContextMenu;
@@ -235,11 +380,15 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
     return this._contextMenuItems;
   }
 
+  /**
+   * Indicates whether the table is currently loading.
+   * Set this to true while loading new items from the backend when reacting to the `onFilterOrSortChanged` event.
+   */
   @Input()
   public isLoading = false;
 
-  private _columns: Property[] = [];
-  public get columns(): Property[] {
+  private _columns: Property<SimpleValue, string, string>[] = [];
+  public get columns(): Property<SimpleValue, string, string>[] {
     return this._columns;
   }
 
@@ -280,7 +429,7 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
     this.onFilterOrSortChanged.emit(parameters);
   }
 
-  public openContextMenu(event: MouseEvent, row: TListDto): void {
+  public openContextMenu(event: MouseEvent, row: TListItem): void {
     if (!this.showRowMenuOnRightClick || this.contextMenu === undefined)
       return;
 
@@ -297,7 +446,7 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
     this.onRowUnselect.emit(event.data);
   }
 
-  public onSelectionChangeInternal(event: TListDto | TListDto[]): void {
+  public onSelectionChangeInternal(event: TListItem | TListItem[]): void {
     this.selectionChange.emit(_.isArray(event) ? event : [event]);
   }
 
@@ -336,7 +485,7 @@ export class RestWorldTableComponent<TListDto extends Record<string, unknown>> {
 
     const newControls = this.rows
       .map(r => {
-        const formGroup = this._formService.createFormGroupFromTemplate(this.editTemplate!);
+        const formGroup = this._formService.createFormGroupFromTemplate(this.editTemplate!) as FormGroup;
         formGroup.patchValue(r);
         return formGroup;
       });

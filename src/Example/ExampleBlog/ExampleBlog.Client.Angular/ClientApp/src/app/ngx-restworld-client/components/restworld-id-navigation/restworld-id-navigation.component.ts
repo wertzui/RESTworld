@@ -1,12 +1,17 @@
 import { Component, Input } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
-import { ProblemDetails } from '../../models/problem-details';
-import { Resource } from '@wertzui/ngx-hal-client';
+import { ProblemDetails, Resource } from '@wertzui/ngx-hal-client';
 import { RestWorldClient } from '../../services/restworld-client';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { RestWorldClientCollection } from '../../services/restworld-client-collection';
 
+/**
+ * Component for navigating to a resource by its ID.
+ * 
+ * @remarks
+ * This component is used to navigate to a resource by its ID. It takes in the API name, the `rel` of the resource, and an optional `urlPrefix` to use for the URL that is returned from the backend. It also provides a form for entering the ID of the resource to navigate to.
+ */
 @Component({
   selector: 'rw-id-navigation',
   templateUrl: './restworld-id-navigation.component.html',
@@ -14,14 +19,14 @@ import { RestWorldClientCollection } from '../../services/restworld-client-colle
 })
 export class RestWorldIdNavigationComponent {
 
-  @Input()
-  public apiName?: string;
+  @Input({ required: true })
+  public apiName!: string;
 
-  @Input()
-  public rel?: string;
+  @Input({ required: true })
+  public rel!: string;
 
   /**
-   * A prefix to use for the URL that si returned from the backend.
+   * A prefix to use for the URL that is returned from the backend.
    * If none is provided, a relative navigation will be performed which means that the last part of the current URL is replaced with the one from the backend.
    */
   @Input()

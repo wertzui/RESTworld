@@ -1,12 +1,16 @@
-import { AfterViewInit, Component, forwardRef, Input, OnDestroy, OnInit, QueryList, ViewChildren } from '@angular/core';
+import { AfterViewInit, Component, forwardRef, Input, OnInit, QueryList, ViewChildren } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { CropperPosition, ImageCroppedEvent, ImageCropperComponent, OutputFormat } from 'ngx-image-cropper';
+import { ImageCroppedEvent, ImageCropperComponent } from 'ngx-image-cropper';
 import { FileUpload } from 'primeng/fileupload';
 import { Dialog } from 'primeng/dialog'
-import { Subscription } from 'rxjs';
 import { Property } from '@wertzui/ngx-hal-client';
 import { RestWorldImage } from '../../models/restworld-image'
+import * as _ from 'lodash';
 
+/**
+ * A component for displaying and editing images with various options such as cropping, resizing, and aspect ratio.
+ * Implements ControlValueAccessor to work with Angular forms.
+ */
 @Component({
   selector: 'rw-image',
   templateUrl: './restworld-image.component.html',
@@ -21,15 +25,15 @@ export class RestWorldImageComponent implements ControlValueAccessor, OnInit, Af
 
   private onChange?: Function;
 
-  @Input()
+  @Input({ required: true })
   public property!: Property & { restWorldImage: RestWorldImage}
 
   public get alt() {
     return this.property.prompt ?? this.property.name;
   }
 
-  public get accept() {
-    return this.property.restWorldImage.accept ?? this.property.placeholder ?? "image/*";
+  public get accept(): string | undefined {
+    return this.property.restWorldImage.accept ?? _.isString(this.property.placeholder) ? this.property.placeholder as string : "image/*";
   }
 
   public get fileName() {

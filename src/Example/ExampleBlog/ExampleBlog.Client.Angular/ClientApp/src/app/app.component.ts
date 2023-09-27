@@ -27,7 +27,6 @@ export class AppComponent implements OnInit {
           disableFetchTracking: false,
           enableCorsCorrelation: true,
           enableDebug: true,
-          enableDebugExceptions: true,
           enableRequestHeaderTracking: true,
           enableResponseHeaderTracking: true,
           extensions: [angularPlugin],

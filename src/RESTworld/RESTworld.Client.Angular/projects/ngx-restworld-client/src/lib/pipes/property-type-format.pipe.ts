@@ -5,6 +5,9 @@ import { PropertyType } from '@wertzui/ngx-hal-client';
 @Pipe({
   name: 'propertyTypeFormat'
 })
+/**
+ * A pipe that formats the value of a property based on its type.
+ */
 export class PropertyTypeFormatPipe implements PipeTransform {
   private static readonly _dateFormat = new Date(3333, 10, 22) // months start at 0 in JS
     .toLocaleDateString()

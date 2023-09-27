@@ -1,10 +1,19 @@
 import { FilterMatchMode, FilterMetadata, LazyLoadEvent } from 'primeng/api';
-import { Property, PropertyType, Template } from '@wertzui/ngx-hal-client';
+import { Property, PropertyType, SimpleValue, Template } from '@wertzui/ngx-hal-client';
 import { TableLazyLoadEvent } from 'primeng/table';
 import { ODataParameters } from '../models/o-data';
 
+/**
+ * A static class that provides utility methods for creating OData filters, order by clauses, and parameters from `TableLazyLoadEvent` objects.
+ */
 export class ODataService {
-  public static createFilterForProperty(property: Property, filter: FilterMetadata): string | undefined {
+  /**
+   * Creates an OData filter string for a given property and filter metadata.
+   * @param property - The property to filter on.
+   * @param filter - The filter metadata to use.
+   * @returns The OData filter string, or undefined if the filter value is falsy.
+   */
+  public static createFilterForProperty(property: Property<SimpleValue, string, string>, filter: FilterMetadata): string | undefined {
     if (!filter.value)
       return undefined;
 
@@ -24,7 +33,13 @@ export class ODataService {
     }
   }
 
-  public static createFilterForPropertyArray(property: Property, filters: FilterMetadata[]): string | undefined {
+  /**
+   * Creates an OData $filter value for an array of filter metadata objects and a given property.
+   * @param property - The property to filter on.
+   * @param filters - An array of filter metadata objects.
+   * @returns The OData $filter value, or undefined if no filters were provided.
+   */
+  public static createFilterForPropertyArray(property: Property<SimpleValue, string, string>, filters: FilterMetadata[]): string | undefined {
     const filter = filters
       .map(f => ODataService.createFilterForProperty(property, f))
       .filter(f => !!f)
@@ -36,7 +51,13 @@ export class ODataService {
     return `(${filter})`;
   }
 
-  public static createFilterFromTableLoadEvent(event: TableLazyLoadEvent, properties?: Property[]): string | undefined {
+  /**
+   * Creates an OData $filter value from a TableLazyLoadEvent and an array of properties.
+   * @param event The TableLazyLoadEvent containing the filter data.
+   * @param properties An optional array of properties to filter on.
+   * @returns The OData $filter value, or undefined if no filters were applied or no properties were provided.
+   */
+  public static createFilterFromTableLoadEvent(event: TableLazyLoadEvent, properties?: ReadonlyArray<Property<SimpleValue, string, string>>): string | undefined {
     if (!event.filters || properties === undefined)
       return undefined;
 
@@ -53,6 +74,11 @@ export class ODataService {
     return `(${filter})`;
   }
 
+  /**
+   * Creates a OData $orderby value from a TableLazyLoadEvent.
+   * @param event The TableLazyLoadEvent to create the $orderby value from.
+   * @returns The $orderby value created from the TableLazyLoadEvent.
+   */
   public static createOrderByFromTableLoadEvent(event: TableLazyLoadEvent): string | undefined {
     if (event.multiSortMeta && event.multiSortMeta.length > 0) {
       return event.multiSortMeta
@@ -68,6 +94,12 @@ export class ODataService {
     return undefined;
   }
 
+  /**
+   * Creates OData parameters from a TableLazyLoadEvent and an optional Template.
+   * @param event The TableLazyLoadEvent to create OData parameters from.
+   * @param template An optional Template to use for creating the OData parameters.
+   * @returns An ODataParameters object containing the $filter, $orderby, $top, and $skip parameters.
+   */
   public static createParametersFromTableLoadEvent(event: TableLazyLoadEvent, template?: Template): ODataParameters {
     const oDataParameters = {
       $filter: ODataService.createFilterFromTableLoadEvent(event, template?.properties),
@@ -79,15 +111,25 @@ export class ODataService {
     return oDataParameters;
   }
 
+  /**
+   * Creates a OData $skip value from a TableLazyLoadEvent.
+   * @param event The TableLazyLoadEvent to create the $skip value from.
+   * @returns The $skip value created from the TableLazyLoadEvent.
+   */
   public static createSkipFromTableLoadEvent(event: TableLazyLoadEvent): number | undefined {
     return event.first;
   }
 
+  /**
+   * Creates a OData $top value from a TableLazyLoadEvent.
+   * @param event The TableLazyLoadEvent to create the $top value from.
+   * @returns The $top value created from the TableLazyLoadEvent.
+   */
   public static createTopFromTableLoadEvent(event: TableLazyLoadEvent): number | undefined {
     return event.rows === null ? undefined : event.rows;
   }
 
-  private static createComparisonValue(property: Property, value: unknown): string {
+  private static createComparisonValue(property: Property<SimpleValue, string, string>, value: unknown): string {
     if (value === null || value === undefined)
       return 'null';
 
@@ -161,7 +203,7 @@ export class ODataService {
     }
   }
 
-  private static findPropertyByName(properties: Property[], propertyName: string): Property {
+  private static findPropertyByName(properties: ReadonlyArray<Property<SimpleValue, string, string>>, propertyName: string): Property<SimpleValue, string, string> {
     const property = properties.find(p => p.name === propertyName);
     if (property === undefined)
       throw new Error(`Cannot find a property with the name ${propertyName} in the properties of the search form template.`);

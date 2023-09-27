@@ -1,14 +1,37 @@
 import { Component, Input } from '@angular/core';
-import { PagedListResource, Resource, ResourceDto, ResourceOfDto, Template } from '@wertzui/ngx-hal-client';
+import { PagedListResource, ProblemDetails, Resource, ResourceDto, ResourceOfDto, Template } from '@wertzui/ngx-hal-client';
 import * as _ from 'lodash';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { RestWorldClient } from '../../services/restworld-client';
 import { RestWorldClientCollection } from '../../services/restworld-client-collection';
-import { ProblemDetails } from '../../models/problem-details';
 import { AvatarGenerator } from '../../services/avatar-generator';
 import { Router } from '@angular/router';
 import { ODataParameters } from '../../models/o-data';
 
+/**
+ * A component that displays a list of resources from a RESTworld API.
+ * This component is meant to be used in conjunction with the `RESTworldEditViewComponent`, but can also be used with any other component if a custom `editLink` is provided.
+ * @example
+ * <rw-list apiName="api" rel="rel"></rw-list>
+ * @example
+ * <rw-list apiName="api" rel="rel" [editLink]="'/edit'"></rw-list>
+ * @example
+ * <rw-list apiName="api" rel="rel" [createButtonMenu]="[{label: 'Create new', icon: 'fas fa-plus', routerLink: ['/edit', 'api', 'rel', 'new']}]" [editLink]="'/edit'"></rw-list>
+ * @example
+ * <rw-list apiName="api" rel="rel" [createButtonMenu]="[{label: 'Create new', icon: 'fas fa-plus', routerLink: ['/edit', 'api', 'rel', 'new']}]" [editLink]="'/edit'">
+ *  <ng-template pTemplate="header">
+ *   <div class="p-d-flex p-ai-center">
+ *    <div class="p-mr-2">
+ *    <i class="fas fa-search"></i>
+ *   </div>
+ *  <div class="p-inputgroup">
+ *  <input pInputText type="text" placeholder="Search..." (input)="load({$search: $event.target.value})">
+ * </div>
+ * </div>
+ * </ng-template>
+ * </rw-list>
+ * 
+ */
 @Component({
   selector: 'rw-list',
   templateUrl: './restworld-list-view.component.html',
@@ -17,6 +40,10 @@ import { ODataParameters } from '../../models/o-data';
 export class RESTworldListViewComponent<TListDto extends ResourceDto & Record<string, unknown>> {
 
   @Input()
+  /**
+   * An array of menu items to be displayed in the create button dropdown menu.
+   * That is the menu at the top right of the list.
+   */
   public createButtonMenu?: MenuItem[];
   public isLoading = false;
   public load = _.debounce(this.loadInternal, 100);
@@ -29,12 +56,17 @@ export class RESTworldListViewComponent<TListDto extends ResourceDto & Record<st
   }
 
   @Input()
+  /**
+   * The URL for the edit link of the RESTworld list view.
+   * Use it if you want to use a custom edit view instead of the default `RESTworldEditViewComponent`.
+   * @param value The new value for the edit link URL.
+   */
   public set editLink(value: string) {
     if(value)
       this._editLink = value;
   }
   private _lastParameters: ODataParameters = {};
-  private _template?: Template;
+  private _searchTemplate: Template = new Template({ properties: [] });
   public _totalRecords = 0;
 
   public headerMenu: MenuItem[] = [];
@@ -65,10 +97,14 @@ export class RESTworldListViewComponent<TListDto extends ResourceDto & Record<st
     private readonly _router: Router) {
   }
 
-  private _apiName?: string;
+  private _apiName!: string;
 
-  @Input()
-  public set apiName(value: string | undefined) {
+  @Input({ required: true })
+  /**
+   * Sets the name of the API to load and triggers a reload of the data.
+   * @param value The name of the API to load.
+   */
+  public set apiName(value: string) {
     this._apiName = value;
     this.load(this._lastParameters);
   };
@@ -85,14 +121,18 @@ export class RESTworldListViewComponent<TListDto extends ResourceDto & Record<st
   public get rel(): string {
     return this._rel;
   }
-  @Input()
+  @Input({ required: true })
+  /**
+   * Sets the rel value for the RESTWorld list view component.
+   * @param value The new rel value to set.
+   */
   public set rel(value: string) {
     this._rel = value;
     this.load(this._lastParameters);
   }
 
-  public get template(): Template | undefined {
-    return this._template;
+  public get searchTemplate(): Template {
+    return this._searchTemplate;
   }
 
   public get totalRecords(): number {
@@ -131,9 +171,10 @@ export class RESTworldListViewComponent<TListDto extends ResourceDto & Record<st
     else if (response.body) {
       try {
         const templates = await this.getClient().getAllTemplates(response.body);
-        this._template = templates["Search"];
-        if (this._template === undefined)
+        const searchTemplate = templates["Search"];
+        if (searchTemplate === undefined)
           throw new Error("No search template found in the API response.");
+        this._searchTemplate = searchTemplate;
       }
       catch (e: unknown) {
         this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the resources from the API. ' + e, data: e });

@@ -20,10 +20,14 @@ namespace ExampleBlog.Common.Dtos
         public int MyInt { get; set; }
         public char MyChar { get; set; }
         public bool MyBool { get; set; }
+        public TestEnum MyEnum { get; set; }
+        [Editable(false)]
+        public TestEnum MyReadonlyEnum { get; set; }
         public string? MyNullableString { get; set; }
         public int? MyNullableInt { get; set; }
         public char? MyNullableChar { get; set; }
         public bool? MyNullableBool { get; set; }
+        public TestEnum? MyNullableEnum { get; set; }
         public decimal? MyNullableDecimal { get; set; }
         public DateTimeOffset MyDateTimeOffset { get; set; }
         public DateOnly MyDateOnly { get; set; }
@@ -63,5 +67,12 @@ namespace ExampleBlog.Common.Dtos
     {
         public string MyListString { get; set; } = default!;
         public int MyListInt { get; set; }
+    }
+
+    public enum TestEnum
+    {
+        TestA,
+        TestB,
+        TestC
     }
 }

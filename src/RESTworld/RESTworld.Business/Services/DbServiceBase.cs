@@ -101,7 +101,7 @@ namespace RESTworld.Business.Services
             }
             catch (DbUpdateConcurrencyException e)
             {
-                return ServiceResponse.FromException<T>(HttpStatusCode.Conflict, e);
+                return GetConcurrencyException<T>(e);
             }
             catch (DbUpdateException e) when (e.InnerException is SqlException se && se.Number == 547)
             {
@@ -317,6 +317,37 @@ namespace RESTworld.Business.Services
             return resultAuthResponse;
         }
 
+        private ServiceResponse<T> GetConcurrencyException<T>(DbUpdateConcurrencyException e)
+        {
+            var validationResults = new ValidationResults("", "Concurrency validation failed. Please reload the resource.");
+
+            var entry = e.Entries.FirstOrDefault();
+            if (entry is null)
+                return ServiceResponse.FromFailedValidation<T>(HttpStatusCode.Conflict, validationResults);
+
+            var concurrencyPropertyNames = entry.CurrentValues.Properties.Where(p => p.IsConcurrencyToken).Select(p => p.Name).ToHashSet();
+            if (concurrencyPropertyNames.Count == 0)
+                return ServiceResponse.FromFailedValidation<T>(HttpStatusCode.Conflict, validationResults);
+
+            var entityType = entry.Entity.GetType();
+            var returnType = typeof(T);
+
+            var destinationMemberNames = _mapper.ConfigurationProvider.Internal().GetAllTypeMaps()
+                .Where(m => m.DestinationType == returnType && m.SourceType == entityType)
+                .SelectMany(m => m.PropertyMaps.Where(p => concurrencyPropertyNames.Contains(p.SourceMember.Name)).Select(p => p.DestinationMember.Name))
+                .ToList();
+
+            if (destinationMemberNames.Count == 0)
+                return ServiceResponse.FromFailedValidation<T>(HttpStatusCode.Conflict, validationResults);
+
+            foreach (var destinationMemberName in destinationMemberNames)
+            {
+                validationResults.AddValidationFailure(destinationMemberName, "Concurrency validation failed.");
+            }
+
+            return ServiceResponse.FromFailedValidation<T>(HttpStatusCode.Conflict, validationResults);
+        }
+
         private ServiceResponse<T> GetForeignKeyExceptionResponse<T>(SqlException e)
         {
             if (e.Message is null)
@@ -341,7 +372,11 @@ namespace RESTworld.Business.Services
                     var maps = _mapper.ConfigurationProvider.Internal().GetAllTypeMaps().Where(m => m.DestinationType == entityType);
                     var sourceTypes = maps.Select(m => m.SourceType).ToHashSet();
 
-                    var foreignKeyPropertyOnDto = returnTypeProperties.Where(p => sourceTypes.Contains(p.PropertyType)).Select(p => FindForeignKeyProperty(returnType, returnTypeProperties, p)).Where(a => a is not null).FirstOrDefault();
+                    var foreignKeyPropertyOnDto = returnTypeProperties
+                        .Where(p => sourceTypes.Contains(p.PropertyType))
+                        .Select(p => FindForeignKeyProperty(returnType, returnTypeProperties, p))
+                        .Where(a => a is not null)
+                        .FirstOrDefault();
 
                     if (foreignKeyPropertyOnDto is not null)
                     {

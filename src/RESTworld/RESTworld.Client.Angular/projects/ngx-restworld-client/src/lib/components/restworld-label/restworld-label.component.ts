@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { ControlContainer, FormGroupDirective } from '@angular/forms';
-import { Property, PropertyType } from '@wertzui/ngx-hal-client';
+import { Property, PropertyType, SimpleValue } from '@wertzui/ngx-hal-client';
 
 /**
  * A label that is generated from the given property.
@@ -13,9 +13,9 @@ import { Property, PropertyType } from '@wertzui/ngx-hal-client';
   styleUrls: ['./restworld-label.component.css'],
   viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }]
 })
-export class RestWorldLabelComponent {
-  @Input()
-  property!: Property;
+export class RestWorldLabelComponent<TProperty extends Property<SimpleValue, string, string>> {
+  @Input({ required: true })
+  property!: TProperty;
 
   public get PropertyType() {
     return PropertyType;

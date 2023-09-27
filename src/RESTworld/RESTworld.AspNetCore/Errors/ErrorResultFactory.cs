@@ -37,7 +37,7 @@ namespace RESTworld.AspNetCore.Errors
             ArgumentNullException.ThrowIfNull(response);
 
             if (!response.ValidationSucceded)
-                return CreateError(_problemDetailsFactory.CreateValidationProblemDetails(GetHttpContext(), response.ValidationResults), action);
+                return CreateError(_problemDetailsFactory.CreateValidationProblemDetails(GetHttpContext(), response.ValidationResults, (int)response.Status, response.Status.ToString()), action);
 
             return CreateError((int)response.Status, response.ProblemDetails, action);
         }

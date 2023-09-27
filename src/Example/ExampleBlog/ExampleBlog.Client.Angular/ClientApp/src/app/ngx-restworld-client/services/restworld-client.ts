@@ -1,8 +1,7 @@
 import { HttpHeaders, HttpResponse } from '@angular/common/http';
 import * as _ from "lodash";
-import { FormsResource, HalClient, Link, PagedListResource, Property, Resource, ResourceDto, Template, Templates } from "@wertzui/ngx-hal-client";
+import { FormsResource, HalClient, Link, PagedListResource, PagedListResourceDto, ProblemDetails, Resource, ResourceDto, ResourceFactory, Template, Templates } from "@wertzui/ngx-hal-client";
 import { LinkNames } from "../constants/link-names";
-import { ProblemDetails } from "../models/problem-details";
 import { RestWorldOptions } from "../models/restworld-options";
 import { lastValueFrom } from 'rxjs';
 import { AbstractControl, FormGroup } from '@angular/forms';
@@ -78,7 +77,7 @@ export class RestWorldClient {
     const uri = deleteLink.href;
     const header = RestWorldClient.createHeadersWithoutBody(this._options.Version, 'application/hal+json');
 
-    const response = await this.halClient.delete(uri, ProblemDetails, header);
+    const response = await this.halClient.delete(uri, header);
 
     return response;
   }
@@ -105,7 +104,7 @@ export class RestWorldClient {
 
   public async getForm(url: string): Promise<HttpResponse<FormsResource | ProblemDetails>> {
     const header = RestWorldClient.createHeadersWithoutBody(this._options.Version, 'application/prs.hal-forms+json');
-    return this._halClient.get(url, FormsResource, ProblemDetails, header);
+    return this._halClient.get(url, ResourceFactory.createFormResource, header);
   }
 
   public getAllLinksFromHome(): { [rel: string]: Link[] | undefined; } {
@@ -220,7 +219,7 @@ export class RestWorldClient {
     const defaultHeaders = RestWorldClient.createHeadersWithoutBody(this._options.Version);
     const combinedHeaders = RestWorldClient.combineHeaders(headers, defaultHeaders, false);
 
-    const response = await this.halClient.get<PagedListResource<TListDto>, ProblemDetails>(filledUri, PagedListResource, ProblemDetails, combinedHeaders);
+    const response = await this.halClient.get<PagedListResourceDto<TListDto>, PagedListResource<TListDto>>(filledUri, ResourceFactory.createPagedListResource<TListDto, ResourceDto>, combinedHeaders);
 
     return response;
   }
@@ -261,15 +260,15 @@ export class RestWorldClient {
     return response;
   }
 
-  public async getSingleByUri(uri: string, headers?: HttpHeaders): Promise<HttpResponse<Resource | ProblemDetails>> {
+  public async getSingleByUri<TState>(uri: string, headers?: HttpHeaders): Promise<HttpResponse<Resource | ProblemDetails>> {
     const defaultHeaders = RestWorldClient.createHeadersWithoutBody(this._options.Version);
     const combinedHeaders = RestWorldClient.combineHeaders(headers, defaultHeaders, false);
-    const response = await this.halClient.get(uri, Resource, ProblemDetails, combinedHeaders);
+    const response = await this.halClient.get<TState & ResourceDto, Resource & TState>(uri, ResourceFactory.createResource, combinedHeaders);
 
     return response;
   }
 
-  public async save(resource: Resource): Promise<HttpResponse<Resource | ProblemDetails>> {
+  public async save<TState>(resource: Resource & TState): Promise<HttpResponse<Resource & TState | ProblemDetails>> {
     const saveLink = resource.findLink('save');
     if (!saveLink)
       throw new Error(`The resource ${resource} does not have a save link.`);
@@ -283,10 +282,10 @@ export class RestWorldClient {
     let response;
     switch (method) {
       case 'put':
-        response = await this.halClient.put(uri, resource, Resource, ProblemDetails, header);
+        response = await this.halClient.put<TState, Resource & TState>(uri, resource, ResourceFactory.createResource<TState>, header);
         break;
       case 'post':
-        response = await this.halClient.post(uri, resource, Resource, ProblemDetails, header);
+        response = await this.halClient.post<TState, Resource & TState>(uri, resource, ResourceFactory.createResource<TState>, header);
         break;
       default:
         throw new Error(`'${method}' is not allowed as link name for the save link. Only 'POST' and 'PUT' are allowed.`);
@@ -295,7 +294,7 @@ export class RestWorldClient {
     return response;
   }
 
-  public async submit(template: Template, formValues: {}): Promise<HttpResponse<FormsResource | ProblemDetails>> {
+  public async submit(template: Template, formValues: { }): Promise<HttpResponse<FormsResource | ProblemDetails>> {
     const uri = template.target || '';
     const method = template.method?.toLowerCase();
     const header = RestWorldClient.createHeadersWithBody(this._options.Version, 'application/prs.hal-forms+json');
@@ -303,13 +302,13 @@ export class RestWorldClient {
     let response;
     switch (method) {
       case 'put':
-        response = await this.halClient.put(uri, formValues, FormsResource, ProblemDetails, header);
+        response = await this.halClient.put<void, FormsResource>(uri, formValues, ResourceFactory.createFormResource, header);
         break;
       case 'post':
-        response = await this.halClient.post(uri, formValues, FormsResource, ProblemDetails, header);
+        response = await this.halClient.post<void, FormsResource>(uri, formValues, ResourceFactory.createFormResource, header);
         break;
       default:
-        response = await this.halClient.get(uri, FormsResource, ProblemDetails, header);
+        response = await this.halClient.get<void, FormsResource>(uri, ResourceFactory.createFormResource, header);
     }
 
     return response;
@@ -332,7 +331,7 @@ export class RestWorldClient {
 
   private async getHomeForced(): Promise<HttpResponse<Resource | ProblemDetails>> {
     const header = RestWorldClient.createHeadersWithoutBody(this._options.Version);
-    const response = await this.halClient.get(this._options.BaseUrl, Resource, ProblemDetails, header);
+    const response = await this.halClient.get(this._options.BaseUrl, ResourceFactory.createResource, header);
     return response;
   }
 
@@ -360,7 +359,7 @@ export class RestWorldClient {
     if (timestamp !== undefined)
       header = header.append("ETag", timestamp);
 
-    const response = await this.halClient.delete(url, ProblemDetails, header);
+    const response = await this.halClient.delete(url, header);
 
     return response;
   }

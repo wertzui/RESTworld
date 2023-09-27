@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { AbstractControl, ControlContainer, FormGroup, FormGroupDirective } from '@angular/forms';
-import { Property } from '@wertzui/ngx-hal-client';
+import { Property, PropertyType, SimpleValue } from '@wertzui/ngx-hal-client';
 
 /**
  * Displays validation errors either for one property or for a whole form.
@@ -13,8 +13,12 @@ import { Property } from '@wertzui/ngx-hal-client';
 })
 export class RestWorldValidationErrorsComponent<T extends { [K in keyof T]: AbstractControl<any, any>; }> {
   @Input()
-  property?: Property;
+  property?: Property<SimpleValue, string, string>;
 
   @Input()
   form?: FormGroup<T>
+
+  public get PropertyType() {
+    return PropertyType;
+  }
 }

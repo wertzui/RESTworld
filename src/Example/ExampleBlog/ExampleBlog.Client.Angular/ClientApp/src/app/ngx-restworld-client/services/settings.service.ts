@@ -4,6 +4,11 @@ import { ClientSettings } from "../models/client-settings";
 import { RestWorldOptions } from "../models/restworld-options";
 import { RestWorldClientCollection } from "./restworld-client-collection";
 
+/**
+ * This service is responsible for loading the settings from the client-backend and setting up the RestWorldClientCollection.
+ * It is important that its ensureInitialized() method is called before angular is initialized.
+ * This can be done by calling ensureSettingsAreLoaded() in your main.ts before calling bootstrapModule(...).
+ */
 @Injectable({
   providedIn: 'root'
 })
@@ -20,6 +25,11 @@ export class SettingsService {
     private _clients: RestWorldClientCollection) {
   }
 
+  /**
+   * Ensures that the settings are loaded and the RestWorldClientCollection is set up.
+   * This method is called automatically by the `RestworldClientModule`.
+   * You should not need to call this method yourself.
+   * */
   public async ensureInitialized(): Promise<void> {
     if (this.initializing || this.initialized)
       return;

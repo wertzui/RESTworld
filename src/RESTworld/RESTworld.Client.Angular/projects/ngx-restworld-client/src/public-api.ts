@@ -20,7 +20,6 @@ export * from './lib/constants/link-names';
 export * from './lib/models/api-url';
 export * from './lib/models/client-settings';
 export * from './lib/models/o-data';
-export * from './lib/models/problem-details';
 export * from './lib/models/restworld-image';
 export * from './lib/models/restworld-options';
 export * from './lib/models/special-properties';
@@ -32,7 +31,6 @@ export * from './lib/pipes/property-type-format.pipe';
 export * from './lib/pipes/safe-url.pipe';
 
 export * from './lib/services/avatar-generator';
-export * from './lib/services/form.service';
 export * from './lib/services/o-data.service';
 export * from './lib/services/restworld-client-collection';
 export * from './lib/services/restworld-client';

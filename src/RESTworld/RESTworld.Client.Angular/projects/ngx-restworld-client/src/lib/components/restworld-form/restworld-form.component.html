@@ -1,27 +1,31 @@
 <form *ngIf="formGroup !== undefined && template !== undefined" [formGroup]="formGroup" (ngSubmit)="submit()">
-    <div class="blockable-container">
-        <div class="blockable-element">
-            <rw-input-template [template]="template" [apiName]="apiName"></rw-input-template>
+  <div class="blockable-container">
+    <div class="blockable-element">
+      <div class="grid field">
+        <div class="col-12 md:col-10 md:col-offset-2">
+          <rw-validation-errors [form]="formGroup"></rw-validation-errors>
         </div>
-        <div class="blockable-overlay" *ngIf="isLoading">
-            <p-progressSpinner></p-progressSpinner>
-        </div>
+      </div>
+      <rw-input-template [template]="template" [apiName]="apiName"></rw-input-template>
     </div>
+    <div class="blockable-overlay" *ngIf="isLoading">
+      <p-progressSpinner></p-progressSpinner>
+    </div>
+  </div>
 
-    <div class="grid">
-        <div class="col">
-            <div class="flex justify-content-end w-full">
-                <ng-template #defaultButtons>
-                    <button pButton pRipple type="submit" label="Save" icon="far fa-save" class="mx-2 p-button-success"
-                        [disabled]="!canSubmit"></button>
-                    <button pButton pRipple type="button" label="Reload" icon="fas fa-redo" class="mx-2 p-button-info"
-                        (click)="reload()" [disabled]="!canReload"></button>
-                    <button pButton pRipple type="button" label="Delete" icon="far fa-trash-alt"
-                        class="ml-2 p-button-danger" (click)="showDeleteConfirmatioModal()"
-                        [disabled]="!canDelete"></button>
-                </ng-template>
-                <ng-container *ngTemplateOutlet="buttonsRef || defaultButtons"></ng-container>
-            </div>
-        </div>
+  <div class="grid">
+    <div class="col">
+      <div class="flex justify-content-end w-full">
+        <ng-template #defaultButtons>
+          <button pButton pRipple type="submit" label="Save" icon="far fa-save" class="mx-2 p-button-success"
+            [disabled]="!canSubmit"></button>
+          <button pButton pRipple type="button" label="Reload" icon="fas fa-redo" class="mx-2 p-button-info"
+            (click)="reload()" [disabled]="!canReload"></button>
+          <button pButton pRipple type="button" label="Delete" icon="far fa-trash-alt" class="ml-2 p-button-danger"
+            (click)="showDeleteConfirmatioModal()" [disabled]="!canDelete"></button>
+        </ng-template>
+        <ng-container *ngTemplateOutlet="buttonsRef || defaultButtons"></ng-container>
+      </div>
     </div>
+  </div>
 </form>

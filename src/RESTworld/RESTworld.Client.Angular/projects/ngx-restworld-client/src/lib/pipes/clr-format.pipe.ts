@@ -5,6 +5,10 @@ import * as clrFormat from 'clr-format';
 @Pipe({
   name: 'clrFormat'
 })
+/**
+ * A pipe that formats a value using a specified format string.
+ * Have a look at https://learn.microsoft.com/en-us/dotnet/standard/base-types/formatting-types to see what is supported.
+ */
 export class ClrFormatPipe implements PipeTransform {
 
   private static readonly formatFunction = ClrFormatPipe.getFormatFunction();

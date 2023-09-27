@@ -41,7 +41,6 @@ import { RestWorldImageComponent } from './components/restworld-image/restworld-
 import { ButtonModule } from 'primeng/button';
 import { RestWorldFileComponent } from './components/restworld-file/restworld-file.component';
 import { SafeUrlPipe } from './pipes/safe-url.pipe';
-import { FormService } from './services/form.service';
 import { AsPipe } from './pipes/as.pipe';
 import { SplitButtonModule } from 'primeng/splitbutton';
 import { RestWorldAvatarComponent } from './components/restworld-avatar/restworld-avatar.component';
@@ -155,7 +154,6 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
     AvatarGenerator,
     ClrFormatPipe,
     ConfirmationService,
-    FormService,
     MessageService,
     RestWorldClientCollection,
     {

@@ -144,7 +144,7 @@ namespace RESTworld.AspNetCore.Controller
             if (!response.Succeeded)
                 return ErrorResultFactory.CreateError(response, "Delete");
 
-            Cache.RemoveGet<TGetFullDto>(id);
+            Cache.RemoveGet<ServiceResponse<TGetFullDto>>(id);
 
             return Ok();
 
@@ -375,7 +375,7 @@ namespace RESTworld.AspNetCore.Controller
 
             foreach (var dto in response.ResponseObject)
             {
-                Cache.RemoveGet<TGetFullDto>(dto.Id);
+                Cache.RemoveGet<ServiceResponse<TGetFullDto>>(dto.Id);
             }
 
             var responseObject = response.ResponseObject ?? Array.Empty<TGetFullDto>();
@@ -420,7 +420,7 @@ namespace RESTworld.AspNetCore.Controller
             if (response.ResponseObject is null)
                 return ErrorResultFactory.CreateError(StatusCodes.Status500InternalServerError, "The service did return null for the created object.", "Post");
 
-            Cache.RemoveGet<TGetFullDto>(response.ResponseObject.Id);
+            Cache.RemoveGet<ServiceResponse<TGetFullDto>>(response.ResponseObject.Id);
 
             var resource = ResourceFactory.CreateForGetEndpoint(response.ResponseObject, routeValues: new { id = response.ResponseObject.Id });
             Url.AddSaveAndDeleteLinks(resource);
@@ -445,7 +445,7 @@ namespace RESTworld.AspNetCore.Controller
 
             foreach (var dto in response.ResponseObject)
             {
-                Cache.RemoveGet<TGetFullDto>(dto.Id);
+                Cache.RemoveGet<ServiceResponse<TGetFullDto>>(dto.Id);
             }
 
             var responseObject = response.ResponseObject ?? Array.Empty<TGetFullDto>();
@@ -487,7 +487,7 @@ namespace RESTworld.AspNetCore.Controller
             if (!response.Succeeded || response.ResponseObject is null)
                 return ErrorResultFactory.CreateError(response, "Put");
 
-            Cache.RemoveGet<TGetFullDto>(response.ResponseObject.Id);
+            Cache.RemoveGet<ServiceResponse<TGetFullDto>>(response.ResponseObject.Id);
 
             return Ok(response.ResponseObject, HttpMethod.Put, accept);
         }

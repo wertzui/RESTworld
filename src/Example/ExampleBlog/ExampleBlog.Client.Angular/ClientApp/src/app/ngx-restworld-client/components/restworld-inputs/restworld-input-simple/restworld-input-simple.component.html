@@ -41,9 +41,9 @@
 
     <p-calendar *ngSwitchCase="PropertyType.Duration" [formControlName]="property.name" [id]="property.name" [dateFormat]="timeFormat" [showTime]="true" [timeOnly]="true" [showWeek]="false" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-calendar>
 
-    <rw-image *ngSwitchCase="PropertyType.Image" [formControlName]="property.name" [property]="property | as:PropertyWithImage"></rw-image>
+    <rw-image *ngSwitchCase="PropertyType.Image" [formControlName]="property.name" [property]="$any(property)"></rw-image>
 
-    <rw-file *ngSwitchCase="PropertyType.File" [formControlName]="property.name" [fileName]="property.name" [accept]="property.placeholder"></rw-file>
+    <rw-file *ngSwitchCase="PropertyType.File" [formControlName]="property.name" [fileName]="property.name" [accept]="$any(property.placeholder)"></rw-file>
 
     <input *ngSwitchDefault [formControlName]="property.name" [id]="property.name" type="text" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
 </div>

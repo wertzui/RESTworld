@@ -2,13 +2,23 @@ import { Component, Input, OnInit } from '@angular/core';
 import { SafeUrl } from '@angular/platform-browser';
 import { AvatarGenerator } from '../../services/avatar-generator';
 
+/**
+ * This component displays an avatar for a given user.
+ * The avatar consists of an image or a 2 character label in a circle, based on what the `AvatarGenerator` returns for that user.
+ * If you have not overridden the `AvatarGenerator`'s `getImageAsyncOverride` method, the image will always be empty and the label will be generated from the user's name or email.
+ * @example
+ * <rw-avatar [user]="'John Doe'"></rw-avatar>
+ */
 @Component({
   selector: 'rw-avatar',
   templateUrl: './restworld-avatar.component.html',
   styleUrls: ['./restworld-avatar.component.css']
 })
 export class RestWorldAvatarComponent implements OnInit{
-  @Input()
+  @Input({required: true})
+  /**
+   * The username of the user to display an avatar for.
+   */
   user?: string;
 
   private _image: SafeUrl = '';

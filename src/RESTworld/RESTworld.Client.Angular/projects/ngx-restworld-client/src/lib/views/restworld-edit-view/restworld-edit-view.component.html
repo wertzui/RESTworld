@@ -29,7 +29,7 @@
 
   <ng-template #tabs>
     <p-tabPanel *ngFor="let template of templates" [header]="template.title ?? ''" [disabled]="isLoading">
-      <rw-form [template]="template" [apiName]="apiName"></rw-form>
+      <rw-form [template]="template" [apiName]="apiName" [rel]="rel"></rw-form>
     </p-tabPanel>
 </ng-template>
 

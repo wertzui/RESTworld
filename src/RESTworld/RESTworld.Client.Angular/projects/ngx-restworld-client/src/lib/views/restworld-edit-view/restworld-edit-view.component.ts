@@ -1,10 +1,9 @@
 import { Component, Input } from '@angular/core';
-import { PropertyType, Resource, Template, Templates } from '@wertzui/ngx-hal-client';
+import { ProblemDetails, PropertyType, Resource, Template, Templates } from '@wertzui/ngx-hal-client';
 import { RestWorldClient } from '../../services/restworld-client';
 import { RestWorldClientCollection } from '../../services/restworld-client-collection';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-import { ProblemDetails } from '../../models/problem-details';
 import { ContentChild } from '@angular/core';
 import { TemplateRef } from '@angular/core';
 import { ValdemortConfig } from 'ngx-valdemort';
@@ -14,9 +13,29 @@ import { ValdemortConfig } from 'ngx-valdemort';
   templateUrl: './restworld-edit-view.component.html',
   styleUrls: ['./restworld-edit-view.component.css']
 })
+/**
+ * Component for editing a resource in the RESTworld application.
+ * This component loads the forms resource from the API and renders a tab view where every template of the forms resource is rendered as a tab.
+ * Every template becomes one `RestworldFormComponent` in the tab view.
+ * It also allows adding extra tabs to the view.
+ * An ID navigation form is also rendered at the top right of the view.
+ * @example
+ * <rw-edit apiName="api" rel="rel" uri="/api/rel/1"></rw-edit>
+ * @example
+ * <rw-edit apiName="api" rel="rel" uri="/api/rel/1">
+ * <ng-template #extraTabs>
+ * <p-tabPanel header="Extra tab">
+ * <p>Some extra content</p>
+ * </p-tabPanel>
+ * </ng-template>
+ * </rw-edit>
+ */
 export class RESTworldEditViewComponent {
   @ContentChild('extraTabs', { static: false })
-  extraTabsRef?: TemplateRef<unknown>;
+  /**
+   * A reference to an optional template that can be used to add extra tabs to the view.
+   */
+  public extraTabsRef?: TemplateRef<unknown>;
   public idNavigationForm = new FormGroup < {
     id: FormControl<number | null>
   }>({
@@ -45,13 +64,19 @@ export class RESTworldEditViewComponent {
   public get apiName(): string {
     return this._apiName;
   }
-  @Input()
+  @Input({ required: true })
+  /**
+   * The name of the API to load the resource from.
+   */
   public set apiName(value: string) {
     this._apiName = value;
     this.load();
   }
 
-  @Input()
+  @Input({ required: true })
+  /**
+   * The relation to load the resource from.
+   */
   public rel!: string;
 
   public get resource() {
@@ -62,7 +87,11 @@ export class RESTworldEditViewComponent {
   public get uri(): string {
     return this._uri;
   }
-  @Input()
+  @Input({ required: true })
+  /**
+   * Sets the URI for the REST API endpoint to be displayed in the view.
+   * @param value The URI to set.
+   */
   public set uri(value: string) {
     this._uri = value;
     this.load();

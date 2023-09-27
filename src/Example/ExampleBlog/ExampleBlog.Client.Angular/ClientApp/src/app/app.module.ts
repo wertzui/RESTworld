@@ -38,7 +38,7 @@ import { ToastModule } from 'primeng/toast';
     HttpClientModule,
     FormsModule,
     ReactiveFormsModule,
-    RouterModule.forRoot(AppRoutes, { onSameUrlNavigation: 'reload' }),
+    RouterModule.forRoot(AppRoutes, { onSameUrlNavigation: 'reload', bindToComponentInputs: true }),
     CommonModule,
     MenubarModule,
     TableModule,
