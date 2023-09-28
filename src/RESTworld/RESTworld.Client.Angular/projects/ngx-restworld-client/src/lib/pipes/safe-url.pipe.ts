@@ -2,10 +2,6 @@ import { Pipe, PipeTransform } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import * as _ from 'lodash';
 
-@Pipe({
-  name: 'safeUrl'
-})
-
 /**
  * A pipe that sanitizes a URL and returns a `SafeUrl` object.
  */
