@@ -16,6 +16,8 @@ namespace ExampleBlog.Common.Dtos
         public required IReadOnlyCollection<long> BlogIds { get; set; }
         [Display(Name = "Post")]
         public required long PostId { get; set; }
+        [Required]
+        public string? MyRequiredString { get; set; }
         public string MyString { get; set; } = default!;
         public int MyInt { get; set; }
         public char MyChar { get; set; }

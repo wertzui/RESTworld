@@ -1,6 +1,7 @@
-import { Component, Input } from '@angular/core';
+import { Component, ElementRef, Input, ViewChildren } from '@angular/core';
 import { AbstractControl, ControlContainer, FormGroup, FormGroupDirective } from '@angular/forms';
 import { Property, PropertyType, SimpleValue } from '@wertzui/ngx-hal-client';
+import { ValidationErrorsComponent } from 'ngx-valdemort';
 
 /**
  * Displays validation errors either for one property or for a whole form.
@@ -17,6 +18,13 @@ export class RestWorldValidationErrorsComponent<T extends { [K in keyof T]: Abst
 
   @Input()
   form?: FormGroup<T>
+
+  @ViewChildren(ValidationErrorsComponent)
+  validationErrorsComponents!: ValidationErrorsComponent[];
+
+  public get isDisplayingAnyErrors() {
+    return this.validationErrorsComponents.some(c => c.shouldDisplayErrors);
+  }
 
   public get PropertyType() {
     return PropertyType;

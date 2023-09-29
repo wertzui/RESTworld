@@ -18,7 +18,7 @@
       <div class="flex justify-content-end w-full">
         <ng-template #defaultButtons>
           <button pButton pRipple type="submit" label="Save" icon="far fa-save" class="mx-2 p-button-success"
-            [disabled]="!canSubmit"></button>
+            [disabled]="!allowSubmit"></button>
           <button pButton pRipple type="button" label="Reload" icon="fas fa-redo" class="mx-2 p-button-info"
             (click)="reload()" [disabled]="!canReload"></button>
           <button pButton pRipple type="button" label="Delete" icon="far fa-trash-alt" class="ml-2 p-button-danger"

@@ -82,6 +82,7 @@ namespace ExampleBlog.Business.Services
             dto.Id = id;
             dto.MyNullCollection = null;
             dto.BlogIds = new HashSet<long> { 2, 3 };
+            dto.MyRequiredString = null;
 
             return Task.FromResult(ServiceResponse.FromResult(dto));
         }

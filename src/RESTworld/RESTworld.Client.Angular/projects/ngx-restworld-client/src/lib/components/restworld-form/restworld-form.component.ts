@@ -1,4 +1,4 @@
-import { Component, ContentChild, EventEmitter, Input, OnInit, Output, TemplateRef } from '@angular/core';
+import { Component, ContentChild, ElementRef, EventEmitter, Input, OnInit, Output, TemplateRef } from '@angular/core';
 import { AbstractControl, FormGroup, UntypedFormArray, UntypedFormGroup } from '@angular/forms';
 import { FormService, FormsResource, ProblemDetails, PropertyDto, SimpleValue, Template } from '@wertzui/ngx-hal-client';
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -76,6 +76,15 @@ export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<Property
   @ContentChild('buttons', { static: false })
   buttonsRef?: TemplateRef<unknown>;
 
+  scrollToFirstValidationError(): void {
+    setTimeout(() => {
+      const validationErrorElements = this._elementRef.nativeElement.querySelectorAll('rw-validation-errors>val-errors>div')
+      const firstError = validationErrorElements[0];
+      firstError.scrollIntoView({ behavior: 'smooth', block: 'center'});
+    },
+    100);
+  }
+
   private _isLoading = false;
   public get isLoading(): boolean {
     return this._isLoading;
@@ -113,7 +122,8 @@ export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<Property
     private readonly _clients: RestWorldClientCollection,
     private readonly _confirmationService: ConfirmationService,
     private readonly _messageService: MessageService,
-    private readonly _formService: FormService) {
+    private readonly _formService: FormService,
+    private readonly _elementRef: ElementRef<HTMLElement>) {
   }
 
   ngOnInit(): void {
@@ -155,6 +165,21 @@ export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<Property
   }
 
   public async submit() {
+    if( this.formGroup !== undefined)
+    {
+      this.formGroup.markAllAsTouched();
+
+      if (!this.formGroup.valid) {
+        this._messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Please correct the errors before submitting.',
+        });
+
+        this.scrollToFirstValidationError();
+      }
+    }
+
     if(!this.canSubmit)
       return;
 
