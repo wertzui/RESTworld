@@ -135,10 +135,10 @@ export class RestWorldInputCollectionComponent<T extends { [K in keyof T]: Abstr
     const nextIndex = maxIndex < 0 ? 0 : maxIndex + 1;
 
     const copiedTemplateDto = JSON.parse(JSON.stringify(this.defaultTemplate)) as TemplateDto;
+    copiedTemplateDto.title = nextIndex.toString();
     const copiedTemplate = new NumberTemplate(copiedTemplateDto);
-    copiedTemplate.title = nextIndex;
 
-    this.templates[copiedTemplate.title] = copiedTemplate;
+    this.templates[nextIndex] = copiedTemplate;
     this.innerFormArray.push(this._formService.createFormGroupFromTemplate(this.defaultTemplate) as unknown as FormGroup<T>);
   }
 
