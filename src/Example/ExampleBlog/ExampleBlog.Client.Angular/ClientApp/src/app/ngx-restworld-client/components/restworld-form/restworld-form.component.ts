@@ -215,12 +215,14 @@ export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<Property
         this._messageService.add({ severity: 'error', summary: summary, detail: detail, data: response, sticky: true });
       }
       else if (response.status == 201) {
-        if (!response.headers.has('Location'))
+        if (!response.headers.has('Location')) {
           this._messageService.add({ severity: 'error', summary: 'Error', detail: 'The server returned a 201 Created response, but did not return a Location header.', data: response, sticky: true });
+          return;
+        }
 
         this._messageService.add({ severity: 'success', summary: 'Created', detail: 'The resource has been created.' });
 
-        var createdAtUri = response.headers.get('Location');
+        var createdAtUri = response.headers.get('Location')!;
         this.afterSubmit.emit({ location: createdAtUri, status: 201 });
       }
       else {
