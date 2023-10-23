@@ -1,5 +1,6 @@
 ﻿using HAL.AspNetCore.Abstractions;
 using HAL.AspNetCore.OData.Abstractions;
+using HAL.AspNetCore.Utils;
 using HAL.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -297,7 +298,7 @@ namespace RESTworld.AspNetCore.Controller
         /// <param name="accept">The value of the Accept header.</param>
         /// <returns>The created Microsoft.AspNetCore.Mvc.CreatedResult for the response.</returns>
         protected virtual CreatedResult Created(TGetFullDto dto, HttpMethod method, string accept)
-            => Created(Url.ActionLink(values: new { id = dto.Id }) ?? throw new UriFormatException("Unable to generate the CreatedAt URI"), CreateResource(dto, method, accept));
+            => Created(Url.ActionLink(ActionHelper.StripAsyncSuffix(nameof(GetAsync)), values: new { id = dto.Id }) ?? throw new UriFormatException("Unable to generate the CreatedAt URI"), CreateResource(dto, method, accept));
 
         /// <summary>
         /// Creates the result which is either a HAL resource, or a HAL-Forms resource based on the
@@ -421,9 +422,6 @@ namespace RESTworld.AspNetCore.Controller
                 return ErrorResultFactory.CreateError(StatusCodes.Status500InternalServerError, "The service did return null for the created object.", "Post");
 
             Cache.RemoveGet<ServiceResponse<TGetFullDto>>(response.ResponseObject.Id);
-
-            var resource = ResourceFactory.CreateForGetEndpoint(response.ResponseObject, routeValues: new { id = response.ResponseObject.Id });
-            Url.AddSaveAndDeleteLinks(resource);
 
             return Created(response.ResponseObject, HttpMethod.Put, accept);
         }

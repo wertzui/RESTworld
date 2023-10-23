@@ -4,6 +4,7 @@ import { FormService, FormsResource, ProblemDetails, PropertyDto, SimpleValue, T
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { RestWorldClient } from '../../services/restworld-client';
 import { RestWorldClientCollection } from '../../services/restworld-client-collection';
+import { AfterSubmitOkEvent, AfterSubmitRedirectEvent } from '../../models/events';
 
 /**
  * A form with Save, Reload and Delete buttons.
@@ -68,7 +69,7 @@ export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<Property
   afterDelete = new EventEmitter<void>();
 
   @Output()
-  afterSubmit = new EventEmitter<{old: Template, new: Template}>();
+  afterSubmit = new EventEmitter<AfterSubmitOkEvent | AfterSubmitRedirectEvent>();
 
   /**
    * A reference to a template that can be used to render custom buttons for the form.
@@ -213,6 +214,15 @@ export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<Property
 
         this._messageService.add({ severity: 'error', summary: summary, detail: detail, data: response, sticky: true });
       }
+      else if (response.status == 201) {
+        if (!response.headers.has('Location'))
+          this._messageService.add({ severity: 'error', summary: 'Error', detail: 'The server returned a 201 Created response, but did not return a Location header.', data: response, sticky: true });
+
+        this._messageService.add({ severity: 'success', summary: 'Created', detail: 'The resource has been created.' });
+
+        var createdAtUri = response.headers.get('Location');
+        this.afterSubmit.emit({ location: createdAtUri, status: 201 });
+      }
       else {
         const templateBeforeSubmit = this.template;
         const responseResource = (response.body as FormsResource);
@@ -221,7 +231,7 @@ export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<Property
 
         this._messageService.add({ severity: 'success', summary: 'Saved', detail: 'The resource has been saved.' });
 
-        this.afterSubmit.emit({old: templateBeforeSubmit, new: this.template});
+        this.afterSubmit.emit({ old: templateBeforeSubmit, new: this.template, status: 200 });
       }
     }
     catch (e: unknown) {

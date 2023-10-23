@@ -7,6 +7,8 @@ import { MessageService } from 'primeng/api';
 import { ContentChild } from '@angular/core';
 import { TemplateRef } from '@angular/core';
 import { ValdemortConfig } from 'ngx-valdemort';
+import { Router } from '@angular/router';
+import { AfterSubmitOkEvent, AfterSubmitRedirectEvent } from '../../models/events';
 
 @Component({
   selector: 'rw-edit',
@@ -36,7 +38,7 @@ export class RESTworldEditViewComponent {
    * A reference to an optional template that can be used to add extra tabs to the view.
    */
   public extraTabsRef?: TemplateRef<unknown>;
-  public idNavigationForm = new FormGroup < {
+  public idNavigationForm = new FormGroup<{
     id: FormControl<number | null>
   }>({
     id: new FormControl(null, Validators.compose([Validators.min(1), Validators.max(Number.MAX_SAFE_INTEGER)]))
@@ -50,8 +52,9 @@ export class RESTworldEditViewComponent {
   private _resource?: Resource;
 
   constructor(
-    private _clients: RestWorldClientCollection,
-    private _messageService: MessageService,
+    private readonly _clients: RestWorldClientCollection,
+    private readonly _messageService: MessageService,
+    private readonly _router: Router,
     valdemortConfig: ValdemortConfig) {
     valdemortConfig.errorClasses = 'p-error text-sm';
   }
@@ -97,6 +100,16 @@ export class RESTworldEditViewComponent {
     this.load();
   }
 
+
+  async afterSubmit($event: AfterSubmitOkEvent | AfterSubmitRedirectEvent) {
+    if ($event.status == 201) {
+      await this._router.navigate(['edit', this.apiName, this.rel, $event.location])
+    }
+  }
+  async afterDelete() {
+    await this._router.navigate(['list', this.apiName, this.rel])
+  }
+
   public async load(): Promise<void> {
     if (!this.apiName || !this.uri)
       return;
@@ -122,7 +135,7 @@ export class RESTworldEditViewComponent {
       return templates;
     }
     catch (e: unknown) {
-      this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the templates from the API. ' + e, data: e , sticky: true});
+      this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the templates from the API. ' + e, data: e, sticky: true });
       return {};
     }
   }

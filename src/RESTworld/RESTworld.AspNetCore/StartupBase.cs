@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using Microsoft.Net.Http.Headers;
 using Microsoft.OData.ModelBuilder;
 using RESTworld.AspNetCore.Caching;
 using RESTworld.AspNetCore.Controller;
@@ -210,6 +211,7 @@ namespace RESTworld.AspNetCore
                     builder => builder
                         .AllowAnyMethod()
                         .AllowAnyHeader()
+                        .WithExposedHeaders(HeaderNames.Location, "Api-Deprecated-Versions", "Api-Supported-Versions")
                         .SetIsOriginAllowed(_ => true) // allow any origin
                         .AllowCredentials()); // allow credentials
             });
