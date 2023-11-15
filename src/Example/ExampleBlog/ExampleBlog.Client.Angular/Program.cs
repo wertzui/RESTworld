@@ -1,9 +1,8 @@
 using RESTworld.AspNetCore;
 
-namespace ExampleBlog.Client.Angular
+namespace ExampleBlog.Client.Angular;
+
+public static class Program
 {
-    public static class Program
-    {
-        public static void Main(string[] args) => Program<Startup>.Main(args);
-    }
+    public static void Main(string[] args) => Program<Startup>.Main(args);
 }

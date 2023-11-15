@@ -1,9 +1,8 @@
 ﻿using RESTworld.Common.Dtos;
 
-namespace ExampleBlog.Common.Dtos
+namespace ExampleBlog.Common.Dtos;
+
+public class BlogDto : ChangeTrackingDtoBase
 {
-    public class BlogDto : ChangeTrackingDtoBase
-    {
-        public string? Name { get; set; }
-    }
+    public string? Name { get; set; }
 }

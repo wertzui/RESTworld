@@ -16,56 +16,55 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ExampleBlog.Business.Services
+namespace ExampleBlog.Business.Services;
+
+public class MyCustomServiceV1 : DbServiceBase<BlogDatabase>
 {
-    public class MyCustomServiceV1 : DbServiceBase<BlogDatabase>
+    private readonly IEnumerable<MyCustomAuthorizationHandlerV1> _authorizationHandlers;
+
+    public MyCustomServiceV1(
+        IDbContextFactory<BlogDatabase> contextFactory,
+        IMapper mapper,
+        IUserAccessor userAccessor,
+        ILogger<MyCustomService> logger,
+        IEnumerable<MyCustomAuthorizationHandlerV1> authorizationHandlers)
+        : base(contextFactory, mapper, userAccessor, logger)
     {
-        private readonly IEnumerable<MyCustomAuthorizationHandlerV1> _authorizationHandlers;
+        _authorizationHandlers = authorizationHandlers ?? throw new ArgumentNullException(nameof(authorizationHandlers));
+    }
 
-        public MyCustomServiceV1(
-            IDbContextFactory<BlogDatabase> contextFactory,
-            IMapper mapper,
-            IUserAccessor userAccessor,
-            ILogger<MyCustomService> logger,
-            IEnumerable<MyCustomAuthorizationHandlerV1> authorizationHandlers)
-            : base(contextFactory, mapper, userAccessor, logger)
-        {
-            _authorizationHandlers = authorizationHandlers ?? throw new ArgumentNullException(nameof(authorizationHandlers));
-        }
+    public Task<ServiceResponse<PostWithAuthorDtoV1>> GetPostWithAuthor(long postId, CancellationToken cancellationToken)
+        => TryExecuteWithAuthorizationAsync<Post, long, PostWithAuthorDtoV1, MyCustomAuthorizationHandlerV1>(
+            postId,
+            (result, token) => GetPostWithAuthorInternalAsync(result, token),
+            (result, handler, token) => handler.HandleRequestAsync(result, token),
+            (response, handler, token) => handler.HandleResponseAsync(response, token),
+            _authorizationHandlers,
+            cancellationToken);
 
-        public Task<ServiceResponse<PostWithAuthorDtoV1>> GetPostWithAuthor(long postId, CancellationToken cancellationToken)
-            => TryExecuteWithAuthorizationAsync<Post, long, PostWithAuthorDtoV1, MyCustomAuthorizationHandlerV1>(
-                postId,
-                (result, token) => GetPostWithAuthorInternalAsync(result, token),
-                (result, handler, token) => handler.HandleRequestAsync(result, token),
-                (response, handler, token) => handler.HandleResponseAsync(response, token),
-                _authorizationHandlers,
-                cancellationToken);
+    private async Task<ServiceResponse<PostWithAuthorDtoV1>> GetPostWithAuthorInternalAsync(AuthorizationResult<Post, long> result, CancellationToken cancellationToken)
+    {
+        var postId = result.Value1;
 
-        private async Task<ServiceResponse<PostWithAuthorDtoV1>> GetPostWithAuthorInternalAsync(AuthorizationResult<Post, long> result, CancellationToken cancellationToken)
-        {
-            var postId = result.Value1;
+        // Get the values from the database.
+        var postTask = _contextFactory.Parallel().Set<Post>()
+            .WithAuthorizationFilter(result)
+            .SingleOrDefaultAsync(p => p.Id == postId, cancellationToken);
+        var authorTask = _contextFactory.Parallel().Set<Post>()
+            .WithAuthorizationFilter(result)
+            .Where(p => p.Id == postId)
+            .Select(p => p.Author)
+            .SingleOrDefaultAsync(cancellationToken);
 
-            // Get the values from the database.
-            var postTask = _contextFactory.Parallel().Set<Post>()
-                .WithAuthorizationFilter(result)
-                .SingleOrDefaultAsync(p => p.Id == postId, cancellationToken);
-            var authorTask = _contextFactory.Parallel().Set<Post>()
-                .WithAuthorizationFilter(result)
-                .Where(p => p.Id == postId)
-                .Select(p => p.Author)
-                .SingleOrDefaultAsync(cancellationToken);
+        await Task.WhenAll(postTask, authorTask);
 
-            await Task.WhenAll(postTask, authorTask);
+        if (postTask.Result is null)
+            return ServiceResponse.FromStatus<PostWithAuthorDtoV1>(HttpStatusCode.NotFound);
 
-            if (postTask.Result is null)
-                return ServiceResponse.FromStatus<PostWithAuthorDtoV1>(HttpStatusCode.NotFound);
+        // Map to DTO.
+        var dto = _mapper.Map<PostWithAuthorDtoV1>(postTask.Result);
+        _mapper.Map(authorTask.Result, dto);
 
-            // Map to DTO.
-            var dto = _mapper.Map<PostWithAuthorDtoV1>(postTask.Result);
-            _mapper.Map(authorTask.Result, dto);
-
-            return ServiceResponse.FromResult(dto);
-        }
+        return ServiceResponse.FromResult(dto);
     }
 }

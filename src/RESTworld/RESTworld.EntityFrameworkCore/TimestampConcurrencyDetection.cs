@@ -8,74 +8,73 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace RESTworld.EntityFrameworkCore
+namespace RESTworld.EntityFrameworkCore;
+
+/// <summary>
+/// Use the time stamp concurrency detection around the SaveChanges or SaveChangesAsync methods of a DbContext
+/// to apply concurrency detection using the time stamp in an environment with disconnected entities.
+/// </summary>
+/// <seealso cref="System.IDisposable" />
+public class TimestampConcurrencyDetection : IDisposable
 {
+    private readonly IDictionary<PropertyEntry<ConcurrentEntityBase, byte[]?>, byte[]?> _modifiedEntries = new Dictionary<PropertyEntry<ConcurrentEntityBase, byte[]?>, byte[]?>();
+
     /// <summary>
-    /// Use the time stamp concurrency detection around the SaveChanges or SaveChangesAsync methods of a DbContext
-    /// to apply concurrency detection using the time stamp in an environment with disconnected entities.
+    /// Initializes a new instance of the <see cref="TimestampConcurrencyDetection"/> class.
     /// </summary>
-    /// <seealso cref="System.IDisposable" />
-    public class TimestampConcurrencyDetection : IDisposable
+    /// <param name="changeTracker">The change tracker.</param>
+    public TimestampConcurrencyDetection(ChangeTracker changeTracker)
     {
-        private readonly IDictionary<PropertyEntry<ConcurrentEntityBase, byte[]?>, byte[]?> _modifiedEntries = new Dictionary<PropertyEntry<ConcurrentEntityBase, byte[]?>, byte[]?>();
+        SetOriginalTimestampValueForConcurrencyDetection(changeTracker);
+    }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="TimestampConcurrencyDetection"/> class.
-        /// </summary>
-        /// <param name="changeTracker">The change tracker.</param>
-        public TimestampConcurrencyDetection(ChangeTracker changeTracker)
+    /// <inheritdoc/>
+    public void Dispose() => ResetTimestamps();
+
+    private void ResetTimestamps()
+    {
+        foreach (var entry in _modifiedEntries)
         {
-            SetOriginalTimestampValueForConcurrencyDetection(changeTracker);
+            entry.Key.OriginalValue = entry.Value;
         }
+    }
 
-        /// <inheritdoc/>
-        public void Dispose() => ResetTimestamps();
+    private void SetOriginalTimestampValueForConcurrencyDetection(ChangeTracker changeTracker)
+    {
+        var entities = changeTracker.Entries<ConcurrentEntityBase>();
 
-        private void ResetTimestamps()
+        foreach (var entity in entities)
         {
-            foreach (var entry in _modifiedEntries)
+            if (entity.State == EntityState.Modified || entity.State == EntityState.Deleted)
             {
-                entry.Key.OriginalValue = entry.Value;
-            }
-        }
-
-        private void SetOriginalTimestampValueForConcurrencyDetection(ChangeTracker changeTracker)
-        {
-            var entities = changeTracker.Entries<ConcurrentEntityBase>();
-
-            foreach (var entity in entities)
-            {
-                if (entity.State == EntityState.Modified || entity.State == EntityState.Deleted)
+                // entity.Property(e => e.Timestamp) throws if the Timestamp has a [NotMapped] Attribute.
+                var timestampProperty = GetPropertyOrDefault(entity, e => e.Timestamp);
+                if (timestampProperty is not null)
                 {
-                    // entity.Property(e => e.Timestamp) throws if the Timestamp has a [NotMapped] Attribute.
-                    var timestampProperty = GetPropertyOrDefault(entity, e => e.Timestamp);
-                    if (timestampProperty is not null)
-                    {
-                        _modifiedEntries.Add(timestampProperty, timestampProperty.OriginalValue);
-                        timestampProperty.OriginalValue = timestampProperty.CurrentValue;
-                    }
+                    _modifiedEntries.Add(timestampProperty, timestampProperty.OriginalValue);
+                    timestampProperty.OriginalValue = timestampProperty.CurrentValue;
                 }
             }
         }
+    }
 
-        private static PropertyEntry<TEntity, TProperty>? GetPropertyOrDefault<TEntity, TProperty>(EntityEntry<TEntity> entityEntry, Expression<Func<TEntity, TProperty>> propertyExpression)
-            where TEntity : class
+    private static PropertyEntry<TEntity, TProperty>? GetPropertyOrDefault<TEntity, TProperty>(EntityEntry<TEntity> entityEntry, Expression<Func<TEntity, TProperty>> propertyExpression)
+        where TEntity : class
+    {
+        var name = GetSimpleMemberName(propertyExpression.GetMemberAccess());
+        var property = entityEntry.Properties.FirstOrDefault(p => p.Metadata.Name == name) as PropertyEntry<TEntity, TProperty>;
+        return property;
+    }
+
+    private static string GetSimpleMemberName(MemberInfo member)
+    {
+        string name = member.Name;
+        int num = name.LastIndexOf('.');
+        if (num < 0)
         {
-            var name = GetSimpleMemberName(propertyExpression.GetMemberAccess());
-            var property = entityEntry.Properties.FirstOrDefault(p => p.Metadata.Name == name) as PropertyEntry<TEntity, TProperty>;
-            return property;
+            return name;
         }
 
-        private static string GetSimpleMemberName(MemberInfo member)
-        {
-            string name = member.Name;
-            int num = name.LastIndexOf('.');
-            if (num < 0)
-            {
-                return name;
-            }
-
-            return name[(num + 1)..];
-        }
+        return name[(num + 1)..];
     }
 }

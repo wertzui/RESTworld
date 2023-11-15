@@ -14,54 +14,53 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ExampleBlog.Controllers
+namespace ExampleBlog.Controllers;
+
+[Route("postwithauthor")]
+[ApiVersion("1", Deprecated = true)]
+public class MyCustomController1 : RestControllerBase
 {
-    [Route("postwithauthor")]
-    [ApiVersion("1", Deprecated = true)]
-    public class MyCustomController1 : RestControllerBase
+    private readonly MyCustomService _service;
+    private readonly ILinkFactory _linkFactory;
+    private readonly IErrorResultFactory _errorResultFactory;
+
+    public MyCustomController1(
+        MyCustomService service,
+        IODataResourceFactory resourceFactory,
+        ILinkFactory linkFactory,
+        IErrorResultFactory errorResultFactory,
+        ICacheHelper cache)
+        : base(resourceFactory, cache)
     {
-        private readonly MyCustomService _service;
-        private readonly ILinkFactory _linkFactory;
-        private readonly IErrorResultFactory _errorResultFactory;
+        _service = service ?? throw new ArgumentNullException(nameof(service));
+        _linkFactory = linkFactory ?? throw new ArgumentNullException(nameof(linkFactory));
+        _errorResultFactory = errorResultFactory ?? throw new ArgumentNullException(nameof(errorResultFactory));
+    }
 
-        public MyCustomController1(
-            MyCustomService service,
-            IODataResourceFactory resourceFactory,
-            ILinkFactory linkFactory,
-            IErrorResultFactory errorResultFactory,
-            ICacheHelper cache)
-            : base(resourceFactory, cache)
+    [HttpGet("postwithauthor/{id:long}")]
+    [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<Resource<PostWithAuthorDto>>> GetPostWithAuthorAsync(
+        long id,
+        CancellationToken cancellationToken)
+    {
+        var response = await Cache.GetOrCreateAsync(nameof(GetPostWithAuthorAsync) + "_" + id, nameof(CachingOptions.Get), _ => _service.GetPostWithAuthorAsync(id, cancellationToken));
+
+        if (!response.Succeeded)
+            return _errorResultFactory.CreateError(response, "Get");
+
+        var result = ResourceFactory.CreateForGetEndpoint(response.ResponseObject, null);
+        var authorId = result.State?.AuthorId;
+
+        if (authorId is not null)
         {
-            _service = service ?? throw new ArgumentNullException(nameof(service));
-            _linkFactory = linkFactory ?? throw new ArgumentNullException(nameof(linkFactory));
-            _errorResultFactory = errorResultFactory ?? throw new ArgumentNullException(nameof(errorResultFactory));
+            var link = _linkFactory.Create("Author", "Get", RestControllerNameConventionAttribute.CreateNameFromType<AuthorDtoV1>(), new { id = authorId });
+            result.AddLink(link);
         }
 
-        [HttpGet("postwithauthor/{id:long}")]
-        [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<Resource<PostWithAuthorDto>>> GetPostWithAuthorAsync(
-            long id,
-            CancellationToken cancellationToken)
-        {
-            var response = await Cache.GetOrCreateAsync(nameof(GetPostWithAuthorAsync) + "_" + id, nameof(CachingOptions.Get), _ => _service.GetPostWithAuthorAsync(id, cancellationToken));
+        Url.AddSaveAndDeleteLinks(result);
 
-            if (!response.Succeeded)
-                return _errorResultFactory.CreateError(response, "Get");
-
-            var result = ResourceFactory.CreateForGetEndpoint(response.ResponseObject, null);
-            var authorId = result.State?.AuthorId;
-
-            if (authorId is not null)
-            {
-                var link = _linkFactory.Create("Author", "Get", RestControllerNameConventionAttribute.CreateNameFromType<AuthorDtoV1>(), new { id = authorId });
-                result.AddLink(link);
-            }
-
-            Url.AddSaveAndDeleteLinks(result);
-
-            return Ok(result);
-        }
+        return Ok(result);
     }
 }

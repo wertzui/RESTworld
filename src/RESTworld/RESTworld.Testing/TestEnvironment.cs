@@ -1,54 +1,53 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 
-namespace RESTworld.Testing
+namespace RESTworld.Testing;
+
+/// <summary>
+/// A test environment is used to retrieve instances of the classes that are used in the test
+/// and have been configured with an <see cref="ITestBuilder"/>.
+/// </summary>
+/// <typeparam name="TSut">The type of the system under test.</typeparam>
+public class TestEnvironment<TSut> : TestEnvironment, ITestEnvironment<TSut>
+    where TSut : class
 {
     /// <summary>
-    /// A test environment is used to retrieve instances of the classes that are used in the test
-    /// and have been configured with an <see cref="ITestBuilder"/>.
+    /// Creates a new instance of the <see cref="TestEnvironment{TSut}"/> class. This is
+    /// normally done by calling the <see cref="ITestBuilder.Build{TSut}"/> method.
     /// </summary>
-    /// <typeparam name="TSut">The type of the system under test.</typeparam>
-    public class TestEnvironment<TSut> : TestEnvironment, ITestEnvironment<TSut>
-        where TSut : class
+    /// <param name="provider">The provider to use when requesting service instances.</param>
+    public TestEnvironment(ServiceProvider provider)
+        : base(provider)
     {
-        /// <summary>
-        /// Creates a new instance of the <see cref="TestEnvironment{TSut}"/> class. This is
-        /// normally done by calling the <see cref="ITestBuilder.Build{TSut}"/> method.
-        /// </summary>
-        /// <param name="provider">The provider to use when requesting service instances.</param>
-        public TestEnvironment(ServiceProvider provider)
-            : base(provider)
-        {
-        }
-
-        /// <inheritdoc/>
-        public TSut GetSut() => GetRequiredService<TSut>();
     }
+
+    /// <inheritdoc/>
+    public TSut GetSut() => GetRequiredService<TSut>();
+}
+
+/// <summary>
+/// A test environment is used to retrieve instances of the classes that are used in the test
+/// and have been configured with an <see cref="ITestBuilder"/>.
+/// </summary>
+public class TestEnvironment : ITestEnvironment
+{
+    private readonly ServiceProvider _provider;
 
     /// <summary>
-    /// A test environment is used to retrieve instances of the classes that are used in the test
-    /// and have been configured with an <see cref="ITestBuilder"/>.
+    /// Creates a new instance of the <see cref="TestEnvironment"/> class. This is
+    /// normally done by calling the <see cref="ITestBuilder.Build"/> method.
     /// </summary>
-    public class TestEnvironment : ITestEnvironment
+    /// <param name="provider">The provider to use when requesting service instances.</param>
+    public TestEnvironment(ServiceProvider provider)
     {
-        private readonly ServiceProvider _provider;
-
-        /// <summary>
-        /// Creates a new instance of the <see cref="TestEnvironment"/> class. This is
-        /// normally done by calling the <see cref="ITestBuilder.Build"/> method.
-        /// </summary>
-        /// <param name="provider">The provider to use when requesting service instances.</param>
-        public TestEnvironment(ServiceProvider provider)
-        {
-            _provider = provider;
-        }
-
-        /// <inheritdoc/>
-        public void Dispose() => _provider.Dispose();
-
-        /// <inheritdoc/>
-        public T GetRequiredService<T>() where T : notnull => _provider.GetRequiredService<T>();
-
-        /// <inheritdoc/>
-        public T? GetService<T>() => _provider.GetService<T>();
+        _provider = provider;
     }
+
+    /// <inheritdoc/>
+    public void Dispose() => _provider.Dispose();
+
+    /// <inheritdoc/>
+    public T GetRequiredService<T>() where T : notnull => _provider.GetRequiredService<T>();
+
+    /// <inheritdoc/>
+    public T? GetService<T>() => _provider.GetService<T>();
 }

@@ -1,13 +1,12 @@
-﻿namespace RESTworld.Common.Client
+﻿namespace RESTworld.Common.Client;
+
+/// <summary>
+/// The same as <see cref="RestWorldClientOptions"/> but with <see cref="ClientSettings"/>.
+/// </summary>
+public class RestWorldClientOptions
 {
     /// <summary>
-    /// The same as <see cref="RestWorldClientOptions"/> but with <see cref="ClientSettings"/>.
+    /// Settings for the client to discover backend APIs.
     /// </summary>
-    public class RestWorldClientOptions
-    {
-        /// <summary>
-        /// Settings for the client to discover backend APIs.
-        /// </summary>
-        public ClientSettings? ClientSettings { get; set; }
-    }
+    public ClientSettings? ClientSettings { get; set; }
 }

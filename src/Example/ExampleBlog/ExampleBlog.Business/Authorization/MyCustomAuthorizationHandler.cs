@@ -6,24 +6,23 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ExampleBlog.Business.Authorization
+namespace ExampleBlog.Business.Authorization;
+
+public class MyCustomAuthorizationHandler : BasicAuthorizationHandlerBase<Post, long, PostWithAuthorDto>
 {
-    public class MyCustomAuthorizationHandler : BasicAuthorizationHandlerBase<Post, long, PostWithAuthorDto>
+    public override Task<AuthorizationResult<Post, long>> HandleRequestAsync(AuthorizationResult<Post, long> previousResult, CancellationToken cancellationToken)
     {
-        public override Task<AuthorizationResult<Post, long>> HandleRequestAsync(AuthorizationResult<Post, long> previousResult, CancellationToken cancellationToken)
-        {
-            // Normally do some user authorization logic and only apply this if the user must not see posts with id 42
-            var result = previousResult.WithFilter(source => source.Where(p => p.Id != 42));
-            return base.HandleRequestAsync(result, cancellationToken);
-        }
+        // Normally do some user authorization logic and only apply this if the user must not see posts with id 42
+        var result = previousResult.WithFilter(source => source.Where(p => p.Id != 42));
+        return base.HandleRequestAsync(result, cancellationToken);
+    }
 
-        public override Task<ServiceResponse<PostWithAuthorDto>> HandleResponseAsync(ServiceResponse<PostWithAuthorDto> previousResponse, CancellationToken cancellationToken)
-        {
-            // Normally do some user authorization logic and only apply this if the user must not see authors with an even ID.
-            if (previousResponse.Succeeded && previousResponse.ResponseObject.AuthorId % 2 == 0)
-                previousResponse.ResponseObject.Author = null;
+    public override Task<ServiceResponse<PostWithAuthorDto>> HandleResponseAsync(ServiceResponse<PostWithAuthorDto> previousResponse, CancellationToken cancellationToken)
+    {
+        // Normally do some user authorization logic and only apply this if the user must not see authors with an even ID.
+        if (previousResponse.Succeeded && previousResponse.ResponseObject.AuthorId % 2 == 0)
+            previousResponse.ResponseObject.Author = null;
 
-            return base.HandleResponseAsync(previousResponse, cancellationToken);
-        }
+        return base.HandleResponseAsync(previousResponse, cancellationToken);
     }
 }

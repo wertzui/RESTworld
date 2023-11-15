@@ -2,37 +2,36 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace RESTworld.AspNetCore.Serialization
+namespace RESTworld.AspNetCore.Serialization;
+
+/// <summary>
+/// A factory to create a <see cref="SingleObjectOrCollectionJsonConverter{T}"/> with the correct generic type.
+/// </summary>
+public class SingleObjectOrCollectionJsonConverterFactory : JsonConverterFactory
 {
-    /// <summary>
-    /// A factory to create a <see cref="SingleObjectOrCollectionJsonConverter{T}"/> with the correct generic type.
-    /// </summary>
-    public class SingleObjectOrCollectionJsonConverterFactory : JsonConverterFactory
+    /// <inheritdoc/>
+    public override bool CanConvert(Type typeToConvert)
     {
-        /// <inheritdoc/>
-        public override bool CanConvert(Type typeToConvert)
+        if (!typeToConvert.IsGenericType)
         {
-            if (!typeToConvert.IsGenericType)
-            {
-                return false;
-            }
-
-            if (typeToConvert.GetGenericTypeDefinition() != typeof(SingleObjectOrCollection<>))
-            {
-                return false;
-            }
-
-            return true;
+            return false;
         }
 
-        /// <inheritdoc/>
-        public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
+        if (typeToConvert.GetGenericTypeDefinition() != typeof(SingleObjectOrCollection<>))
         {
-            var objectType = typeToConvert.GetGenericArguments()[0];
-
-            var converter = Activator.CreateInstance(typeof(SingleObjectOrCollectionJsonConverter<>).MakeGenericType(objectType)) as JsonConverter;
-
-            return converter;
+            return false;
         }
+
+        return true;
+    }
+
+    /// <inheritdoc/>
+    public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
+    {
+        var objectType = typeToConvert.GetGenericArguments()[0];
+
+        var converter = Activator.CreateInstance(typeof(SingleObjectOrCollectionJsonConverter<>).MakeGenericType(objectType)) as JsonConverter;
+
+        return converter;
     }
 }
