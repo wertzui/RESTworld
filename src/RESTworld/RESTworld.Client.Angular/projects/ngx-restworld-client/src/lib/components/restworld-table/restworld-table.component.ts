@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, Optional, Output, ViewChild } from '@angular/core';
 import { FormService, Property, PropertyType, SimpleValue, Template } from '@wertzui/ngx-hal-client';
 import * as _ from 'lodash';
-import { MenuItem, SortMeta } from 'primeng/api';
+import { FilterMatchMode, MenuItem, SortMeta } from 'primeng/api';
 import { ODataParameters } from '../../models/o-data';
 import { ODataService } from '../../services/o-data.service';
 import { ContextMenu } from 'primeng/contextmenu';
@@ -466,6 +466,16 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
       default:
         return ColumnFilterType.text;
     }
+  }
+
+  public toMatchMode(propertyType: PropertyType): string | undefined {
+    // There is a bug in PrimeNG returning CONTAINS for boolean columns
+    // Once the bug has been fixed, we can remove this workaround
+    // https://github.com/primefaces/primeng/issues/14210
+    if (propertyType === PropertyType.Bool)
+      return FilterMatchMode.EQUALS;
+
+      return undefined;
   }
 
   public showInputField(column: Property): boolean {
