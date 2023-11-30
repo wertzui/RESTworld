@@ -55,7 +55,7 @@
             <span *ngSwitchCase="PropertyType.Number" class="flex justify-content-end">{{entity[col.name] | propertyTypeFormat:col.type}}</span>
             <span *ngSwitchCase="PropertyType.Percent" class="flex justify-content-end">{{entity[col.name] | propertyTypeFormat:col.type}}</span>
             <span *ngSwitchCase="PropertyType.Currency" class="flex justify-content-end">{{entity[col.name] | propertyTypeFormat:col.type}}</span>
-            <span *ngSwitchCase="PropertyType.Bool" class="flex justify-content-center"><p-triStateCheckbox [(ngModel)]="entity[col.name]" [readonly]="true"></p-triStateCheckbox></span>
+            <span *ngSwitchCase="PropertyType.Bool" class="flex justify-content-center"><p-triStateCheckbox [(ngModel)]="entity[col.name]" [readonly]="true" [disabled]="true"></p-triStateCheckbox></span>
             <span *ngSwitchCase="PropertyType.Date" [pTooltip]="entity[col.name]">{{entity[col.name] | propertyTypeFormat:col.type}}</span>
             <span *ngSwitchCase="PropertyType.Time" [pTooltip]="entity[col.name]">{{entity[col.name] | propertyTypeFormat:col.type}}</span>
             <span *ngSwitchCase="PropertyType.Duration" [pTooltip]="entity[col.name]">{{entity[col.name] | propertyTypeFormat:col.type}}</span>
