@@ -79,10 +79,7 @@ public class RestWorldProblemDetailsFactory : ProblemDetailsFactory, IRestWorldP
         string? detail = null,
         string? instance = null)
     {
-        if (validationResults == null)
-        {
-            throw new ArgumentNullException(nameof(validationResults));
-        }
+        ArgumentNullException.ThrowIfNull(validationResults);
 
         statusCode ??= 400;
 
@@ -121,10 +118,7 @@ public class RestWorldProblemDetailsFactory : ProblemDetailsFactory, IRestWorldP
         string? detail = null,
         string? instance = null)
     {
-        if (modelStateDictionary == null)
-        {
-            throw new ArgumentNullException(nameof(modelStateDictionary));
-        }
+        ArgumentNullException.ThrowIfNull(modelStateDictionary);
 
         statusCode ??= 400;
 

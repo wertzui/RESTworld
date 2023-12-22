@@ -18,12 +18,12 @@ public class CachingOptions : Dictionary<string, TimeSpan>
     }
 
     /// <summary>
-    /// The cache time for the get endpoint.
+    /// The cache time for a get operation.
     /// </summary>
     public TimeSpan Get => this[nameof(Get)];
 
     /// <summary>
-    /// The cache time for the get list endpoint.
+    /// The cache time for a get list operation.
     /// </summary>
     public TimeSpan GetList => this[nameof(GetList)];
 }

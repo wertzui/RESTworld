@@ -35,8 +35,7 @@ public class AutomapperTestConfiguration : ITestConfiguration
     /// <exception cref="ArgumentNullException"><paramref name="configureAutomapper"/></exception>
     public AutomapperTestConfiguration(Action<IMapperConfigurationExpression> configureAutomapper)
     {
-        if (configureAutomapper is null)
-            throw new ArgumentNullException(nameof(configureAutomapper));
+        ArgumentNullException.ThrowIfNull(configureAutomapper);
 
         _mapper = new Mapper(new MapperConfiguration(configureAutomapper));
     }

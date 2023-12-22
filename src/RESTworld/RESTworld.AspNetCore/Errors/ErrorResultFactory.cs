@@ -56,7 +56,7 @@ public class ErrorResultFactory : IErrorResultFactory
     {
         ArgumentNullException.ThrowIfNull(problemDetails);
 
-        var resource = _resourceFactory.CreateForGetEndpoint(problemDetails, action);
+        var resource = _resourceFactory.CreateForEndpoint(problemDetails, action);
 
         var result = new ObjectResult(resource) { StatusCode = problemDetails.Status };
         return result;

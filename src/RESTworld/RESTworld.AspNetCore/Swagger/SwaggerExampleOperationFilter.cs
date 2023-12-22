@@ -88,10 +88,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
     /// </exception>
     public SwaggerExampleOperationFilter(IHttpContextAccessor httpContextAccessor, LinkGenerator linkGenerator, IApiDescriptionGroupCollectionProvider apiExplorer, IODataQueryFactory oDataQueryFactory, IOptions<RestWorldOptions> options)
     {
-        if (options is null)
-        {
-            throw new ArgumentNullException(nameof(options));
-        }
+        ArgumentNullException.ThrowIfNull(options);
         _curieName = options.Value.GetCurieOrDefault();
 
         _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
@@ -250,13 +247,13 @@ public class SwaggerExampleOperationFilter : IOperationFilter
                             }
                         }
                     }
-                    resource = resourceFactory.CreateForGetEndpoint(state, action: "New", controller: controllerName);
+                    resource = resourceFactory.CreateForEndpoint(state, action: "New", controller: controllerName);
 
                     resource.AddLink("save", linkFactory.Create("POST", action: "Post", controller: controllerName));
                 }
                 else
                 {
-                    resource = resourceFactory.CreateForGetEndpoint(state, controller: controllerName, routeValues: new { id = ((DtoBase)state).Id });
+                    resource = resourceFactory.CreateForEndpoint(state, controller: controllerName, routeValues: new { id = ((DtoBase)state).Id });
                 }
 
                 type.Example = CreateExample(resource);
@@ -267,7 +264,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
                 var states = Enumerable.Repeat<object?>(null, 3).Select(_ => _fixture.Create(tFullDto, _specimenContext)).Cast<ConcurrentDtoBase>().ToList();
                 var CollectionResource = resourceFactory.CreateForListEndpoint(states, _ => "List", d => d.Id, controllerName);
 
-                type.Examples.Add("Single Object", new OpenApiExample { Value = CreateExample((Resource)resourceFactory.CreateForGetEndpoint(states[0], controller: controllerName, routeValues: new { id = states[0].Id })) });
+                type.Examples.Add("Single Object", new OpenApiExample { Value = CreateExample((Resource)resourceFactory.CreateForEndpoint(states[0], controller: controllerName, routeValues: new { id = states[0].Id })) });
                 type.Examples.Add("Collection", new OpenApiExample { Value = CreateExample(resourceFactory.CreateForListEndpoint(states, _ => "List", d => d.Id, controllerName)) });
             }
         }

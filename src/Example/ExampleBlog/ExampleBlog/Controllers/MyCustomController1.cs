@@ -45,12 +45,12 @@ public class MyCustomController1 : RestControllerBase
         long id,
         CancellationToken cancellationToken)
     {
-        var response = await Cache.GetOrCreateAsync(nameof(GetPostWithAuthorAsync) + "_" + id, nameof(CachingOptions.Get), _ => _service.GetPostWithAuthorAsync(id, cancellationToken));
+        var response = await Cache.GetOrCreateWithCurrentUserAsync(nameof(GetPostWithAuthorAsync) + "_" + id, nameof(CachingOptions.Get), _ => _service.GetPostWithAuthorAsync(id, cancellationToken));
 
         if (!response.Succeeded)
             return _errorResultFactory.CreateError(response, "Get");
 
-        var result = ResourceFactory.CreateForGetEndpoint(response.ResponseObject, null);
+        var result = ResourceFactory.CreateForEndpoint(response.ResponseObject, null);
         var authorId = result.State?.AuthorId;
 
         if (authorId is not null)

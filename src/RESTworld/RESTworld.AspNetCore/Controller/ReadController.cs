@@ -1,4 +1,5 @@
 ﻿using HAL.AspNetCore.Abstractions;
+using HAL.AspNetCore.ContentNegotiation;
 using HAL.AspNetCore.OData.Abstractions;
 using HAL.Common;
 using HAL.Common.Forms;
@@ -10,7 +11,6 @@ using RESTworld.AspNetCore.Caching;
 using RESTworld.AspNetCore.DependencyInjection;
 using RESTworld.AspNetCore.Errors.Abstractions;
 using RESTworld.AspNetCore.Filters;
-using RESTworld.AspNetCore.Swagger;
 using RESTworld.Business.Services.Abstractions;
 using RESTworld.Common.Dtos;
 using RESTworld.EntityFrameworkCore.Models;
@@ -67,8 +67,7 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
         IOptions<RestWorldOptions> options)
         : base(resourceFactory, cache)
     {
-        if (options is null)
-            throw new ArgumentNullException(nameof(options));
+        ArgumentNullException.ThrowIfNull(options);
         Options = options.Value;
 
         _readService = service ?? throw new ArgumentNullException(nameof(service));
@@ -101,7 +100,6 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
     /// Gets a full representation of the resource with the given ID.
     /// </summary>
     /// <param name="id">The ID of the resource.</param>
-    /// <param name="accept">The Accept header.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns>The full representation for the requested resource.</returns>
     [HttpGet("{id:long}")]
@@ -109,14 +107,14 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
     [ProducesResponseType(200)]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
     [ProducesWithContentNegotiation("application/hal+json", "application/prs.hal-forms+json", "application/hal-forms+json")]
-    public virtual async Task<ActionResult<Resource<TGetFullDto>>> GetAsync(long id, [FromHeader, SwaggerIgnore] string accept, CancellationToken cancellationToken)
+    public virtual async Task<ActionResult<Resource<TGetFullDto>>> GetAsync(long id, CancellationToken cancellationToken)
     {
-        var response = await Cache.CacheGetAsync(id, _ => _readService.GetSingleAsync(id, cancellationToken));
+        var response = await Cache.CacheGetWithCurrentUserAsync(id, _ => _readService.GetSingleAsync(id, cancellationToken));
 
         if (!response.Succeeded || response.ResponseObject is null)
             return ErrorResultFactory.CreateError(response, "Get");
 
-        return Ok(response.ResponseObject, id == 0 ? HttpMethod.Post : HttpMethod.Put, accept);
+        return Ok(response.ResponseObject, id == 0 ? HttpMethod.Post : HttpMethod.Put);
     }
 
 
@@ -124,38 +122,25 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
     /// Gets a paged list of resources matching the filter criteria.
     /// </summary>
     /// <param name="options">The OData options used to filter, order an page the list.</param>
-    /// <param name="accept">The value of the Accept header.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
-    /// <param name="filter">The filter to filter resources by.</param>
-    /// <param name="orderby">
-    /// The order of the resources. If none is given, the resources are returned as they appear
-    /// in the database.
-    /// </param>
-    /// <param name="top">The maximum number of resources to return. THis is used for paging.</param>
-    /// <param name="skip">The number of resources to skip. This is used for paging.</param>
     /// <returns>A paged list of resources matching the filter criteria.</returns>
     [HttpGet]
     [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
     [ProducesResponseType(200)]
     [ProducesWithContentNegotiation("application/hal+json", "text/csv", "application/prs.hal-forms+json", "application/hal-forms+json")]
     public virtual async Task<ActionResult<Resource>> GetListAsync(
-        [SwaggerIgnore] ODataQueryOptions<TEntity> options,
-        [FromHeader, SwaggerIgnore] string accept,
-        CancellationToken cancellationToken,
-        [FromQuery(Name = "$filter")] string? filter = default,
-        [FromQuery(Name = "$orderby")] string? orderby = default,
-        [FromQuery(Name = "$top")] long? top = default,
-        [FromQuery(Name = "$skip")] long? skip = default)
+        ODataQueryOptions<TEntity> options,
+        CancellationToken cancellationToken)
     {
         options.Context.DefaultQueryConfigurations.MaxTop = Options.MaxNumberForListEndpoint;
         var getListrequest = options.ToListRequest(Options.CalculateTotalCountForListEndpoint);
 
-        var response = await Cache.CacheGetListAsync(options.RawValues, _ => _readService.GetListAsync(getListrequest, cancellationToken));
+        var response = await Cache.CacheGetListWithCurrentUserAsync(options.RawValues, _ => _readService.GetListAsync(getListrequest, cancellationToken));
 
         if (!response.Succeeded)
             return ErrorResultFactory.CreateError(response, "GetList");
 
-        var result = CreateListResource(options, response, accept);
+        var result = CreateListResource(options, response);
 
         return Ok(result);
     }
@@ -166,11 +151,10 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
     /// </summary>
     /// <param name="dto">The DTO to return.</param>
     /// <param name="method">The method to use when submitting the form.</param>
-    /// <param name="accept">The value of the Accept header.</param>
     /// <returns>Either a HAL resource, or a HAL-Forms resource</returns>
-    protected virtual Resource CreateListResource(TGetFullDto dto, HttpMethod method, string accept)
+    protected virtual Resource CreateListResource(TGetFullDto dto, HttpMethod method)
     {
-        if (accept.Contains("hal-forms+json"))
+        if (HttpContext.GetAcceptHeaders().AcceptsHalFormsOverHal())
         {
             var result = FormFactory.CreateResourceForEndpoint(dto, method, "View", routeValues: new { id = dto.Id });
 
@@ -180,7 +164,7 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
         }
         else
         {
-            var result = ResourceFactory.CreateForGetEndpoint(dto, routeValues: new { id = dto.Id });
+            var result = ResourceFactory.CreateForEndpoint(dto, routeValues: new { id = dto.Id });
 
             LinkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
 
@@ -194,11 +178,10 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
     /// </summary>
     /// <param name="dto">The DTO to return.</param>
     /// <param name="method">The method to use when submitting the form.</param>
-    /// <param name="accept">The value of the Accept header.</param>
     /// <returns>Either a HAL resource, or a HAL-Forms resource</returns>
-    protected virtual Resource CreateResource(TGetFullDto dto, HttpMethod method, string accept)
+    protected virtual Resource CreateResource(TGetFullDto dto, HttpMethod method)
     {
-        if (accept.Contains("hal-forms+json"))
+        if (HttpContext.GetAcceptHeaders().AcceptsHalFormsOverHal())
         {
             var result = FormFactory.CreateResourceForEndpoint(dto, method, "View", routeValues: new { id = dto.Id });
 
@@ -208,7 +191,7 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
         }
         else
         {
-            var result = ResourceFactory.CreateForGetEndpoint(dto, routeValues: new { id = dto.Id });
+            var result = ResourceFactory.CreateForEndpoint(dto, routeValues: new { id = dto.Id });
 
             LinkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
 
@@ -222,14 +205,13 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
     /// </summary>
     /// <param name="dto">The DTO to return.</param>
     /// <param name="method">The method to use when submitting the form.</param>
-    /// <param name="accept">The value of the Accept header.</param>
     /// <returns>The created Microsoft.AspNetCore.Mvc.OkObjectResult for the response.</returns>
-    protected virtual OkObjectResult Ok(TGetFullDto dto, HttpMethod method, string accept)
-        => Ok(CreateResource(dto, method, accept));
+    protected virtual OkObjectResult Ok(TGetFullDto dto, HttpMethod method)
+        => Ok(CreateResource(dto, method));
 
     /// <summary>
     /// Since this is a read-only controller, every property is also read only.
-    /// <see cref="CreateResource(TGetFullDto, HttpMethod, string)"/> is overridden in the
+    /// <see cref="CreateResource(TGetFullDto, HttpMethod)"/> is overridden in the
     /// <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
     /// and there the form is kept as it is.
     /// </summary>
@@ -257,14 +239,14 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
         }
     }
 
-    private Resource<Page> CreateListResource(ODataQueryOptions<TEntity> options, Business.Models.ServiceResponse<Business.Models.Abstractions.IReadOnlyPagedCollection<TGetListDto>> response, string accept)
+    private Resource<Page> CreateListResource(ODataQueryOptions<TEntity> options, Business.Models.ServiceResponse<Business.Models.Abstractions.IReadOnlyPagedCollection<TGetListDto>> response)
     {
         if (!response.Succeeded)
             throw new ArgumentException($"{nameof(CreateListResource)}() may only be called if the response succeeded.", nameof(response));
 
         Resource<Page> result;
 
-        if (accept.Contains("hal-forms+json"))
+        if (HttpContext.GetAcceptHeaders().AcceptsHalFormsOverHal())
         {
             result = FormFactory.CreateForODataListEndpointUsingSkipTopPaging(response.ResponseObject.Items, _ => Common.Constants.ListItems, m => m.Id, options.RawValues, options.Context.DefaultQueryConfigurations.MaxTop ?? 50, response.ResponseObject.TotalCount);
         }

@@ -30,10 +30,7 @@ public class FactoryBuilder<T> : ISpecimenBuilder
     public FactoryBuilder(Func<T> factory)
         : this((_, __) => factory())
     {
-        if (factory is null)
-        {
-            throw new ArgumentNullException(nameof(factory));
-        }
+        ArgumentNullException.ThrowIfNull(factory);
     }
 
     /// <summary>
@@ -44,10 +41,7 @@ public class FactoryBuilder<T> : ISpecimenBuilder
     public FactoryBuilder(Func<ISpecimenContext, T> factory)
         : this((_, context) => factory(context))
     {
-        if (factory is null)
-        {
-            throw new ArgumentNullException(nameof(factory));
-        }
+        ArgumentNullException.ThrowIfNull(factory);
     }
 
     /// <summary>
@@ -58,10 +52,7 @@ public class FactoryBuilder<T> : ISpecimenBuilder
     public FactoryBuilder(Func<object, T> factory)
         : this((request, _) => factory(request))
     {
-        if (factory is null)
-        {
-            throw new ArgumentNullException(nameof(factory));
-        }
+        ArgumentNullException.ThrowIfNull(factory);
     }
 
     /// <inheritdoc/>

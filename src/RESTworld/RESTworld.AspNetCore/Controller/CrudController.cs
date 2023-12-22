@@ -1,4 +1,5 @@
 ﻿using HAL.AspNetCore.Abstractions;
+using HAL.AspNetCore.ContentNegotiation;
 using HAL.AspNetCore.OData.Abstractions;
 using HAL.AspNetCore.Utils;
 using HAL.Common;
@@ -10,7 +11,6 @@ using RESTworld.AspNetCore.Caching;
 using RESTworld.AspNetCore.DependencyInjection;
 using RESTworld.AspNetCore.Errors.Abstractions;
 using RESTworld.AspNetCore.Serialization;
-using RESTworld.AspNetCore.Swagger;
 using RESTworld.Business.Models;
 using RESTworld.Business.Services.Abstractions;
 using RESTworld.Common.Dtos;
@@ -145,7 +145,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
         if (!response.Succeeded)
             return ErrorResultFactory.CreateError(response, "Delete");
 
-        Cache.RemoveGet<ServiceResponse<TGetFullDto>>(id);
+        Cache.RemoveGetWithCurrentUser<ServiceResponse<TGetFullDto>>(id);
 
         return Ok();
 
@@ -167,24 +167,22 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     /// <summary>
     /// Returns an empty resource which can be used as a template when creating a new resource.
     /// </summary>
-    /// <param name="accept">The Accept header.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns>An empty resource.</returns>
     [HttpGet("new")]
     [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
     [ProducesResponseType(200)]
-    public virtual Task<ActionResult<Resource<TCreateDto>>> NewAsync([FromHeader, SwaggerIgnore] string accept, CancellationToken cancellationToken)
+    public virtual Task<ActionResult<Resource<TCreateDto>>> NewAsync(CancellationToken cancellationToken)
     {
         var result = CreateEmpty();
 
-        return Task.FromResult<ActionResult<Resource<TCreateDto>>>(Json(result, accept, _createNewResourceJsonSettings));
+        return Task.FromResult<ActionResult<Resource<TCreateDto>>>(Json(result, _createNewResourceJsonSettings));
     }
 
     /// <summary>
     /// Creates the given new resource(s).
     /// </summary>
     /// <param name="dto">The resource(s) to create. Supply either a single object or a collection.</param>
-    /// <param name="accept">The Accept header.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns>The full resource(s) as stored in the database.</returns>
     [HttpPost]
@@ -194,7 +192,6 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     [ProducesResponseType(typeof(Resource), StatusCodes.Status201Created)]
     public virtual async Task<ActionResult<Resource<TGetFullDto>>> PostAsync(
         [FromBody] SingleObjectOrCollection<TCreateDto> dto,
-        [FromHeader, SwaggerIgnore] string accept,
         CancellationToken cancellationToken)
     {
         if (dto == null || (dto.ContainsCollection && dto.Collection is null) || (dto.ContainsSingleObject && dto.SingleObject is null))
@@ -203,7 +200,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
         if (dto.ContainsCollection)
             return await PostMultipleAsync(dto.Collection, cancellationToken);
         else
-            return await PostSingleAsync(dto.SingleObject!, accept, cancellationToken);
+            return await PostSingleAsync(dto.SingleObject, cancellationToken);
 
     }
 
@@ -215,7 +212,6 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     /// object, or it must be absent when updating a collection.
     /// </param>
     /// <param name="dto">Updated values for the resource(s).</param>
-    /// <param name="accept">The value of the Accept header.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns>The full resource(s) as stored in the database.</returns>
     [HttpPut("{id:long?}")]
@@ -227,7 +223,6 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     public virtual async Task<ActionResult<Resource<TGetFullDto>>> PutAsync(
         long? id,
         [FromBody] SingleObjectOrCollection<TUpdateDto> dto,
-        [FromHeader, SwaggerIgnore] string accept,
         CancellationToken cancellationToken)
     {
         if (dto == null || (dto.ContainsCollection && dto.Collection is null) || (dto.ContainsSingleObject && dto.SingleObject is null))
@@ -245,7 +240,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
             if (id != dto.SingleObject?.Id)
                 return ErrorResultFactory.CreateError(StatusCodes.Status400BadRequest, "The URL must contain the same ID as the object in the request body when the request body contains a single object.", "Put");
 
-            return await PutSingleAsync(dto.SingleObject!, accept, cancellationToken);
+            return await PutSingleAsync(dto.SingleObject!, cancellationToken);
         }
     }
 
@@ -283,11 +278,10 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     /// response.
     /// </summary>
     /// <param name="dto">The DTO to return.</param>
-    /// <param name="accept">The value of the Accept header.</param>
     /// <param name="jsonSerializerOptions">The options for the JSON serializer. Normally these are <see cref="_createNewResourceJsonSettings"/>.</param>
     /// <returns>The created Microsoft.AspNetCore.Mvc.OkObjectResult for the response.</returns>
-    protected virtual JsonResult Json(TCreateDto? dto, string accept, JsonSerializerOptions jsonSerializerOptions)
-        => new(CreateNewResource(dto, accept), jsonSerializerOptions);
+    protected virtual JsonResult Json(TCreateDto? dto, JsonSerializerOptions jsonSerializerOptions)
+        => new(CreateNewResource(dto), jsonSerializerOptions);
 
     /// <summary>
     /// Creates an Microsoft.AspNetCore.Mvc.CreatedResult object that produces an Microsoft.AspNetCore.Http.StatusCodes.Status201Created
@@ -295,21 +289,19 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     /// </summary>
     /// <param name="dto">The DTO to return.</param>
     /// <param name="method">The method to use when submitting the form.</param>
-    /// <param name="accept">The value of the Accept header.</param>
     /// <returns>The created Microsoft.AspNetCore.Mvc.CreatedResult for the response.</returns>
-    protected virtual CreatedResult Created(TGetFullDto dto, HttpMethod method, string accept)
-        => Created(Url.ActionLink(ActionHelper.StripAsyncSuffix(nameof(GetAsync)), values: new { id = dto.Id }) ?? throw new UriFormatException("Unable to generate the CreatedAt URI"), CreateResource(dto, method, accept));
+    protected virtual CreatedResult Created(TGetFullDto dto, HttpMethod method)
+        => Created(Url.ActionLink(ActionHelper.StripAsyncSuffix(nameof(GetAsync)), values: new { id = dto.Id }) ?? throw new UriFormatException("Unable to generate the CreatedAt URI"), CreateResource(dto, method));
 
     /// <summary>
     /// Creates the result which is either a HAL resource, or a HAL-Forms resource based on the
     /// accept header.
     /// </summary>
     /// <param name="dto">The DTO to return.</param>
-    /// <param name="accept">The value of the Accept header.</param>
     /// <returns>Either a HAL resource, or a HAL-Forms resource</returns>
-    protected virtual Resource CreateNewResource(TCreateDto? dto, string accept)
+    protected virtual Resource CreateNewResource(TCreateDto? dto)
     {
-        if (accept.Contains("hal-forms+json"))
+        if (HttpContext.GetAcceptHeaders().AcceptsHalFormsOverHal())
         {
             var result = FormFactory.CreateResourceForEndpoint(dto, HttpMethod.Post, "Create", action: HttpMethod.Post.Method);
 
@@ -317,7 +309,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
         }
         else
         {
-            var result = ResourceFactory.CreateForGetEndpoint(dto, "New");
+            var result = ResourceFactory.CreateForEndpoint(dto, "New");
 
             var saveHref = Url.ActionLink(HttpMethod.Post.Method);
             if (saveHref is null)
@@ -338,11 +330,10 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     /// </summary>
     /// <param name="dto">The DTO to return.</param>
     /// <param name="method">The method to use when submitting the form.</param>
-    /// <param name="accept">The value of the Accept header.</param>
     /// <returns>Either a HAL resource, or a HAL-Forms resource</returns>
-    protected override Resource CreateResource(TGetFullDto dto, HttpMethod method, string accept)
+    protected override Resource CreateResource(TGetFullDto dto, HttpMethod method)
     {
-        if (accept.Contains("hal-forms+json"))
+        if (HttpContext.GetAcceptHeaders().AcceptsHalFormsOverHal())
         {
             var result = FormFactory.CreateResourceForEndpoint(dto, method, "Edit", action: method.Method, routeValues: new { id = dto.Id });
             Url.AddDeleteLink(result);
@@ -351,7 +342,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
         }
         else
         {
-            var result = ResourceFactory.CreateForGetEndpoint(dto, routeValues: new { id = dto.Id });
+            var result = ResourceFactory.CreateForEndpoint(dto, routeValues: new { id = dto.Id });
 
             LinkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
             Url.AddSaveAndDeleteLinks(result);
@@ -362,7 +353,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
 
     /// <summary>
     /// Creates the given new resources. This method is called when
-    /// <see cref="PostAsync(SingleObjectOrCollection{TCreateDto}, string, CancellationToken)"/> is called with a collection.
+    /// <see cref="PostAsync(SingleObjectOrCollection{TCreateDto}, CancellationToken)"/> is called with a collection.
     /// </summary>
     /// <param name="dtos">The resources to create.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
@@ -376,7 +367,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
 
         foreach (var dto in response.ResponseObject)
         {
-            Cache.RemoveGet<ServiceResponse<TGetFullDto>>(dto.Id);
+            Cache.RemoveGetWithCurrentUser<ServiceResponse<TGetFullDto>>(dto.Id);
         }
 
         var responseObject = response.ResponseObject ?? Array.Empty<TGetFullDto>();
@@ -405,13 +396,12 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
 
     /// <summary>
     /// Creates the given new resource. This method is called when
-    /// <see cref="PostAsync(SingleObjectOrCollection{TCreateDto}, string, CancellationToken)"/> is called with a single object.
+    /// <see cref="PostAsync(SingleObjectOrCollection{TCreateDto}, CancellationToken)"/> is called with a single object.
     /// </summary>
     /// <param name="dto">The resource to create.</param>
-    /// <param name="accept">The value of the Accept header.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns>The full resource as stored in the database.</returns>
-    protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PostSingleAsync(TCreateDto dto, string accept, CancellationToken cancellationToken)
+    protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PostSingleAsync(TCreateDto dto, CancellationToken cancellationToken)
     {
         var response = await _crudService.CreateAsync(dto, cancellationToken);
 
@@ -421,14 +411,14 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
         if (response.ResponseObject is null)
             return ErrorResultFactory.CreateError(StatusCodes.Status500InternalServerError, "The service did return null for the created object.", "Post");
 
-        Cache.RemoveGet<ServiceResponse<TGetFullDto>>(response.ResponseObject.Id);
+        Cache.RemoveGetWithCurrentUser<ServiceResponse<TGetFullDto>>(response.ResponseObject.Id);
 
-        return Created(response.ResponseObject, HttpMethod.Put, accept);
+        return Created(response.ResponseObject, HttpMethod.Put);
     }
 
     /// <summary>
     /// Updates the given resources with new values. This method is called
-    /// when <see cref="PutAsync(long?, SingleObjectOrCollection{TUpdateDto}, string, CancellationToken)"/> is called with a collection.
+    /// when <see cref="PutAsync(long?, SingleObjectOrCollection{TUpdateDto}, CancellationToken)"/> is called with a collection.
     /// </summary>
     /// <param name="dtos">Updated values for the resources.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
@@ -443,7 +433,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
 
         foreach (var dto in response.ResponseObject)
         {
-            Cache.RemoveGet<ServiceResponse<TGetFullDto>>(dto.Id);
+            Cache.RemoveGetWithCurrentUser<ServiceResponse<TGetFullDto>>(dto.Id);
         }
 
         var responseObject = response.ResponseObject ?? Array.Empty<TGetFullDto>();
@@ -472,22 +462,21 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
 
     /// <summary>
     /// Updates the given resource with new values. This method is called
-    /// when <see cref="PutAsync(long?, SingleObjectOrCollection{TUpdateDto}, string, CancellationToken)"/> is called with a single object.
+    /// when <see cref="PutAsync(long?, SingleObjectOrCollection{TUpdateDto}, CancellationToken)"/> is called with a single object.
     /// </summary>
     /// <param name="dto">Updated values for the resource.</param>
-    /// <param name="accept">The Accept header.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns>The full resource as stored in the database.</returns>
-    protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PutSingleAsync(TUpdateDto dto, string accept, CancellationToken cancellationToken)
+    protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PutSingleAsync(TUpdateDto dto, CancellationToken cancellationToken)
     {
         var response = await _crudService.UpdateAsync(dto, cancellationToken);
 
         if (!response.Succeeded || response.ResponseObject is null)
             return ErrorResultFactory.CreateError(response, "Put");
 
-        Cache.RemoveGet<ServiceResponse<TGetFullDto>>(response.ResponseObject.Id);
+        Cache.RemoveGetWithCurrentUser<ServiceResponse<TGetFullDto>>(response.ResponseObject.Id);
 
-        return Ok(response.ResponseObject, HttpMethod.Put, accept);
+        return Ok(response.ResponseObject, HttpMethod.Put);
     }
 
     private static void AppendRange(StringBuilder sb, long inclusiveStart, long inclusiveEnd)

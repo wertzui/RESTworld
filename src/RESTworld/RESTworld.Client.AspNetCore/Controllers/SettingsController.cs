@@ -38,7 +38,7 @@ public class SettingsController : RestControllerBase
     [ProducesResponseType(200)]
     public ActionResult<Resource<ClientSettings?>> Get()
     {
-        var resource = Cache.GetOrCreate("ClientSettings", nameof(CachingOptions.Get), _ => ResourceFactory.CreateForGetEndpoint(_options.Value.ClientSettings));
+        var resource = Cache.GetOrCreateWithoutUser("ClientSettings", nameof(CachingOptions.Get), _ => ResourceFactory.CreateForEndpoint(_options.Value.ClientSettings));
 
         return resource;
     }

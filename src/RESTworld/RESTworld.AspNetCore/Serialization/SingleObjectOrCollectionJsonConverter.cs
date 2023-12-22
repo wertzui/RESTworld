@@ -16,11 +16,11 @@ public class SingleObjectOrCollectionJsonConverter<T> : JsonConverter<SingleObje
     {
         if (reader.TokenType == JsonTokenType.StartObject)
         {
-            return new(JsonSerializer.Deserialize<T>(ref reader, options));
+            return new(JsonSerializer.Deserialize<T>(ref reader, options) ?? throw new JsonException($"Unable to deserialize the given value into an object of type {typeof(T).Name} although a start object token was encountered.", null, null, reader.BytesConsumed));
         }
         else if (reader.TokenType == JsonTokenType.StartArray)
         {
-            return new(JsonSerializer.Deserialize<IReadOnlyCollection<T>>(ref reader, options));
+            return new(JsonSerializer.Deserialize<IReadOnlyCollection<T>>(ref reader, options) ?? throw new JsonException($"Unable to deserialize the given value into an object of type IReadOnlyCollection<{typeof(T).Name}> although a start array token was encountered.", null, null, reader.BytesConsumed));
         }
 
         throw new JsonException("The value must either be an object or an array.", null, null, reader.BytesConsumed);

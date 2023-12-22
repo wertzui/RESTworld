@@ -41,11 +41,9 @@ public class HomeController : HalControllerBase
         IOptions<RestWorldOptions> options,
         IApiDescriptionGroupCollectionProvider apiExplorer)
     {
-        if (options is null)
-            throw new ArgumentNullException(nameof(options));
+        ArgumentNullException.ThrowIfNull(options);
 
-        if (apiExplorer is null)
-            throw new ArgumentNullException(nameof(apiExplorer));
+        ArgumentNullException.ThrowIfNull(apiExplorer);
 
         _curieName = options.Value.GetCurieOrDefault();
         _resourceFactory = resourceFactory ?? throw new ArgumentNullException(nameof(resourceFactory));

@@ -103,11 +103,9 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddDbContextFactoryWithDefaults<TContext>(this IServiceCollection services, IConfiguration configuration, Action<DbContextOptionsBuilder>? optionsAction = null, Action<SqlServerDbContextOptionsBuilder>? sqlServerOptionsAction = null)
                 where TContext : DbContext
     {
-        if (services is null)
-            throw new ArgumentNullException(nameof(services));
+        ArgumentNullException.ThrowIfNull(services);
 
-        if (configuration is null)
-            throw new ArgumentNullException(nameof(configuration));
+        ArgumentNullException.ThrowIfNull(configuration);
 
         sqlServerOptionsAction ??= optionsBuilder => optionsBuilder.EnableRetryOnFailure();
 
@@ -153,7 +151,7 @@ public static class ServiceCollectionExtensions
     /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
     public static IServiceCollection AddForeignKeyForFormTo<TListDto>(this IServiceCollection services)
-        => services.AddScoped<IForeignKeyLinkFactory, CrudForeignKeyLinkFactory<TListDto>>();
+        => services.AddSingleton<IForeignKeyLinkFactory, CrudForeignKeyLinkFactory<TListDto>>();
 
     /// <summary>
     /// Adds an ODataModel for a <see cref="DbContext"/>. This is required for List operations
@@ -184,7 +182,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    public static IServiceCollection AddUserAccessor(this IServiceCollection services) => services.AddScoped<IUserAccessor, UserAccessor>();
+    public static IServiceCollection AddUserAccessor(this IServiceCollection services) => services.AddSingleton<IUserAccessor, UserAccessor>();
 
     /// <summary>
     /// Adds the database to the list of databases to migrate to the latest version during startup.

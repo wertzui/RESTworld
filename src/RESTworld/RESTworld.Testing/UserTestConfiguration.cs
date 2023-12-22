@@ -126,8 +126,7 @@ public class UserTestConfiguration : ITestConfiguration
     public UserTestConfiguration(ClaimsIdentity claimsIdentity)
         : this(new ClaimsPrincipal(claimsIdentity))
     {
-        if (claimsIdentity is null)
-            throw new ArgumentNullException(nameof(claimsIdentity));
+        ArgumentNullException.ThrowIfNull(claimsIdentity);
     }
 
     /// <summary>
@@ -138,8 +137,7 @@ public class UserTestConfiguration : ITestConfiguration
     public UserTestConfiguration(ClaimsPrincipal claimsPrincipal)
         : this(new TestUserAccessor(claimsPrincipal))
     {
-        if (claimsPrincipal is null)
-            throw new ArgumentNullException(nameof(claimsPrincipal));
+        ArgumentNullException.ThrowIfNull(claimsPrincipal);
     }
 
     /// <summary>

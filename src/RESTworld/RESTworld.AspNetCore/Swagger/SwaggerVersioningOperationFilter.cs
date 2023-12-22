@@ -68,7 +68,11 @@ public class SwaggerVersioningOperationFilter : IOperationFilter
         // REF: https://github.com/domaindrivendev/Swashbuckle.AspNetCore/pull/413
         foreach (var parameter in operation.Parameters)
         {
-            var description = apiDescription.ParameterDescriptions.First(p => p.Name == parameter.Name);
+            var description = apiDescription.ParameterDescriptions.FirstOrDefault(p => p.Name == parameter.Name);
+
+            // The description may be null if the parameter is not present in the API explorer. e.g. it has been added by a Swagger Filter.
+            if (description is null)
+                continue;
 
             if (parameter.Description == null)
             {

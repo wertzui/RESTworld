@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -47,6 +48,14 @@ public class DatabaseMigrationHostedService<TDbContext> : BackgroundService
                 timeout = context.Database.GetCommandTimeout();
                 context.Database.SetCommandTimeout(MIGRATION_TIMEOUT);
 
+                var pendingMigrations = await context.Database.GetPendingMigrationsAsync(stoppingToken);
+                if (!pendingMigrations.Any())
+                {
+                    _logger.LogInformation($"No pending migrations for {contextName}.");
+                    return;
+                }
+
+                _logger.LogInformation($"The following migrations will be applied to {contextName}:{Environment.NewLine}- {string.Join(Environment.NewLine + "- ", pendingMigrations)}");
                 await context.Database.MigrateAsync(stoppingToken);
             }
             finally

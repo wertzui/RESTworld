@@ -1,6 +1,7 @@
 ﻿using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 using AutoMapper;
+using HAL.AspNetCore.ContentNegotiation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
@@ -25,8 +26,6 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
 using System.Globalization;
 using System.Linq;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace RESTworld.AspNetCore;
 
@@ -62,6 +61,8 @@ public abstract class StartupBase
     {
         if (env.IsDevelopment())
             app.UseDeveloperExceptionPage();
+
+        app.UseAcceptHeaders();
 
         app.UseRequestLocalization(options =>
         {
@@ -201,7 +202,6 @@ public abstract class StartupBase
             .AddHALOData()
             .AddJsonOptions(o =>
             {
-                o.JsonSerializerOptions.Converters.Add(new JsonStringEnumMemberConverter(JsonNamingPolicy.CamelCase));
                 o.JsonSerializerOptions.Converters.Add(new SingleObjectOrCollectionJsonConverterFactory());
             });
 
@@ -220,6 +220,7 @@ public abstract class StartupBase
         services.AddSwaggerGen(options =>
         {
             // Remove the ODataQueryOptions which is used on the GetList endpoint from the schema and the operation.
+            options.OperationFilter<SwaggerODataOperationFilter>();
             options.OperationFilter<SwaggerIgnoreOperationFilter>();
             options.MapType(typeof(ODataQueryOptions<>), () => new());
 

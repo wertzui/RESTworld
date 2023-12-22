@@ -2,6 +2,7 @@
 using ExampleBlog.Business.Services;
 using ExampleBlog.Common.Dtos;
 using HAL.AspNetCore.Abstractions;
+using HAL.AspNetCore.ContentNegotiation;
 using HAL.AspNetCore.Forms.Abstractions;
 using HAL.AspNetCore.OData.Abstractions;
 using HAL.AspNetCore.Utils;
@@ -12,7 +13,6 @@ using RESTworld.AspNetCore.Caching;
 using RESTworld.AspNetCore.Controller;
 using RESTworld.AspNetCore.DependencyInjection;
 using RESTworld.AspNetCore.Errors.Abstractions;
-using RESTworld.AspNetCore.Swagger;
 using System;
 using System.Net.Http;
 using System.Threading;
@@ -50,10 +50,9 @@ public class MyCustomController : RestControllerBase
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Resource<PostWithAuthorDto>>> GetPostWithAuthorAsync(
         long id,
-        [FromHeader, SwaggerIgnore] string accept,
         CancellationToken cancellationToken)
     {
-        var response = await Cache.GetOrCreateAsync(nameof(GetPostWithAuthorAsync) + "_" + id, nameof(CachingOptions.Get), _ => _service.GetPostWithAuthorAsync(id, cancellationToken));
+        var response = await Cache.GetOrCreateWithCurrentUserAsync(nameof(GetPostWithAuthorAsync) + "_" + id, nameof(CachingOptions.Get), _ => _service.GetPostWithAuthorAsync(id, cancellationToken));
 
         if (!response.Succeeded)
             return _errorResultFactory.CreateError(response, "Get");
@@ -62,7 +61,7 @@ public class MyCustomController : RestControllerBase
         if (dto is null)
             return NotFound();
 
-        if (accept.Contains("hal-forms+json"))
+        if (HttpContext.GetAcceptHeaders().AcceptsHalFormsOverHal())
         {
             var result = _formFactory.CreateResourceForEndpoint(dto, HttpMethod.Get, "Post", action: ActionHelper.StripAsyncSuffix(nameof(GetPostWithAuthorAsync)));
 
@@ -75,7 +74,7 @@ public class MyCustomController : RestControllerBase
         }
         else
         {
-            var result = ResourceFactory.CreateForGetEndpoint(dto, null);
+            var result = ResourceFactory.CreateForEndpoint(dto, null);
 
             _linkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
 

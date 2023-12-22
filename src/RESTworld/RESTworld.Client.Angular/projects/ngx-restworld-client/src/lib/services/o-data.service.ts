@@ -58,13 +58,14 @@ export class ODataService {
    * @returns The OData $filter value, or undefined if no filters were applied or no properties were provided.
    */
   public static createFilterFromTableLoadEvent(event: TableLazyLoadEvent, properties?: ReadonlyArray<Property<SimpleValue, string, string>>): string | undefined {
-    if (!event.filters || properties === undefined)
+    const eventFilters = event.filters;
+    if (eventFilters === undefined || properties === undefined)
       return undefined;
 
-    const filter = Object.entries(event.filters)
-      // The type definition is wrong, event.filters has values of type FilterMetadata[] and not FilterMetadata.
-      .map(([propertyName, filter]) => ({ property: ODataService.findPropertyByName(properties, propertyName), filters: filter as FilterMetadata[] }))
-      .map(f => ODataService.createFilterForPropertyArray(f.property, f.filters))
+    const filter = properties
+      .map(property => ({ property, filters: eventFilters[property.name] as (FilterMetadata[] | undefined) }))
+      .filter(f => f.filters !== undefined)
+      .map(f => ODataService.createFilterForPropertyArray(f.property, f.filters!))
       .filter(f => !!f)
       .join(' and ');
 
@@ -85,7 +86,7 @@ export class ODataService {
         .map(m => `${m.field} ${m.order > 0 ? 'asc' : 'desc'}`)
         .join(', ');
     }
-    
+
     if (event.sortField) {
       const order = !event.sortOrder || event.sortOrder > 0 ? 'asc' : 'desc';
       return `${event.sortField} ${order}`;

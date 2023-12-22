@@ -57,14 +57,11 @@ public class RestWorldClient : IRestWorldClient
     /// <exception cref="ArgumentException"></exception>
     public static async Task<RestWorldClient> CreateAsync(IHalClient halClient, ApiUrl apiUrl, ILogger<RestWorldClient> logger, CancellationToken cancellationToken = default)
     {
-        if (halClient is null)
-            throw new ArgumentNullException(nameof(halClient));
+        ArgumentNullException.ThrowIfNull(halClient);
 
-        if (apiUrl is null)
-            throw new ArgumentNullException(nameof(apiUrl));
+        ArgumentNullException.ThrowIfNull(apiUrl);
 
-        if (logger is null)
-            throw new ArgumentNullException(nameof(logger));
+        ArgumentNullException.ThrowIfNull(logger);
 
         if (string.IsNullOrWhiteSpace(apiUrl.Url))
             throw new ArgumentException("The apiUrl.Url must contain a value.", nameof(apiUrl));
