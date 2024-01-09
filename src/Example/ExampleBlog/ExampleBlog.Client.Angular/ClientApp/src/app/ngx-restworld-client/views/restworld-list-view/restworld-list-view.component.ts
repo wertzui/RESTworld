@@ -1,12 +1,12 @@
 import { Component, Input } from '@angular/core';
 import { PagedListResource, ProblemDetails, Resource, ResourceDto, ResourceOfDto, Template } from '@wertzui/ngx-hal-client';
-import * as _ from 'lodash';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { RestWorldClient } from '../../services/restworld-client';
 import { RestWorldClientCollection } from '../../services/restworld-client-collection';
 import { AvatarGenerator } from '../../services/avatar-generator';
 import { Router } from '@angular/router';
 import { ODataParameters } from '../../models/o-data';
+import { debounce } from '../../util/debounce';
 
 /**
  * A component that displays a list of resources from a RESTworld API.
@@ -30,7 +30,7 @@ import { ODataParameters } from '../../models/o-data';
  * </div>
  * </ng-template>
  * </rw-list>
- * 
+ *
  */
 @Component({
   selector: 'rw-list',
@@ -46,7 +46,7 @@ export class RESTworldListViewComponent<TListDto extends ResourceDto & Record<st
    */
   public createButtonMenu?: MenuItem[];
   public isLoading = false;
-  public load = _.debounce(this.loadInternal, 100);
+  public load = debounce(this.loadInternal, 100);
   public resource?: PagedListResource<TListDto>;
 
   private _editLink = '/edit';
@@ -129,6 +129,15 @@ export class RESTworldListViewComponent<TListDto extends ResourceDto & Record<st
   public set rel(value: string) {
     this._rel = value;
     this.load(this._lastParameters);
+  }
+
+  @Input()
+  /**
+   * Sets the initial $orderBy value for the RESTWorld list view component.
+   * @param value The new $orderBy value to set.
+   */
+  public set initialOrderby(value: string | undefined) {
+    this._lastParameters.$orderby = value;
   }
 
   public get searchTemplate(): Template {

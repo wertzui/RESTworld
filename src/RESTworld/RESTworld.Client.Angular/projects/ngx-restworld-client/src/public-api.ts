@@ -36,6 +36,8 @@ export * from './lib/services/restworld-client-collection';
 export * from './lib/services/restworld-client';
 export * from './lib/services/settings.service';
 
+export * from './lib/util/debounce';
+
 export * from './lib/views/restworld-edit-view/restworld-edit-view.component';
 export * from './lib/views/restworld-list-view/restworld-list-view.component';
 

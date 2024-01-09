@@ -8,7 +8,7 @@ import { PropertyTemplateContext } from '../../models/templating';
 import { RestWorldClient } from '../../services/restworld-client';
 import { RestWorldClientCollection } from '../../services/restworld-client-collection';
 import { PropertyWithOptions, PropertyWithImage } from '../../models/special-properties'
-import * as _ from 'lodash';
+import { debounce } from '../../util/debounce';
 
 /**
  * A form element with a label that is automatically created from a property in a form template.
@@ -124,8 +124,8 @@ export class RestWorldInputCollectionComponent<T extends { [K in keyof T]: Abstr
       return [];
 
     return Object.entries(property._templates)
-      .filter(([key, value]) => Number.isInteger(Number.parseInt(key)) && Number.isInteger(Number.parseInt(value.title ?? "")))
-      .map(([, value]) => new NumberTemplate(value));
+      .filter(([key, value]) => Number.isInteger(Number.parseInt(key)) && Number.isInteger(Number.parseInt(value?.title ?? "")))
+      .map(([, value]) => new NumberTemplate(value as TemplateDto));
   }
 
   public addNewItemToCollection(): void {
@@ -313,7 +313,7 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
     this._formControl.setValue(newValue);
   }
 
-  public onOptionsFiltered = _.debounce(this.onOptionsFilteredInternal, 200);
+  public onOptionsFiltered = debounce(this.onOptionsFilteredInternal, 200);
 
   public async onOptionsFilteredInternal(event: { originalEvent: unknown; filter: string | null }) {
     this._loading = true;
@@ -343,7 +343,7 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
     const options = this.property.options;
 
     if (!options.link?.href || !options.selectedValues) {
-      if (!_.isArray(options.inline) || options.inline.length === 0)
+      if (!Array.isArray(options.inline) || options.inline.length === 0)
         options.inline = [];
       return;
     }
@@ -381,14 +381,14 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
 
     const selectedValues = this.getSelectedValues();
     const itemsToKeep = oldInline.filter(i => selectedValues.includes(this.getValue(i as TOptionsItem)));
-    const newItems = _.uniqBy(items.concat(itemsToKeep), i => this.getValue(i as TOptionsItem));
+    const newItems = items.concat(itemsToKeep.filter(i => !items.includes(i)));
 
     return newItems;
   }
 
   private getSelectedValues(): unknown[] {
     const value = this._formControl.value;
-    if (_.isArray(value))
+    if (Array.isArray(value))
       return value
 
     return [value];

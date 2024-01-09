@@ -2,12 +2,12 @@ import { Component, Input, OnInit } from '@angular/core';
 import { RestWorldClientCollection } from '../ngx-restworld-client/services/restworld-client-collection';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { AvatarGenerator } from '../ngx-restworld-client/services/avatar-generator';
-import * as _ from 'lodash';
 import { ODataParameters } from '../ngx-restworld-client/models/o-data';
 import { RestWorldClient } from '../ngx-restworld-client/services/restworld-client';
 import { PostListDto } from './models';
 import { FormService, PagedListResource, ProblemDetails, Property, ResourceOfDto, Template } from '@wertzui/ngx-hal-client';
 import { FormArray, FormGroup } from '@angular/forms';
+import { debounce } from '../ngx-restworld-client/util/debounce';
 
 @Component({
   selector: 'app-posts-for-blog',
@@ -21,7 +21,7 @@ export class PostsForBlogComponent implements OnInit {
   @Input()
   public rel?: string;
 
-  public load = _.debounce(this.loadInternal, 100);
+  public load = debounce(this.loadInternal, 100);
   public isLoading: boolean;
   public searchTemplate: Template;
   public resource: PagedListResource<PostListDto>;

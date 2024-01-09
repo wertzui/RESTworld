@@ -1,6 +1,5 @@
 import { Component, EventEmitter, Input, Optional, Output, ViewChild } from '@angular/core';
 import { FormService, Property, PropertyType, SimpleValue, Template } from '@wertzui/ngx-hal-client';
-import * as _ from 'lodash';
 import { FilterMatchMode, MenuItem, SortMeta } from 'primeng/api';
 import { ODataParameters } from '../../models/o-data';
 import { ODataService } from '../../services/o-data.service';
@@ -21,7 +20,7 @@ enum ColumnFilterType {
  * The edit-template is optional and used to edit the items. For the edit capability, the table must be part of a reactive form.
  * The items are displayed as table rows.
  * The table supports lazy loading, row selection, row menus, and context menus.
- * 
+ *
  * @example
  * <rw-table
  *   [apiName]="apiName"
@@ -49,7 +48,7 @@ enum ColumnFilterType {
  *   (onRowUnselect)="onRowUnselect($event)"
  *   (selectionChange)="selectionChange($event)">
  * </rw-table>
- * 
+ *
  */
 @Component({
   selector: 'rw-table',
@@ -58,8 +57,9 @@ enum ColumnFilterType {
   viewProviders: [{
     provide: ControlContainer,
     deps: [[Optional, FormArrayName]],
-    useFactory: (arrayName: FormArrayName) => arrayName, }]
-  })
+    useFactory: (arrayName: FormArrayName) => arrayName,
+  }]
+})
 export class RestWorldTableComponent<TListItem extends Record<string, any>> {
   /**
    * The name of the api.
@@ -68,7 +68,7 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
   @Input()
   public apiName?: string;
 
-  private _formArray?: FormArray<FormGroup<{[K in keyof TListItem] : AbstractControl<unknown>}>>;
+  private _formArray?: FormArray<FormGroup<{ [K in keyof TListItem]: AbstractControl<unknown> }>>;
 
   /**
    * The form array that contains the form groups for the items.
@@ -77,15 +77,15 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
    * For the editing capability, you must also set the apiName and the editTemplate.
    */
   @Input()
-  public set formArray(value: FormArray<FormGroup<{[K in keyof TListItem] : AbstractControl<unknown>}>> | undefined) {
+  public set formArray(value: FormArray<FormGroup<{ [K in keyof TListItem]: AbstractControl<unknown> }>> | undefined) {
     this._formArray = value;
   }
 
-  public get formArray(): FormArray<FormGroup<{[K in keyof TListItem] : AbstractControl<unknown>}>> | undefined {
-    return this._formArray ?? this._controlContainer?.control as FormArray<FormGroup<{[K in keyof TListItem] : AbstractControl<unknown>}>> | undefined;
+  public get formArray(): FormArray<FormGroup<{ [K in keyof TListItem]: AbstractControl<unknown> }>> | undefined {
+    return this._formArray ?? this._controlContainer?.control as FormArray<FormGroup<{ [K in keyof TListItem]: AbstractControl<unknown> }>> | undefined;
   }
 
-  private _searchTemplate: Template = new Template({properties: []});
+  private _searchTemplate: Template = new Template({ properties: [] });
 
   /**
    * The template that is used to display the table columns and to filter and sort the items.
@@ -93,7 +93,7 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
    * Normally this is returned from the backend as part of the hal-forms resource from a list endpoint.
    */
   @Input({ required: true })
-  public set searchTemplate(value: Template){
+  public set searchTemplate(value: Template) {
     this._searchTemplate = value;
     this._columns = value?.properties.filter(p => p.type !== PropertyType.Hidden) ?? [];
     this.setSortFieldAndSortOrder(value)
@@ -112,7 +112,7 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
    * For the editing capability, you must also set the apiName and the formArray.
    */
   @Input()
-  public set editTemplate(value: Template | undefined){
+  public set editTemplate(value: Template | undefined) {
     this._editTemplate = value;
     this.updateEditProperties();
     this.updateFormArray();
@@ -154,6 +154,13 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
    */
   @Input()
   public rowsPerPageOptions = [10, 25, 50];
+
+  /**
+   * The number of rows per page.
+   * The default is 10.
+   */
+  @Input()
+  public rowsPerPage = 10;
 
   /**
    * An optional menu that is displayed at the top right of the table.
@@ -265,7 +272,7 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
     this.updateCellStyles(this.rows);
   }
 
-  private _cellStyleClasses: Record<string,string>[] = [];
+  private _cellStyleClasses: Record<string, string>[] = [];
   public get cellStyleClasses() {
     return this._cellStyleClasses;
   }
@@ -279,16 +286,39 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
   }
 
   private setSortFieldAndSortOrder(template: Template | undefined) {
-    const orderBy = template?.properties?.find(p => p?.name === "$orderby")?.value;
+    const orderByProperty = template?.properties?.find(p => p?.name === "$orderby");
 
-    if(orderBy === null || orderBy === undefined || typeof orderBy !== 'string')
-    return;
+    // If the template does not contain an $orderby property, we do not set the sort field and sort order
+    if (orderByProperty === null || orderByProperty === undefined || typeof orderByProperty !== 'object')
+      return;
 
-    const [field, order] = orderBy.split(" ");
-    const orderAsNumber = order?.toLowerCase() === "desc" ? -1 : 1;
+    // If the $orderby property is present and the value is not a string, we set the sort field and sort order to null
+    const orderBy = orderByProperty?.value;
+    if (orderBy === null || orderBy === undefined || typeof orderBy !== 'string') {
+      this.multiSortMeta = undefined;
+      return;
+    }
 
-    if (this.multiSortMeta?.length !== 1 || this.multiSortMeta[0].field !== field || this.multiSortMeta[0].order !== orderAsNumber)
-      this.multiSortMeta = [{field: field, order: orderAsNumber}]
+    // If the $orderby property is present and the value is a string, we set the sort field and sort order
+    const sortMetas = orderBy
+      .split(",")
+      .map(o => o.trim())
+      .filter(o => o !== "")
+      .map(o => {
+        const [field, order] = o.split(" ");
+        const orderAsNumber = order?.toLowerCase() === "desc" ? -1 : 1;
+        return { field: field, order: orderAsNumber };
+      });
+
+    // We only set it if it is different from the current value.
+    // Otherwise we would create an infinite loop.
+    if (this.multiSortMeta === undefined ||
+      this.multiSortMeta === null ||
+      !Array.isArray(this.multiSortMeta) ||
+      this.multiSortMeta.length === 0 ||
+      this.multiSortMeta.every(m => m.field !== sortMetas[0].field || m.order !== sortMetas[0].order)) {
+        this.multiSortMeta = sortMetas;
+      }
   }
 
   public multiSortMeta?: SortMeta[] | null;
@@ -304,7 +334,7 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
    * The inline style for the table.
    */
   @Input()
-  public tableStyle?: Record<string,string>;
+  public tableStyle?: Record<string, string>;
 
   /**
    * Indicates whether the table is scrollable.
@@ -358,7 +388,7 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
    */
   @Input()
   public get selection(): TListItem[] {
-    return _.isArray(this._selection) ? this._selection : [this._selection];
+    return Array.isArray(this._selection) ? this._selection : [this._selection];
   }
   public set selection(value: TListItem[]) {
     this._selection = value;
@@ -447,11 +477,11 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
   }
 
   public onSelectionChangeInternal(event: TListItem | TListItem[]): void {
-    this.selectionChange.emit(_.isArray(event) ? event : [event]);
+    this.selectionChange.emit(Array.isArray(event) ? event : [event]);
   }
 
-  public toColumnFilterType(propertyType: PropertyType) : ColumnFilterType{
-    switch(propertyType) {
+  public toColumnFilterType(propertyType: PropertyType): ColumnFilterType {
+    switch (propertyType) {
       case PropertyType.Number:
       case PropertyType.Percent:
       case PropertyType.Currency:
@@ -475,7 +505,20 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
     if (propertyType === PropertyType.Bool)
       return FilterMatchMode.EQUALS;
 
-      return undefined;
+    return undefined;
+  }
+
+  public toMaxFractionDigits(property: Property<SimpleValue, string, string>): number | undefined {
+    switch (property.type) {
+      case PropertyType.Number:
+      case PropertyType.Percent:
+      case PropertyType.Currency:
+        return property.step?.toString().split(".")[1]?.length ?? 2;
+      case PropertyType.Month:
+        return 0;
+      default:
+        return undefined;
+    }
   }
 
   public showInputField(column: Property): boolean {
@@ -488,7 +531,7 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
   }
 
   private updateFormArray(): void {
-    if(!this.isEditable || !this.rows || !this.formArray || !this.editTemplate)
+    if (!this.isEditable || !this.rows || !this.formArray || !this.editTemplate)
       return;
 
     this.formArray.clear();
@@ -508,6 +551,6 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
     if (!this.editTemplate)
       return;
 
-    this._editProperties = Object.fromEntries(this.editTemplate.properties.map(p => [ p.name, p ]));
+    this._editProperties = Object.fromEntries(this.editTemplate.properties.map(p => [p.name, p]));
   }
 }

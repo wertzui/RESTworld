@@ -5,7 +5,7 @@ import { PostWithAuthorComponent } from "./blog-posts/post-with-author.component
 import { HomeComponent } from "./home/home.component";
 import { PostWithAuthorListComponent } from './blog-posts/post-with-autor-list.component';
 import { PostsForBlogComponent } from "./posts-for-blog/posts-for-blog.component";
-import { Route } from "@angular/router";
+import { Route, RouterLink } from "@angular/router";
 
 export const AppRoutes: Route[] = [
   {
@@ -41,7 +41,8 @@ export const AppMenu: MenuItem[] = [
     items: [
       {
         label: "Blogs",
-        routerLink: ['list', 'ExampleBlog', 'MyEx:Blog']
+        routerLink: ['list', 'ExampleBlog', 'MyEx:Blog'],
+        queryParams: { initialOrderby: 'id desc' }
       },
       {
         label: "Authors",

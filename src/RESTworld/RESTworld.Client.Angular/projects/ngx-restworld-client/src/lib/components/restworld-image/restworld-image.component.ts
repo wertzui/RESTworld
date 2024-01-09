@@ -5,7 +5,6 @@ import { FileUpload } from 'primeng/fileupload';
 import { Dialog } from 'primeng/dialog'
 import { Property } from '@wertzui/ngx-hal-client';
 import { RestWorldImage } from '../../models/restworld-image'
-import * as _ from 'lodash';
 
 /**
  * A component for displaying and editing images with various options such as cropping, resizing, and aspect ratio.
@@ -33,7 +32,7 @@ export class RestWorldImageComponent implements ControlValueAccessor, OnInit, Af
   }
 
   public get accept(): string | undefined {
-    return this.property.restWorldImage.accept ?? _.isString(this.property.placeholder) ? this.property.placeholder as string : "image/*";
+    return this.property.restWorldImage.accept ?? typeof this.property.placeholder === "string" ? this.property.placeholder as string : "image/*";
   }
 
   public get fileName() {

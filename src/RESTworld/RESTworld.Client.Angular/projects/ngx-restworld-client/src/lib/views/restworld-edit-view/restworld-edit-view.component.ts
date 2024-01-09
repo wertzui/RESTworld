@@ -123,7 +123,7 @@ export class RESTworldEditViewComponent {
     else {
       this._resource = response.body;
       const templates = await this.getAllTemplates(this._resource);
-      this._templates = Object.values(templates);
+      this._templates = Object.values(templates).filter((t: Template | undefined): t is Template => t !== undefined);
     }
 
     this.isLoading = false;

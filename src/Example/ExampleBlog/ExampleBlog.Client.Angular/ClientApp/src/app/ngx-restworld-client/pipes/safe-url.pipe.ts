@@ -1,6 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
-import * as _ from 'lodash';
 
 /**
  * A pipe that sanitizes a URL and returns a `SafeUrl` object.
@@ -20,7 +19,7 @@ export class SafeUrlPipe implements PipeTransform {
    * @throws An error if the given URL is not a string.
    */
   transform(url: unknown): SafeUrl {
-    if (!_.isString(url))
+    if (typeof url !== 'string')
       throw new Error(`The given url '${url}' is not a string.`)
 
     return this._domSanitizer.bypassSecurityTrustResourceUrl(url);

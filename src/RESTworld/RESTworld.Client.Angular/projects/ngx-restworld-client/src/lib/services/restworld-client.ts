@@ -1,5 +1,4 @@
 import { HttpHeaders, HttpResponse } from '@angular/common/http';
-import * as _ from "lodash";
 import { FormsResource, HalClient, Link, PagedListResource, PagedListResourceDto, ProblemDetails, Resource, ResourceDto, ResourceFactory, Template, Templates } from "@wertzui/ngx-hal-client";
 import { LinkNames } from "../constants/link-names";
 import { RestWorldOptions } from "../models/restworld-options";
@@ -249,7 +248,7 @@ export class RestWorldClient {
   }
 
   public async getSingle(rel: string, id: number, headers?: HttpHeaders, curie?: string): Promise<HttpResponse<Resource | ProblemDetails>> {
-    if (!_.isNumber(id))
+    if (!Number.isInteger(id))
       throw new Error('When supplying a rel, an ID must be supplied too.');
 
     const link = this.getLinkFromHome(rel, LinkNames.get, curie);

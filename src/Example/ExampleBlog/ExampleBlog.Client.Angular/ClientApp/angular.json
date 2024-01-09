@@ -62,14 +62,14 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "ExampleBlog.Client.Angular:build"
+            "buildTarget": "ExampleBlog.Client.Angular:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "ExampleBlog.Client.Angular:build:production"
+              "buildTarget": "ExampleBlog.Client.Angular:build:production"
             },
             "dev": {
-              "browserTarget": "ExampleBlog.Client.Angular:build:dev"
+              "buildTarget": "ExampleBlog.Client.Angular:build:dev"
             }
           },
           "defaultConfiguration": "dev"
@@ -77,7 +77,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "ExampleBlog.Client.Angular:build"
+            "buildTarget": "ExampleBlog.Client.Angular:build"
           }
         },
         "test": {
