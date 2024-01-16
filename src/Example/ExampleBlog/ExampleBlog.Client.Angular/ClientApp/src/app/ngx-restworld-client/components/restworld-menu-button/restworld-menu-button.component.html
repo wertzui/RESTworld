@@ -8,7 +8,7 @@
     [styleClass]="item.styleClass!"
     [pTooltip]="item.tooltip!"
     [tooltipPosition]="item.tooltipPosition!"
-    (onClick)="onClick(item)"
+    (onClick)="onClick($event, item)"
     [class.ml-2]="i > 0">
   </p-button>
 
@@ -23,7 +23,7 @@
     [styleClass]="item.styleClass!"
     [pTooltip]="item.tooltip!"
     [tooltipPosition]="item.tooltipPosition!"
-    (onClick)="onClick(item)"
+    (onClick)="onClick($event, item)"
     [class.ml-2]="i > 0">
   </p-splitButton>
 </ng-container>
