@@ -35,6 +35,10 @@ public class TestService : ServiceBase, ICrudServiceBase<ConcurrentEntityBase, T
 
         // Otherwise these will be really small
         _fixture.Customize<TimeOnly>(composer => composer.FromFactory<DateTime>(TimeOnly.FromDateTime));
+
+        _fixture.Customize<TestDto>(composer => composer
+            .With(t => t.BlogIds, () => Enumerable.Repeat(0, Random.Shared.Next(1, 4)).Select(i => Random.Shared.NextInt64(1, 3)).Distinct().ToList())
+            .With(t => t.PostId, () => Random.Shared.NextInt64(1, 250)));
     }
 
     public Task<ServiceResponse<TestDto>> CreateAsync(TestDto dto, CancellationToken cancellationToken)

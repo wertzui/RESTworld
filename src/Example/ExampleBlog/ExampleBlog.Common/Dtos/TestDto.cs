@@ -25,6 +25,7 @@ public class TestDto : ConcurrentDtoBase
     public TestEnum MyEnum { get; set; }
     [Editable(false)]
     public TestEnum MyReadonlyEnum { get; set; }
+    public TestFlagsEnum MyFlagsEnum { get; set; }
     public string? MyNullableString { get; set; }
     public int? MyNullableInt { get; set; }
     public char? MyNullableChar { get; set; }
@@ -76,4 +77,12 @@ public enum TestEnum
     TestA,
     TestB,
     TestC
+}
+
+[Flags]
+public enum TestFlagsEnum
+{
+    TestFlagA,
+    TestFlagB,
+    TestFlagC
 }

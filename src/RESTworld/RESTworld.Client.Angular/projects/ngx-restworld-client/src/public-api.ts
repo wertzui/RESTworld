@@ -5,6 +5,7 @@
 export * from './lib/constants/link-names';
 
 export * from './lib/components/restworld-avatar/restworld-avatar.component';
+export * from './lib/components/restworld-displays/restworld-displays';
 export * from './lib/components/restworld-file/restworld-file.component';
 export * from './lib/components/restworld-form/restworld-form.component';
 export * from './lib/components/restworld-id-navigation/restworld-id-navigation.component';

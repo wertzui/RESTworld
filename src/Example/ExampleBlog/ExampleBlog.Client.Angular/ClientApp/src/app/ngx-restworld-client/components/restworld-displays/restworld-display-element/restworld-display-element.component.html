@@ -1,0 +1,4 @@
+<div class="grid field" *ngIf="property.type !== PropertyType.Hidden">
+    <rw-label [property]="property" class="col-12 md:col-2 flex align-items-center"></rw-label>
+    <rw-display [property]="property" [value]="value" [apiName]="apiName" class="col-12 md:col-10"></rw-display>
+</div>

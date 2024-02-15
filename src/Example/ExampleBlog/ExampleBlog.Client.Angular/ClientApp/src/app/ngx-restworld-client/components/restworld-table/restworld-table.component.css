@@ -5,3 +5,16 @@
 a.p-button {
     text-decoration: none;
 }
+
+::ng-deep rw-label.md\:col-2 {
+  width: 100%;
+  font-weight: 600;
+}
+
+::ng-deep .p-d-flex {
+  display: flex;
+}
+
+::ng-deep .p-ai-center {
+  align-items: center;
+}

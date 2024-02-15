@@ -1,6 +1,6 @@
 {
   "name": "@wertzui/ngx-restworld-client",
-  "version": "13.1.1",
+  "version": "13.2.0",
   "author": "wertzui",
   "description": "An Angular client to consume a RESTworld service that serves application/hal+json or hal-forms+json.",
   "publishConfig": {
@@ -38,7 +38,7 @@
     "@angular/platform-server": "^17",
     "@angular/router": "^17",
     "@fortawesome/fontawesome-free": "^6.5.1",
-    "@wertzui/ngx-hal-client": "^11",
+    "@wertzui/ngx-hal-client": "^11.1.0",
     "cldr-dates-modern": "^44.1.0",
     "cldr-numbers-modern": "^44.1.0",
     "clr-format": "^0.5.2",
@@ -50,8 +50,5 @@
     "rxjs": "^7.8.1",
     "uri-templates-es": "^1.0.0",
     "zone.js": "^0.14.2"
-  },
-  "devDependencies": {
-    "@types/uri-templates": "0.1.34"
   }
 }

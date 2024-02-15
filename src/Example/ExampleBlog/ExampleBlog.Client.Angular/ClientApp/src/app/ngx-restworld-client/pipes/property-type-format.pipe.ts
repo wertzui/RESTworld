@@ -54,8 +54,8 @@ export class PropertyTypeFormatPipe implements PipeTransform {
   public constructor(private readonly _clrFormatPipe: ClrFormatPipe) {
   }
 
-  public transform(value: any, type: PropertyType): string {
-    const format = PropertyTypeFormatPipe._typeToFormatMap.get(type) ?? "{0}";
+  public transform(value: any, type?: PropertyType): string {
+    const format = type === undefined ? "{0}" : (PropertyTypeFormatPipe._typeToFormatMap.get(type) ?? "{0}");
     return this._clrFormatPipe.transform(value, format);
   }
 }

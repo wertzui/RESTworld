@@ -13,7 +13,7 @@ import { debounce } from '../../util/debounce';
 /**
  * A form element with a label that is automatically created from a property in a form template.
  * This may also be a complex object or a collection in which case multiple and nested input elements may be rendered.
- * If you want a form element without a label, use RestWorldFormInput <rw-form-input>.
+ * If you want a form element without a label, use RestWorldFormInput <rw-input>.
  */
 @Component({
   selector: 'rw-form-element',
@@ -357,8 +357,6 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
     if (!options.link?.href)
       throw new Error('The property does not have a link href.');
 
-    //this._lastFilterValue = eventFilter;
-
     const templatedUri = options.link.href;
     const response = await this.getClient().getListByUri<TOptionsItem>(templatedUri, { $filter: filter, $top: 10 });
     if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body) {
@@ -521,7 +519,7 @@ export class RestWorldInputSimpleComponent<TProperty extends Property<SimpleValu
 }
 
 /**
- * A collection of rw-form-elemtns automatically created from a template.
+ * A collection of rw-form-elements automatically created from a template.
  * Does not have any buttons on its own.
  * If you want buttons, use RestWorldForm <rw-form>.
  */

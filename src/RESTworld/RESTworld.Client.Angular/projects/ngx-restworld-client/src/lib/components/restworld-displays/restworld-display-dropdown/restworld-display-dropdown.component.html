@@ -1,0 +1,6 @@
+<!-- <ng-template #defaultInputOptions let-property="property" let-selectedValues="selectedValues"> -->
+<ng-container *ngFor="let value of selectedValues; last as last;">
+    <span [pTooltip]="getTooltip(getOptionItem(value))">{{getLabel(getOptionItem(value))}}</span>{{last ? "" : ", "}}
+</ng-container>
+<!-- </ng-template>
+<ng-container *ngTemplateOutlet="inputOptionsRef ?? defaultInputOptions; context: { property: property, selectedValues: selectedValues }"></ng-container> -->

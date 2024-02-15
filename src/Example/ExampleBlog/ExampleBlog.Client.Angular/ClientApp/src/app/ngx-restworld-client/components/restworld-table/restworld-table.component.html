@@ -48,22 +48,7 @@
             <rw-input [apiName]="apiName!" [property]="editProperties[col.name]"></rw-input>
           </ng-container>
           <ng-template #textField>
-            <ng-container *ngSwitchCase="PropertyType.Text">
-                <rw-avatar *ngIf="col.name === 'createdBy' || col.name === 'lastChangedBy'" [user]="entity[col.name]"></rw-avatar>
-                <span *ngIf="col.name !== 'createdBy' && col.name !== 'lastChangedBy'">{{entity[col.name]}}</span>
-            </ng-container>
-            <span *ngSwitchCase="PropertyType.Number" class="flex justify-content-end">{{entity[col.name] | propertyTypeFormat:col.type}}</span>
-            <span *ngSwitchCase="PropertyType.Percent" class="flex justify-content-end">{{entity[col.name] | propertyTypeFormat:col.type}}</span>
-            <span *ngSwitchCase="PropertyType.Currency" class="flex justify-content-end">{{entity[col.name] | propertyTypeFormat:col.type}}</span>
-            <span *ngSwitchCase="PropertyType.Bool" class="flex justify-content-center"><p-triStateCheckbox [(ngModel)]="entity[col.name]" [readonly]="true" [disabled]="true"></p-triStateCheckbox></span>
-            <span *ngSwitchCase="PropertyType.Date" [pTooltip]="entity[col.name]">{{entity[col.name] | propertyTypeFormat:col.type}}</span>
-            <span *ngSwitchCase="PropertyType.Time" [pTooltip]="entity[col.name]">{{entity[col.name] | propertyTypeFormat:col.type}}</span>
-            <span *ngSwitchCase="PropertyType.Duration" [pTooltip]="entity[col.name]">{{entity[col.name] | propertyTypeFormat:col.type}}</span>
-            <span *ngSwitchCase="PropertyType.DatetimeLocal" [pTooltip]="entity[col.name]">{{entity[col.name] | propertyTypeFormat:PropertyType.Date}}</span>
-            <span *ngSwitchCase="PropertyType.DatetimeOffset" [pTooltip]="entity[col.name]">{{entity[col.name] | propertyTypeFormat:PropertyType.Date}}</span>
-            <span *ngSwitchCase="PropertyType.Collection" class="flex justify-content-end"><p *ngFor="let arrayElement of entity[col.name]">{{arrayElement | json}}</p></span>
-            <span *ngSwitchCase="PropertyType.Object" class="flex justify-content-end">{{entity[col.name] | json}}</span>
-            <span *ngSwitchDefault [pTooltip]="entity[col.name]">{{entity[col.name] | propertyTypeFormat:col.type}}</span>
+            <rw-display [property]="col" [value]="entity[col.name]" [apiName]="apiName!"></rw-display>
           </ng-template>
         </td>
         <td *ngIf="showMenuColumn">

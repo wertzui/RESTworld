@@ -51,6 +51,7 @@ import { RestWorldTableComponent } from './components/restworld-table/restworld-
 import { RestWorldMenuButtonComponent } from './components/restworld-menu-button/restworld-menu-button.component';
 import { RestWorldIdNavigationComponent } from './components/restworld-id-navigation/restworld-id-navigation.component';
 import { RestWorldFormElementComponent, RestWorldInputCollectionComponent, RestWorldInputComponent, RestWorldInputDropdownComponent, RestWorldInputObjectComponent, RestWorldInputSimpleComponent, RestWorldInputTemplateComponent } from './components/restworld-inputs/restworld-inputs';
+import { RestWorldDisplayElementComponent, RestWorldDisplayCollectionComponent, RestWorldDisplayComponent, RestWorldDisplayDropdownComponent, RestWorldDisplayObjectComponent, RestWorldDisplaySimpleComponent, RestWorldDisplayTemplateComponent } from './components/restworld-displays/restworld-displays';
 import { HalClientModule } from '@wertzui/ngx-hal-client';
 import { SearchIcon } from 'primeng/icons/search';
 import { SpinnerIcon } from 'primeng/icons/spinner';
@@ -68,6 +69,13 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
     PropertyTypeFormatPipe,
     RestWorldAvatarComponent,
     RestWorldAvatarComponent,
+    RestWorldDisplayCollectionComponent,
+    RestWorldDisplayComponent,
+    RestWorldDisplayDropdownComponent,
+    RestWorldDisplayElementComponent,
+    RestWorldDisplayObjectComponent,
+    RestWorldDisplaySimpleComponent,
+    RestWorldDisplayTemplateComponent,
     RESTworldEditViewComponent,
     RestWorldFileComponent,
     RestWorldFormComponent,
@@ -131,6 +139,13 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
     AsPipe,
     ClrFormatPipe,
     RestWorldAvatarComponent,
+    RestWorldDisplayCollectionComponent,
+    RestWorldDisplayComponent,
+    RestWorldDisplayDropdownComponent,
+    RestWorldDisplayElementComponent,
+    RestWorldDisplayObjectComponent,
+    RestWorldDisplaySimpleComponent,
+    RestWorldDisplayTemplateComponent,
     RESTworldEditViewComponent,
     RestWorldFileComponent,
     RestWorldFormComponent,
