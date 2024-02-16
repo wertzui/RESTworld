@@ -164,17 +164,15 @@ export class RestWorldDisplayDropdownComponent<TProperty extends Property<Simple
     @Input({ required: true })
     apiName!: string;
 
-    private _selectedValues: ExtractGenericOptionsSelectedValuesType<TProperty>[] = [];
+    private _selectedValues?: ExtractGenericOptionsSelectedValuesType<TProperty>[];
     /**
      * The values to display. If not set, the values of the property options will be used.
     */
     @Input()
     public set selectedValues(value: ExtractGenericOptionsSelectedValuesType<TProperty>[] | ExtractGenericOptionsSelectedValuesType<TProperty> | undefined) {
-        if (value === undefined)
-            this._selectedValues = [];
-        else if (Array.isArray(value))
+        if (Array.isArray(value))
             this._selectedValues = value as ExtractGenericOptionsSelectedValuesType<TProperty>[];
-        else
+        else if (value !== undefined && value !== null)
             this._selectedValues = [value];
     }
 
