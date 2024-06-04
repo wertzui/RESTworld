@@ -379,13 +379,17 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
 
     const selectedValues = this.getSelectedValues();
     const itemsToKeep = oldInline.filter(i => selectedValues.includes(this.getValue(i as TOptionsItem)));
-    const newItems = items.concat(itemsToKeep.filter(i => !items.includes(i)));
+    const newValues = items.map(i => this.getValue(i));
+    const newItems = items.concat(itemsToKeep.filter(i => !newValues.includes(this.getValue(i))));
 
     return newItems;
   }
 
   private getSelectedValues(): unknown[] {
     const value = this._formControl.value;
+    if (value === undefined || value === null)
+      return [];
+
     if (Array.isArray(value))
       return value
 

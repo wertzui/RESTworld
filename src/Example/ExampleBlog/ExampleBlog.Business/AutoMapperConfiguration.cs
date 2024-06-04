@@ -4,9 +4,9 @@ using ExampleBlog.Data.Models;
 
 namespace ExampleBlog.Business;
 
-public class AutoMapperConfiguration
+public static class AutoMapperConfiguration
 {
-    public void ConfigureAutomapper(IMapperConfigurationExpression config)
+    public static void ConfigureAutomapper(IMapperConfigurationExpression config)
     {
         config
             .CreateMap<Blog, BlogDto>()

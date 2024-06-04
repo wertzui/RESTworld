@@ -1,8 +1,10 @@
 ﻿using HAL.Client.Net;
 using HAL.Common;
+using HAL.Common.Forms;
 using Microsoft.Extensions.Logging;
 using RESTworld.Common.Client;
 using RESTworld.Common.Dtos;
+using System.Text.Json;
 
 namespace RESTworld.Client.Net;
 
@@ -43,6 +45,8 @@ public class RestWorldClient : IRestWorldClient
         }
 
         _defaultCurie = GetDefaultCurie();
+
+        logger.LogInformation("Created a new RestWorldClient for {ApiName} at {ApiUrl} with version {Version}.", apiUrl.Name, apiUrl.Url, version);
     }
 
     /// <summary>
@@ -58,9 +62,7 @@ public class RestWorldClient : IRestWorldClient
     public static async Task<RestWorldClient> CreateAsync(IHalClient halClient, ApiUrl apiUrl, ILogger<RestWorldClient> logger, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(halClient);
-
         ArgumentNullException.ThrowIfNull(apiUrl);
-
         ArgumentNullException.ThrowIfNull(logger);
 
         if (string.IsNullOrWhiteSpace(apiUrl.Url))
@@ -69,7 +71,9 @@ public class RestWorldClient : IRestWorldClient
         var response = await halClient.GetAsync<HomeDto>(new Uri(apiUrl.Url), version: apiUrl.Version?.ToString(), cancellationToken: cancellationToken);
         if (!response.Succeeded || response.Resource is null)
         {
-            var ex = new HttpRequestException($"Unable to get the home resource from {apiUrl.Url} with version {apiUrl.Version}. Response was {response}", null, response.StatusCode);
+            var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+            jsonOptions.WriteIndented = true;
+            var ex = new HttpRequestException($"Unable to get the home resource from {apiUrl.Url} with version {apiUrl.Version}. Response was:{Environment.NewLine}{JsonSerializer.Serialize(response, jsonOptions)}", null, response.StatusCode);
             ex.Data["Response"] = response;
             throw ex;
         }
@@ -78,18 +82,38 @@ public class RestWorldClient : IRestWorldClient
     }
 
     /// <inheritdoc/>
-    public Task<HalResponse<TResponse>> DeleteAsync<TResponse>(
+    public Task<HalResponse<Resource<TState>>> DeleteAsync<TState>(
         Uri requestUri, string? eTag = null, IDictionary<string, object>? uriParameters = null,
         IDictionary<string, IEnumerable<string>>? headers = null, string? version = null,
         CancellationToken cancellationToken = default)
-        => _halClient.DeleteAsync<TResponse>(requestUri, eTag, uriParameters, headers, version, cancellationToken);
+        => _halClient.DeleteAsync<TState>(requestUri, eTag, uriParameters, headers, version, cancellationToken);
 
     /// <inheritdoc/>
-    public Task<HalResponse> DeleteAsync(
+    public Task<HalResponse<Resource>> DeleteAsync(
         Uri requestUri, string? eTag = null, IDictionary<string, object>? uriParameters = null,
         IDictionary<string, IEnumerable<string>>? headers = null, string? version = null,
         CancellationToken cancellationToken = default)
         => _halClient.DeleteAsync(requestUri, eTag, uriParameters, headers, version, cancellationToken);
+
+    /// <inheritdoc/>
+    public Task<HalResponse<FormsResource<TState>>> DeleteFormAsync<TState>(
+        Uri requestUri,
+        string? eTag = null,
+        IDictionary<string, object>? uriParameters = null,
+        IDictionary<string, IEnumerable<string>>? headers = null,
+        string? version = null,
+        CancellationToken cancellationToken = default)
+        => _halClient.DeleteFormAsync<TState>(requestUri, eTag, uriParameters, headers, version, cancellationToken);
+
+    /// <inheritdoc/>
+    public Task<HalResponse<FormsResource>> DeleteFormAsync(
+        Uri requestUri,
+        string? eTag = null,
+        IDictionary<string, object>? uriParameters = null,
+        IDictionary<string, IEnumerable<string>>? headers = null,
+        string? version = null,
+        CancellationToken cancellationToken = default)
+        => _halClient.DeleteFormAsync(requestUri, eTag, uriParameters, headers, version, cancellationToken);
 
     /// <inheritdoc/>
     public IDictionary<string, ICollection<Link>> GetAllLinksFromHome()
@@ -98,7 +122,55 @@ public class RestWorldClient : IRestWorldClient
     }
 
     /// <inheritdoc/>
-    public async Task<HalResponse<Page>> GetAllPagesListAsync(
+    public async Task<HalResponse<FormsResource<Page>>> GetAllPagesFormListAsync(
+        string rel,
+        string? curie = null,
+        IDictionary<string, object>? uriParameters = null,
+        IDictionary<string, IEnumerable<string>>? headers = null,
+        string? version = null,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await GetFormListAsync(rel, curie, uriParameters, headers, version, cancellationToken);
+
+        if (!response.Succeeded || response.Resource is null)
+            return response;
+
+        if (!response.Succeeded || response.Resource is null || response.Resource.Embedded is null || !response.Resource.Embedded.TryGetValue(Common.Constants.ListItems, out var items))
+            return response;
+
+        items ??= new List<Resource>();
+
+        var lastResponse = response;
+
+        while (lastResponse.Resource!.TryFindLink("next", out var nextLink))
+        {
+            // Get the next response
+            lastResponse = await nextLink!.FollowGetFormAsync<Page>(_halClient, null, headers, version, cancellationToken);
+
+            if (!lastResponse.Succeeded)
+                return lastResponse;
+
+            // Combine the embedded items
+            if (lastResponse.Resource?.Embedded is not null && lastResponse.Resource.Embedded.TryGetValue(Common.Constants.ListItems, out var lastItems) && lastItems is not null)
+            {
+                foreach (var embeddedItemResource in lastItems)
+                {
+                    items.Add(embeddedItemResource);
+                }
+            }
+        }
+
+        // We combined everything, so there is just one big page
+        if (response.Resource.State is not null)
+            response.Resource.State.TotalPages = 1;
+
+        response.Resource.Links!.Remove("next");
+
+        return response;
+    }
+
+    /// <inheritdoc/>
+    public async Task<HalResponse<Resource<Page>>> GetAllPagesListAsync(
         string rel,
         string? curie = default,
         IDictionary<string, object>? uriParameters = default,
@@ -146,18 +218,56 @@ public class RestWorldClient : IRestWorldClient
     }
 
     /// <inheritdoc/>
-    public Task<HalResponse<TResponse>> GetAsync<TResponse>(
-        Uri requestUri, IDictionary<string, object>? uriParameters = null,
-        IDictionary<string, IEnumerable<string>>? headers = null, string? version = null,
+    public Task<HalResponse<Resource<TState>>> GetAsync<TState>(
+        Uri requestUri,
+        IDictionary<string, object>? uriParameters = null,
+        IDictionary<string, IEnumerable<string>>? headers = null,
+        string? version = null,
         CancellationToken cancellationToken = default)
-        => _halClient.GetAsync<TResponse>(requestUri, uriParameters, headers, version, cancellationToken);
+        => _halClient.GetAsync<TState>(requestUri, uriParameters, headers, version, cancellationToken);
 
     /// <inheritdoc/>
-    public Task<HalResponse> GetAsync(
-        Uri requestUri, IDictionary<string, object>? uriParameters = null,
-        IDictionary<string, IEnumerable<string>>? headers = null, string? version = null,
+    public Task<HalResponse<Resource>> GetAsync(
+        Uri requestUri,
+        IDictionary<string, object>? uriParameters = null,
+        IDictionary<string, IEnumerable<string>>? headers = null,
+        string? version = null,
         CancellationToken cancellationToken = default)
         => _halClient.GetAsync(requestUri, uriParameters, headers, version, cancellationToken);
+
+    /// <inheritdoc/>
+    public Task<HalResponse<FormsResource<TState>>> GetFormAsync<TState>(
+        Uri requestUri,
+        IDictionary<string, object>? uriParameters = null,
+        IDictionary<string, IEnumerable<string>>? headers = null,
+        string? version = null,
+        CancellationToken cancellationToken = default)
+        => _halClient.GetFormAsync<TState>(requestUri, uriParameters, headers, version, cancellationToken);
+
+    /// <inheritdoc/>
+    public Task<HalResponse<FormsResource>> GetFormAsync(
+        Uri requestUri,
+        IDictionary<string, object>? uriParameters = null,
+        IDictionary<string, IEnumerable<string>>? headers = null,
+        string? version = null,
+        CancellationToken cancellationToken = default)
+        => _halClient.GetFormAsync(requestUri, uriParameters, headers, version, cancellationToken);
+
+    /// <inheritdoc/>
+    public async Task<HalResponse<FormsResource<Page>>> GetFormListAsync(
+        string rel,
+        string? curie = null,
+        IDictionary<string, object>? uriParameters = null,
+        IDictionary<string, IEnumerable<string>>? headers = null,
+        string? version = null,
+        CancellationToken cancellationToken = default)
+    {
+        var link = GetLinkFromHome(rel, Common.Constants.GetListLinkName, curie)
+            ?? throw new ArgumentException($"Unable to find a link with the rel {rel} and the curie {curie ?? "null"}", nameof(rel));
+        var response = await link.FollowGetFormAsync<Page>(_halClient, uriParameters, headers, version, cancellationToken);
+
+        return response;
+    }
 
     /// <inheritdoc/>
     public Link? GetLinkFromHome(string rel, string? name = default, string? curie = default)
@@ -178,7 +288,7 @@ public class RestWorldClient : IRestWorldClient
     }
 
     /// <inheritdoc/>
-    public async Task<HalResponse<Page>> GetListAsync(
+    public async Task<HalResponse<Resource<Page>>> GetListAsync(
         string rel,
         string? curie = default,
         IDictionary<string, object>? uriParameters = default,
@@ -194,42 +304,86 @@ public class RestWorldClient : IRestWorldClient
     }
 
     /// <inheritdoc/>
-    public Task<HalResponse<TResponse>> PostAsync<TRequest, TResponse>(
+    public Task<HalResponse<Resource<TState>>> PostAsync<TRequest, TState>(
         Uri requestUri, TRequest? content = default, IDictionary<string, object>? uriParameters = null,
         IDictionary<string, IEnumerable<string>>? headers = null, string? version = null,
         CancellationToken cancellationToken = default)
-        => _halClient.PostAsync<TRequest, TResponse>(requestUri, content, uriParameters, headers, version, cancellationToken);
+        => _halClient.PostAsync<TRequest, TState>(requestUri, content, uriParameters, headers, version, cancellationToken);
 
     /// <inheritdoc/>
-    public Task<HalResponse> PostAsync<TRequest>(
+    public Task<HalResponse<Resource>> PostAsync<TRequest>(
         Uri requestUri, TRequest? content = default, IDictionary<string, object>? uriParameters = null,
         IDictionary<string, IEnumerable<string>>? headers = null, string? version = null,
         CancellationToken cancellationToken = default)
         => _halClient.PostAsync(requestUri, content, uriParameters, headers, version, cancellationToken);
 
     /// <inheritdoc/>
-    public Task<HalResponse<TResponse>> PutAsync<TRequest, TResponse>(
+    public Task<HalResponse<FormsResource<TState>>> PostFormAsync<TRequest, TState>(
+        Uri requestUri,
+        TRequest? content = default,
+        IDictionary<string, object>? uriParameters = null,
+        IDictionary<string, IEnumerable<string>>? headers = null,
+        string? version = null,
+        CancellationToken cancellationToken = default)
+     => _halClient.PostFormAsync<TRequest, TState>(requestUri, content, uriParameters, headers, version, cancellationToken);
+
+    /// <inheritdoc/>
+    public Task<HalResponse<FormsResource>> PostFormAsync<TRequest>(
+        Uri requestUri,
+        TRequest? content = default,
+        IDictionary<string, object>? uriParameters = null,
+        IDictionary<string, IEnumerable<string>>? headers = null,
+        string? version = null,
+        CancellationToken cancellationToken = default)
+        => _halClient.PostFormAsync(requestUri, content, uriParameters, headers, version, cancellationToken);
+
+    /// <inheritdoc/>
+    public Task<HalResponse<Resource<TState>>> PutAsync<TRequest, TState>(
         Uri requestUri, TRequest? content = default, IDictionary<string, object>? uriParameters = null,
         IDictionary<string, IEnumerable<string>>? headers = null, string? version = null,
         CancellationToken cancellationToken = default)
-        => _halClient.PutAsync<TRequest, TResponse>(requestUri, content, uriParameters, headers, version, cancellationToken);
+        => _halClient.PutAsync<TRequest, TState>(requestUri, content, uriParameters, headers, version, cancellationToken);
 
     /// <inheritdoc/>
-    public Task<HalResponse> PutAsync<TRequest>(
+    public Task<HalResponse<Resource>> PutAsync<TRequest>(
         Uri requestUri, TRequest? content = default, IDictionary<string, object>? uriParameters = null,
         IDictionary<string, IEnumerable<string>>? headers = null, string? version = null,
         CancellationToken cancellationToken = default)
         => _halClient.PutAsync(requestUri, content, uriParameters, headers, version, cancellationToken);
 
     /// <inheritdoc/>
-    public Task<HalResponse<TResponse>> SendAsync<TRequest, TResponse>(
-        HttpMethod method, Uri requestUri, TRequest? content = default,
-        IDictionary<string, object>? uriParameters = null, IDictionary<string, IEnumerable<string>>? headers = null,
-        string? version = null, CancellationToken cancellationToken = default)
-        => _halClient.SendAsync<TRequest, TResponse>(method, requestUri, content, uriParameters, headers, version, cancellationToken);
+    public Task<HalResponse<FormsResource<TState>>> PutFormAsync<TRequest, TState>(
+        Uri requestUri,
+        TRequest? content = default,
+        IDictionary<string, object>? uriParameters = null,
+        IDictionary<string, IEnumerable<string>>? headers = null,
+        string? version = null,
+        CancellationToken cancellationToken = default)
+        => _halClient.PutFormAsync<TRequest, TState>(requestUri, content, uriParameters, headers, version, cancellationToken);
 
     /// <inheritdoc/>
-    public Task<HalResponse> SendAsync<TRequest>(
+    public Task<HalResponse<FormsResource>> PutFormAsync<TRequest>(
+        Uri requestUri,
+        TRequest? content = default,
+        IDictionary<string, object>? uriParameters = null,
+        IDictionary<string, IEnumerable<string>>? headers = null,
+        string? version = null,
+        CancellationToken cancellationToken = default)
+        => _halClient.PutFormAsync(requestUri, content, uriParameters, headers, version, cancellationToken);
+
+    /// <inheritdoc/>
+    public Task<HalResponse<Resource<TState>>> SendAsync<TRequest, TState>(
+        HttpMethod method,
+        Uri requestUri,
+        TRequest? content = default,
+        IDictionary<string, object>? uriParameters = null,
+        IDictionary<string, IEnumerable<string>>? headers = null,
+        string? version = null,
+        CancellationToken cancellationToken = default)
+        => _halClient.SendAsync<TRequest, TState>(method, requestUri, content, uriParameters, headers, version, cancellationToken);
+
+    /// <inheritdoc/>
+    public Task<HalResponse<Resource>> SendAsync<TRequest>(
         HttpMethod method,
         Uri requestUri,
         TRequest? content = default,
@@ -240,12 +394,51 @@ public class RestWorldClient : IRestWorldClient
         => _halClient.SendAsync(method, requestUri, content, uriParameters, headers, version, cancellationToken);
 
     /// <inheritdoc/>
-    public Task<HttpResponseMessage> SendHttpRequestAsync<TRequest>(HttpMethod method, Uri requestUri, TRequest? content = default, IDictionary<string, object>? uriParameters = null, IDictionary<string, IEnumerable<string>>? headers = null, string? version = null, HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead, CancellationToken cancellationToken = default)
-        => _halClient.SendHttpRequestAsync(method, requestUri, content, uriParameters, headers, version, completionOption, cancellationToken);
+    public Task<HalResponse<FormsResource<TState>>> SendFormAsync<TRequest, TState>(
+        HttpMethod method,
+        Uri requestUri,
+        TRequest? content = default,
+        IDictionary<string, object>? uriParameters = null,
+        IDictionary<string, IEnumerable<string>>? headers = null,
+        string? version = null,
+        CancellationToken cancellationToken = default)
+        => _halClient.SendFormAsync<TRequest, TState>(method, requestUri, content, uriParameters, headers, version, cancellationToken);
 
     /// <inheritdoc/>
-    public Task<HttpResponseMessage> SendHttpRequestAsync<TRequest>(HttpRequestMessage request, TRequest? content = default, IDictionary<string, object>? uriParameters = null, IDictionary<string, IEnumerable<string>>? headers = null, string? version = null, HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead, CancellationToken cancellationToken = default)
-        => _halClient.SendHttpRequestAsync(request, content, uriParameters, headers, version, completionOption, cancellationToken);
+    public Task<HalResponse<FormsResource>> SendFormAsync<TRequest>(
+        HttpMethod method,
+        Uri requestUri,
+        TRequest? content = default,
+        IDictionary<string, object>? uriParameters = null,
+        IDictionary<string, IEnumerable<string>>? headers = null,
+        string? version = null,
+        CancellationToken cancellationToken = default)
+        => _halClient.SendFormAsync(method, requestUri, content, uriParameters, headers, version, cancellationToken);
+
+    /// <inheritdoc/>
+    public Task<HttpResponseMessage> SendHttpRequestAsync<TRequest>(
+        HttpMethod method,
+        Uri requestUri,
+        Accepts accepts,
+        TRequest? content = default,
+        IDictionary<string, object>? uriParameters = default,
+        IDictionary<string, IEnumerable<string>>? headers = default,
+        string? version = default,
+        HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead,
+        CancellationToken cancellationToken = default)
+        => _halClient.SendHttpRequestAsync(method, requestUri, accepts, content, uriParameters, headers, version, completionOption, cancellationToken);
+
+    /// <inheritdoc/>
+    public Task<HttpResponseMessage> SendHttpRequestAsync<TRequest>(
+        HttpRequestMessage request,
+        Accepts accepts,
+        TRequest? content = default,
+        IDictionary<string, object>? uriParameters = null,
+        IDictionary<string, IEnumerable<string>>? headers = null,
+        string? version = null,
+        HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead,
+        CancellationToken cancellationToken = default)
+        => _halClient.SendHttpRequestAsync(request, accepts, content, uriParameters, headers, version, completionOption, cancellationToken);
 
     private string? GetDefaultCurie()
     {

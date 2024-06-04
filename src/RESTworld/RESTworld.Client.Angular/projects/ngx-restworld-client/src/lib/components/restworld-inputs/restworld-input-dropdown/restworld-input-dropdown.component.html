@@ -61,10 +61,10 @@
     <ng-template let-value pTemplate="selectedItems">
       <p-chip
         *ngFor="let item of value; let i = index"
-        [pTooltip]="getTooltip(getItemByValue(item))"
-        [label]="getLabel(getItemByValue(item))"
+        [pTooltip]="getTooltip(item)"
+        [label]="getLabel(item)"
         [removable]="true"
-        (onRemove)="removeByValue(item)"
+        (onRemove)="removeByValue(getValue(item))"
       >
       </p-chip>
     </ng-template>

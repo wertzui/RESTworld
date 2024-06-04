@@ -1,5 +1,6 @@
 ﻿using HAL.Client.Net;
 using HAL.Common;
+using HAL.Common.Forms;
 
 namespace RESTworld.Client.Net;
 
@@ -15,14 +16,12 @@ public interface IRestWorldClient : IHalClient
     IDictionary<string, ICollection<Link>> GetAllLinksFromHome();
 
     /// <summary>
-    /// Gets all pages from a list resource. Depending on the total count and page size, this
-    /// may take some time.
+    /// Gets all pages from a list resource. Depending on the total count and page size, this may
+    /// take some time.
     /// </summary>
     /// <param name="rel">The relation of the link.</param>
     /// <param name="curie">An optional curie. If none is given, the default curie is used.</param>
-    /// <param name="uriParameters">
-    /// Optional parameters to fill into the URI, like $filter or $orderby.
-    /// </param>
+    /// <param name="uriParameters">Optional parameters to fill into the URI, like $filter or $orderby.</param>
     /// <param name="headers">
     /// Optional headers to include. If you are calling a private endpoint, you probably need to
     /// include an Authorization header here.
@@ -30,7 +29,23 @@ public interface IRestWorldClient : IHalClient
     /// <param name="version">An optional version to include in the Accept header.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>All items as if they where in a single page.</returns>
-    Task<HalResponse<Page>> GetAllPagesListAsync(string rel, string? curie = null, IDictionary<string, object>? uriParameters = null, IDictionary<string, IEnumerable<string>>? headers = null, string? version = null, CancellationToken cancellationToken = default);
+    Task<HalResponse<Resource<Page>>> GetAllPagesListAsync(string rel, string? curie = null, IDictionary<string, object>? uriParameters = null, IDictionary<string, IEnumerable<string>>? headers = null, string? version = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all pages from a list forms resource. Depending on the total count and page size, this may
+    /// take some time.
+    /// </summary>
+    /// <param name="rel">The relation of the link.</param>
+    /// <param name="curie">An optional curie. If none is given, the default curie is used.</param>
+    /// <param name="uriParameters">Optional parameters to fill into the URI, like $filter or $orderby.</param>
+    /// <param name="headers">
+    /// Optional headers to include. If you are calling a private endpoint, you probably need to
+    /// include an Authorization header here.
+    /// </param>
+    /// <param name="version">An optional version to include in the Accept header.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>All items as if they where in a single page including form templates from the first page.</returns>
+    Task<HalResponse<FormsResource<Page>>> GetAllPagesFormListAsync(string rel, string? curie = null, IDictionary<string, object>? uriParameters = null, IDictionary<string, IEnumerable<string>>? headers = null, string? version = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets the first link from the home resource that matches the given parameters.
@@ -52,7 +67,8 @@ public interface IRestWorldClient : IHalClient
     IEnumerable<Link> GetLinksFromHome(string rel, string? curie = null);
 
     /// <summary>
-    /// Gets one page from the list resource. If no <paramref name="uriParameters"/> for $skip are given then this will be the first page.
+    /// Gets one page from the list resource. If no <paramref name="uriParameters"/> for $skip are
+    /// given then this will be the first page.
     /// </summary>
     /// <param name="rel">The relation of the link.</param>
     /// <param name="curie">An optional curie. If none is given, the default curie is used.</param>
@@ -66,5 +82,23 @@ public interface IRestWorldClient : IHalClient
     /// <param name="version">An optional version to include in the Accept header.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The specified page from the list resource.</returns>
-    Task<HalResponse<Page>> GetListAsync(string rel, string? curie = null, IDictionary<string, object>? uriParameters = null, IDictionary<string, IEnumerable<string>>? headers = null, string? version = null, CancellationToken cancellationToken = default);
+    Task<HalResponse<Resource<Page>>> GetListAsync(string rel, string? curie = null, IDictionary<string, object>? uriParameters = null, IDictionary<string, IEnumerable<string>>? headers = null, string? version = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets one page from the list form resource. If no <paramref name="uriParameters"/> for $skip are
+    /// given then this will be the first page.
+    /// </summary>
+    /// <param name="rel">The relation of the link.</param>
+    /// <param name="curie">An optional curie. If none is given, the default curie is used.</param>
+    /// <param name="uriParameters">
+    /// Optional parameters to fill into the URI, like $filter, $orderby, $skip and $take.
+    /// </param>
+    /// <param name="headers">
+    /// Optional headers to include. If you are calling a private endpoint, you probably need to
+    /// include an Authorization header here.
+    /// </param>
+    /// <param name="version">An optional version to include in the Accept header.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The specified page from the list resource including the form templates.</returns>
+    Task<HalResponse<FormsResource<Page>>> GetFormListAsync(string rel, string? curie = null, IDictionary<string, object>? uriParameters = null, IDictionary<string, IEnumerable<string>>? headers = null, string? version = null, CancellationToken cancellationToken = default);
 }

@@ -1,13 +1,13 @@
 ﻿using HAL.AspNetCore.Abstractions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using RESTworld.AspNetCore.Errors.Abstractions;
+using RESTworld.AspNetCore.Results.Errors.Abstractions;
 using RESTworld.AspNetCore.Validation.Abstractions;
 using RESTworld.Business.Models;
 using System;
 using System.Net;
 
-namespace RESTworld.AspNetCore.Errors;
+namespace RESTworld.AspNetCore.Results.Errors;
 
 /// <inheritdoc/>
 public class ErrorResultFactory : IErrorResultFactory
@@ -32,31 +32,31 @@ public class ErrorResultFactory : IErrorResultFactory
     }
 
     /// <inheritdoc/>
-    public ObjectResult CreateError<T>(ServiceResponse<T> response, string action)
+    public ObjectResult CreateError<T>(ServiceResponse<T> response, string action, string? controller = null, object? routeValues = null)
     {
         ArgumentNullException.ThrowIfNull(response);
 
         if (!response.ValidationSucceded)
-            return CreateError(_problemDetailsFactory.CreateValidationProblemDetails(GetHttpContext(), response.ValidationResults, (int)response.Status, response.Status.ToString()), action);
+            return CreateError(_problemDetailsFactory.CreateValidationProblemDetails(GetHttpContext(), response.ValidationResults, (int)response.Status, response.Status.ToString()), action, controller, routeValues);
 
-        return CreateError((int)response.Status, response.ProblemDetails, action);
+        return CreateError((int)response.Status, response.ProblemDetails, action, controller, routeValues);
     }
 
     /// <inheritdoc/>
-    public ObjectResult CreateError(int status, string? problemDetails, string action)
+    public ObjectResult CreateError(int status, string? problemDetails, string action, string? controller = null, object? routeValues = null)
     {
-        var result = CreateError(new ProblemDetails { Title = Enum.GetName(typeof(HttpStatusCode), status), Status = status, Detail = problemDetails }, action);
+        var result = CreateError(new ProblemDetails { Title = Enum.GetName(typeof(HttpStatusCode), status), Status = status, Detail = problemDetails }, action, controller, routeValues);
 
         return result;
     }
 
     /// <inheritdoc/>
-    public ObjectResult CreateError<TProblemDetails>(TProblemDetails problemDetails, string action)
+    public ObjectResult CreateError<TProblemDetails>(TProblemDetails problemDetails, string action, string? controller = null, object? routeValues = null)
         where TProblemDetails : ProblemDetails
     {
         ArgumentNullException.ThrowIfNull(problemDetails);
 
-        var resource = _resourceFactory.CreateForEndpoint(problemDetails, action);
+        var resource = _resourceFactory.CreateForEndpoint(problemDetails, action, controller, routeValues);
 
         var result = new ObjectResult(resource) { StatusCode = problemDetails.Status };
         return result;

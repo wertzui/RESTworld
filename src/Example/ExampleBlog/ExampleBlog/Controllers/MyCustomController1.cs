@@ -1,7 +1,6 @@
 ﻿using Asp.Versioning;
 using ExampleBlog.Business.Services;
 using ExampleBlog.Common.Dtos;
-using HAL.AspNetCore.Abstractions;
 using HAL.AspNetCore.OData.Abstractions;
 using HAL.Common;
 using Microsoft.AspNetCore.Http;
@@ -9,7 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 using RESTworld.AspNetCore.Caching;
 using RESTworld.AspNetCore.Controller;
 using RESTworld.AspNetCore.DependencyInjection;
-using RESTworld.AspNetCore.Errors.Abstractions;
+using RESTworld.AspNetCore.Links.Abstractions;
+using RESTworld.AspNetCore.Results.Errors.Abstractions;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,13 +21,13 @@ namespace ExampleBlog.Controllers;
 public class MyCustomController1 : RestControllerBase
 {
     private readonly MyCustomService _service;
-    private readonly ILinkFactory _linkFactory;
+    private readonly ICrudLinkFactory _linkFactory;
     private readonly IErrorResultFactory _errorResultFactory;
 
     public MyCustomController1(
         MyCustomService service,
         IODataResourceFactory resourceFactory,
-        ILinkFactory linkFactory,
+        ICrudLinkFactory linkFactory,
         IErrorResultFactory errorResultFactory,
         ICacheHelper cache)
         : base(resourceFactory, cache)
@@ -59,7 +59,7 @@ public class MyCustomController1 : RestControllerBase
             result.AddLink(link);
         }
 
-        Url.AddSaveAndDeleteLinks(result);
+        _linkFactory.AddSaveAndDeleteLinks(result);
 
         return Ok(result);
     }

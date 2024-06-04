@@ -1,8 +1,11 @@
-using RESTworld.AspNetCore;
+using Microsoft.AspNetCore.Builder;
 
-namespace ExampleBlog.Client.Angular;
+var builder = WebApplication.CreateBuilder(args);
 
-public static class Program
-{
-    public static void Main(string[] args) => Program<Startup>.Main(args);
-}
+var rwBuilder = builder.AddRestWorldWithSpaFrontend();
+
+var app = rwBuilder.Build();
+
+app.UseRestWorldWithSpaFrontend();
+
+await app.RunAsync();

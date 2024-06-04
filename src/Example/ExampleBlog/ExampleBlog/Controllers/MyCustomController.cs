@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 using RESTworld.AspNetCore.Caching;
 using RESTworld.AspNetCore.Controller;
 using RESTworld.AspNetCore.DependencyInjection;
-using RESTworld.AspNetCore.Errors.Abstractions;
+using RESTworld.AspNetCore.Results.Errors.Abstractions;
 using System;
 using System.Net.Http;
 using System.Threading;

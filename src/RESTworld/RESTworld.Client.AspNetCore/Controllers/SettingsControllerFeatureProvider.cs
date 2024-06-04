@@ -15,7 +15,14 @@ public class SettingsControllerFeatureProvider : IApplicationFeatureProvider<Con
     /// <inheritdoc/>
     public void PopulateFeature(IEnumerable<ApplicationPart> parts, ControllerFeature feature)
     {
+
         // Resolve controller name to avoid duplicates.
+        var controllerName = nameof(SettingsController);
+
+        // If a controller with the same name already exists, do not register the Settings controller from RESTworld.
+        if (feature.Controllers.Any(c => c.Name == controllerName))
+            return;
+
         var type = typeof(SettingsController).GetTypeInfo();
         var controllerModel = new ControllerModel(type, type.GetCustomAttributes().ToList());
 
@@ -23,12 +30,6 @@ public class SettingsControllerFeatureProvider : IApplicationFeatureProvider<Con
         {
             controllerModelConvention.Apply(controllerModel);
         }
-
-        var controllerName = nameof(SettingsController);
-
-        // If a controller with the same name already exists, do not register the Settings controller from RESTworld.
-        if (feature.Controllers.Any(c => c.Name == controllerName))
-            return;
 
         // Add generic controller.
         feature.Controllers.Add(type);

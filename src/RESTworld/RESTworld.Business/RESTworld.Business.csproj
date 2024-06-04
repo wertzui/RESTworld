@@ -23,8 +23,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="12.0.1" />
-    <PackageReference Include="EntityFrameworkCore.Parallel" Version="4.0.1" />
+    <PackageReference Include="AutoMapper" Version="13.0.1" />
+    <PackageReference Include="EntityFrameworkCore.Parallel" Version="4.0.4" />
   </ItemGroup>
 
 

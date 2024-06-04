@@ -1,5 +1,4 @@
 ﻿using HAL.AspNetCore.Abstractions;
-using HAL.AspNetCore.ContentNegotiation;
 using HAL.AspNetCore.OData.Abstractions;
 using HAL.AspNetCore.Utils;
 using HAL.Common;
@@ -9,7 +8,8 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using RESTworld.AspNetCore.Caching;
 using RESTworld.AspNetCore.DependencyInjection;
-using RESTworld.AspNetCore.Errors.Abstractions;
+using RESTworld.AspNetCore.Results.Abstractions;
+using RESTworld.AspNetCore.Results.Errors.Abstractions;
 using RESTworld.AspNetCore.Serialization;
 using RESTworld.Business.Models;
 using RESTworld.Business.Services.Abstractions;
@@ -18,10 +18,8 @@ using RESTworld.EntityFrameworkCore.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Net.Http;
 using System.Reflection;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -79,6 +77,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     /// </param>
     /// <param name="linkFactory"></param>
     /// <param name="formFactory">The form factory which created HAL-Form resources.</param>
+    /// <param name="resultFactory">The factory to create results.</param>
     /// <param name="errorResultFactory">The factory to create error results.</param>
     /// <param name="cache">The cache for service responses.</param>
     /// <param name="options">
@@ -89,12 +88,14 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
         IODataResourceFactory resourceFactory,
         ILinkFactory linkFactory,
         IODataFormFactory formFactory,
+        IResultFactory resultFactory,
         IErrorResultFactory errorResultFactory,
         ICacheHelper cache,
         IOptions<RestWorldOptions> options)
-        : base(service, resourceFactory, linkFactory, formFactory, errorResultFactory, cache, options)
+        : base(service, resourceFactory, linkFactory, formFactory, resultFactory, errorResultFactory, cache, options)
     {
         _crudService = service ?? throw new ArgumentNullException(nameof(service));
+        ReturnsReadOnlyFormsResponses = false;
     }
 
     /// <summary>
@@ -140,14 +141,14 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
             }
         }
 
-        var response = await _crudService.DeleteAsync(id, timestampBytes, cancellationToken);
+        var serviceResponse = await _crudService.DeleteAsync(id, timestampBytes, cancellationToken);
 
-        if (!response.Succeeded)
-            return ErrorResultFactory.CreateError(response, "Delete");
+        if (serviceResponse.Succeeded)
+            Cache.RemoveGetWithCurrentUser<ServiceResponse<TGetFullDto>>(id);
 
-        Cache.RemoveGetWithCurrentUser<ServiceResponse<TGetFullDto>>(id);
+        var result = ResultFactory.CreateEmptyResultBasedOnOutcome(serviceResponse);
 
-        return Ok();
+        return result;
 
         static bool TryParseEncodedTimestamp(string timestamp, [NotNullWhen(true)] out byte[]? timestampBytes)
         {
@@ -174,9 +175,13 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     [ProducesResponseType(200)]
     public virtual Task<ActionResult<Resource<TCreateDto>>> NewAsync(CancellationToken cancellationToken)
     {
-        var result = CreateEmpty();
+        var dto = CreateEmpty();
 
-        return Task.FromResult<ActionResult<Resource<TCreateDto>>>(Json(result, _createNewResourceJsonSettings));
+        var resource = ResultFactory.CreateResource(dto, HttpMethod.Post, ReturnsReadOnlyFormsResponses, ActionHelper.StripAsyncSuffix(nameof(NewAsync)), routeValues: new { });
+
+        var result = new JsonResult(resource, _createNewResourceJsonSettings);
+
+        return Task.FromResult<ActionResult<Resource<TCreateDto>>>(result);
     }
 
     /// <summary>
@@ -257,7 +262,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
 
         if (constructor is not null)
         {
-            var dto = (TCreateDto)constructor.Invoke(Array.Empty<object>());
+            var dto = (TCreateDto)constructor.Invoke([]);
             var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty);
             foreach (var property in properties)
             {
@@ -274,84 +279,6 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     }
 
     /// <summary>
-    /// Creates an Microsoft.AspNetCore.Mvc.OkObjectResult object that produces an Microsoft.AspNetCore.Http.StatusCodes.Status200OK
-    /// response.
-    /// </summary>
-    /// <param name="dto">The DTO to return.</param>
-    /// <param name="jsonSerializerOptions">The options for the JSON serializer. Normally these are <see cref="_createNewResourceJsonSettings"/>.</param>
-    /// <returns>The created Microsoft.AspNetCore.Mvc.OkObjectResult for the response.</returns>
-    protected virtual JsonResult Json(TCreateDto? dto, JsonSerializerOptions jsonSerializerOptions)
-        => new(CreateNewResource(dto), jsonSerializerOptions);
-
-    /// <summary>
-    /// Creates an Microsoft.AspNetCore.Mvc.CreatedResult object that produces an Microsoft.AspNetCore.Http.StatusCodes.Status201Created
-    /// response.
-    /// </summary>
-    /// <param name="dto">The DTO to return.</param>
-    /// <param name="method">The method to use when submitting the form.</param>
-    /// <returns>The created Microsoft.AspNetCore.Mvc.CreatedResult for the response.</returns>
-    protected virtual CreatedResult Created(TGetFullDto dto, HttpMethod method)
-        => Created(Url.ActionLink(ActionHelper.StripAsyncSuffix(nameof(GetAsync)), values: new { id = dto.Id }) ?? throw new UriFormatException("Unable to generate the CreatedAt URI"), CreateResource(dto, method));
-
-    /// <summary>
-    /// Creates the result which is either a HAL resource, or a HAL-Forms resource based on the
-    /// accept header.
-    /// </summary>
-    /// <param name="dto">The DTO to return.</param>
-    /// <returns>Either a HAL resource, or a HAL-Forms resource</returns>
-    protected virtual Resource CreateNewResource(TCreateDto? dto)
-    {
-        if (HttpContext.GetAcceptHeaders().AcceptsHalFormsOverHal())
-        {
-            var result = FormFactory.CreateResourceForEndpoint(dto, HttpMethod.Post, "Create", action: HttpMethod.Post.Method);
-
-            return result;
-        }
-        else
-        {
-            var result = ResourceFactory.CreateForEndpoint(dto, "New");
-
-            var saveHref = Url.ActionLink(HttpMethod.Post.Method);
-            if (saveHref is null)
-                throw new UriFormatException("Unable to generate the 'save' link.");
-
-            result
-                .AddLink("save", new Link(saveHref) { Name = HttpMethod.Post.Method });
-
-            LinkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
-
-            return result;
-        }
-    }
-
-    /// <summary>
-    /// Creates the result which is either a HAL resource, or a HAL-Forms resource based on the
-    /// accept header.
-    /// </summary>
-    /// <param name="dto">The DTO to return.</param>
-    /// <param name="method">The method to use when submitting the form.</param>
-    /// <returns>Either a HAL resource, or a HAL-Forms resource</returns>
-    protected override Resource CreateResource(TGetFullDto dto, HttpMethod method)
-    {
-        if (HttpContext.GetAcceptHeaders().AcceptsHalFormsOverHal())
-        {
-            var result = FormFactory.CreateResourceForEndpoint(dto, method, "Edit", action: method.Method, routeValues: new { id = dto.Id });
-            Url.AddDeleteLink(result);
-
-            return result;
-        }
-        else
-        {
-            var result = ResourceFactory.CreateForEndpoint(dto, routeValues: new { id = dto.Id });
-
-            LinkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
-            Url.AddSaveAndDeleteLinks(result);
-
-            return result;
-        }
-    }
-
-    /// <summary>
     /// Creates the given new resources. This method is called when
     /// <see cref="PostAsync(SingleObjectOrCollection{TCreateDto}, CancellationToken)"/> is called with a collection.
     /// </summary>
@@ -360,38 +287,11 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     /// <returns>The full resources as stored in the database.</returns>
     protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PostMultipleAsync(IReadOnlyCollection<TCreateDto> dtos, CancellationToken cancellationToken)
     {
-        var response = await _crudService.CreateAsync(dtos, cancellationToken);
+        var serviceResponse = await _crudService.CreateAsync(dtos, cancellationToken);
 
-        if (!response.Succeeded)
-            return ErrorResultFactory.CreateError(response, "Post");
+        var response = ResultFactory.CreateCreatedCollectionResultBasedOnOutcome(serviceResponse, ReturnsReadOnlyFormsResponses);
 
-        foreach (var dto in response.ResponseObject)
-        {
-            Cache.RemoveGetWithCurrentUser<ServiceResponse<TGetFullDto>>(dto.Id);
-        }
-
-        var responseObject = response.ResponseObject ?? Array.Empty<TGetFullDto>();
-
-        var resource = ResourceFactory.CreateForListEndpoint(responseObject, _ => "items", m => m.Id);
-
-        if (resource.Embedded is not null)
-        {
-            foreach (var embedded in resource.Embedded.SelectMany(e => e.Value).Cast<Resource<TGetFullDto>>())
-            {
-                Url.AddDeleteLink(embedded);
-            }
-        }
-
-        var filter = CreateODataFilterForIds(responseObject.Select(d => d.Id));
-        var url = Url.ActionLink() + "?$filter=" + filter;
-
-        var selfLink = resource.Links?["self"].FirstOrDefault();
-        if (selfLink is null)
-            throw new Exception($"The result of {nameof(PostMultipleAsync)} does not have a 'self' link.");
-
-        selfLink.Href = url;
-
-        return Created(url, resource);
+        return response;
     }
 
     /// <summary>
@@ -405,15 +305,9 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     {
         var response = await _crudService.CreateAsync(dto, cancellationToken);
 
-        if (!response.Succeeded)
-            return ErrorResultFactory.CreateError(response, "Post");
+        var result = ResultFactory.CreateCreatedResultBasedOnOutcome(response, ReturnsReadOnlyFormsResponses);
 
-        if (response.ResponseObject is null)
-            return ErrorResultFactory.CreateError(StatusCodes.Status500InternalServerError, "The service did return null for the created object.", "Post");
-
-        Cache.RemoveGetWithCurrentUser<ServiceResponse<TGetFullDto>>(response.ResponseObject.Id);
-
-        return Created(response.ResponseObject, HttpMethod.Put);
+        return result;
     }
 
     /// <summary>
@@ -428,36 +322,17 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
         var request = new UpdateMultipleRequest<TUpdateDto, TEntity>(dtos, x => x);
         var response = await _crudService.UpdateAsync(request, cancellationToken);
 
-        if (!response.Succeeded)
-            return ErrorResultFactory.CreateError(response, "Put");
-
-        foreach (var dto in response.ResponseObject)
+        if (response.Succeeded)
         {
-            Cache.RemoveGetWithCurrentUser<ServiceResponse<TGetFullDto>>(dto.Id);
-        }
-
-        var responseObject = response.ResponseObject ?? Array.Empty<TGetFullDto>();
-
-        var resource = ResourceFactory.CreateForListEndpoint(responseObject, _ => "items", m => m.Id);
-
-        if (resource.Embedded is not null)
-        {
-            foreach (var embedded in resource.Embedded.SelectMany(e => e.Value).Cast<Resource<TGetFullDto>>())
+            foreach (var dto in response.ResponseObject)
             {
-                Url.AddDeleteLink(embedded);
+                Cache.RemoveGetWithCurrentUser<ServiceResponse<TGetFullDto>>(dto.Id);
             }
         }
 
-        var filter = CreateODataFilterForIds(responseObject.Select(d => d.Id));
-        var url = Url.ActionLink() + "?$filter=" + filter;
+        var result = ResultFactory.CreateOkCollectionResultBasedOnOutcome(response, ReturnsReadOnlyFormsResponses);
 
-        var selfLink = resource.Links?["self"].FirstOrDefault();
-        if (selfLink is null)
-            throw new Exception($"The result of {nameof(PutMultipleAsync)} does not have a 'self' link.");
-
-        selfLink.Href = url;
-
-        return Ok(resource);
+        return result;
     }
 
     /// <summary>
@@ -471,54 +346,11 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     {
         var response = await _crudService.UpdateAsync(dto, cancellationToken);
 
-        if (!response.Succeeded || response.ResponseObject is null)
-            return ErrorResultFactory.CreateError(response, "Put");
+        if (response.Succeeded)
+            Cache.RemoveGetWithCurrentUser<ServiceResponse<TGetFullDto>>(response.ResponseObject.Id);
 
-        Cache.RemoveGetWithCurrentUser<ServiceResponse<TGetFullDto>>(response.ResponseObject.Id);
+        var result = ResultFactory.CreateOkResultBasedOnOutcome(response, ReturnsReadOnlyFormsResponses);
 
-        return Ok(response.ResponseObject, HttpMethod.Put);
-    }
-
-    private static void AppendRange(StringBuilder sb, long inclusiveStart, long inclusiveEnd)
-    {
-        if (sb.Length != 0)
-            sb.Append(" or ");
-
-        sb.Append('(');
-
-        if (inclusiveStart == inclusiveEnd)
-            sb.AppendFormat("id eq {0}", inclusiveStart);
-        else
-            sb.AppendFormat("id ge {0} and id le {1}", inclusiveStart, inclusiveEnd);
-
-        sb.Append(')');
-    }
-
-    private static string CreateODataFilterForIds(IEnumerable<long> ids)
-    {
-        using var enumerator = ids.OrderBy(i => i).GetEnumerator();
-        enumerator.MoveNext();
-        var currentStart = enumerator.Current;
-        var currentEnd = currentStart;
-
-        var sb = new StringBuilder();
-
-        while (enumerator.MoveNext())
-        {
-            if (enumerator.Current == currentEnd + 1)
-            {
-                currentEnd++;
-            }
-            else
-            {
-                AppendRange(sb, currentStart, currentEnd);
-
-                currentStart = enumerator.Current;
-                currentEnd = currentStart;
-            }
-        }
-        AppendRange(sb, currentStart, currentEnd);
-
-        return sb.ToString();
+        return result;
     }
 }

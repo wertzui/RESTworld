@@ -57,6 +57,7 @@ import { SearchIcon } from 'primeng/icons/search';
 import { SpinnerIcon } from 'primeng/icons/spinner';
 import { ClrFormatPipe } from './pipes/clr-format.pipe';
 import { PropertyTypeFormatPipe } from './pipes/property-type-format.pipe';
+import { OpenTelemetryService } from './services/opentelemetry.service';
 
 export function initializeSettings(settingsService: SettingsService): () => Promise<void> {
   return async () => await settingsService.ensureInitialized();
@@ -170,6 +171,7 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
     ClrFormatPipe,
     ConfirmationService,
     MessageService,
+    OpenTelemetryService,
     RestWorldClientCollection,
     {
       provide: APP_INITIALIZER,

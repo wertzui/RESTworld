@@ -12,10 +12,4 @@
     <ProjectReference Include="..\ExampleBlog.Business\ExampleBlog.Business.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0" />
-    <PackageReference Include="Microsoft.ApplicationInsights.Kubernetes" Version="6.1.1" />
-    <PackageReference Include="Serilog.Sinks.ApplicationInsights" Version="4.0.0" />
-  </ItemGroup>
-
 </Project>

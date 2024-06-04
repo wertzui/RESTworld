@@ -82,7 +82,7 @@ public enum TestEnum
 [Flags]
 public enum TestFlagsEnum
 {
-    TestFlagA,
-    TestFlagB,
-    TestFlagC
+    TestFlagA = 1,
+    TestFlagB = 2,
+    TestFlagC = 4
 }

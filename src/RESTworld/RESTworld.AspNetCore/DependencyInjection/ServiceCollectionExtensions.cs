@@ -3,8 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.OData.ModelBuilder;
-using RESTworld.AspNetCore;
 using RESTworld.AspNetCore.Authorization;
 using RESTworld.AspNetCore.Forms;
 using RESTworld.AspNetCore.Health;
@@ -14,7 +12,6 @@ using RESTworld.Business.Services.Abstractions;
 using RESTworld.EntityFrameworkCore.Models;
 using System;
 using System.Linq;
-using System.Reflection;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -100,7 +97,11 @@ public static class ServiceCollectionExtensions
     /// <param name="optionsAction">An optional custom configuration. Is none is supplied, these are applied by default: <see cref="SqlServerDbContextOptionsExtensions.UseSqlServer(DbContextOptionsBuilder, Action{SqlServerDbContextOptionsBuilder}?)"/>, <see cref="DbContextOptionsBuilder.EnableDetailedErrors(bool)"/>, <see cref="DbContextOptionsBuilder.EnableServiceProviderCaching(bool)"/></param>
     /// <param name="sqlServerOptionsAction">An optional custom configuration for the SQL server connection. If none is supplied, <see cref="SqlServerDbContextOptionsBuilder.EnableRetryOnFailure()"/> is added as default. If an <paramref name="optionsAction"/> is provided, that this is not called by default.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    public static IServiceCollection AddDbContextFactoryWithDefaults<TContext>(this IServiceCollection services, IConfiguration configuration, Action<DbContextOptionsBuilder>? optionsAction = null, Action<SqlServerDbContextOptionsBuilder>? sqlServerOptionsAction = null)
+    public static IServiceCollection AddDbContextFactoryWithDefaults<TContext>(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        Action<DbContextOptionsBuilder>? optionsAction = null,
+        Action<SqlServerDbContextOptionsBuilder>? sqlServerOptionsAction = null)
                 where TContext : DbContext
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -131,12 +132,12 @@ public static class ServiceCollectionExtensions
 
             if (!o.Registrations.Any(r => r.Name == migrationCheckName))
             {
-                o.Registrations.Add(new HealthCheckRegistration(migrationCheckName, ActivatorUtilities.GetServiceOrCreateInstance<DbContextFactoryMigrationHealthCheck<TContext>>, null, new[] { "startup" }));
+                o.Registrations.Add(new HealthCheckRegistration(migrationCheckName, ActivatorUtilities.GetServiceOrCreateInstance<DbContextFactoryMigrationHealthCheck<TContext>>, null, ["startup"]));
             }
 
             if (!o.Registrations.Any(r => r.Name == connectionCheckname))
             {
-                o.Registrations.Add(new HealthCheckRegistration(connectionCheckname, ActivatorUtilities.GetServiceOrCreateInstance<DbContextFactoryConnectionHealthCheck<TContext>>, null, new[] { "ready" }));
+                o.Registrations.Add(new HealthCheckRegistration(connectionCheckname, ActivatorUtilities.GetServiceOrCreateInstance<DbContextFactoryConnectionHealthCheck<TContext>>, null, ["ready"]));
             }
         });
 
@@ -152,29 +153,6 @@ public static class ServiceCollectionExtensions
     /// <returns>A reference to this instance after the operation has completed.</returns>
     public static IServiceCollection AddForeignKeyForFormTo<TListDto>(this IServiceCollection services)
         => services.AddSingleton<IForeignKeyLinkFactory, CrudForeignKeyLinkFactory<TListDto>>();
-
-    /// <summary>
-    /// Adds an ODataModel for a <see cref="DbContext"/>. This is required for List operations
-    /// to work.
-    /// </summary>
-    /// <typeparam name="TContext">The type of the <see cref="DbContext"/>.</typeparam>
-    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
-    /// <returns>A reference to this instance after the operation has completed.</returns>
-    public static IServiceCollection AddODataModelForDbContext<TContext>(this IServiceCollection services)
-    {
-        var dbSetType = typeof(DbSet<>);
-        var entityTypes = typeof(TContext).GetProperties(BindingFlags.Instance | BindingFlags.Public)
-            .Select(p => p.PropertyType)
-            .Where(t => t.IsGenericType && t.GetGenericTypeDefinition() == dbSetType)
-            .Select(t => t.GenericTypeArguments[0]);
-
-        foreach (var entityType in entityTypes)
-        {
-            StartupBase.ODataModelBuilder.AddEntitySet(entityType.Name, new EntityTypeConfiguration(StartupBase.ODataModelBuilder, entityType));
-        }
-
-        return services;
-    }
 
     /// <summary>
     /// Adds and <see cref="IUserAccessor"/> to the services which can be used to retrieve the

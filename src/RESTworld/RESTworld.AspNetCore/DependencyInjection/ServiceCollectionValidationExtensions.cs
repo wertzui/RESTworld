@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc.Infrastructure;
-using RESTworld.AspNetCore.Errors;
-using RESTworld.AspNetCore.Errors.Abstractions;
+using RESTworld.AspNetCore.Results.Errors;
+using RESTworld.AspNetCore.Results.Errors.Abstractions;
 using RESTworld.AspNetCore.Validation;
 using RESTworld.AspNetCore.Validation.Abstractions;
 using RESTworld.Business.Services;
