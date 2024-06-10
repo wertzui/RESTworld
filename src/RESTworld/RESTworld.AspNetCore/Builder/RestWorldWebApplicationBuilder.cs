@@ -5,6 +5,8 @@ using Microsoft.Extensions.Diagnostics.Metrics;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OData.ModelBuilder;
+using System;
+using System.Collections.Generic;
 
 namespace Microsoft.AspNetCore.Builder;
 
@@ -13,7 +15,7 @@ namespace Microsoft.AspNetCore.Builder;
 /// A builder for creating a <see cref="WebApplication"/> with RESTworld services.
 /// It exposes all the properties of a <see cref="WebApplicationBuilder"/> and adds additional properties for RESTworld.
 /// </summary>
-public class RestWorldWebApplicationBuilder
+public class RestWorldWebApplicationBuilder : IHostApplicationBuilder
 {
     private readonly WebApplicationBuilder _builder;
 
@@ -70,9 +72,15 @@ public class RestWorldWebApplicationBuilder
     /// </summary>
     public ConfigureHostBuilder Host => _builder.Host;
 
+    /// <inheritdoc/>
+    public IDictionary<object, object> Properties => ((IHostApplicationBuilder)_builder).Properties;
+
     /// <summary>
     /// Builds the <see cref="WebApplication"/>.
     /// </summary>
     /// <returns>A configured <see cref="WebApplication"/>.</returns>
     public WebApplication Build() => _builder.Build();
+
+    /// <inheritdoc/>
+    public void ConfigureContainer<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory, Action<TContainerBuilder>? configure = null) where TContainerBuilder : notnull => ((IHostApplicationBuilder)_builder).ConfigureContainer(factory, configure);
 }

@@ -1,7 +1,7 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { ErrorHandler, NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClientModule, provideHttpClient, withFetch, withInterceptorsFromDi } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 
@@ -16,7 +16,6 @@ import { RestworldClientModule } from './ngx-restworld-client/restworld-client.m
 import { AppRoutes } from './app.routes';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { PostWithAuthorComponent } from './blog-posts/post-with-author.component';
-import { ApplicationinsightsAngularpluginErrorService } from '@microsoft/applicationinsights-angularplugin-js';
 import { PostWithAuthorListComponent } from './blog-posts/post-with-autor-list.component';
 import { DialogModule } from 'primeng/dialog';
 import { AvatarGenerator } from './ngx-restworld-client/services/avatar-generator';
@@ -34,8 +33,7 @@ import { ToastModule } from 'primeng/toast';
     PostsForBlogComponent
   ],
   imports: [
-    BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
-    HttpClientModule,
+    BrowserModule,
     FormsModule,
     ReactiveFormsModule,
     RouterModule.forRoot(AppRoutes, { onSameUrlNavigation: 'reload', bindToComponentInputs: true }),
@@ -54,11 +52,8 @@ import { ToastModule } from 'primeng/toast';
     {
       provide: AvatarGenerator,
       useClass: ExampleAvatarGenerator
-    }
-    //{
-    //  provide: ErrorHandler,
-    //  useClass: ApplicationinsightsAngularpluginErrorService
-    //}
+    },
+    provideHttpClient(withInterceptorsFromDi())
   ],
   bootstrap: [AppComponent]
 })

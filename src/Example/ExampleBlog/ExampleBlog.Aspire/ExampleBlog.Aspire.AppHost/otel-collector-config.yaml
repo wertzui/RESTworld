@@ -1,0 +1,36 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+        cors:
+            allowed_origins: ["http://*", "https://*"]
+            allowed_headers: ["*"]
+
+processors:
+  batch:
+
+exporters:
+  debug:
+    verbosity: detailed
+  otlp/aspire:
+    endpoint: $ASPIRE_ENDPOINT
+    tls:
+        insecure_skip_verify: true
+    headers:
+        x-otlp-api-key: $OTLP_API_KEY
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/aspire, debug]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/aspire]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/aspire]

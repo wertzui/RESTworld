@@ -2,6 +2,9 @@ using Projects;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
+builder.AddOpenTelemetryCollector("collector", "otel-collector-config.yaml")
+    .WithAppForwarding();
+
 // This will read the connection string from the appsettings.json or secrets.json file or get it from an environment variable
 // In this example it is stored in appsettings.json, because it just connects to lodaldb without a password.
 var database = builder.AddConnectionString("BlogDatabase");

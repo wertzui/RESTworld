@@ -1,10 +1,8 @@
 ﻿using Microsoft.AspNetCore.SpaServices.AngularCli;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RESTworld.AspNetCore.Controller;
 using RESTworld.Client.AspNetCore.Controllers;
-using RESTworld.Common.Client;
 using System;
 
 namespace Microsoft.AspNetCore.Builder;
@@ -35,17 +33,6 @@ public static class RestWorldSpaClientBuilderExtensions
             configuration.RootPath = contentRoot;
         });
 
-        // These options will be served through the SettingsController at the /Settings endpoint.
-        // The Angular application will use these settings to find the correct API endpoints.
-        var restWorldConfigSection = builder.Configuration.GetSection("RESTworld");
-        AddConfigToClientExtensions(builder, restWorldConfigSection, "OTEL_EXPORTER_OTLP_ENDPOINT");
-        AddConfigToClientExtensions(builder, restWorldConfigSection, "OTEL_EXPORTER_OTLP_HEADERS");
-        AddConfigToClientExtensions(builder, restWorldConfigSection, "OTEL_SERVICE_NAME");
-        AddConfigToClientExtensions(builder, restWorldConfigSection, "OTEL_TRACES_SAMPLER");
-        AddConfigToClientExtensions(builder, restWorldConfigSection, "OTEL_TRACES_SAMPLER_ARG");
-        AddConfigToClientExtensions(builder, restWorldConfigSection, "OTEL_RESOURCE_ATTRIBUTES");
-        services.Configure<RestWorldClientOptions>(restWorldConfigSection);
-
         var rwBuilder = builder.AddRestWorld();
 
         // The default Home Controller interferes with our SPA so we have to remove it.
@@ -58,11 +45,6 @@ public static class RestWorldSpaClientBuilderExtensions
             });
 
         return rwBuilder;
-    }
-
-    private static void AddConfigToClientExtensions(WebApplicationBuilder builder, IConfigurationSection restWorldConfigSection, string configKey)
-    {
-        restWorldConfigSection[$"{nameof(RestWorldClientOptions.ClientSettings)}:{nameof(ClientSettings.Extensions)}:{configKey}"] = builder.Configuration.GetValue<string?>(configKey);
     }
 
     /// <summary>

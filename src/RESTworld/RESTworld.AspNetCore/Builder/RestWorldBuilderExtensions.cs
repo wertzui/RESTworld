@@ -20,7 +20,6 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 using RESTworld.AspNetCore.Caching;
 using RESTworld.AspNetCore.Controller;
-using RESTworld.AspNetCore.DependencyInjection;
 using RESTworld.AspNetCore.Formatter;
 using RESTworld.AspNetCore.Health;
 using RESTworld.AspNetCore.Links;
@@ -32,9 +31,13 @@ using RESTworld.AspNetCore.Swagger;
 using RESTworld.AspNetCore.Versioning;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json;
 
 namespace Microsoft.AspNetCore.Builder;
 
@@ -58,6 +61,8 @@ public static class RestWorldBuilderExtensions
         var restWorldBuilder = new RestWorldWebApplicationBuilder(builder);
         var configuration = builder.Configuration;
         var services = builder.Services;
+
+        restWorldBuilder.AddRestWorldOptions();
 
         var versionParameterName = configuration.GetValue("RESTworld:Versioning:ParameterName", "v");
         if (versionParameterName is null)
@@ -104,8 +109,6 @@ public static class RestWorldBuilderExtensions
             .AddMvc();
 
         services.AddSingleton(_ => restWorldBuilder.ODataModelBuilder.GetEdmModel());
-
-        services.Configure<RestWorldOptions>(configuration.GetSection("RESTworld"));
 
         services.AddSingleton<ICacheHelper, CacheHelper>();
         services.AddSingleton<IResultFactory, ResultFactory>();
@@ -185,8 +188,6 @@ public static class RestWorldBuilderExtensions
 
         builder.ConfigureOpenTelemetry();
 
-        builder.Services.AddServiceDiscovery();
-
         builder.Services.ConfigureHttpClientDefaults(http =>
         {
             // Turn on resilience by default
@@ -218,26 +219,89 @@ public static class RestWorldBuilderExtensions
                     .AddHttpClientInstrumentation()
                     .AddRuntimeInstrumentation();
             }))
-            .WithTracing(configureTracing ?? (tracing =>
+            .WithTracing((tracing =>
             {
                 tracing.AddAspNetCoreInstrumentation()
                     // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
                     //.AddGrpcClientInstrumentation()
                     .AddHttpClientInstrumentation(opts =>
                     {
+                        var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+                        opts.RecordException = true;
+                        opts.EnrichWithHttpRequestMessage = (activity, request) =>
+                        {
+                            AddHttpHeadersToActivity(activity, request.Headers, jsonOptions);
+                        };
+                        opts.EnrichWithHttpResponseMessage = (activity, response) =>
+                        {
+                            AddHttpHeadersToActivity(activity, response.Headers, jsonOptions);
+                        };
                     })
-                    .AddSqlClientInstrumentation(opt =>
+                    .AddEntityFrameworkCoreInstrumentation(opts =>
                     {
-                        opt.EnableConnectionLevelAttributes = true;
-                        opt.RecordException = true;
-                        opt.SetDbStatementForStoredProcedure = true;
-                        opt.SetDbStatementForText = true;
+                        opts.SetDbStatementForStoredProcedure = true;
+                        opts.SetDbStatementForText = true;
+                        opts.EnrichWithIDbCommand = (activity, command) =>
+                        {
+                            MoveDbStatementTagToDbQueryText(activity);
+                            AddDbQueryParameterTagsToActivity(activity, command);
+                        };
                     });
+                // When using both Instrumentations, there is a bug, causing spans to not use the correct parent.
+                // See https://github.com/open-telemetry/opentelemetry-dotnet-contrib/issues/1764
+                //.AddSqlClientInstrumentation(opt =>
+                //{
+                //    opt.EnableConnectionLevelAttributes = true;
+                //    opt.RecordException = true;
+                //    opt.SetDbStatementForStoredProcedure = true;
+                //    opt.SetDbStatementForText = true;
+                //    opt.Enrich = (activity, eventName, command) =>
+                //    {
+                //        MoveDbStatementTagToDbQueryText(activity);
+
+                //        if (command is IDbCommand dbCommand)
+                //            AddDbQueryParameterTagsToActivity(activity, dbCommand);
+                //    };
+                //});
             }));
 
         builder.AddOpenTelemetryExporters();
 
         return builder;
+    }
+
+    private static void AddDbQueryParameterTagsToActivity(Activity activity, IDbCommand command)
+    {
+        foreach (IDataParameter parameter in command.Parameters)
+        {
+            var key = "db.query.parameter." + parameter.ParameterName;
+            activity.SetTag(key, parameter.Value);
+        }
+    }
+
+    private static void MoveDbStatementTagToDbQueryText(Activity activity)
+    {
+        var statement = activity.GetTagItem("db.statement");
+        var queryText = activity.GetTagItem("db.query.text");
+        if (statement is not null)
+        {
+            activity.SetTag("db.statement", null);
+            if (queryText is null)
+                activity.SetTag("db.query.text", statement);
+        }
+    }
+
+    private static void AddHttpHeadersToActivity(Activity activity, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers, JsonSerializerOptions jsonOptions)
+    {
+        foreach (var header in headers)
+        {
+            var key = header.Key.ToLowerInvariant();
+            var value = JsonSerializer.Serialize(header.Value, jsonOptions);
+            activity.SetTag($"http.request.header.{key}", value);
+
+            if (key == "content-length")
+                activity.SetTag("http.request.body.size", value);
+        }
     }
 
     private static IHostApplicationBuilder AddOpenTelemetryExporters(this IHostApplicationBuilder builder)
