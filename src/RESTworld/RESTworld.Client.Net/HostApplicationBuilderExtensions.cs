@@ -1,6 +1,6 @@
 ﻿using HAL.Client.Net;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RESTworld.Client.Net;
@@ -11,40 +11,38 @@ namespace Microsoft.Extensions.DependencyInjection;
 /// <summary>
 /// Contains extension methods for <see cref="IServiceCollection"/>.
 /// </summary>
-public static class ServiceCollectionExtensions
+public static class HostApplicationBuilderExtensions
 {
     /// <summary>
-    /// Adds an <see cref="IRestWorldClientCollection"/> to the <see cref="IServiceCollection"/>.
+    /// Adds an <see cref="IRestWorldClientCollection"/> to the <see cref="IHostApplicationBuilder"/>.
     /// </summary>
-    /// <param name="services">The services to add it to.</param>
-    /// <param name="configuration">The configuration to read the <see cref="RestWorldClientOptions"/> from.</param>
+    /// <param name="builder">The builder to add the RESTworld clients to.</param>
     /// <param name="clientConfigurations">An optional dictionary with client names and optional configuration actions. You can use these to inject something into the underlying <see cref="HttpClient"/>s like authorization or retry logic.</param>
-    /// <returns>The <paramref name="services"/>.</returns>
-    public static IServiceCollection AddRestWorldClients(this IServiceCollection services, IConfiguration configuration, IDictionary<string, Action<IServiceProvider, HttpClient>?>? clientConfigurations = null)
+    /// <returns>The <paramref name="builder"/>.</returns>
+    public static IHostApplicationBuilder AddRestWorldClients(this IHostApplicationBuilder builder, IDictionary<string, Action<IServiceProvider, HttpClient>?>? clientConfigurations = null)
     {
-        var configSection = configuration.GetSection("RESTworld");
-        services.Configure<RestWorldClientOptions>(configSection);
+        ArgumentNullException.ThrowIfNull(builder);
+
+        var configSection = builder.Configuration.GetSection("RESTworld");
 
         if (clientConfigurations is null)
-        {
             clientConfigurations = new Dictionary<string, Action<IServiceProvider, HttpClient>?>();
-            var options = new RestWorldClientOptions();
-            configSection.Bind(options);
-            if (options.ClientSettings?.ApiUrls is not null)
+
+        var options = configSection.Get<RestWorldClientOptions>();
+        if (options?.ClientSettings?.ApiUrls is not null)
+        {
+            foreach (var api in options.ClientSettings.ApiUrls)
             {
-                foreach (var api in options.ClientSettings.ApiUrls)
-                {
-                    if (api.Name is not null)
-                        clientConfigurations[api.Name] = null;
-                }
+                if (api.Name is not null)
+                    clientConfigurations.TryAdd(api.Name, null);
             }
         }
 
-        services.AddHalClientFactoy(clientConfigurations);
+        builder.Services.AddHalClientFactoy(clientConfigurations);
 
-        services.AddSingleton(RestWorldClientCollectionFactory);
+        builder.Services.AddSingleton(RestWorldClientCollectionFactory);
 
-        return services;
+        return builder;
     }
 
     private static IRestWorldClientCollection RestWorldClientCollectionFactory(IServiceProvider provider)

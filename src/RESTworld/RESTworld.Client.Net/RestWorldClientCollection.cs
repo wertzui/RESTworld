@@ -35,6 +35,19 @@ public class RestWorldClientCollection : IRestWorldClientCollection
             return new RestWorldClientCollection(new Dictionary<string, IRestWorldClient>());
         }
 
+        var duplicateApiUrls = options.Value.ClientSettings.ApiUrls
+            .Where(a => a.Name is not null)
+            .GroupBy(a => a.Name)
+            .Where(g => g.Count() > 1)
+            .ToList();
+
+        if (duplicateApiUrls.Any())
+        {
+            var message = $"Cannot create any RestWorldClients, because the following ApiUrls are defined more than once: {string.Join(", ", duplicateApiUrls.Select(g => $"{g.Key}: [{string.Join(", ", g.Select(a => $"{a.Url} (Version: {a.Version})"))}]"))}";
+            logger.LogCritical(message);
+            throw new Exception(message);
+        }
+
         try
         {
             var tasks = options.Value.ClientSettings.ApiUrls
