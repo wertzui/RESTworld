@@ -161,13 +161,13 @@ public static class RestWorldBuilderExtensions
             options.OperationFilter<SwaggerExampleOperationFilter>();
         });
 
-        services.AddValidationAndErrorHandling();
+        builder.AddValidationAndErrorHandling();
 
         services.AddAuthentication();
         services.AddAuthorization();
 
         services.AddHttpContextAccessor();
-        services.AddUserAccessor();
+        builder.AddUserAccessor();
 
         services.AddHealthChecks();
 

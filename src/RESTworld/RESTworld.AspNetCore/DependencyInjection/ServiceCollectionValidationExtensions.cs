@@ -6,6 +6,7 @@ using RESTworld.AspNetCore.Validation.Abstractions;
 using RESTworld.Business.Services;
 using RESTworld.Business.Validation;
 using RESTworld.Business.Validation.Abstractions;
+using System;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -25,6 +26,7 @@ public static class ServiceCollectionValidationExtensions
     /// <typeparam name="TEntity">The type of the entity.</typeparam>
     /// <param name="services">The <see cref="IServiceCollection"/> to add this validator to.</param>
     /// <returns>The <see cref="IServiceCollection"/> passed in.</returns>
+    [Obsolete("Use HostApplicationBuilderValidationExtensions.AddCreateValidator instead.")]
     public static IServiceCollection AddCreateValidator<TValidator, TCreateDto, TEntity>(this IServiceCollection services)
         where TValidator : class, ICreateValidator<TCreateDto, TEntity>
         => services.AddScoped<ICreateValidator<TCreateDto, TEntity>, TValidator>();
@@ -36,6 +38,7 @@ public static class ServiceCollectionValidationExtensions
     /// </summary>
     /// <param name="services"></param>
     /// <returns></returns>
+    [Obsolete("Use HostApplicationBuilderValidationExtensions.AddRestWorldProblemDetailsFactory instead.")]
     public static IServiceCollection AddRestWorldProblemDetailsFactory(this IServiceCollection services)
     {
         services.AddSingleton<ProblemDetailsFactory, RestWorldProblemDetailsFactory>();
@@ -55,6 +58,7 @@ public static class ServiceCollectionValidationExtensions
     /// <typeparam name="TEntity">The type of the entity.</typeparam>
     /// <param name="services">The <see cref="IServiceCollection"/> to add this validator to.</param>
     /// <returns>The <see cref="IServiceCollection"/> passed in.</returns>
+    [Obsolete("Use HostApplicationBuilderValidationExtensions.AddUpdateValidator instead.")]
     public static IServiceCollection AddUpdateValidator<TValidator, TUpdateDto, TEntity>(this IServiceCollection services)
         where TValidator : class, IUpdateValidator<TUpdateDto, TEntity>
         => services.AddScoped<IUpdateValidator<TUpdateDto, TEntity>, TValidator>();
@@ -65,6 +69,7 @@ public static class ServiceCollectionValidationExtensions
     /// </summary>
     /// <param name="services"></param>
     /// <returns></returns>
+    [Obsolete("Use HostApplicationBuilderValidationExtensions.AddValidationAndErrorHandling instead.")]
     public static IServiceCollection AddValidationAndErrorHandling(this IServiceCollection services)
     {
         services.AddRestWorldProblemDetailsFactory();
@@ -89,6 +94,7 @@ public static class ServiceCollectionValidationExtensions
     /// <typeparam name="TEntity">The type of the entity.</typeparam>
     /// <param name="services">The <see cref="IServiceCollection"/> to add this validator to.</param>
     /// <returns>The <see cref="IServiceCollection"/> passed in.</returns>
+    [Obsolete("Use HostApplicationBuilderValidationExtensions.AddValidator instead.")]
     public static IServiceCollection AddValidator<TValidator, TCreateDto, TUpdateDto, TEntity>(this IServiceCollection services)
         where TValidator : class, IValidator<TCreateDto, TUpdateDto, TEntity>
     {

@@ -1,9 +1,12 @@
-﻿using HAL.Common;
+﻿using CsvHelper;
+using CsvHelper.Configuration;
+using HAL.Common;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Net.Http.Headers;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -88,13 +91,13 @@ public class CsvOutputFormatter : TextOutputFormatter
         // The states are the part that should be serialized into the CSV.
         var states = list.Select(r => ((dynamic)r).State);
 
-        var culture = context.HttpContext.Features.Get<IRequestCultureFeature>()?.RequestCulture.Culture;
-        var configuration = new CsvHelper.Configuration.CsvConfiguration(culture)
+        var culture = context.HttpContext.Features.Get<IRequestCultureFeature>()?.RequestCulture.Culture ?? CultureInfo.InvariantCulture;
+        var configuration = new CsvConfiguration(culture)
         {
             Encoding = selectedEncoding
         };
         await using var writer = context.WriterFactory(context.HttpContext.Response.Body, selectedEncoding);
-        await using var csv = new CsvHelper.CsvWriter(writer, configuration, true);
+        await using var csv = new CsvWriter(writer, configuration, true);
 
         await csv.WriteRecordsAsync(states, context.HttpContext.RequestAborted);
     }

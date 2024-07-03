@@ -17,3 +17,7 @@ main {
   overflow-y: auto;
   overflow-x: hidden;
 }
+
+.p-toast-message-text {
+  width: 17rem;
+}

@@ -1,4 +1,4 @@
-import { FilterMatchMode, FilterMetadata, LazyLoadEvent } from 'primeng/api';
+import { FilterMatchMode, FilterMetadata, LazyLoadEvent, TranslationKeys } from 'primeng/api';
 import { Property, PropertyType, SimpleValue, Template } from '@wertzui/ngx-hal-client';
 import { TableLazyLoadEvent } from 'primeng/table';
 import { ODataParameters } from '../models/o-data';
@@ -14,7 +14,7 @@ export class ODataService {
    * @returns The OData filter string, or undefined if the filter value is falsy.
    */
   public static createFilterForProperty(property: Property<SimpleValue, string, string>, filter: FilterMetadata): string | undefined {
-    if (!filter.value)
+    if (filter.matchMode == TranslationKeys.NO_FILTER)
       return undefined;
 
     const oDataOperator = ODataService.createODataOperator(

@@ -31,7 +31,14 @@
                 {{col.prompt}}
                 <ng-container *ngIf="!col.readOnly">
                   <p-sortIcon [field]="col.name"></p-sortIcon>
-                  <p-columnFilter [type]="toColumnFilterType(col.type)" [maxFractionDigits]="toMaxFractionDigits(col)" [matchMode]="toMatchMode(col.type)" [field]="col.name" display="menu"></p-columnFilter>
+                  <p-columnFilter
+                    [type]="toColumnFilterType(col.type)"
+                    [maxFractionDigits]="toMaxFractionDigits(col)"
+                    matchMode="noFilter"
+                    [matchModeOptions]="toMatchModeOptions(col)"
+                    [showMatchModes]="true"
+                    [field]="col.name"
+                    display="menu"></p-columnFilter>
                 </ng-container>
             </div>
         </th>

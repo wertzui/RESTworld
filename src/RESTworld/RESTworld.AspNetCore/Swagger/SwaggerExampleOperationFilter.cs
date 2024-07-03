@@ -96,7 +96,11 @@ public class SwaggerExampleOperationFilter : IOperationFilter
         _apiExplorer = apiExplorer ?? throw new ArgumentNullException(nameof(apiExplorer));
         _oDataQueryFactory = oDataQueryFactory ?? throw new ArgumentNullException(nameof(oDataQueryFactory));
 
-        _serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault };
+        _serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
+            ReferenceHandler = ReferenceHandler.Preserve
+        };
         _serializerOptions.Converters.Add(new JsonStringEnumMemberConverter(JsonNamingPolicy.CamelCase));
 
         _fixture

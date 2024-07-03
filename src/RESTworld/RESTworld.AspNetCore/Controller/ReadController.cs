@@ -121,7 +121,7 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
     {
         var response = await Cache.CacheGetWithCurrentUserAsync(id, _ => _readService.GetSingleAsync(id, cancellationToken));
 
-        var result = ResultFactory.CreateOkResultBasedOnOutcome(response, ReturnsReadOnlyFormsResponses);
+        var result = await ResultFactory.CreateOkResultBasedOnOutcomeAsync(response, ReturnsReadOnlyFormsResponses);
 
         return result;
     }
@@ -146,7 +146,7 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
 
         var response = await Cache.CacheGetListWithCurrentUserAsync(options.RawValues, _ => _readService.GetListAsync(getListrequest, cancellationToken));
 
-        var result = ResultFactory.CreatePagedCollectionResultBasedOnOutcome(options, response);
+        var result = await ResultFactory.CreatePagedCollectionResultBasedOnOutcomeAsync(options, response);
 
         return result;
     }

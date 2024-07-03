@@ -26,7 +26,6 @@ import { DropdownModule } from 'primeng/dropdown';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { FileUploadModule } from 'primeng/fileupload';
 import { ValdemortModule } from 'ngx-valdemort';
-import { ImageCropperModule } from 'ngx-image-cropper';
 import { DialogModule } from 'primeng/dialog';
 import { ColorPickerModule } from 'primeng/colorpicker';
 import { ContextMenuModule } from 'primeng/contextmenu';
@@ -58,6 +57,7 @@ import { SpinnerIcon } from 'primeng/icons/spinner';
 import { ClrFormatPipe } from './pipes/clr-format.pipe';
 import { PropertyTypeFormatPipe } from './pipes/property-type-format.pipe';
 import { OpenTelemetryService } from './services/opentelemetry.service';
+import { ImageCropperComponent } from 'ngx-image-cropper';
 
 export function initializeSettings(settingsService: SettingsService): () => Promise<void> {
   return async () => await settingsService.ensureInitialized();
@@ -114,7 +114,7 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
     FormsModule,
     ReactiveFormsModule,
     HalClientModule,
-    ImageCropperModule,
+    ImageCropperComponent,
     InputNumberModule,
     InputTextModule,
     MessagesModule,

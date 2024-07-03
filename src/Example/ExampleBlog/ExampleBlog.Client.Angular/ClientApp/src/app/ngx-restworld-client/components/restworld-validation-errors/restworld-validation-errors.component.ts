@@ -22,10 +22,6 @@ export class RestWorldValidationErrorsComponent<T extends { [K in keyof T]: Abst
   @ViewChildren(ValidationErrorsComponent)
   validationErrorsComponents!: ValidationErrorsComponent[];
 
-  public get isDisplayingAnyErrors() {
-    return this.validationErrorsComponents.some(c => c.shouldDisplayErrors);
-  }
-
   public get PropertyType() {
     return PropertyType;
   }

@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using RESTworld.AspNetCore.Caching;
 using RESTworld.AspNetCore.DependencyInjection;
+using RESTworld.AspNetCore.Filters;
 using RESTworld.AspNetCore.Results.Abstractions;
 using RESTworld.AspNetCore.Results.Errors.Abstractions;
 using RESTworld.AspNetCore.Serialization;
@@ -173,15 +174,16 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     [HttpGet("new")]
     [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
     [ProducesResponseType(200)]
-    public virtual Task<ActionResult<Resource<TCreateDto>>> NewAsync(CancellationToken cancellationToken)
+    [ProducesWithContentNegotiation("application/hal+json", "application/prs.hal-forms+json", "application/hal-forms+json")]
+    public virtual async Task<ActionResult<Resource<TCreateDto>>> NewAsync(CancellationToken cancellationToken)
     {
         var dto = CreateEmpty();
 
-        var resource = ResultFactory.CreateResource(dto, HttpMethod.Post, ReturnsReadOnlyFormsResponses, ActionHelper.StripAsyncSuffix(nameof(NewAsync)), routeValues: new { });
+        var resource = await ResultFactory.CreateResourceAsync(dto, HttpMethod.Post, ReturnsReadOnlyFormsResponses, ActionHelper.StripAsyncSuffix(nameof(NewAsync)), routeValues: new { });
 
         var result = new JsonResult(resource, _createNewResourceJsonSettings);
 
-        return Task.FromResult<ActionResult<Resource<TCreateDto>>>(result);
+        return result;
     }
 
     /// <summary>
@@ -195,6 +197,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(Resource), StatusCodes.Status201Created)]
+    [ProducesWithContentNegotiation("application/hal+json", "application/prs.hal-forms+json", "application/hal-forms+json")]
     public virtual async Task<ActionResult<Resource<TGetFullDto>>> PostAsync(
         [FromBody] SingleObjectOrCollection<TCreateDto> dto,
         CancellationToken cancellationToken)
@@ -225,6 +228,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     [ProducesResponseType(typeof(Resource), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status409Conflict)]
+    [ProducesWithContentNegotiation("application/hal+json", "application/prs.hal-forms+json", "application/hal-forms+json")]
     public virtual async Task<ActionResult<Resource<TGetFullDto>>> PutAsync(
         long? id,
         [FromBody] SingleObjectOrCollection<TUpdateDto> dto,
@@ -289,7 +293,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     {
         var serviceResponse = await _crudService.CreateAsync(dtos, cancellationToken);
 
-        var response = ResultFactory.CreateCreatedCollectionResultBasedOnOutcome(serviceResponse, ReturnsReadOnlyFormsResponses);
+        var response = await ResultFactory.CreateCreatedCollectionResultBasedOnOutcomeAsync(serviceResponse, ReturnsReadOnlyFormsResponses);
 
         return response;
     }
@@ -305,7 +309,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     {
         var response = await _crudService.CreateAsync(dto, cancellationToken);
 
-        var result = ResultFactory.CreateCreatedResultBasedOnOutcome(response, ReturnsReadOnlyFormsResponses);
+        var result = await ResultFactory.CreateCreatedResultBasedOnOutcomeAsync(response, ReturnsReadOnlyFormsResponses);
 
         return result;
     }
@@ -330,7 +334,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
             }
         }
 
-        var result = ResultFactory.CreateOkCollectionResultBasedOnOutcome(response, ReturnsReadOnlyFormsResponses);
+        var result = await ResultFactory.CreateOkCollectionResultBasedOnOutcomeAsync(response, ReturnsReadOnlyFormsResponses);
 
         return result;
     }
@@ -349,7 +353,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
         if (response.Succeeded)
             Cache.RemoveGetWithCurrentUser<ServiceResponse<TGetFullDto>>(response.ResponseObject.Id);
 
-        var result = ResultFactory.CreateOkResultBasedOnOutcome(response, ReturnsReadOnlyFormsResponses);
+        var result = await ResultFactory.CreateOkResultBasedOnOutcomeAsync(response, ReturnsReadOnlyFormsResponses);
 
         return result;
     }

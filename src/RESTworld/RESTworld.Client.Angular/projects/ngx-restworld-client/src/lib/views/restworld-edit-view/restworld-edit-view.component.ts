@@ -117,8 +117,11 @@ export class RESTworldEditViewComponent {
     this.isLoading = true;
 
     const response = await this.getClient().getSingleByUri(this.uri);
-    if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body) {
-      this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the resource from the API.', data: response, sticky: true });
+    if (!response.ok || ProblemDetails.isProblemDetails(response.body) || response.body === null) {
+      if (ProblemDetails.isProblemDetails(response.body))
+        this._messageService.add({ severity: 'error', summary: 'Error', detail: response.body.detail, data: response, sticky: true });
+      else
+        this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the resource from the API.', data: response, sticky: true });
     }
     else {
       this._resource = response.body;

@@ -9,7 +9,7 @@ using RESTworld.Common.Client;
 namespace Microsoft.Extensions.DependencyInjection;
 
 /// <summary>
-/// Contains extension methods for <see cref="IServiceCollection"/>.
+/// Contains extension methods for <see cref="IHostApplicationBuilder"/>.
 /// </summary>
 public static class HostApplicationBuilderExtensions
 {

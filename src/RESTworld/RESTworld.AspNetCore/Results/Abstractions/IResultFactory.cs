@@ -8,6 +8,7 @@ using RESTworld.Business.Models.Abstractions;
 using RESTworld.Common.Dtos;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace RESTworld.AspNetCore.Results.Abstractions;
 
@@ -33,7 +34,7 @@ public interface IResultFactory
     /// The name of the put method for the update-multiple endpoint. Default is "Put".
     /// </param>
     /// <returns>Either a HAL resource, or a HAL-Forms resource containing the given <paramref name="items"/>.</returns>
-    Resource CreateCollectionResource<TDto>(IReadOnlyCollection<TDto> items, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
+    ValueTask<Resource> CreateCollectionResourceAsync<TDto>(IReadOnlyCollection<TDto> items, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
 
     /// <summary>
     /// Creates a collection result based on the outcome of a service response. It either contains the
@@ -61,7 +62,7 @@ public interface IResultFactory
     /// <see cref="ServiceResponse{T}.ResponseObject"/> is used.
     /// </param>
     /// <returns>Either a successful or an error result.</returns>
-    ObjectResult CreateCreatedCollectionResultBasedOnOutcome<TDto>(ServiceResponse<IReadOnlyCollection<TDto>> serviceResponse, bool readOnly = false, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put", object? routeValues = null) where TDto : DtoBase;
+    ValueTask<ObjectResult> CreateCreatedCollectionResultBasedOnOutcomeAsync<TDto>(ServiceResponse<IReadOnlyCollection<TDto>> serviceResponse, bool readOnly = false, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put", object? routeValues = null) where TDto : DtoBase;
 
     /// <summary>
     /// Creates a result based on the outcome of a service response. It either contains the
@@ -84,7 +85,7 @@ public interface IResultFactory
     /// <see cref="ServiceResponse{T}.ResponseObject"/> is used.
     /// </param>
     /// <returns>Either a successful or an error result.</returns>
-    ObjectResult CreateCreatedResultBasedOnOutcome<TDto>(ServiceResponse<TDto> serviceResponse, bool readOnly = false, string action = "Get", string? controller = null, object? routeValues = null);
+    ValueTask<ObjectResult> CreateCreatedResultBasedOnOutcomeAsync<TDto>(ServiceResponse<TDto> serviceResponse, bool readOnly = false, string action = "Get", string? controller = null, object? routeValues = null);
 
     /// <summary>
     /// Creates an empty result based on the outcome of a service response. It is either empty, or
@@ -130,7 +131,7 @@ public interface IResultFactory
     /// <see cref="ServiceResponse{T}.ResponseObject"/> is used.
     /// </param>
     /// <returns>Either a successful or an error result.</returns>
-    ObjectResult CreateOkCollectionResultBasedOnOutcome<TDto>(ServiceResponse<IReadOnlyCollection<TDto>> serviceResponse, bool readOnly = false, string action = "Put", string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put", object? routeValues = null) where TDto : DtoBase;
+    ValueTask<ObjectResult> CreateOkCollectionResultBasedOnOutcomeAsync<TDto>(ServiceResponse<IReadOnlyCollection<TDto>> serviceResponse, bool readOnly = false, string action = "Put", string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put", object? routeValues = null) where TDto : DtoBase;
 
     /// <summary>
     /// Creates a result based on the outcome of a service response. It either contains the
@@ -153,7 +154,7 @@ public interface IResultFactory
     /// <see cref="ServiceResponse{T}.ResponseObject"/> is used.
     /// </param>
     /// <returns>Either a successful or an error result.</returns>
-    ObjectResult CreateOkResultBasedOnOutcome<TDto>(ServiceResponse<TDto> serviceResponse, bool readOnly = true, string action = "Get", string? controller = null, object? routeValues = null);
+    ValueTask<ObjectResult> CreateOkResultBasedOnOutcomeAsync<TDto>(ServiceResponse<TDto> serviceResponse, bool readOnly = true, string action = "Get", string? controller = null, object? routeValues = null);
 
     /// <summary>
     /// Creates a paged collection result which is either a HAL resource, or a HAL-Forms resource
@@ -178,7 +179,7 @@ public interface IResultFactory
     /// The name of the put method for the update-multiple endpoint. Default is "Put".
     /// </param>
     /// <returns>Either a HAL resource, or a HAL-Forms resource containing the given <paramref name="page"/>.</returns>
-    Resource CreatePagedCollectionResource<TEntity, TDto>(ODataQueryOptions<TEntity> options, IReadOnlyPagedCollection<TDto> page, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
+    ValueTask<Resource> CreatePagedCollectionResourceAsync<TEntity, TDto>(ODataQueryOptions<TEntity> options, IReadOnlyPagedCollection<TDto> page, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
 
     /// <summary>
     /// Creates a paged collection result which is either a HAL resource, or a HAL-Forms resource
@@ -201,7 +202,7 @@ public interface IResultFactory
     /// The name of the put method for the update-multiple endpoint. Default is "Put".
     /// </param>
     /// <returns>Either a HAL resource, or a HAL-Forms resource containing the given <paramref name="page"/>.</returns>
-    Resource CreatePagedCollectionResource<TDto>(ODataRawQueryOptions options, int? maxTop, IReadOnlyPagedCollection<TDto> page, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
+    ValueTask<Resource> CreatePagedCollectionResourceAsync<TDto>(ODataRawQueryOptions options, int? maxTop, IReadOnlyPagedCollection<TDto> page, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
 
     /// <summary>
     /// Creates a paged collection result based on the outcome of a service response. It either
@@ -227,7 +228,7 @@ public interface IResultFactory
     /// The name of the put method for the update-multiple endpoint. Default is "Put".
     /// </param>
     /// <returns>Either a successful or an error result.</returns>
-    ObjectResult CreatePagedCollectionResultBasedOnOutcome<TEntity, TDto>(ODataQueryOptions<TEntity> options, ServiceResponse<IReadOnlyPagedCollection<TDto>> serviceResponse, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
+    ValueTask<ObjectResult> CreatePagedCollectionResultBasedOnOutcomeAsync<TEntity, TDto>(ODataQueryOptions<TEntity> options, ServiceResponse<IReadOnlyPagedCollection<TDto>> serviceResponse, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
 
     /// <summary>
     /// Creates a paged collection result based on the outcome of a service response. It either
@@ -251,7 +252,7 @@ public interface IResultFactory
     /// The name of the put method for the update-multiple endpoint. Default is "Put".
     /// </param>
     /// <returns>Either a successful or an error result.</returns>
-    ObjectResult CreatePagedCollectionResultBasedOnOutcome<TDto>(ODataRawQueryOptions options, int? maxTop, ServiceResponse<IReadOnlyPagedCollection<TDto>> serviceResponse, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
+    ValueTask<ObjectResult> CreatePagedCollectionResultBasedOnOutcomeAsync<TDto>(ODataRawQueryOptions options, int? maxTop, ServiceResponse<IReadOnlyPagedCollection<TDto>> serviceResponse, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
 
     /// <summary>
     /// Creates a result which is either a HAL resource, or a HAL-Forms resource based on the accept header.
@@ -269,7 +270,7 @@ public interface IResultFactory
     /// <param name="controller">The controller.</param>
     /// <param name="routeValues">The route values.</param>
     /// <returns>Either a HAL resource, or a HAL-Forms resource containing the given <paramref name="dto"/></returns>
-    Resource CreateResource<TDto>(TDto dto, HttpMethod method, bool readOnly = true, string action = "Get", string? controller = null, object? routeValues = null);
+    ValueTask<Resource> CreateResourceAsync<TDto>(TDto dto, HttpMethod method, bool readOnly = true, string action = "Get", string? controller = null, object? routeValues = null);
 
     /// <summary>
     /// Turns a HAL-Form read-only.

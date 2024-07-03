@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace RESTworld.AspNetCore.Results;
 
@@ -54,7 +55,7 @@ public class ResultFactory : IResultFactory
     }
 
     /// <inheritdoc/>
-    public Resource CreateCollectionResource<TDto>(IReadOnlyCollection<TDto> items, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put")
+    public async ValueTask<Resource> CreateCollectionResourceAsync<TDto>(IReadOnlyCollection<TDto> items, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put")
         where TDto : DtoBase
     {
         var urlHelper = GetUrlHelper();
@@ -67,7 +68,7 @@ public class ResultFactory : IResultFactory
 
         if (GetHttpContext().GetAcceptHeaders().AcceptsHalFormsOverHal())
         {
-            result = _formFactory.CreateForODataListEndpointUsingSkipTopPaging(items, _ => Common.Constants.ListItems, m => m.Id, options, items.Count, items.Count, controller, listGetMethod, singleGetMethod, listPutMethod);
+            result = await _formFactory.CreateForODataListEndpointUsingSkipTopPagingAsync(items, _ => Common.Constants.ListItems, m => m.Id, options, items.Count, items.Count, controller, listGetMethod, singleGetMethod, listPutMethod);
         }
         else
         {
@@ -94,24 +95,24 @@ public class ResultFactory : IResultFactory
     }
 
     /// <inheritdoc/>
-    public ObjectResult CreateCreatedCollectionResultBasedOnOutcome<TDto>(ServiceResponse<IReadOnlyCollection<TDto>> serviceResponse, bool readOnly = false, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put", object? routeValues = null)
+    public async ValueTask<ObjectResult> CreateCreatedCollectionResultBasedOnOutcomeAsync<TDto>(ServiceResponse<IReadOnlyCollection<TDto>> serviceResponse, bool readOnly = false, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put", object? routeValues = null)
         where TDto : DtoBase
     {
         if (!serviceResponse.Succeeded)
             return _errorResultFactory.CreateError(serviceResponse, "Post");
 
-        var resource = CreateCollectionResource(serviceResponse.ResponseObject, controller, listGetMethod, singleGetMethod, listPutMethod);
+        var resource = await CreateCollectionResourceAsync(serviceResponse.ResponseObject, controller, listGetMethod, singleGetMethod, listPutMethod);
 
         return new CreatedResult(resource.GetSelfLink().Href, resource);
     }
 
     /// <inheritdoc/>
-    public ObjectResult CreateCreatedResultBasedOnOutcome<TDto>(ServiceResponse<TDto> serviceResponse, bool readOnly = false, string getAction = "Get", string? controller = null, object? routeValues = null)
+    public async ValueTask<ObjectResult> CreateCreatedResultBasedOnOutcomeAsync<TDto>(ServiceResponse<TDto> serviceResponse, bool readOnly = false, string getAction = "Get", string? controller = null, object? routeValues = null)
     {
         if (!serviceResponse.Succeeded)
             return _errorResultFactory.CreateError(serviceResponse, "Post");
 
-        var resource = CreateResource(serviceResponse.ResponseObject, DetermineHttpMethodFromId(serviceResponse.ResponseObject), readOnly, getAction, controller, routeValues);
+        var resource = await CreateResourceAsync(serviceResponse.ResponseObject, DetermineHttpMethodFromId(serviceResponse.ResponseObject), readOnly, getAction, controller, routeValues);
 
         return new CreatedAtActionResult(resource.GetSelfLink().Href, controller, UseIdAsRouteValuesIfPresent(serviceResponse.ResponseObject, routeValues), serviceResponse.ResponseObject);
     }
@@ -126,35 +127,35 @@ public class ResultFactory : IResultFactory
     }
 
     /// <inheritdoc/>
-    public ObjectResult CreateOkResultBasedOnOutcome<TDto>(ServiceResponse<TDto> serviceResponse, bool readOnly = true, string action = "Get", string? controller = null, object? routeValues = null)
+    public async ValueTask<ObjectResult> CreateOkResultBasedOnOutcomeAsync<TDto>(ServiceResponse<TDto> serviceResponse, bool readOnly = true, string action = "Get", string? controller = null, object? routeValues = null)
     {
         if (!serviceResponse.Succeeded)
             return _errorResultFactory.CreateError(serviceResponse, action);
 
-        var resource = CreateResource(serviceResponse.ResponseObject, DetermineHttpMethodFromId(serviceResponse.ResponseObject), readOnly, action, controller, routeValues);
+        var resource = await CreateResourceAsync(serviceResponse.ResponseObject, DetermineHttpMethodFromId(serviceResponse.ResponseObject), readOnly, action, controller, routeValues);
 
         return new OkObjectResult(resource);
     }
 
     /// <inheritdoc/>
-    public ObjectResult CreateOkCollectionResultBasedOnOutcome<TDto>(ServiceResponse<IReadOnlyCollection<TDto>> serviceResponse, bool readOnly = false, string action = "Put", string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put", object? routeValues = null)
+    public async ValueTask<ObjectResult> CreateOkCollectionResultBasedOnOutcomeAsync<TDto>(ServiceResponse<IReadOnlyCollection<TDto>> serviceResponse, bool readOnly = false, string action = "Put", string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put", object? routeValues = null)
         where TDto : DtoBase
     {
         if (!serviceResponse.Succeeded)
             return _errorResultFactory.CreateError(serviceResponse, action);
 
-        var resource = CreateCollectionResource(serviceResponse.ResponseObject, controller, listGetMethod, singleGetMethod, listPutMethod);
+        var resource = await CreateCollectionResourceAsync(serviceResponse.ResponseObject, controller, listGetMethod, singleGetMethod, listPutMethod);
 
         return new OkObjectResult(resource);
     }
 
     /// <inheritdoc/>
-    public Resource CreatePagedCollectionResource<TEntity, TDto>(ODataQueryOptions<TEntity> options, IReadOnlyPagedCollection<TDto> page, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put")
+    public ValueTask<Resource> CreatePagedCollectionResourceAsync<TEntity, TDto>(ODataQueryOptions<TEntity> options, IReadOnlyPagedCollection<TDto> page, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put")
         where TDto : DtoBase
-        => CreatePagedCollectionResource(options.RawValues, options.Context.DefaultQueryConfigurations.MaxTop, page, controller, listGetMethod, singleGetMethod, listPutMethod);
+        => CreatePagedCollectionResourceAsync(options.RawValues, options.Context.DefaultQueryConfigurations.MaxTop, page, controller, listGetMethod, singleGetMethod, listPutMethod);
 
     /// <inheritdoc/>
-    public Resource CreatePagedCollectionResource<TDto>(ODataRawQueryOptions options, int? maxTop, IReadOnlyPagedCollection<TDto> page, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put")
+    public async ValueTask<Resource> CreatePagedCollectionResourceAsync<TDto>(ODataRawQueryOptions options, int? maxTop, IReadOnlyPagedCollection<TDto> page, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put")
         where TDto : DtoBase
     {
         var urlHelper = GetUrlHelper();
@@ -162,7 +163,7 @@ public class ResultFactory : IResultFactory
 
         if (GetHttpContext().GetAcceptHeaders().AcceptsHalFormsOverHal())
         {
-            result = _formFactory.CreateForODataListEndpointUsingSkipTopPaging(page.Items, _ => Common.Constants.ListItems, m => m.Id, options, maxTop ?? 50, page.TotalCount, controller, listGetMethod, singleGetMethod, listPutMethod);
+            result = await _formFactory.CreateForODataListEndpointUsingSkipTopPagingAsync(page.Items, _ => Common.Constants.ListItems, m => m.Id, options, maxTop ?? 50, page.TotalCount, controller, listGetMethod, singleGetMethod, listPutMethod);
         }
         else
         {
@@ -189,37 +190,37 @@ public class ResultFactory : IResultFactory
     }
 
     /// <inheritdoc/>
-    public ObjectResult CreatePagedCollectionResultBasedOnOutcome<TEntity, TDto>(ODataQueryOptions<TEntity> options, ServiceResponse<IReadOnlyPagedCollection<TDto>> serviceResponse, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put")
+    public async ValueTask<ObjectResult> CreatePagedCollectionResultBasedOnOutcomeAsync<TEntity, TDto>(ODataQueryOptions<TEntity> options, ServiceResponse<IReadOnlyPagedCollection<TDto>> serviceResponse, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put")
         where TDto : DtoBase
     {
         if (!serviceResponse.Succeeded)
             return _errorResultFactory.CreateError(serviceResponse, listGetMethod);
 
-        var result = CreatePagedCollectionResource(options, serviceResponse.ResponseObject, controller, listGetMethod, singleGetMethod, listPutMethod);
+        var result = await CreatePagedCollectionResourceAsync(options, serviceResponse.ResponseObject, controller, listGetMethod, singleGetMethod, listPutMethod);
 
         return new OkObjectResult(result);
     }
 
     /// <inheritdoc/>
-    public ObjectResult CreatePagedCollectionResultBasedOnOutcome<TDto>(ODataRawQueryOptions options, int? maxTop, ServiceResponse<IReadOnlyPagedCollection<TDto>> serviceResponse, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put")
+    public async ValueTask<ObjectResult> CreatePagedCollectionResultBasedOnOutcomeAsync<TDto>(ODataRawQueryOptions options, int? maxTop, ServiceResponse<IReadOnlyPagedCollection<TDto>> serviceResponse, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put")
         where TDto : DtoBase
     {
         if (!serviceResponse.Succeeded)
             return _errorResultFactory.CreateError(serviceResponse, listGetMethod, controller);
 
-        var result = CreatePagedCollectionResource(options, maxTop, serviceResponse.ResponseObject, controller, listGetMethod, singleGetMethod, listPutMethod);
+        var result = await CreatePagedCollectionResourceAsync(options, maxTop, serviceResponse.ResponseObject, controller, listGetMethod, singleGetMethod, listPutMethod);
 
         return new OkObjectResult(result);
     }
 
     /// <inheritdoc/>
-    public Resource CreateResource<TDto>(TDto dto, HttpMethod method, bool readOnly = true, string action = "Get", string? controller = null, object? routeValues = null)
+    public async ValueTask<Resource> CreateResourceAsync<TDto>(TDto dto, HttpMethod method, bool readOnly = true, string action = "Get", string? controller = null, object? routeValues = null)
     {
         routeValues = UseIdAsRouteValuesIfPresent(dto, routeValues);
 
         if (GetHttpContext().GetAcceptHeaders().AcceptsHalFormsOverHal())
         {
-            var result = _formFactory.CreateResourceForEndpoint(dto, method, "View", action: action, controller: controller, routeValues: routeValues);
+            var result = await _formFactory.CreateResourceForEndpointAsync(dto, method, "View", action: action, controller: controller, routeValues: routeValues);
 
             if (readOnly)
                 MakeFormReadOnly(result);

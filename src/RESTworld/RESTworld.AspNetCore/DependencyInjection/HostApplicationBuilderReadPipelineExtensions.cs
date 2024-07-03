@@ -1,6 +1,6 @@
 ﻿using Asp.Versioning;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using RESTworld.AspNetCore.Controller;
 using RESTworld.Business.Authorization.Abstractions;
 using RESTworld.Business.Services;
@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.DependencyInjection;
 /// <summary>
 /// Contains extension methods for <see cref="IServiceCollection"/> and Read controllers and services.
 /// </summary>
-public static class ServiceCollectionReadPipelineExtensions
+public static class HostApplicationBuilderReadPipelineExtensions
 {
     /// <summary>
     /// Adds a complete CRUD pipeline without authorization, using the <see cref="ReadController{TEntity, TGetListDto, TGetFullDto}"/> and
@@ -25,40 +25,26 @@ public static class ServiceCollectionReadPipelineExtensions
     /// <typeparam name="TEntity">The type of the entity.</typeparam>
     /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
     /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
-    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+    /// <param name="builder">The host application builder.</param>
     /// <param name="apiVersion">An optional API version.</param>
     /// <param name="isDeprecated">
     /// if set to <c>true</c> the pipeline with this version is treated as deprecated.
     /// </param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    [Obsolete("Use HostApplicationBuilderReadPipelineExtensions.AddReadPipeline instead.")]
-    public static IServiceCollection AddReadPipeline<TContext, TEntity, TGetListDto, TGetFullDto>(this IServiceCollection services, ApiVersion? apiVersion = null, bool isDeprecated = false)
+    public static IHostApplicationBuilder AddReadPipeline<TContext, TEntity, TGetListDto, TGetFullDto>(this IHostApplicationBuilder builder, ApiVersion? apiVersion = null, bool isDeprecated = false)
                 where TContext : DbContextBase
         where TEntity : EntityBase
         where TGetListDto : DtoBase
         where TGetFullDto : DtoBase
 
     {
-        services.AddScoped<IReadServiceBase<TEntity, TGetListDto, TGetFullDto>, ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>>();
-        services.AddForeignKeyForFormTo<TGetListDto>();
-        RestControllerFeatureProvider.AddReadController<TEntity, TGetListDto, TGetFullDto>();
-        services.Configure<MvcApiVersioningOptions>(options =>
-        {
-            var controllerConvention = options.Conventions.Controller<ReadController<TEntity, TGetListDto, TGetFullDto>>();
-            if (apiVersion is null)
-            {
-                controllerConvention.IsApiVersionNeutral();
-            }
-            else
-            {
-                if (isDeprecated)
-                    controllerConvention.HasDeprecatedApiVersion(apiVersion);
-                else
-                    controllerConvention.HasApiVersion(apiVersion);
-            }
-        });
+        ArgumentNullException.ThrowIfNull(builder);
 
-        return services;
+#pragma warning disable CS0618 // Type or member is obsolete
+        builder.Services.AddReadPipeline<TContext, TEntity, TGetListDto, TGetFullDto>(apiVersion, isDeprecated);
+#pragma warning restore CS0618 // Type or member is obsolete
+
+        return builder;
     }
 
     /// <summary>
@@ -72,17 +58,13 @@ public static class ServiceCollectionReadPipelineExtensions
     /// <typeparam name="TAuthorizationHandler">
     /// The type of the <see cref="IReadAuthorizationHandler{TEntity, TGetListDto, TGetFullDto}"/>.
     /// </typeparam>
-    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
-    /// <param name="configuration">
-    /// The <see cref="IConfiguration"/> instance which holds the RESTWorld configuration.
-    /// </param>
+    /// <param name="builder">The host application builder.</param>
     /// <param name="apiVersion">An optional API version.</param>
     /// <param name="isDeprecated">
     /// if set to <c>true</c> the pipeline with this version is treated as deprecated.
     /// </param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    [Obsolete("Use HostApplicationBuilderReadPipelineExtensions.AddReadPipelineWithAuthorization instead.")]
-    public static IServiceCollection AddReadPipelineWithAuthorization<TContext, TEntity, TGetListDto, TGetFullDto, TAuthorizationHandler>(this IServiceCollection services, IConfiguration configuration, ApiVersion? apiVersion = null, bool isDeprecated = false)
+    public static IHostApplicationBuilder AddReadPipelineWithAuthorization<TContext, TEntity, TGetListDto, TGetFullDto, TAuthorizationHandler>(this IHostApplicationBuilder builder, ApiVersion? apiVersion = null, bool isDeprecated = false)
         where TContext : DbContextBase
         where TEntity : EntityBase
         where TGetListDto : DtoBase
@@ -90,10 +72,13 @@ public static class ServiceCollectionReadPipelineExtensions
 
         where TAuthorizationHandler : class, IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>
     {
-        services.AddReadPipeline<TContext, TEntity, TGetListDto, TGetFullDto>(apiVersion, isDeprecated);
-        services.AddReadAuthorizationHandler<TAuthorizationHandler, TEntity, TGetListDto, TGetFullDto>(configuration);
+        ArgumentNullException.ThrowIfNull(builder);
 
-        return services;
+#pragma warning disable CS0618 // Type or member is obsolete
+        builder.Services.AddReadPipelineWithAuthorization<TContext, TEntity, TGetListDto, TGetFullDto, TAuthorizationHandler>(builder.Configuration, apiVersion, isDeprecated);
+#pragma warning restore CS0618 // Type or member is obsolete
+
+        return builder;
     }
 
     /// <summary>
@@ -107,10 +92,9 @@ public static class ServiceCollectionReadPipelineExtensions
     /// <typeparam name="TService">
     /// The type of the custom <see cref="IReadServiceBase{TEntity, TGetListDto, TGetFullDto}"/> implementation.
     /// </typeparam>
-    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+    /// <param name="builder">The host application builder.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    [Obsolete("Use HostApplicationBuilderReadPipelineExtensions.AddReadPipelineWithCustomService instead.")]
-    public static IServiceCollection AddReadPipelineWithCustomService<TContext, TEntity, TGetListDto, TGetFullDto, TService>(this IServiceCollection services)
+    public static IHostApplicationBuilder AddReadPipelineWithCustomService<TContext, TEntity, TGetListDto, TGetFullDto, TService>(this IHostApplicationBuilder builder)
         where TContext : DbContextBase
         where TEntity : EntityBase
         where TGetListDto : DtoBase
@@ -118,11 +102,13 @@ public static class ServiceCollectionReadPipelineExtensions
 
         where TService : class, IReadServiceBase<TEntity, TGetListDto, TGetFullDto>
     {
-        services.AddScoped<IReadServiceBase<TEntity, TGetListDto, TGetFullDto>, TService>();
-        RestControllerFeatureProvider.AddReadController<TEntity, TGetListDto, TGetFullDto>();
-        services.AddForeignKeyForFormTo<TGetListDto>();
+        ArgumentNullException.ThrowIfNull(builder);
 
-        return services;
+#pragma warning disable CS0618 // Type or member is obsolete
+        builder.Services.AddReadPipelineWithCustomService<TContext, TEntity, TGetListDto, TGetFullDto, TService>();
+#pragma warning restore CS0618 // Type or member is obsolete
+
+        return builder;
     }
 
     /// <summary>
@@ -139,13 +125,9 @@ public static class ServiceCollectionReadPipelineExtensions
     /// <typeparam name="TAuthorizationHandler">
     /// The type of the <see cref="IReadAuthorizationHandler{TEntity, TGetListDto, TGetFullDto}"/>.
     /// </typeparam>
-    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
-    /// <param name="configuration">
-    /// The <see cref="IConfiguration"/> instance which holds the RESTWorld configuration.
-    /// </param>
+    /// <param name="builder">The host application builder.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    [Obsolete("Use HostApplicationBuilderReadPipelineExtensions.AddReadPipelineWithCustomServiceAndAuthorization instead.")]
-    public static IServiceCollection AddReadPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TGetListDto, TGetFullDto, TService, TAuthorizationHandler>(this IServiceCollection services, IConfiguration configuration)
+    public static IHostApplicationBuilder AddReadPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TGetListDto, TGetFullDto, TService, TAuthorizationHandler>(this IHostApplicationBuilder builder)
         where TContext : DbContextBase
         where TEntity : EntityBase
         where TGetListDto : DtoBase
@@ -154,9 +136,12 @@ public static class ServiceCollectionReadPipelineExtensions
         where TService : class, IReadServiceBase<TEntity, TGetListDto, TGetFullDto>
         where TAuthorizationHandler : class, IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>
     {
-        services.AddReadPipelineWithCustomService<TContext, TEntity, TGetListDto, TGetFullDto, TService>();
-        services.AddReadAuthorizationHandler<TAuthorizationHandler, TEntity, TGetListDto, TGetFullDto>(configuration);
+        ArgumentNullException.ThrowIfNull(builder);
 
-        return services;
+#pragma warning disable CS0618 // Type or member is obsolete
+        builder.Services.AddReadPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TGetListDto, TGetFullDto, TService, TAuthorizationHandler>(builder.Configuration);
+#pragma warning restore CS0618 // Type or member is obsolete
+
+        return builder;
     }
 }

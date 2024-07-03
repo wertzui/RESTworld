@@ -1,11 +1,11 @@
-import { Component, EventEmitter, Input, Optional, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, EventEmitter, Input, OnInit, Optional, Output, QueryList, ViewChild, ViewChildren, viewChildren } from '@angular/core';
 import { FormService, Property, PropertyType, SimpleValue, Template } from '@wertzui/ngx-hal-client';
-import { FilterMatchMode, MenuItem, SortMeta } from 'primeng/api';
+import { FilterMatchMode, FilterMetadata, MenuItem, PrimeNGConfig, SelectItem, SortMeta, TranslationKeys } from 'primeng/api';
 import { ODataParameters } from '../../models/o-data';
 import { ODataService } from '../../services/o-data.service';
 import { ContextMenu } from 'primeng/contextmenu';
 import { AbstractControl, ControlContainer, FormArray, FormArrayName, FormGroup } from '@angular/forms';
-import { TableLazyLoadEvent, TableRowSelectEvent, TableRowUnSelectEvent } from 'primeng/table';
+import { ColumnFilter, TableLazyLoadEvent, TableRowSelectEvent, TableRowUnSelectEvent } from 'primeng/table';
 
 enum ColumnFilterType {
   text = 'text',
@@ -69,6 +69,8 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
   public apiName?: string;
 
   private _formArray?: FormArray<FormGroup<{ [K in keyof TListItem]: AbstractControl<unknown> }>>;
+  private readonly _filterMatchModeOptions: { [K in keyof PrimeNGConfig["filterMatchModeOptions"]]: SelectItem[] } & { "boolean": SelectItem[] };
+  _lastUsedFilters: Partial<Record<string, FilterMetadata | FilterMetadata[]>> = {};
 
   /**
    * The form array that contains the form groups for the items.
@@ -282,7 +284,15 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
 
   public constructor(
     private readonly _controlContainer: ControlContainer,
-    private readonly _formService: FormService,) {
+    private readonly _formService: FormService,
+    primeNGConfig: PrimeNGConfig) {
+    primeNGConfig.setTranslation({});
+    this._filterMatchModeOptions = {
+      text: [TranslationKeys.NO_FILTER, ...primeNGConfig.filterMatchModeOptions.text].map(o => ({ label: primeNGConfig.getTranslation(o), value: o })),
+      numeric: [TranslationKeys.NO_FILTER, ...primeNGConfig.filterMatchModeOptions.numeric].map(o => ({ label: primeNGConfig.getTranslation(o), value: o })),
+      date: [TranslationKeys.NO_FILTER, ...primeNGConfig.filterMatchModeOptions.date].map(o => ({ label: primeNGConfig.getTranslation(o), value: o })),
+      boolean: [TranslationKeys.NO_FILTER, TranslationKeys.EQUALS, TranslationKeys.NOT_EQUALS].map(o => ({ label: primeNGConfig.getTranslation(o), value: o }))
+    };
   }
 
   private setSortFieldAndSortOrder(template: Template | undefined) {
@@ -317,8 +327,8 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
       !Array.isArray(this.multiSortMeta) ||
       this.multiSortMeta.length === 0 ||
       this.multiSortMeta.every(m => m.field !== sortMetas[0].field || m.order !== sortMetas[0].order)) {
-        this.multiSortMeta = sortMetas;
-      }
+      this.multiSortMeta = sortMetas;
+    }
   }
 
   public multiSortMeta?: SortMeta[] | null;
@@ -453,10 +463,49 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
   }
 
   public load(event: TableLazyLoadEvent) {
+    this.fixUserFilterErrors(event.filters);
     this.multiSortMeta = event.multiSortMeta;
     this._rowsBeforeCurrentPage = event.first ?? 0;
     const parameters = ODataService.createParametersFromTableLoadEvent(event, this.searchTemplate);
     this.onFilterOrSortChanged.emit(parameters);
+  }
+
+  private fixUserFilterErrors(filters?: Partial<Record<string, FilterMetadata | FilterMetadata[]>>) {
+    if (!filters)
+      return;
+
+    Object.entries(filters).forEach(([propertyName, filter]) => {
+      const lastFilter = this._lastUsedFilters[propertyName];
+      if (Array.isArray(filter)) {
+        filter.forEach((filterEntry, index) => this.fixUserFilterError(filterEntry, Array.isArray(lastFilter) ? lastFilter[index] : lastFilter, propertyName));
+      }
+      else {
+        this.fixUserFilterError(filter, Array.isArray(lastFilter) ? lastFilter[0] : lastFilter, propertyName);
+      }
+    });
+    this._lastUsedFilters = JSON.parse(JSON.stringify(filters));
+  }
+
+  private fixUserFilterError(filterEntry: FilterMetadata | undefined, lastFilterEntry: FilterMetadata | undefined, propertyName: string) {
+    if (!filterEntry)
+      return;
+
+    if (
+      lastFilterEntry !== undefined &&
+      lastFilterEntry.matchMode !== TranslationKeys.NO_FILTER &&
+      filterEntry.matchMode === TranslationKeys.NO_FILTER) {
+      // The user changed the mode from something to no filter
+      // => We reset the value
+      filterEntry.value = null;
+    }
+    else if (
+      filterEntry.matchMode === TranslationKeys.NO_FILTER &&
+      (lastFilterEntry === undefined || lastFilterEntry.value === null) &&
+      filterEntry.value !== null) {
+      // The user entered a value into the filter, but forgot to change the mode
+      // => We set the match mode to the default for the type that is not no filter
+        filterEntry.matchMode = this._filterMatchModeOptions[this.toColumnFilterType(this.searchTemplate.properties.find(p => p.name === propertyName)?.type)][1].value;
+    }
   }
 
   public openContextMenu(event: MouseEvent, row: TListItem): void {
@@ -480,7 +529,7 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
     this.selectionChange.emit(Array.isArray(event) ? event : [event]);
   }
 
-  public toColumnFilterType(propertyType: PropertyType): ColumnFilterType {
+  public toColumnFilterType(propertyType: PropertyType | undefined): ColumnFilterType {
     switch (propertyType) {
       case PropertyType.Number:
       case PropertyType.Percent:
@@ -498,14 +547,9 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
     }
   }
 
-  public toMatchMode(propertyType: PropertyType): string | undefined {
-    // There is a bug in PrimeNG returning CONTAINS for boolean columns
-    // Once the bug has been fixed, we can remove this workaround
-    // https://github.com/primefaces/primeng/issues/14210
-    if (propertyType === PropertyType.Bool)
-      return FilterMatchMode.EQUALS;
-
-    return undefined;
+  toMatchModeOptions(property: Property<SimpleValue, string, string>): SelectItem<any>[] | undefined {
+    const columnFilterType = this.toColumnFilterType(property.type);
+    return this._filterMatchModeOptions[columnFilterType];
   }
 
   public toMaxFractionDigits(property: Property<SimpleValue, string, string>): number | undefined {

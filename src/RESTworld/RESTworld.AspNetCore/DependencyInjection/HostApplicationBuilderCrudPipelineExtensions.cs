@@ -1,6 +1,6 @@
 ﻿using Asp.Versioning;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using RESTworld.AspNetCore.Controller;
 using RESTworld.Business.Authorization.Abstractions;
 using RESTworld.Business.Services;
@@ -13,9 +13,9 @@ using System;
 namespace Microsoft.Extensions.DependencyInjection;
 
 /// <summary>
-/// Contains extension methods for <see cref="IServiceCollection"/> and CRUD controllers and services.
+/// Contains extension methods for <see cref="IHostApplicationBuilder"/> and CRUD controllers and services.
 /// </summary>
-public static class ServiceCollectionCrudPipelineExtensions
+public static class HostApplicationBuilderCrudPipelineExtensions
 {
     /// <summary>
     /// Adds a complete CRUD pipeline without authorization, using the <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> and
@@ -27,40 +27,26 @@ public static class ServiceCollectionCrudPipelineExtensions
     /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
     /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
     /// <typeparam name="TUpdateDto">The type of the DTO for an Update operation.</typeparam>
-    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+    /// <param name="builder">The host application builder.</param>
     /// <param name="apiVersion">An optional API version.</param>
     /// <param name="isDeprecated">
     /// if set to <c>true</c> the pipeline with this version is treated as deprecated.
     /// </param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    [Obsolete("Use HostApplicationBuilderCrudPipelineExtensions.AddCrudPipeline instead.")]
-    public static IServiceCollection AddCrudPipeline<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(this IServiceCollection services, ApiVersion? apiVersion = null, bool isDeprecated = false)
+    public static IHostApplicationBuilder AddCrudPipeline<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(this IHostApplicationBuilder builder, ApiVersion? apiVersion = null, bool isDeprecated = false)
                 where TContext : DbContextBase
         where TEntity : ConcurrentEntityBase
         where TGetListDto : ConcurrentDtoBase
         where TGetFullDto : ConcurrentDtoBase
         where TUpdateDto : ConcurrentDtoBase
     {
-        services.AddScoped<ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>>();
-        services.AddForeignKeyForFormTo<TGetListDto>();
-        RestControllerFeatureProvider.AddCrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
-        services.Configure<MvcApiVersioningOptions>(options =>
-        {
-            var controllerConvention = options.Conventions.Controller<CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>>();
-            if (apiVersion is null)
-            {
-                controllerConvention.IsApiVersionNeutral();
-            }
-            else
-            {
-                if (isDeprecated)
-                    controllerConvention.HasDeprecatedApiVersion(apiVersion);
-                else
-                    controllerConvention.HasApiVersion(apiVersion);
-            }
-        });
+        ArgumentNullException.ThrowIfNull(builder);
 
-        return services;
+#pragma warning disable CS0618 // Type or member is obsolete
+        builder.Services.AddCrudPipeline<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(apiVersion, isDeprecated);
+#pragma warning restore CS0618 // Type or member is obsolete
+
+        return builder;
     }
 
     /// <summary>
@@ -78,17 +64,13 @@ public static class ServiceCollectionCrudPipelineExtensions
     /// The type of the <see cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto,
     /// TGetFullDto, TUpdateDto}"/>.
     /// </typeparam>
-    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
-    /// <param name="configuration">
-    /// The <see cref="IConfiguration"/> instance which holds the RESTWorld configuration.
-    /// </param>
+    /// <param name="builder">The host application builder.</param>
     /// <param name="apiVersion">An optional API version.</param>
     /// <param name="isDeprecated">
     /// if set to <c>true</c> the pipeline with this version is treated as deprecated.
     /// </param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    [Obsolete("Use HostApplicationBuilderCrudPipelineExtensions.AddCrudPipelineWithAuthorization instead.")]
-    public static IServiceCollection AddCrudPipelineWithAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TAuthorizationHandler>(this IServiceCollection services, IConfiguration configuration, ApiVersion? apiVersion = null, bool isDeprecated = false)
+    public static IHostApplicationBuilder AddCrudPipelineWithAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TAuthorizationHandler>(this IHostApplicationBuilder builder, ApiVersion? apiVersion = null, bool isDeprecated = false)
         where TContext : DbContextBase
         where TEntity : ConcurrentEntityBase
         where TGetListDto : ConcurrentDtoBase
@@ -96,10 +78,13 @@ public static class ServiceCollectionCrudPipelineExtensions
         where TUpdateDto : ConcurrentDtoBase
         where TAuthorizationHandler : class, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
     {
-        services.AddCrudPipeline<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(apiVersion, isDeprecated);
-        services.AddCrudAuthorizationHandler<TAuthorizationHandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(configuration);
+        ArgumentNullException.ThrowIfNull(builder);
 
-        return services;
+#pragma warning disable CS0618 // Type or member is obsolete
+        builder.Services.AddCrudPipelineWithAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TAuthorizationHandler>(builder.Configuration, apiVersion, isDeprecated);
+#pragma warning restore CS0618 // Type or member is obsolete
+
+        return builder;
     }
 
     /// <summary>
@@ -116,10 +101,9 @@ public static class ServiceCollectionCrudPipelineExtensions
     /// The type of the custom <see cref="ICrudServiceBase{TEntity, TCreateDto, TGetListDto,
     /// TGetFullDto, TUpdateDto}"/> implementation.
     /// </typeparam>
-    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+    /// <param name="builder">The host application builder.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    [Obsolete("Use HostApplicationBuilderCrudPipelineExtensions.AddCrudPipelineWithCustomService instead.")]
-    public static IServiceCollection AddCrudPipelineWithCustomService<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TService>(this IServiceCollection services)
+    public static IHostApplicationBuilder AddCrudPipelineWithCustomService<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TService>(this IHostApplicationBuilder builder)
         where TContext : DbContextBase
         where TEntity : ConcurrentEntityBase
         where TGetListDto : ConcurrentDtoBase
@@ -127,11 +111,13 @@ public static class ServiceCollectionCrudPipelineExtensions
         where TUpdateDto : ConcurrentDtoBase
         where TService : class, ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
     {
-        services.AddScoped<ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, TService>();
-        RestControllerFeatureProvider.AddCrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
-        services.AddForeignKeyForFormTo<TGetListDto>();
+        ArgumentNullException.ThrowIfNull(builder);
 
-        return services;
+#pragma warning disable CS0618 // Type or member is obsolete
+        builder.Services.AddCrudPipelineWithCustomService<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TService>();
+#pragma warning restore CS0618 // Type or member is obsolete
+
+        return builder;
     }
 
     /// <summary>
@@ -152,13 +138,9 @@ public static class ServiceCollectionCrudPipelineExtensions
     /// The type of the <see cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto,
     /// TGetFullDto, TUpdateDto}"/>.
     /// </typeparam>
-    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
-    /// <param name="configuration">
-    /// The <see cref="IConfiguration"/> instance which holds the RESTWorld configuration.
-    /// </param>
+    /// <param name="builder">The host application builder.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    [Obsolete("Use HostApplicationBuilderCrudPipelineExtensions.AddCrudPipelineWithCustomServiceAndAuthorization instead.")]
-    public static IServiceCollection AddCrudPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TService, TAuthorizationHandler>(this IServiceCollection services, IConfiguration configuration)
+    public static IHostApplicationBuilder AddCrudPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TService, TAuthorizationHandler>(this IHostApplicationBuilder builder)
         where TContext : DbContextBase
         where TEntity : ConcurrentEntityBase
         where TGetListDto : ConcurrentDtoBase
@@ -167,9 +149,12 @@ public static class ServiceCollectionCrudPipelineExtensions
         where TService : class, ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
         where TAuthorizationHandler : class, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
     {
-        services.AddCrudPipelineWithCustomService<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TService>();
-        services.AddCrudAuthorizationHandler<TAuthorizationHandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(configuration);
+        ArgumentNullException.ThrowIfNull(builder);
 
-        return services;
+#pragma warning disable CS0618 // Type or member is obsolete
+        builder.Services.AddCrudPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TService, TAuthorizationHandler>(builder.Configuration);
+#pragma warning restore CS0618 // Type or member is obsolete
+
+        return builder;
     }
 }

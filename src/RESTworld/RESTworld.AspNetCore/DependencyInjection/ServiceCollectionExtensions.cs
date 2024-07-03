@@ -41,6 +41,7 @@ public static class ServiceCollectionExtensions
     /// The <see cref="IConfiguration"/> instance which holds the RESTWorld configuration.
     /// </param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
+    [Obsolete("Use HostApplicationBuilderExtensions.AddCustomServiceAndAuthorization instead.")]
     public static IServiceCollection AddCustomServiceAndAuthorization<TRequest, TResponse, TService, TAuthorizationhandler>(this IServiceCollection services, IConfiguration configuration)
         where TService : class
         where TAuthorizationhandler : class, IBasicAuthorizationHandler<TRequest, TResponse>
@@ -73,6 +74,7 @@ public static class ServiceCollectionExtensions
     /// The <see cref="IConfiguration"/> instance which holds the RESTWorld configuration.
     /// </param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
+    [Obsolete("Use HostApplicationBuilderExtensions.AddCustomServiceAndAuthorization instead.")]
     public static IServiceCollection AddCustomServiceAndAuthorization<TEntity, TRequest, TResponse, TService, TAuthorizationhandler>(this IServiceCollection services, IConfiguration configuration)
         where TEntity : ConcurrentEntityBase
         where TService : class
@@ -97,6 +99,7 @@ public static class ServiceCollectionExtensions
     /// <param name="optionsAction">An optional custom configuration. Is none is supplied, these are applied by default: <see cref="SqlServerDbContextOptionsExtensions.UseSqlServer(DbContextOptionsBuilder, Action{SqlServerDbContextOptionsBuilder}?)"/>, <see cref="DbContextOptionsBuilder.EnableDetailedErrors(bool)"/>, <see cref="DbContextOptionsBuilder.EnableServiceProviderCaching(bool)"/></param>
     /// <param name="sqlServerOptionsAction">An optional custom configuration for the SQL server connection. If none is supplied, <see cref="SqlServerDbContextOptionsBuilder.EnableRetryOnFailure()"/> is added as default. If an <paramref name="optionsAction"/> is provided, that this is not called by default.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
+    [Obsolete("Use HostApplicationBuilderExtensions.AddDbContextFactoryWithDefaults instead.")]
     public static IServiceCollection AddDbContextFactoryWithDefaults<TContext>(
         this IServiceCollection services,
         IConfiguration configuration,
@@ -151,6 +154,7 @@ public static class ServiceCollectionExtensions
     /// <typeparam name="TListDto">The type of the List DTO.</typeparam>
     /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
+    [Obsolete("Use HostApplicationBuilderExtensions.AddForeignKeyForFormTo instead.")]
     public static IServiceCollection AddForeignKeyForFormTo<TListDto>(this IServiceCollection services)
         => services.AddSingleton<IForeignKeyLinkFactory, CrudForeignKeyLinkFactory<TListDto>>();
 
@@ -160,6 +164,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
+    [Obsolete("Use HostApplicationBuilderExtensions.AddUserAccessor instead.")]
     public static IServiceCollection AddUserAccessor(this IServiceCollection services) => services.AddSingleton<IUserAccessor, UserAccessor>();
 
     /// <summary>
@@ -167,6 +172,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     /// <typeparam name="TDbContext">The type of the database context.</typeparam>
     /// <param name="services">The services.</param>
+    [Obsolete("Use HostApplicationBuilderExtensions.MigrateDatabaseDuringStartup instead.")]
     public static void MigrateDatabaseDuringStartup<TDbContext>(this IServiceCollection services)
         where TDbContext : DbContext
     {

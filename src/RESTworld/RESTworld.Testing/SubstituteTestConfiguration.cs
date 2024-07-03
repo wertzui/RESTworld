@@ -27,9 +27,11 @@ public static class SubstituteTestConfigurationExtensions
     /// <param name="builder">The builder with the substitute to add the configuration to.</param>
     /// <param name="configureSubstitute">An action to configure the substitute.</param>
     /// <returns>This instance.</returns>
-    public static ITestBuilderWithConfig<SubstituteTestConfiguration<TSubstitute>> Configure<TSubstitute>(this ITestBuilderWithConfig<SubstituteTestConfiguration<TSubstitute>> builder, Action<TSubstitute> configureSubstitute = null)
+    public static ITestBuilderWithConfig<SubstituteTestConfiguration<TSubstitute>> Configure<TSubstitute>(this ITestBuilderWithConfig<SubstituteTestConfiguration<TSubstitute>> builder, Action<TSubstitute> configureSubstitute)
         where TSubstitute : class
     {
+        ArgumentNullException.ThrowIfNull(configureSubstitute);
+
         builder.Config.Configure(configureSubstitute);
         return builder;
     }
@@ -50,8 +52,6 @@ public class SubstituteTestConfiguration<TSubstitute> : ITestConfiguration
     /// <exception cref="ArgumentNullException"><paramref name="configureSubstitute"/></exception>
     public SubstituteTestConfiguration(Action<TSubstitute>? configureSubstitute)
     {
-        ArgumentNullException.ThrowIfNull(configureSubstitute);
-
         var substitute = Substitute.For<TSubstitute>();
         configureSubstitute?.Invoke(substitute);
 
