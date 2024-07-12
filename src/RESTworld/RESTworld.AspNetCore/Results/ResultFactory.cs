@@ -114,7 +114,7 @@ public class ResultFactory : IResultFactory
 
         var resource = await CreateResourceAsync(serviceResponse.ResponseObject, DetermineHttpMethodFromId(serviceResponse.ResponseObject), readOnly, getAction, controller, routeValues);
 
-        return new CreatedAtActionResult(resource.GetSelfLink().Href, controller, UseIdAsRouteValuesIfPresent(serviceResponse.ResponseObject, routeValues), serviceResponse.ResponseObject);
+        return new CreatedResult(resource.GetSelfLink().Href, serviceResponse.ResponseObject);
     }
 
     /// <inheritdoc/>

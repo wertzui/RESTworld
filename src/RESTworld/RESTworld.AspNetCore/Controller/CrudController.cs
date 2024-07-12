@@ -179,7 +179,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     {
         var dto = CreateEmpty();
 
-        var resource = await ResultFactory.CreateResourceAsync(dto, HttpMethod.Post, ReturnsReadOnlyFormsResponses, ActionHelper.StripAsyncSuffix(nameof(NewAsync)), routeValues: new { });
+        var resource = await ResultFactory.CreateResourceAsync(dto, HttpMethod.Post, ReturnsReadOnlyFormsResponses, ActionHelper.StripAsyncSuffix(nameof(PostAsync)), routeValues: new { });
 
         var result = new JsonResult(resource, _createNewResourceJsonSettings);
 
