@@ -1,5 +1,5 @@
 import { CdkDragDrop } from '@angular/cdk/drag-drop';
-import { ChangeDetectorRef, Component, ContentChild, EventEmitter, Input, OnInit, Output, TemplateRef } from '@angular/core';
+import { ChangeDetectorRef, Component, ContentChild, EventEmitter, Input, OnInit, Output, TemplateRef, ViewChild } from '@angular/core';
 import { AbstractControl, ControlContainer, FormArray, FormControl, FormGroup, FormGroupDirective } from '@angular/forms';
 import { FormService, NumberTemplate, Options, OptionsItemDto, ProblemDetails, Property, PropertyType, ResourceDto, ResourceOfDto, SimpleValue, Template, TemplateDto } from '@wertzui/ngx-hal-client';
 import { MessageService } from 'primeng/api';
@@ -9,6 +9,7 @@ import { RestWorldClient } from '../../services/restworld-client';
 import { RestWorldClientCollection } from '../../services/restworld-client-collection';
 import { PropertyWithOptions, PropertyWithImage } from '../../models/special-properties'
 import { debounce } from '../../util/debounce';
+import { MultiSelect } from 'primeng/multiselect';
 
 /**
  * A form element with a label that is automatically created from a property in a form template.
@@ -75,7 +76,7 @@ export class RestWorldInputComponent<TProperty extends Property<SimpleValue, str
 export class RestWorldInputCollectionComponent<T extends { [K in keyof T]: AbstractControl<any, any>; }> implements OnInit {
 
   @Input({ required: true })
-  property!: Property & {_templates: { default: Template }};
+  property!: Property & { _templates: { default: Template } };
 
   @Input({ required: true })
   apiName!: string;
@@ -220,6 +221,9 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
   @ContentChild('inputOptionsMultiple', { static: false })
   inputOptionsMultipleRef?: TemplateRef<PropertyTemplateContext>;
 
+  @ViewChild(MultiSelect)
+  multiSelect?: MultiSelect;
+
   /**
    * An event that is emitted when the selected value changes.
    */
@@ -298,7 +302,7 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
   }
 
   public getItemByValue(value: ExtractValueType<TProperty>): TOptionsItem {
-    if(this.property.options.inline === undefined || this.property.options.inline === null)
+    if (this.property.options.inline === undefined || this.property.options.inline === null)
       throw new Error('The property does not have any inline options.');
 
     return this.property.options.inline.find(item => this.getValue(item as TOptionsItem) === value) as TOptionsItem;
@@ -315,20 +319,59 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
 
   public onOptionsFiltered = debounce(this.onOptionsFilteredInternal, 200);
 
-  public async onOptionsFilteredInternal(event: { originalEvent: unknown; filter: string | null }) {
+  public async onOptionsFilteredInternal(event: { originalEvent: Event; filter: string | null }) {
     this._loading = true;
 
     try {
       const options = this.property?.options;
 
-      if (!options?.link?.href || !event.filter || event.filter === '')
+      if (!(event.filter) || event.filter === '')
         return;
 
-      let filter = `contains(${options.promptField}, '${event.filter}')`;
-      if (options.valueField?.toLowerCase() === 'id' && !Number.isNaN(Number.parseInt(event.filter)))
-        filter = `(${options.valueField} eq ${event.filter})  or (${filter})`;
+      if (event.originalEvent.type === "input") {
+        const inputEvent = (event.originalEvent as InputEvent);
+        if (inputEvent.inputType === "insertFromPaste") {
+          // If the user pasted in multiple ids as comma separated list, we want to get them all and set them as the selected value.
 
-      await this.SetInlineOptionsFromFilter(filter, event.filter);
+          var values = event.filter
+            .split(",")
+            .filter(v => v !== '')
+            .map(v => v.trim())
+            .map(v => {
+              const n = Number.parseFloat(v);
+              return Number.isNaN(n) ? v : n;
+            });
+
+          if (!values || values.length === 0)
+            return;
+
+          const allAreNumbers = values.every(v => typeof v === "number" && !isNaN(v));
+          const filter = allAreNumbers
+            ? `${options.valueField} in (${values.join(',')})`
+            : `contains(${options.promptField}, '${values.join("', '")}')`;
+
+          if ((options?.link?.href))
+            await this.SetInlineOptionsFromFilter(filter, "");
+
+          if (options.inline) {
+            const selectedValues: ExtractGenericOptionsSelectedValuesType<TProperty> = options.inline
+              .map(i => this.getValue(i as TOptionsItem))
+              .filter(v => values.includes(v as any)) as any;
+            this._formControl.setValue(selectedValues);
+            this.multiSelect?.resetFilter();
+          }
+        }
+        else {
+          // This is the normal case where the user types in a filter.
+
+          let filter = `contains(${options.promptField}, '${event.filter}')`;
+          if (options.valueField?.toLowerCase() === 'id' && !Number.isNaN(Number.parseInt(event.filter)))
+            filter = `(${options.valueField} eq ${event.filter})  or (${filter})`;
+
+          if ((options?.link?.href))
+            await this.SetInlineOptionsFromFilter(filter, event.filter);
+        }
+      }
     }
     finally {
       this._loading = false;
@@ -360,7 +403,7 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
     const templatedUri = options.link.href;
     const response = await this.getClient().getListByUri<TOptionsItem>(templatedUri, { $filter: filter, $top: 10 });
     if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body) {
-      const message = `An error occurred while getting the initial selected items for the property ${this.property.name}.`;
+      const message = `An error occurred while getting the selected items for the property ${this.property.name}.`;
       this._messageService.add({ severity: 'error', summary: 'Error', detail: message, data: response, sticky: true });
     }
 
