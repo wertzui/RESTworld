@@ -59,8 +59,8 @@ import { PropertyTypeFormatPipe } from './pipes/property-type-format.pipe';
 import { OpenTelemetryService } from './services/opentelemetry.service';
 import { ImageCropperComponent } from 'ngx-image-cropper';
 
-export function initializeSettings(settingsService: SettingsService): () => Promise<void> {
-  return async () => await settingsService.ensureInitialized();
+export function initializeRestWorldClientModule(settingsService: SettingsService, opentelemetryService: OpenTelemetryService): () => Promise<void> {
+  return async () => await settingsService.ensureInitialized().then(() => opentelemetryService.initialize());
 }
 
 @NgModule({
@@ -175,8 +175,8 @@ export function initializeSettings(settingsService: SettingsService): () => Prom
     RestWorldClientCollection,
     {
       provide: APP_INITIALIZER,
-      useFactory: initializeSettings,
-      deps: [SettingsService],
+      useFactory: initializeRestWorldClientModule,
+      deps: [SettingsService, OpenTelemetryService],
       multi: true,
     },
   ]
