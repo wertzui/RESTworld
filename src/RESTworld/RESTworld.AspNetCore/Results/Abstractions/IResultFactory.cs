@@ -1,4 +1,5 @@
-﻿using HAL.Common;
+﻿using Asp.Versioning;
+using HAL.Common;
 using HAL.Common.Forms;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
@@ -24,6 +25,7 @@ public interface IResultFactory
     /// <typeparam name="TDto">The type of the DTOs in the list.</typeparam>
     /// <param name="items">The items of the collection.</param>
     /// <param name="controller">The controller.</param>
+    /// <param name="version">The API version. Defaults to version of the currently running request.</param>
     /// <param name="listGetMethod">
     /// The name of the get method for the list endpoint. Default is "GetList".
     /// </param>
@@ -34,7 +36,7 @@ public interface IResultFactory
     /// The name of the put method for the update-multiple endpoint. Default is "Put".
     /// </param>
     /// <returns>Either a HAL resource, or a HAL-Forms resource containing the given <paramref name="items"/>.</returns>
-    ValueTask<Resource> CreateCollectionResourceAsync<TDto>(IReadOnlyCollection<TDto> items, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
+    ValueTask<Resource> CreateCollectionResourceAsync<TDto>(IReadOnlyCollection<TDto> items, string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
 
     /// <summary>
     /// Creates a collection result based on the outcome of a service response. It either contains the
@@ -48,6 +50,7 @@ public interface IResultFactory
     /// When this method returns HAL-Forms, this parameter determines if the form is read only or not.
     /// </param>
     /// <param name="controller">The controller.</param>
+    /// <param name="version">The API version. Defaults to version of the currently running request.</param>
     /// <param name="listGetMethod">
     /// The name of the get method for the list endpoint. Default is "GetList".
     /// </param>
@@ -62,7 +65,7 @@ public interface IResultFactory
     /// <see cref="ServiceResponse{T}.ResponseObject"/> is used.
     /// </param>
     /// <returns>Either a successful or an error result.</returns>
-    ValueTask<ObjectResult> CreateCreatedCollectionResultBasedOnOutcomeAsync<TDto>(ServiceResponse<IReadOnlyCollection<TDto>> serviceResponse, bool readOnly = false, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put", object? routeValues = null) where TDto : DtoBase;
+    ValueTask<ObjectResult> CreateCreatedCollectionResultBasedOnOutcomeAsync<TDto>(ServiceResponse<IReadOnlyCollection<TDto>> serviceResponse, bool readOnly = false, string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put", object? routeValues = null) where TDto : DtoBase;
 
     /// <summary>
     /// Creates a result based on the outcome of a service response. It either contains the
@@ -117,6 +120,7 @@ public interface IResultFactory
     /// the controller method without the async suffix. If none is provided, "Get" is used as default.
     /// </param>
     /// <param name="controller">The controller.</param>
+    /// <param name="version">The API version. Defaults to version of the currently running request.</param>
     /// <param name="listGetMethod">
     /// The name of the get method for the list endpoint. Default is "GetList".
     /// </param>
@@ -131,7 +135,7 @@ public interface IResultFactory
     /// <see cref="ServiceResponse{T}.ResponseObject"/> is used.
     /// </param>
     /// <returns>Either a successful or an error result.</returns>
-    ValueTask<ObjectResult> CreateOkCollectionResultBasedOnOutcomeAsync<TDto>(ServiceResponse<IReadOnlyCollection<TDto>> serviceResponse, bool readOnly = false, string action = "Put", string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put", object? routeValues = null) where TDto : DtoBase;
+    ValueTask<ObjectResult> CreateOkCollectionResultBasedOnOutcomeAsync<TDto>(ServiceResponse<IReadOnlyCollection<TDto>> serviceResponse, bool readOnly = false, string action = "Put", string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put", object? routeValues = null) where TDto : DtoBase;
 
     /// <summary>
     /// Creates a result based on the outcome of a service response. It either contains the
@@ -169,6 +173,7 @@ public interface IResultFactory
     /// </param>
     /// <param name="page">The page to return.</param>
     /// <param name="controller">The controller.</param>
+    /// <param name="version">The API version. Defaults to version of the currently running request.</param>
     /// <param name="listGetMethod">
     /// The name of the get method for the list endpoint. Default is "GetList".
     /// </param>
@@ -179,7 +184,7 @@ public interface IResultFactory
     /// The name of the put method for the update-multiple endpoint. Default is "Put".
     /// </param>
     /// <returns>Either a HAL resource, or a HAL-Forms resource containing the given <paramref name="page"/>.</returns>
-    ValueTask<Resource> CreatePagedCollectionResourceAsync<TEntity, TDto>(ODataQueryOptions<TEntity> options, IReadOnlyPagedCollection<TDto> page, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
+    ValueTask<Resource> CreatePagedCollectionResourceAsync<TEntity, TDto>(ODataQueryOptions<TEntity> options, IReadOnlyPagedCollection<TDto> page, string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
 
     /// <summary>
     /// Creates a paged collection result which is either a HAL resource, or a HAL-Forms resource
@@ -192,6 +197,7 @@ public interface IResultFactory
     /// <param name="maxTop">The default max top for pagination.</param>
     /// <param name="page">The page to return.</param>
     /// <param name="controller">The controller.</param>
+    /// <param name="version">The API version. Defaults to version of the currently running request.</param>
     /// <param name="listGetMethod">
     /// The name of the get method for the list endpoint. Default is "GetList".
     /// </param>
@@ -202,7 +208,7 @@ public interface IResultFactory
     /// The name of the put method for the update-multiple endpoint. Default is "Put".
     /// </param>
     /// <returns>Either a HAL resource, or a HAL-Forms resource containing the given <paramref name="page"/>.</returns>
-    ValueTask<Resource> CreatePagedCollectionResourceAsync<TDto>(ODataRawQueryOptions options, int? maxTop, IReadOnlyPagedCollection<TDto> page, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
+    ValueTask<Resource> CreatePagedCollectionResourceAsync<TDto>(ODataRawQueryOptions options, int? maxTop, IReadOnlyPagedCollection<TDto> page, string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
 
     /// <summary>
     /// Creates a paged collection result based on the outcome of a service response. It either
@@ -218,6 +224,7 @@ public interface IResultFactory
     /// </param>
     /// <param name="serviceResponse">The response from the service call.</param>
     /// <param name="controller">The controller.</param>
+    /// <param name="version">The API version. Defaults to version of the currently running request.</param>
     /// <param name="listGetMethod">
     /// The name of the get method for the list endpoint. Default is "GetList".
     /// </param>
@@ -228,7 +235,7 @@ public interface IResultFactory
     /// The name of the put method for the update-multiple endpoint. Default is "Put".
     /// </param>
     /// <returns>Either a successful or an error result.</returns>
-    ValueTask<ObjectResult> CreatePagedCollectionResultBasedOnOutcomeAsync<TEntity, TDto>(ODataQueryOptions<TEntity> options, ServiceResponse<IReadOnlyPagedCollection<TDto>> serviceResponse, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
+    ValueTask<ObjectResult> CreatePagedCollectionResultBasedOnOutcomeAsync<TEntity, TDto>(ODataQueryOptions<TEntity> options, ServiceResponse<IReadOnlyPagedCollection<TDto>> serviceResponse, string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
 
     /// <summary>
     /// Creates a paged collection result based on the outcome of a service response. It either
@@ -242,6 +249,7 @@ public interface IResultFactory
     /// <param name="maxTop">The default max top for pagination.</param>
     /// <param name="serviceResponse">The response from the service call.</param>
     /// <param name="controller">The controller.</param>
+    /// <param name="version">The API version. Defaults to version of the currently running request.</param>
     /// <param name="listGetMethod">
     /// The name of the get method for the list endpoint. Default is "GetList".
     /// </param>
@@ -252,7 +260,7 @@ public interface IResultFactory
     /// The name of the put method for the update-multiple endpoint. Default is "Put".
     /// </param>
     /// <returns>Either a successful or an error result.</returns>
-    ValueTask<ObjectResult> CreatePagedCollectionResultBasedOnOutcomeAsync<TDto>(ODataRawQueryOptions options, int? maxTop, ServiceResponse<IReadOnlyPagedCollection<TDto>> serviceResponse, string? controller = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
+    ValueTask<ObjectResult> CreatePagedCollectionResultBasedOnOutcomeAsync<TDto>(ODataRawQueryOptions options, int? maxTop, ServiceResponse<IReadOnlyPagedCollection<TDto>> serviceResponse, string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
 
     /// <summary>
     /// Creates a result which is either a HAL resource, or a HAL-Forms resource based on the accept header.
