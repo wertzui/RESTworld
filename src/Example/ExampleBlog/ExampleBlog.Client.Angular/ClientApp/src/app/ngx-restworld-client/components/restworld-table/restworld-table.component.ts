@@ -514,6 +514,7 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
 
     this._contextMenuItems = this.rowMenu(row, true);
     this.contextMenu.show(event);
+
     event.stopPropagation();
   }
 

@@ -18,6 +18,7 @@
       [panelStyleClass]="loading ? 'loading' : ''"
       [filterPlaceholder]="property?.options?.link?.href ? 'search for more results' : ''"
       [emptyFilterMessage]="loading ? 'Loading...' : ''"
+      appendTo="body"
     >
         <ng-template let-item pTemplate="selectedItem">
           <span [pTooltip]="getTooltip(item)">{{getLabel(item)}}</span>
@@ -57,6 +58,7 @@
       [emptyFilterMessage]="loading ? 'Loading...' : ''"
       [selectionLimit]="property.options.maxItems"
       display="chip"
+      appendTo="body"
     >
     <ng-template let-value pTemplate="selectedItems">
       <p-chip
