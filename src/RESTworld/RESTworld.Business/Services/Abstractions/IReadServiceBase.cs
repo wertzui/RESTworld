@@ -20,6 +20,13 @@ public interface IReadServiceBase<TEntity, TGetListDto, TGetFullDto>
     where TGetListDto : DtoBase
     where TGetFullDto : DtoBase
 {
+    /// <summary>
+    /// Gets multiple historical entries from the database, filtered and paged as defined in the <paramref name="request"/>.
+    /// </summary>
+    /// <param name="request">Specifies filtering, paging and ordering through its Filter and if the total count shall be returned.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
+    /// <returns></returns>
+    Task<ServiceResponse<IReadOnlyPagedCollection<TGetFullDto>>> GetHistoryAsync(IGetHistoryRequest<TGetFullDto, TEntity> request, CancellationToken cancellationToken);
 
     /// <summary>
     /// Gets multiple entries from the database, filtered and paged as defined in the <paramref name="request"/>.
@@ -28,7 +35,7 @@ public interface IReadServiceBase<TEntity, TGetListDto, TGetFullDto>
     /// <param name="request">Specifies filtering, paging and ordering through its Filter and if the total count shall be returned.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
-    Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListAsync(IGetListRequest<TEntity> request, CancellationToken cancellationToken);
+    Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListAsync(IGetListRequest<TGetListDto, TEntity> request, CancellationToken cancellationToken);
 
     /// <summary>
     /// Gets a single entry, defined by the <paramref name="id"/>.

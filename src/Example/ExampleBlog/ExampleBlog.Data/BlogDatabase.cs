@@ -37,6 +37,8 @@ public class BlogDatabase : DbContextBase
 
         modelBuilder.Entity<Post>(entity =>
         {
+            entity.ToTable(b => b.IsTemporal());
+
             var id = 1L;
             for (var blogId = 1; blogId <= 3; blogId++)
             {

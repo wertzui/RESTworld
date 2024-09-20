@@ -21,7 +21,7 @@ public class BlogpostAuthorizationHandler : CrudAuthorizationHandlerBase<Post, P
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public override Task<AuthorizationResult<Post, IGetListRequest<Post>>> HandleGetListRequestAsync(AuthorizationResult<Post, IGetListRequest<Post>> previousResult, CancellationToken cancellationToken)
+    public override Task<AuthorizationResult<Post, IGetListRequest<PostListDto, Post>>> HandleGetListRequestAsync(AuthorizationResult<Post, IGetListRequest<PostListDto, Post>> previousResult, CancellationToken cancellationToken)
     {
         // This is just to illustrate how authorization handlers work.
         // In a normal environment you would use the current user (probably through UserIsAuthorizedCrudAuthorizationHandler) and do some real authorization.

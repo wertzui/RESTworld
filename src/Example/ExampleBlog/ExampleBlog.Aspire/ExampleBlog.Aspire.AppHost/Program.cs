@@ -2,8 +2,10 @@ using Projects;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-builder.AddOpenTelemetryCollector("collector", "otel-collector-config.yaml")
-    .WithAppForwarding();
+// Add an OpenTelemetry collector.
+// This is mostly done, because the Dashboard does not directly accept OTLP over HTTP with CORS.
+// So this collector is a proxy in the middle, accepting OTLP over HTTP and forwarding it to the Dashboard.
+builder.AddOpenTelemetryCollector();
 
 // This will read the connection string from the appsettings.json or secrets.json file or get it from an environment variable
 // In this example it is stored in appsettings.json, because it just connects to lodaldb without a password.
@@ -20,8 +22,6 @@ var apiService = builder.AddProject<ExampleBlog>(nameof(ExampleBlog))
     .WithReference(database);
 
 // Add the Frontend which hosts the Angular client
-// Note that OTLP in Angular does not work with Aspire at the moment, because Aspire only accepts OTLP through gRPC
-// Until this PR is merged: https://github.com/dotnet/aspire/pull/4197
 var frontendService = builder.AddProject<ExampleBlog_Client_Angular>("ExampleBlog-Client-Angular")
     // Add a reference to the backend API
     // This will inject an environment variable services__ExampleBlog__https__0=https://localhost:5432

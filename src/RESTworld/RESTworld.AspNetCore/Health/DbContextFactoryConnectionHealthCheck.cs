@@ -1,6 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Logging;
 using System;
+using System.Globalization;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,19 +13,27 @@ namespace RESTworld.AspNetCore.Health;
 /// Checks if a connection to the database can be established.
 /// </summary>
 /// <typeparam name="TContext"></typeparam>
-public class DbContextFactoryConnectionHealthCheck<TContext> : IHealthCheck
+public partial class DbContextFactoryConnectionHealthCheck<TContext> : IHealthCheck
     where TContext : DbContext
 {
     private readonly string _contextName;
     private readonly IDbContextFactory<TContext> _factory;
+    private readonly ILogger<DbContextFactoryConnectionHealthCheck<TContext>> _logger;
+    private const string _exceptionMessageLogFormat = "Cannot connect to {Context}.";
+    private static readonly CompositeFormat _exceptionMessageCompositeFormat = CompositeFormat.Parse(_exceptionMessageLogFormat.Replace("{Context}", "{0}"));
+
+    private const string _successMessageLogFormat = "Connection to {Context} was successful.";
+    private static readonly CompositeFormat _successMessageCompositeFormat = CompositeFormat.Parse(_successMessageLogFormat.Replace("{Context}", "{0}"));
 
     /// <summary>
     /// Creates a new instance of the <see cref="DbContextFactoryConnectionHealthCheck{TContext}"/> class.
     /// </summary>
     /// <param name="factory">The factory which is used to create the <see cref="DbContext"/>.</param>
-    public DbContextFactoryConnectionHealthCheck(IDbContextFactory<TContext> factory)
+    /// <param name="logger">The logger.</param>
+    public DbContextFactoryConnectionHealthCheck(IDbContextFactory<TContext> factory, ILogger<DbContextFactoryConnectionHealthCheck<TContext>> logger)
     {
         _factory = factory ?? throw new ArgumentNullException(nameof(factory));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _contextName = typeof(TContext).Name;
     }
 
@@ -41,12 +52,16 @@ public class DbContextFactoryConnectionHealthCheck<TContext> : IHealthCheck
             }
             catch (Exception e)
             {
-                return new HealthCheckResult(context.Registration.FailureStatus, $"Cannot connect to {_contextName}", e);
+                LogExceptionMessage(_contextName, e);
+                return new HealthCheckResult(context.Registration.FailureStatus, string.Format(CultureInfo.InvariantCulture, _exceptionMessageCompositeFormat, _contextName));
             }
 
-            return new HealthCheckResult(context.Registration.FailureStatus, $"Cannot connect to {_contextName}.");
+            return new HealthCheckResult(context.Registration.FailureStatus, string.Format(CultureInfo.InvariantCulture, _exceptionMessageCompositeFormat, _contextName));
         }
 
-        return HealthCheckResult.Healthy($"Connection to {_contextName} was successfull.");
+        return HealthCheckResult.Healthy(string.Format(CultureInfo.InvariantCulture, _successMessageCompositeFormat, _contextName));
     }
+
+    [LoggerMessage(LogLevel.Error, _exceptionMessageLogFormat)]
+    internal partial void LogExceptionMessage(string context, Exception? exception);
 }

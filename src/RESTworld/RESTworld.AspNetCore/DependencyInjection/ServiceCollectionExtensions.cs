@@ -1,6 +1,8 @@
 ﻿using HAL.AspNetCore.Forms.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.SqlServer.Query;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using RESTworld.AspNetCore.Authorization;
@@ -120,7 +122,8 @@ public static class ServiceCollectionExtensions
             builder
                 .UseSqlServer(configuration.GetConnectionString(contextName), sqlServerOptionsAction)
                 .EnableDetailedErrors()
-                .EnableSensitiveDataLogging();
+                .EnableSensitiveDataLogging()
+                .ReplaceService<INavigationExpansionExtensibilityHelper, AllowAllTemporalSqlServerNavigationExpansionExtensibilityHelper>();
 
         services.AddPooledDbContextFactory<TContext>(optionsAction);
 

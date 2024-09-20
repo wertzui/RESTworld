@@ -27,7 +27,9 @@ public static class AutoMapperConfiguration
         config
             .CreateMap<Post, PostListDto>();
         config
-            .CreateMap<Post, PostGetFullDto>();
+            .CreateMap<Post, PostGetFullDto>()
+            .ForMember(dst => dst.Author, opt => opt.Ignore())
+            .ForMember(dst => dst.Blog, opt => opt.Ignore());
         config
             .CreateMap<PostUpdateDto, Post>();
 
@@ -52,6 +54,10 @@ public static class AutoMapperConfiguration
             .ReverseMap();
         config
             .CreateMap<Author, AuthorStatisticsFullDto>()
+            .ReverseMap();
+
+        config
+            .CreateMap<TestEntity, TestDto>()
             .ReverseMap();
     }
 }

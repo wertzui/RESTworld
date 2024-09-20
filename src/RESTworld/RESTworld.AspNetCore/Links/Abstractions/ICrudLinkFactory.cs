@@ -24,6 +24,24 @@ namespace RESTworld.AspNetCore.Links.Abstractions
         TFormsResource AddDeleteLink<TFormsResource>(TFormsResource resource) where TFormsResource : FormsResource;
 
         /// <summary>
+        /// Adds a history link to the given resource.
+        /// </summary>
+        /// <param name="resource">The resource to add the link to.</param>
+        /// <typeparam name="TDto">The type of the resources state.</typeparam>
+        Resource<TDto> AddHistoryLink<TDto>(Resource<TDto> resource) where TDto : DtoBase?;
+
+        /// <summary>
+        /// Adds a history link to the given resource.
+        /// </summary>
+        /// <param name="resource">The resource to add the link to.</param>
+        /// <param name="dto">The DTO to get the history for.</param>
+        /// <typeparam name="TResource">The type of the resource.</typeparam>
+        /// <typeparam name="TDto">The type of the resources state.</typeparam>
+        TResource AddHistoryLink<TResource, TDto>(TResource resource, TDto dto)
+            where TResource : Resource
+            where TDto : DtoBase?;
+
+        /// <summary>
         /// Adds the "new" link to the resource which is used to retrieve a template for creating
         /// new entries.
         /// </summary>

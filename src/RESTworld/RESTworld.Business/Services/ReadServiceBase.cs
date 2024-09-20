@@ -58,12 +58,22 @@ public class ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>
     protected virtual IEnumerable<IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>> ReadAuthorizationHandlers { get; }
 
     /// <inheritdoc/>
-    public Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListAsync(IGetListRequest<TEntity> request, CancellationToken cancellationToken)
-        => TryExecuteWithAuthorizationAsync<TEntity, IGetListRequest<TEntity>, IReadOnlyPagedCollection<TGetListDto>, IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>>(
+    public Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListAsync(IGetListRequest<TGetListDto, TEntity> request, CancellationToken cancellationToken)
+        => TryExecuteWithAuthorizationAsync<TEntity, IGetListRequest<TGetListDto, TEntity>, IReadOnlyPagedCollection<TGetListDto>, IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>>(
             request,
             (result, token) => GetListInternalAsync(result, token),
             (result, handler, token) => handler.HandleGetListRequestAsync(result, token),
             (response, handler, token) => handler.HandleGetListResponseAsync(response, token),
+            ReadAuthorizationHandlers,
+            cancellationToken);
+
+    /// <inheritdoc/>
+    public Task<ServiceResponse<IReadOnlyPagedCollection<TGetFullDto>>> GetHistoryAsync(IGetHistoryRequest<TGetFullDto, TEntity> request, CancellationToken cancellationToken)
+        => TryExecuteWithAuthorizationAsync<TEntity, IGetHistoryRequest<TGetFullDto, TEntity>, IReadOnlyPagedCollection<TGetFullDto>, IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>>(
+            request,
+            (result, token) => GetHistoryInternalAsync(result, token),
+            (result, handler, token) => handler.HandleGetHistoryRequestAsync(result, token),
+            (response, handler, token) => handler.HandleGetHistoryResponseAsync(response, token),
             ReadAuthorizationHandlers,
             cancellationToken);
 
@@ -82,19 +92,19 @@ public class ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>
     /// to add some custom logic on how this is generated, you can override this method.
     /// </summary>
     /// <returns>The DB set that is used in all other methods.</returns>
-    protected virtual IQueryable<TEntity> GetDbSetForReading() => _contextFactory.Set<TContext, TEntity>();
+    protected virtual ValueTask<IQueryable<TEntity>> GetDbSetForReadingAsync() => ValueTask.FromResult(_contextFactory.Set<TContext, TEntity>());
 
     /// <summary>
-    /// Gets the DB set from <see cref="GetDbSetForReading"/> that is used when reading (not
+    /// Gets the DB set from <see cref="GetDbSetForReadingAsync"/> that is used when reading (not
     /// updating!) and applies the given authorization filters. You can override this method if
     /// you need to apply a custom authorization logic. If you just want to modify the DB set,
-    /// you should override <see cref="GetDbSetForReading"/> instead.
+    /// you should override <see cref="GetDbSetForReadingAsync"/> instead.
     /// </summary>
     /// <param name="authorizationResult">
     /// The authorization result containing the filter that will be applied to the DB set.
     /// </param>
     /// <returns>The filtered DB set that is used in all other methods.</returns>
-    protected virtual IQueryable<TEntity> GetDbSetForReadingWithAuthorization(AuthorizationResult<TEntity> authorizationResult) => GetDbSetForReading().WithAuthorizationFilter(authorizationResult);
+    protected virtual async ValueTask<IQueryable<TEntity>> GetDbSetForReadingWithAuthorizationAsync(AuthorizationResult<TEntity> authorizationResult) => (await GetDbSetForReadingAsync()).WithAuthorizationFilter(authorizationResult);
 
     /// <summary>
     /// The method contains the business logic for the READ-List operation. It will return the
@@ -110,47 +120,89 @@ public class ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>
     /// <exception cref="ArgumentException">
     /// If request.CalculateTotalCount is true, request.FilterForTotalCount must not be null.
     /// </exception>
-    protected virtual async Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListInternalAsync(AuthorizationResult<TEntity, IGetListRequest<TEntity>> authorizationResult, CancellationToken cancellationToken)
+    protected virtual async Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListInternalAsync(AuthorizationResult<TEntity, IGetListRequest<TGetListDto, TEntity>> authorizationResult, CancellationToken cancellationToken)
     {
         var request = authorizationResult.Value1;
 
-        var setForEntities = GetDbSetForReadingWithAuthorization(authorizationResult);
+        var setForEntities = await GetDbSetForReadingWithAuthorizationAsync(authorizationResult);
 
         Task<long>? totalPagesTask = null;
         long? totalCount = null;
 
-        var tasks = new List<Task>(2);
+        var setForDtos = request.Filter(setForEntities);
 
-        if (request is not null)
+        var dtosTask = setForDtos.ToListAsync(cancellationToken);
+
+        if (request.CalculateTotalCount)
         {
-            if (request.Filter is not null)
-                setForEntities = request.Filter(setForEntities);
+            if (request.FilterForTotalCount is null)
+                throw new ArgumentException($"If {nameof(authorizationResult)}{nameof(authorizationResult.Value1)}.{nameof(authorizationResult.Value1.CalculateTotalCount)} is true, {nameof(authorizationResult)}{nameof(authorizationResult.Value1)}.{nameof(authorizationResult.Value1.FilterForTotalCount)} must not be null.", nameof(authorizationResult));
 
-            if (request.CalculateTotalCount)
-            {
-                if (request.FilterForTotalCount is null)
-                    throw new ArgumentException($"If {nameof(authorizationResult)}{nameof(authorizationResult.Value1)}.{nameof(authorizationResult.Value1.CalculateTotalCount)} is true, {nameof(authorizationResult)}{nameof(authorizationResult.Value1)}.{nameof(authorizationResult.Value1.FilterForTotalCount)} must not be null.", nameof(authorizationResult));
-
-                var totalPagesSet = GetDbSetForReadingWithAuthorization(authorizationResult);
-                totalPagesSet = request.FilterForTotalCount(totalPagesSet);
-                totalPagesTask = totalPagesSet.LongCountAsync(cancellationToken);
-                tasks.Add(totalPagesTask);
-            }
+            var totalPagesSetForEntities = await GetDbSetForReadingWithAuthorizationAsync(authorizationResult);
+            var totalPagesSetForDtos = request.FilterForTotalCount(totalPagesSetForEntities);
+            totalPagesTask = totalPagesSetForDtos.LongCountAsync(cancellationToken);
         }
 
-        var entitiesTask = setForEntities.ToListAsync(cancellationToken);
-        tasks.Add(entitiesTask);
-
-        await Task.WhenAll(tasks);
-
-        var dtos = _mapper.Map<IReadOnlyCollection<TGetListDto>>(entitiesTask.Result);
+        var dtos = await dtosTask;
 
         if (request is not null && request.CalculateTotalCount && totalPagesTask is not null)
-            totalCount = totalPagesTask.Result;
+            totalCount = await totalPagesTask;
 
         IReadOnlyPagedCollection<TGetListDto> pagedCollection = new ReadOnlyPagedCollection<TGetListDto>(dtos, totalCount);
 
-        await OnGotListInternalAsync(authorizationResult, pagedCollection, entitiesTask.Result, cancellationToken);
+        await OnGotListInternalAsync(authorizationResult, pagedCollection, cancellationToken);
+
+        return ServiceResponse.FromResult(pagedCollection);
+    }
+
+    /// <summary>
+    /// The method contains the business logic for the READ-History operation. It will return the
+    /// items from the database as specified in the request.
+    /// </summary>
+    /// <param name="authorizationResult">
+    /// The result of the authorization which contains the request which contains the date range and a filter on
+    /// which items to return. The filter is normally mapped from the OData parameters that
+    /// where passed into the controller ($filter, $orderby, $top, $skip).
+    /// </param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
+    /// <returns>All items as specified in the request with paging options if specified.</returns>
+    /// <exception cref="ArgumentException">
+    /// If request.CalculateTotalCount is true, request.FilterForTotalCount must not be null.
+    /// </exception>
+    protected virtual async Task<ServiceResponse<IReadOnlyPagedCollection<TGetFullDto>>> GetHistoryInternalAsync(AuthorizationResult<TEntity, IGetHistoryRequest<TGetFullDto, TEntity>> authorizationResult, CancellationToken cancellationToken)
+    {
+        var request = authorizationResult.Value1;
+
+        //using var context = _contextFactory.CreateDbContext();
+        var setForEntities = (await GetDbSetForReadingWithAuthorizationAsync(authorizationResult)).TemporalBetween(request.ValidFrom.UtcDateTime, request.ValidTo.UtcDateTime);
+        //var setForEntities = context.Set<TEntity>().TemporalBetween(request.ValidFrom.UtcDateTime, request.ValidTo.UtcDateTime);
+
+        Task<long>? totalPagesTask = null;
+        long? totalCount = null;
+
+        var setForDtos = request.Filter(setForEntities);
+
+        var dtosTask = setForDtos.ToListAsync(cancellationToken);
+
+        if (request.CalculateTotalCount)
+        {
+            if (request.FilterForTotalCount is null)
+                throw new ArgumentException($"If {nameof(authorizationResult)}{nameof(authorizationResult.Value1)}.{nameof(authorizationResult.Value1.CalculateTotalCount)} is true, {nameof(authorizationResult)}{nameof(authorizationResult.Value1)}.{nameof(authorizationResult.Value1.FilterForTotalCount)} must not be null.", nameof(authorizationResult));
+
+            var totalPagesSetForEntities = await GetDbSetForReadingWithAuthorizationAsync(authorizationResult);
+            totalPagesSetForEntities = totalPagesSetForEntities.TemporalBetween(request.ValidFrom.UtcDateTime, request.ValidTo.UtcDateTime);
+            var totalPagesSetForDtos = request.FilterForTotalCount(totalPagesSetForEntities);
+            totalPagesTask = totalPagesSetForDtos.LongCountAsync(cancellationToken);
+        }
+
+        var dtos = await dtosTask;
+
+        if (request is not null && request.CalculateTotalCount && totalPagesTask is not null)
+            totalCount = await totalPagesTask;
+
+        IReadOnlyPagedCollection<TGetFullDto> pagedCollection = new ReadOnlyPagedCollection<TGetFullDto>(dtos, totalCount);
+
+        await OnGotHistoryInternalAsync(authorizationResult, pagedCollection, cancellationToken);
 
         return ServiceResponse.FromResult(pagedCollection);
     }
@@ -168,7 +220,8 @@ public class ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>
     {
         var id = authorizationResult.Value1;
 
-        var entity = await GetDbSetForReadingWithAuthorization(authorizationResult).FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+        var setForEntities = await GetDbSetForReadingWithAuthorizationAsync(authorizationResult);
+        var entity = await setForEntities.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
 
         if (entity is null)
             return ServiceResponse.FromStatus<TGetFullDto>(HttpStatusCode.NotFound);
@@ -188,10 +241,24 @@ public class ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>
     /// The result of the authorization which contains the filter.
     /// </param>
     /// <param name="pagedCollection">The DTOs which have been mapped from the entities.</param>
-    /// <param name="entities">The entity as they have been read from the database.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
-    protected virtual Task OnGotListInternalAsync(AuthorizationResult<TEntity, IGetListRequest<TEntity>> authorizationResult, IReadOnlyPagedCollection<TGetListDto> pagedCollection, IReadOnlyCollection<TEntity> entities, CancellationToken cancellationToken)
+    protected virtual Task OnGotListInternalAsync(AuthorizationResult<TEntity, IGetListRequest<TGetListDto, TEntity>> authorizationResult, IReadOnlyPagedCollection<TGetListDto> pagedCollection, CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// This method is called after the entities have been read from the database and mapped
+    /// into DTOs.
+    /// </summary>
+    /// <param name="authorizationResult">
+    /// The result of the authorization which contains the filter.
+    /// </param>
+    /// <param name="pagedCollection">The DTOs which have been mapped from the entities.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
+    /// <returns></returns>
+    protected virtual Task OnGotHistoryInternalAsync(AuthorizationResult<TEntity, IGetHistoryRequest<TGetFullDto, TEntity>> authorizationResult, IReadOnlyPagedCollection<TGetFullDto> pagedCollection, CancellationToken cancellationToken)
     {
         return Task.CompletedTask;
     }

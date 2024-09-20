@@ -39,7 +39,7 @@ public class UserIsAuthorizedReadAuthorizationHandler<TEntity, TGetListDto, TGet
     protected IUserAccessor UserAccessor { get; }
 
     /// <inheritdoc/>
-    public override Task<AuthorizationResult<TEntity, IGetListRequest<TEntity>>> HandleGetListRequestAsync(AuthorizationResult<TEntity, IGetListRequest<TEntity>> previousResult, CancellationToken cancellationToken)
+    public override Task<AuthorizationResult<TEntity, IGetListRequest<TGetListDto, TEntity>>> HandleGetListRequestAsync(AuthorizationResult<TEntity, IGetListRequest<TGetListDto, TEntity>> previousResult, CancellationToken cancellationToken)
     {
         var user = GetUser();
 
@@ -89,13 +89,13 @@ public class UserIsAuthorizedReadAuthorizationHandler<TEntity, TGetListDto, TGet
     protected virtual ClaimsPrincipal? GetUser() => UserAccessor.User;
 
     /// <summary>
-    /// This method is the same as <see cref="HandleGetListRequestAsync(AuthorizationResult{TEntity, IGetListRequest{TEntity}}, CancellationToken)" /> but also gives access to the current <paramref name="user" />.
+    /// This method is the same as <see cref="HandleGetListRequestAsync(AuthorizationResult{TEntity, IGetListRequest{TGetListDto, TEntity}}, CancellationToken)" /> but also gives access to the current <paramref name="user" />.
     /// </summary>
     /// <param name="previousResult">The previous result.</param>
     /// <param name="user">The user.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
-    protected virtual Task<AuthorizationResult<TEntity, IGetListRequest<TEntity>>> HandleGetListRequestWithUserAsync(AuthorizationResult<TEntity, IGetListRequest<TEntity>> previousResult, ClaimsPrincipal user, CancellationToken cancellationToken)
+    protected virtual Task<AuthorizationResult<TEntity, IGetListRequest<TGetListDto, TEntity>>> HandleGetListRequestWithUserAsync(AuthorizationResult<TEntity, IGetListRequest<TGetListDto, TEntity>> previousResult, ClaimsPrincipal user, CancellationToken cancellationToken)
     {
         return base.HandleGetListRequestAsync(previousResult, cancellationToken);
     }

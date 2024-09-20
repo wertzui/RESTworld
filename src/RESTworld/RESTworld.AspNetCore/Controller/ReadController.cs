@@ -1,5 +1,6 @@
 ﻿using HAL.AspNetCore.Abstractions;
 using HAL.AspNetCore.OData.Abstractions;
+using HAL.AspNetCore.Utils;
 using HAL.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -10,10 +11,14 @@ using RESTworld.AspNetCore.DependencyInjection;
 using RESTworld.AspNetCore.Filters;
 using RESTworld.AspNetCore.Results.Abstractions;
 using RESTworld.AspNetCore.Results.Errors.Abstractions;
+using RESTworld.Business.Models.Abstractions;
 using RESTworld.Business.Services.Abstractions;
 using RESTworld.Common.Dtos;
 using RESTworld.EntityFrameworkCore.Models;
 using System;
+using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -48,6 +53,7 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
     /// </param>
     /// <param name="linkFactory"></param>
     /// <param name="formFactory">The form factory which created HAL-Form resources.</param>
+    /// <param name="listRequestFactory">The factory to create list requests out of OData parameters.</param>
     /// <param name="resultFactory">The factory to create results.</param>
     /// <param name="errorResultFactory">The factory to create error results.</param>
     /// <param name="cache">The cache for service responses.</param>
@@ -59,6 +65,7 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
         IODataResourceFactory resourceFactory,
         ILinkFactory linkFactory,
         IODataFormFactory formFactory,
+        IListRequestFactory listRequestFactory,
         IResultFactory resultFactory,
         IErrorResultFactory errorResultFactory,
         ICacheHelper cache,
@@ -72,6 +79,7 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
         LinkFactory = linkFactory ?? throw new ArgumentNullException(nameof(linkFactory));
         FormFactory = formFactory ?? throw new ArgumentNullException(nameof(formFactory));
         ResultFactory = resultFactory ?? throw new ArgumentNullException(nameof(resultFactory));
+        ListRequestFactory = listRequestFactory ?? throw new ArgumentNullException(nameof(listRequestFactory));
         ErrorResultFactory = errorResultFactory ?? throw new ArgumentNullException(nameof(errorResultFactory));
     }
 
@@ -86,9 +94,14 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
     protected IODataFormFactory FormFactory { get; }
 
     /// <summary>
-    /// The factory to create successfull results.
+    /// The factory to create successful results.
     /// </summary>
     public IResultFactory ResultFactory { get; }
+
+    /// <summary>
+    /// The factory to create list requests out of OData parameters.
+    /// </summary>
+    public IListRequestFactory ListRequestFactory { get; }
 
     /// <summary>
     /// The link factory to add links to resources.
@@ -138,16 +151,91 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
     [ProducesResponseType(200)]
     [ProducesWithContentNegotiation("application/hal+json", "text/csv", "application/prs.hal-forms+json", "application/hal-forms+json")]
     public virtual async Task<ActionResult<Resource>> GetListAsync(
-        ODataQueryOptions<TEntity> options,
+        ODataQueryOptions<TGetListDto> options,
         CancellationToken cancellationToken)
     {
         options.Context.DefaultQueryConfigurations.MaxTop = Options.MaxNumberForListEndpoint;
-        var getListrequest = options.ToListRequest(Options.CalculateTotalCountForListEndpoint);
+
+        var getListrequest = ListRequestFactory.CreateListRequest<TGetListDto, TEntity>(options, Options.CalculateTotalCountForListEndpoint);
 
         var response = await Cache.CacheGetListWithCurrentUserAsync(options.RawValues, _ => _readService.GetListAsync(getListrequest, cancellationToken));
 
         var result = await ResultFactory.CreatePagedCollectionResultBasedOnOutcomeAsync(options, response);
 
         return result;
+    }
+
+    /// <summary>
+    /// Gets a paged list of historical resources matching the filter criteria.
+    /// </summary>
+    /// <param name="options">The OData options used to filter, order an page the list.</param>
+    /// <param name="at">Specifies a specific point in time.</param>
+    /// <param name="from">Specifies the start of a time range.</param>
+    /// <param name="to">Specifies the exclusive end of a time range.</param>
+    /// <param name="toInclusive">Specifies the inclusive end of a time range.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
+    /// <returns>A paged list of resources matching the filter criteria.</returns>
+    [HttpGet("history")]
+    [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
+    [ProducesResponseType(200)]
+    [ProducesWithContentNegotiation("application/hal+json", "text/csv", "application/prs.hal-forms+json", "application/hal-forms+json")]
+    public virtual async Task<ActionResult<Resource>> GetHistoryAsync(
+        ODataQueryOptions<TGetFullDto> options,
+        [FromQuery(Name = "$at")] DateTimeOffset? at,
+        [FromQuery(Name = "$from")] DateTimeOffset? from,
+        [FromQuery(Name = "$to")] DateTimeOffset? to,
+        [FromQuery(Name = "$toInclusive")] DateTimeOffset? toInclusive,
+        CancellationToken cancellationToken)
+    {
+        options.Context.DefaultQueryConfigurations.MaxTop = Options.MaxNumberForListEndpoint;
+
+        if (TryParseTemporalQuery(options, at, from, to, toInclusive, out var getHistoryRequest, out var error))
+        {
+            var response = await Cache.CacheGetListWithCurrentUserAsync(options.RawValues, _ => _readService.GetHistoryAsync(getHistoryRequest, cancellationToken));
+            var result = await ResultFactory.CreatePagedCollectionResultBasedOnOutcomeAsync(options, response);
+            return result;
+        }
+
+        return error;
+    }
+
+    private bool TryParseTemporalQuery(
+        ODataQueryOptions<TGetFullDto> options,
+        DateTimeOffset? at,
+        DateTimeOffset? from,
+        DateTimeOffset? to,
+        DateTimeOffset? toInclusive,
+        [NotNullWhen(true)] out IGetHistoryRequest<TGetFullDto, TEntity>? getHistoryRequest,
+        [NotNullWhen(false)] out ObjectResult? error)
+    {
+        getHistoryRequest = null;
+        error = null;
+
+        if (typeof(TGetFullDto).GetCustomAttributes(typeof(HasHistoryAttribute), true).Length == 0)
+        {
+            error = ErrorResultFactory.CreateError((int)HttpStatusCode.NotFound, "This resource does not have a history.", ActionHelper.StripAsyncSuffix(nameof(GetHistoryAsync)));
+            return false;
+        }
+
+        if (at.HasValue)
+        {
+            if (from.HasValue || to.HasValue || toInclusive.HasValue)
+            {
+                error = ErrorResultFactory.CreateError((int)HttpStatusCode.BadRequest, "If $at is specified, $from, $to and $toInclusive must not be specified.", ActionHelper.StripAsyncSuffix(nameof(GetHistoryAsync)));
+                return false;
+            }
+
+            getHistoryRequest = ListRequestFactory.CreateHistoryRequest<TGetFullDto, TEntity>(options, at, at.Value.AddTicks(1), Options.CalculateTotalCountForListEndpoint);
+            return true;
+        }
+
+        if (to.HasValue && toInclusive.HasValue)
+        {
+            error = ErrorResultFactory.CreateError((int)HttpStatusCode.BadRequest, "If $from is specified, only one of $to and $toInclusive may be specified.", ActionHelper.StripAsyncSuffix(nameof(GetHistoryAsync)));
+            return false;
+        }
+
+        getHistoryRequest = ListRequestFactory.CreateHistoryRequest<TGetFullDto, TEntity>(options, from ?? DateTimeOffset.MinValue, to ?? toInclusive?.AddTicks(1) ?? DateTimeOffset.MaxValue, Options.CalculateTotalCountForListEndpoint);
+        return true;
     }
 }

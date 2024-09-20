@@ -40,6 +40,62 @@ public static class CacheHelperExtensions
         => cache.GetOrCreateWithCurrentUserAsync(CacheKeys.CreateCacheKeyForGet<TServiceResponse, TParam>(parameter, action), nameof(CachingOptions.Get), factory);
 
     /// <summary>
+    /// Caches the result in a GET History operation with the default lifetime.
+    /// </summary>
+    /// <typeparam name="TServiceResponse">The type of the service response to return. In case of a custom controller this may also be the controller type.</typeparam>
+    /// <param name="cache">The cache.</param>
+    /// <param name="oDataQueryOptions">The raw OData query options.</param>
+    /// <param name="at">Specifies a specific point in time.</param>
+    /// <param name="from">Specifies the start of a time range.</param>
+    /// <param name="to">Specifies the exclusive end of a time range.</param>
+    /// <param name="toInclusive">Specifies the inclusive end of a time range.</param>
+    /// <param name="factory">The factory method to create the entry if it does not exist.</param>
+    /// <param name="action">The calling method. This is automatically filled out.</param>
+    /// <returns>The entry.</returns>
+    public static Task<TServiceResponse> CacheGetHistoryWithCurrentUserAsync<TServiceResponse>(
+        this ICacheHelper cache,
+        ODataRawQueryOptions oDataQueryOptions,
+        DateTimeOffset? at,
+        DateTimeOffset? from,
+        DateTimeOffset? to,
+        DateTimeOffset? toInclusive,
+        Func<string, Task<TServiceResponse>> factory,
+        [CallerMemberName] string? action = null)
+        => cache.GetOrCreateWithCurrentUserAsync(
+            CacheKeys.CreateCacheKeyForGetHistory<TServiceResponse>(oDataQueryOptions, at, from, to, toInclusive, action),
+            nameof(CachingOptions.GetHistory),
+            factory);
+
+    /// <summary>
+    /// Caches the result in a GET History operation with the default lifetime.
+    /// </summary>
+    /// <typeparam name="TServiceResponse">The type of the service response to return. In case of a custom controller this may also be the controller type.</typeparam>
+    /// <typeparam name="TParam">The type of the parameter to differentiate DTOs. Normally this is some kind of ID.</typeparam>
+    /// <param name="cache">The cache.</param>
+    /// <param name="parameter">A parameter to differentiate DTOs. Normally this is some kind of ID.</param>
+    /// <param name="oDataQueryOptions">The raw OData query options.</param>
+    /// <param name="at">Specifies a specific point in time.</param>
+    /// <param name="from">Specifies the start of a time range.</param>
+    /// <param name="to">Specifies the exclusive end of a time range.</param>
+    /// <param name="toInclusive">Specifies the inclusive end of a time range.</param>
+    /// <param name="factory">The factory method to create the entry if it does not exist.</param>
+    /// <param name="action">The calling method. This is automatically filled out.</param>
+    /// <returns>The entry.</returns>
+    public static Task<TServiceResponse> CacheGetHistoryWithCurrentUserAsync<TServiceResponse, TParam>(this ICacheHelper cache,
+        TParam parameter,
+        ODataRawQueryOptions oDataQueryOptions,
+        DateTimeOffset? at,
+        DateTimeOffset? from,
+        DateTimeOffset? to,
+        DateTimeOffset? toInclusive,
+        Func<string, Task<TServiceResponse>> factory,
+        [CallerMemberName] string? action = null)
+        => cache.GetOrCreateWithCurrentUserAsync(
+            CacheKeys.CreateCacheKeyForGetHistory<TServiceResponse, TParam>(parameter, oDataQueryOptions, at, from, to, toInclusive, action),
+            nameof(CachingOptions.GetHistory),
+            factory);
+
+    /// <summary>
     /// Caches the result in a GET List operation with the default lifetime.
     /// </summary>
     /// <typeparam name="TServiceResponse">The type of the service response to return. In case of a custom controller this may also be the controller type.</typeparam>

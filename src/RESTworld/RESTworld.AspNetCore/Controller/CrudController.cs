@@ -78,6 +78,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     /// </param>
     /// <param name="linkFactory"></param>
     /// <param name="formFactory">The form factory which created HAL-Form resources.</param>
+    /// <param name="listRequestFactory">The factory to create list requests out of OData parameters.</param>
     /// <param name="resultFactory">The factory to create results.</param>
     /// <param name="errorResultFactory">The factory to create error results.</param>
     /// <param name="cache">The cache for service responses.</param>
@@ -89,11 +90,12 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
         IODataResourceFactory resourceFactory,
         ILinkFactory linkFactory,
         IODataFormFactory formFactory,
+        IListRequestFactory listRequestFactory,
         IResultFactory resultFactory,
         IErrorResultFactory errorResultFactory,
         ICacheHelper cache,
         IOptions<RestWorldOptions> options)
-        : base(service, resourceFactory, linkFactory, formFactory, resultFactory, errorResultFactory, cache, options)
+        : base(service, resourceFactory, linkFactory, formFactory, listRequestFactory, resultFactory, errorResultFactory, cache, options)
     {
         _crudService = service ?? throw new ArgumentNullException(nameof(service));
         ReturnsReadOnlyFormsResponses = false;

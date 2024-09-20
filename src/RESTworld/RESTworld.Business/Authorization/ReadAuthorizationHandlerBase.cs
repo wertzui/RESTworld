@@ -20,7 +20,13 @@ namespace RESTworld.Business.Authorization;
 public abstract class ReadAuthorizationHandlerBase<TEntity, TGetListDto, TGetFullDto> : IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>
 {
     /// <inheritdoc/>
-    public virtual Task<AuthorizationResult<TEntity, IGetListRequest<TEntity>>> HandleGetListRequestAsync(AuthorizationResult<TEntity, IGetListRequest<TEntity>> previousResult, CancellationToken cancellationToken) => Task.FromResult(previousResult);
+    public Task<AuthorizationResult<TEntity, IGetHistoryRequest<TGetFullDto, TEntity>>> HandleGetHistoryRequestAsync(AuthorizationResult<TEntity, IGetHistoryRequest<TGetFullDto, TEntity>> previousResult, CancellationToken cancellationToken) => Task.FromResult(previousResult);
+
+    /// <inheritdoc/>
+    public Task<ServiceResponse<IReadOnlyPagedCollection<TGetFullDto>>> HandleGetHistoryResponseAsync(ServiceResponse<IReadOnlyPagedCollection<TGetFullDto>> previousResponse, CancellationToken cancellationToken) => Task.FromResult(previousResponse);
+
+    /// <inheritdoc/>
+    public virtual Task<AuthorizationResult<TEntity, IGetListRequest<TGetListDto, TEntity>>> HandleGetListRequestAsync(AuthorizationResult<TEntity, IGetListRequest<TGetListDto, TEntity>> previousResult, CancellationToken cancellationToken) => Task.FromResult(previousResult);
 
     /// <inheritdoc/>
     public virtual Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> HandleGetListResponseAsync(ServiceResponse<IReadOnlyPagedCollection<TGetListDto>> previousResponse, CancellationToken cancellationToken) => Task.FromResult(previousResponse);

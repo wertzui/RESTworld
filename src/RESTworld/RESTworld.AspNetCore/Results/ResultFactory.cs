@@ -16,6 +16,7 @@ using RESTworld.Business.Models.Abstractions;
 using RESTworld.Common.Dtos;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -223,20 +224,33 @@ public class ResultFactory : IResultFactory
 
         if (GetHttpContext().GetAcceptHeaders().AcceptsHalFormsOverHal())
         {
-            var result = await _formFactory.CreateResourceForEndpointAsync(dto, method, "View", action: action, controller: controller, routeValues: routeValues);
+            var formsResource = await _formFactory.CreateResourceForEndpointAsync(dto, method, "View", action: action, controller: controller, routeValues: routeValues);
 
             if (readOnly)
-                MakeFormReadOnly(result);
+                MakeFormReadOnly(formsResource);
 
-            return result;
+            AddHistoryLinkIfResourceHasHistory(formsResource, dto);
+
+            return formsResource;
         }
         else
         {
-            var result = _resourceFactory.CreateForEndpoint(dto, action: action, controller: controller, routeValues: routeValues);
+            var resource = _resourceFactory.CreateForEndpoint(dto, action: action, controller: controller, routeValues: routeValues);
 
-            _linkFactory.AddFormLinkForExistingLinkTo(result, Constants.SelfLinkName);
+            _linkFactory.AddFormLinkForExistingLinkTo(resource, Constants.SelfLinkName);
+            AddHistoryLinkIfResourceHasHistory(resource, dto);
 
-            return result;
+            return resource;
+        }
+
+    }
+
+    private void AddHistoryLinkIfResourceHasHistory<TResource, TDto>(TResource resource, TDto dto)
+        where TResource : Resource
+    {
+        if (typeof(TDto).GetCustomAttributes(typeof(HasHistoryAttribute), true).Length > 0 && dto is DtoBase dtoBase)
+        {
+            _linkFactory.AddHistoryLink(resource, dtoBase);
         }
     }
 

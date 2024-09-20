@@ -9,7 +9,6 @@ using ExampleBlog.Data.Models;
 using ExampleBlog.HalFormsCustomizations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using RESTworld.EntityFrameworkCore.Models;
 using System;
 
 
@@ -57,7 +56,7 @@ services.AddScoped<MyCustomAuthorizationHandlerV1>();
 rwBuilder.AddFormsResourceGenerationCustomization<AuthorForPostCustomizationV1>();
 
 // A pipeline which uses a service that just generates random test data.
-rwBuilder.AddCrudPipelineWithCustomService<BlogDatabase, ConcurrentEntityBase, TestDto, TestDto, TestDto, TestDto, TestService>();
+rwBuilder.AddCrudPipelineWithCustomService<BlogDatabase, TestEntity, TestDto, TestDto, TestDto, TestDto, TestService>();
 
 // A simple pipeline that will return a users photo which can then be displayed in the frontend in the list views
 // The PhotoController is automatically added, we only need to add the service.

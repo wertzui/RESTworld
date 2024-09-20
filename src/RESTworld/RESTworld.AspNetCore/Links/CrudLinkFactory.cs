@@ -1,12 +1,15 @@
 ﻿using HAL.AspNetCore;
+using HAL.AspNetCore.Utils;
 using HAL.Common;
 using HAL.Common.Forms;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.WebUtilities;
+using RESTworld.AspNetCore.Controller;
 using RESTworld.AspNetCore.Links.Abstractions;
 using RESTworld.Common.Dtos;
+using RESTworld.EntityFrameworkCore.Models;
 using System;
 using System.Linq;
 using System.Net.Http;
@@ -123,5 +126,34 @@ namespace RESTworld.AspNetCore.Links
                     Name = HttpMethod.Put.Method,
                 });
         }
+
+        /// <inheritdoc/>
+        public TResource AddHistoryLink<TResource, TDto>(TResource resource, TDto dto)
+            where TResource : Resource
+            where TDto : DtoBase?
+        {
+            ArgumentNullException.ThrowIfNull(resource);
+
+            if (dto is null)
+                return resource;
+
+            var id = dto.Id;
+
+            var href = LinkGenerator.GetUriByAction(GetHttpContext(), ActionHelper.StripAsyncSuffix(nameof(ReadController<EntityBase, DtoBase, DtoBase>.GetHistoryAsync)), values: new { filter = $"id eq {id}" });
+            if (href is null)
+                return resource;
+
+            return resource.AddLink(
+                "history",
+                new Link(href)
+                {
+                    Name = "history"
+                });
+        }
+
+        /// <inheritdoc/>
+        public Resource<TDto> AddHistoryLink<TDto>(Resource<TDto> resource)
+            where TDto : DtoBase?
+            => AddHistoryLink(resource, resource.State);
     }
 }

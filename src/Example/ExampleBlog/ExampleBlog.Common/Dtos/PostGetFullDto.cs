@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace ExampleBlog.Common.Dtos;
 
+[HasHistory]
 public class PostGetFullDto : ChangeTrackingDtoBase
 {
     [Display(Name = "Author")]

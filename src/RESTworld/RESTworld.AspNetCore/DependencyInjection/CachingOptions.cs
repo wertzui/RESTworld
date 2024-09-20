@@ -15,6 +15,7 @@ public class CachingOptions : Dictionary<string, TimeSpan>
     {
         Add(nameof(Get), TimeSpan.FromSeconds(30));
         Add(nameof(GetList), TimeSpan.FromSeconds(30));
+        Add(nameof(GetHistory), TimeSpan.FromSeconds(30));
     }
 
     /// <summary>
@@ -26,4 +27,9 @@ public class CachingOptions : Dictionary<string, TimeSpan>
     /// The cache time for a get list operation.
     /// </summary>
     public TimeSpan GetList => this[nameof(GetList)];
+
+    /// <summary>
+    /// The cache time for a get history operation.
+    /// </summary>
+    public TimeSpan GetHistory => this[nameof(GetHistory)];
 }
