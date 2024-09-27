@@ -6,7 +6,10 @@
           <rw-validation-errors [form]="formGroup"></rw-validation-errors>
         </div>
       </div>
-      <rw-input-template [template]="template" [apiName]="apiName"></rw-input-template>
+      <ng-template #defaultContent>
+        <rw-input-template [template]="template" [apiName]="apiName"></rw-input-template>
+      </ng-template>
+      <ng-container *ngTemplateOutlet="contentRef || defaultContent"></ng-container>
     </div>
     <div class="blockable-overlay" *ngIf="isLoading">
       <p-progressSpinner></p-progressSpinner>

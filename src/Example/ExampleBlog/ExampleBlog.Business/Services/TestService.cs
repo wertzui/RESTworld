@@ -41,7 +41,8 @@ public class TestService : CrudServiceBase<BlogDatabase, TestEntity, TestDto, Te
 
         _fixture.Customize<TestEntity>(composer => composer
             .With(t => t.MyRequiredString, () => null)
-            .With(t => t.PostId, () => Random.Shared.NextInt64(1, 250)));
+            .With(t => t.PostId, () => Random.Shared.NextInt64(1, 250))
+            .With(t => t.MyFlagsEnum, () => TestFlagsEnum.TestFlagA | TestFlagsEnum.TestFlagB | TestFlagsEnum.TestFlagC));
 
         _entities = _fixture.CreateMany<TestEntity>(100)
             .ToArray()

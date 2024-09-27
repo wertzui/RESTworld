@@ -276,7 +276,7 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
     if (item === undefined || item === null || !item.hasOwnProperty(this.promptField))
       return "";
 
-    return item[this.promptField as keyof TOptionsItem] as string;
+    return item[this.promptField as keyof TOptionsItem] as string ?? "";
   }
 
   public getLabelInternal(item: TOptionsItem): string {
@@ -284,8 +284,11 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
       return "";
 
     let label = this.getPrompt(item);
-    if (this.property.cols === undefined || this.property.cols > 1)
-      label += ` (${this.getValue(item)})`;
+    if (this.property.cols === undefined || this.property.cols > 1) {
+      const value = this.getValue(item);
+      if (typeof value !== "string" || (value !== "" && value.toUpperCase() !== label.toUpperCase()))
+        label += ` (${value})`;
+    }
 
     return label;
   }

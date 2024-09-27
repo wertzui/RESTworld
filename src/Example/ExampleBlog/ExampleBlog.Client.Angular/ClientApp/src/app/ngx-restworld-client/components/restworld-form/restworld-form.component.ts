@@ -77,6 +77,12 @@ export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<Property
   @ContentChild('buttons', { static: false })
   buttonsRef?: TemplateRef<unknown>;
 
+  /**
+   * A reference to a template that can be used to render custom content inside the <form> element instead of the default form.
+  */
+  @ContentChild('content', { static: false })
+  contentRef?: TemplateRef<unknown>;
+
   scrollToFirstValidationError(): void {
     setTimeout(() => {
       const validationErrorElements = this._elementRef.nativeElement.querySelectorAll('rw-validation-errors>val-errors>div')
