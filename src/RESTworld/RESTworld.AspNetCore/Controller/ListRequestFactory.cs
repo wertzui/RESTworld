@@ -18,7 +18,7 @@ namespace RESTworld.AspNetCore.Controller;
 public class ListRequestFactory : IListRequestFactory
 {
     private static readonly MethodInfo _getQueryableMethod = GetQueryableMethod();
-    //private static readonly Dictionary<(Type, Type), Delegate> _getQueryableMethodCache = new();
+    private static readonly PropertyInfo _topProperty = typeof(ODataQueryOptions).GetProperty(nameof(ODataQueryOptions.Top))!;
     private readonly IMapper _mapper;
     private readonly IMemoryCache _cache;
 
@@ -62,11 +62,21 @@ public class ListRequestFactory : IListRequestFactory
     {
         ArgumentNullException.ThrowIfNull(oDataQueryOptions);
 
-        Func<IQueryable<TEntity>, IQueryable<TDto>> filter = source => source.GetQuery(_mapper, oDataQueryOptions);
+        Func<IQueryable<TEntity>, IQueryable<TDto>> filter = source =>
+            source.GetQuery(
+                _mapper,
+                oDataQueryOptions,
+                // The AutoMapper.AspNetCore.OData.EFCore library does not support getting the MaxTop from the DefaultQueryConfigurations, so we need to set it explicitly.
+                new QuerySettings { ODataSettings = new ODataSettings { PageSize = oDataQueryOptions.Context.DefaultQueryConfigurations.MaxTop } }
+            );
 
         if (calculateTotalCount)
         {
-            var filterForTotalCount = GetFilterOnlyQuery<TDto, TEntity>(oDataQueryOptions);
+            // The total count must be calculated without any given $top value.
+            var totalCountOptions = new ODataQueryOptions<TDto>(oDataQueryOptions.Context, oDataQueryOptions.Request);
+            _topProperty.SetValue(totalCountOptions, null);
+
+            var filterForTotalCount = GetFilterOnlyQuery<TDto, TEntity>(totalCountOptions);
             return new GetListRequest<TDto, TEntity>(filter, filterForTotalCount);
         }
         else
