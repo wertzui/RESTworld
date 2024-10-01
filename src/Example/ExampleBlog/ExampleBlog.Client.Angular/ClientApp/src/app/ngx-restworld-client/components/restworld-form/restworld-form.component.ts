@@ -1,4 +1,4 @@
-import { Component, ContentChild, ElementRef, EventEmitter, Input, OnInit, Output, TemplateRef } from '@angular/core';
+import { Component, ContentChild, ElementRef, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
 import { AbstractControl, FormGroup, UntypedFormArray, UntypedFormGroup } from '@angular/forms';
 import { FormService, FormsResource, ProblemDetails, PropertyDto, SimpleValue, Template } from '@wertzui/ngx-hal-client';
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -16,12 +16,19 @@ import { AfterSubmitOkEvent, AfterSubmitRedirectEvent } from '../../models/event
   templateUrl: './restworld-form.component.html',
   styleUrls: ['./restworld-form.component.css']
 })
-export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<PropertyDto<SimpleValue, string, string>>> implements OnInit{
+export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<PropertyDto<SimpleValue, string, string>>> {
   /**
    * The template used to render the form.
    */
+  private _template?: Template<TPropertyDtos>;
+  public get template(): Template<TPropertyDtos> | undefined {
+    return this._template;
+  }
   @Input({ required: true })
-  template!: Template<TPropertyDtos>;
+  public set template(value: Template<TPropertyDtos>) {
+    this._template = value;
+    this._formGroup = this._formService.createFormGroupFromTemplate(value);
+  }
 
   @Input({ required: true })
   apiName!: string;
@@ -104,6 +111,7 @@ export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<Property
 
   public get canSubmit() : boolean {
     return this.allowSubmit &&
+      this.template !== undefined &&
       this.template.target !== undefined &&
       !this.isLoading &&
       this.formGroup !== undefined &&
@@ -112,6 +120,7 @@ export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<Property
 
   public get canDelete(): boolean {
     return this.allowDelete &&
+      this.template !== undefined &&
       this.template.target !== undefined &&
       this.template.method == "PUT" &&
       !this.isLoading;
@@ -119,6 +128,7 @@ export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<Property
 
   public get canReload(): boolean {
     return this.allowReload &&
+      this.template !== undefined &&
       this.template.target !== undefined &&
       this.template.title !== undefined &&
       this.template.properties.some(p => p.name === "id" && p.value !== undefined && p.value !== null && p.value !== 0) &&
@@ -133,12 +143,8 @@ export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<Property
     private readonly _elementRef: ElementRef<HTMLElement>) {
   }
 
-  ngOnInit(): void {
-    this._formGroup = this._formService.createFormGroupFromTemplate(this.template);
-  }
-
   public async reload(): Promise<void> {
-    if (!this.canReload)
+    if (!this.canReload || this.template === undefined)
       return;
 
     this._isLoading = true;
@@ -172,7 +178,7 @@ export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<Property
   }
 
   public async submit() {
-    if( this.formGroup !== undefined)
+    if(this.formGroup !== undefined)
     {
       this.formGroup.markAllAsTouched();
 
@@ -187,7 +193,7 @@ export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<Property
       }
     }
 
-    if(!this.canSubmit)
+    if(!this.canSubmit || this.formGroup === undefined || this.template === undefined)
       return;
 
     this._isLoading = true;
@@ -256,6 +262,9 @@ export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<Property
 
     if (this.formGroup === undefined)
       throw new Error("formGroup cannot be undefined.");
+
+    if (this.template === undefined)
+      throw new Error("template cannot be undefined.");
 
     await this.getClient().deleteByTemplateAndForm(this.template, this.formGroup);
     this._messageService.add({ severity: 'success', summary: 'Deleted', detail: 'The resource has been deleted.' })

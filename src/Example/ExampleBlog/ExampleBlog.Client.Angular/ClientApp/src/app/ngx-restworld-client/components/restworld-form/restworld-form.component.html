@@ -9,7 +9,7 @@
       <ng-template #defaultContent>
         <rw-input-template [template]="template" [apiName]="apiName"></rw-input-template>
       </ng-template>
-      <ng-container *ngTemplateOutlet="contentRef || defaultContent"></ng-container>
+      <ng-container *ngTemplateOutlet="contentRef ?? defaultContent; context: { form: formGroup, template: template, apiName: apiName }"></ng-container>
     </div>
     <div class="blockable-overlay" *ngIf="isLoading">
       <p-progressSpinner></p-progressSpinner>
@@ -27,7 +27,7 @@
           <button pButton pRipple type="button" label="Delete" icon="far fa-trash-alt" class="ml-2 p-button-danger"
             (click)="showDeleteConfirmatioModal()" [disabled]="!canDelete"></button>
         </ng-template>
-        <ng-container *ngTemplateOutlet="buttonsRef || defaultButtons"></ng-container>
+        <ng-container *ngTemplateOutlet="buttonsRef ?? defaultButtons; context: { form: formGroup, template: template, apiName: apiName }"></ng-container>
       </div>
     </div>
   </div>
