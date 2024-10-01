@@ -18,6 +18,8 @@ namespace RESTworld.AspNetCore.Controller;
 public class ListRequestFactory : IListRequestFactory
 {
     private static readonly MethodInfo _getQueryableMethod = GetQueryableMethod();
+    private static readonly PropertyInfo _skipProperty = typeof(ODataQueryOptions).GetProperty(nameof(ODataQueryOptions.Skip))!;
+    private static readonly PropertyInfo _skipTokenProperty = typeof(ODataQueryOptions).GetProperty(nameof(ODataQueryOptions.SkipToken))!;
     private static readonly PropertyInfo _topProperty = typeof(ODataQueryOptions).GetProperty(nameof(ODataQueryOptions.Top))!;
     private readonly IMapper _mapper;
     private readonly IMemoryCache _cache;
@@ -74,7 +76,12 @@ public class ListRequestFactory : IListRequestFactory
         {
             // The total count must be calculated without any given $top value.
             var totalCountOptions = new ODataQueryOptions<TDto>(oDataQueryOptions.Context, oDataQueryOptions.Request);
-            _topProperty.SetValue(totalCountOptions, null);
+            if (totalCountOptions.Skip != null)
+                _skipProperty.SetValue(totalCountOptions, null);
+            if (totalCountOptions.SkipToken != null)
+                _skipTokenProperty.SetValue(totalCountOptions, null);
+            if (totalCountOptions.Top != null)
+                _topProperty.SetValue(totalCountOptions, null);
 
             var filterForTotalCount = GetFilterOnlyQuery<TDto, TEntity>(totalCountOptions);
             return new GetListRequest<TDto, TEntity>(filter, filterForTotalCount);
