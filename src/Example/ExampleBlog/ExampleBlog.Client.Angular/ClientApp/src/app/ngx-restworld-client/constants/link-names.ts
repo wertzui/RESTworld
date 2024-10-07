@@ -1,3 +1,6 @@
+/**
+ * Well known link names.
+ */
 export enum LinkNames {
   get = "Get",
   getList = "GetList",

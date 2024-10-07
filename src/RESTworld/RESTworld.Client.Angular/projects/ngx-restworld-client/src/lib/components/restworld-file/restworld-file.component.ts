@@ -5,6 +5,11 @@ import { FileUpload } from 'primeng/fileupload';
 /**
  * Represents a component for uploading files in the RESTworld Angular client.
  * Implements the ControlValueAccessor interface to enable two-way data binding.
+ * @example
+ * <rw-file
+ *  [(ngModel)]="base64EncodedFileUri"
+ *  accept="file/text">
+ * </rw-file>
  */
 @Component({
   selector: 'rw-file',

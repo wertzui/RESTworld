@@ -1,7 +1,7 @@
 import { CropperPosition, OutputFormat } from 'ngx-image-cropper';
 
 /**
- * If working with a RESTworld backend, you can expect a form-template-property that has an image type to also have a field "restWorldImage" with a value that satisfies this interface.
+ * If working with a RESTworld backend, you can expect a form-template-property that has an image type to also have a field `restWorldImage` with a value that satisfies this interface.
  */
 export interface RestWorldImage {
     accept?: string;

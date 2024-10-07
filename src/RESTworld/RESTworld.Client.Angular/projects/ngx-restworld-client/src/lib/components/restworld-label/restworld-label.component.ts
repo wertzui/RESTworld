@@ -4,8 +4,10 @@ import { Property, PropertyType, SimpleValue } from '@wertzui/ngx-hal-client';
 
 /**
  * A label that is generated from the given property.
- * If you also want an input element, you can either use RestWorldFormElement <rw-form-element> to have a label and an input rendered,
- * or use RestWorldInput <rw-input> which will just render the input element, so you can freely place this label.
+ * If you also want an input element, you can either use {@link RestWorldFormElement} `<rw-form-element>` to have a label and an input rendered,
+ * or use {@link RestWorldInput} `<rw-input>` which will just render the input element, so you can freely place this label.
+ * @example
+ * <rw-label [property]="property"></rw-label>
  */
 @Component({
   selector: 'rw-label',
@@ -14,6 +16,10 @@ import { Property, PropertyType, SimpleValue } from '@wertzui/ngx-hal-client';
   viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }]
 })
 export class RestWorldLabelComponent<TProperty extends Property<SimpleValue, string, string>> {
+  /**
+   * The property to be displayed.
+   * @required
+   **/
   @Input({ required: true })
   property!: TProperty;
 

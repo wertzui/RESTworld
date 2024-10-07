@@ -3,6 +3,8 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 
 /**
  * A pipe that sanitizes a URL and returns a `SafeUrl` object.
+ * @example
+ * <img [src]="url | safeUrl"></img>
  */
 @Pipe({
   name: 'safeUrl'

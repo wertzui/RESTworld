@@ -9,7 +9,9 @@ import { RestWorldClient } from '../../services/restworld-client';
 /**
  * Display the value of a form element with a label that is automatically created from a property in a form template.
  * This may also be a complex object or a collection in which case multiple and nested display elements may be rendered.
- * If you want to display just the value without a label, use RestWorldDisplayComponent <rw-display>.
+ * If you want to display just the value without a label, use {@link RestWorldDisplayComponent} `<rw-display>`.
+ * @example
+ * <rw-display-element [property]="property" [apiName]="apiName" [value]="value"></rw-display-element>
  */
 @Component({
     selector: 'rw-display-element',
@@ -17,9 +19,18 @@ import { RestWorldClient } from '../../services/restworld-client';
     styleUrl: './restworld-display-element/restworld-display-element.component.css'
 })
 export class RestWorldDisplayElementComponent<TProperty extends Property<SimpleValue, string, string>> {
+    /**
+     * The property to display.
+     * @required
+     */
     @Input({ required: true })
     property!: TProperty;
 
+    /**
+     * The name of the API to use for the property.
+     * @required
+     * @remarks This is the name of the API as defined in the `RestWorldClientCollection`.
+     */
     @Input({ required: true })
     apiName!: string;
 
@@ -42,9 +53,11 @@ export class RestWorldDisplayElementComponent<TProperty extends Property<SimpleV
 /**
  * Displays a value that is automatically created from a property in a form template.
  * This may also be a complex object or a collection in which case multiple and nested input elements may be rendered.
- * If you also want a label, use RestWorldDisplayElementComponent <rw-display-element>.
- * You can also use one of the different RestWorldDisplay... <rw-display-...> elements to render a specific  property type,
+ * If you also want a label, use {@link RestWorldDisplayElementComponent} `<rw-display-element>`.
+ * You can also use one of the different RestWorldDisplay... `<rw-display-...>` elements to render a specific property type,
  * but it is advised to control the rendered element through the passed in property.
+ * @example
+ * <rw-display [property]="property" [apiName]="apiName" [value]="value"></rw-display>
  */
 @Component({
     selector: 'rw-display',
@@ -52,9 +65,18 @@ export class RestWorldDisplayElementComponent<TProperty extends Property<SimpleV
     styleUrl: './restworld-display/restworld-display.component.css'
 })
 export class RestWorldDisplayComponent<TProperty extends Property<SimpleValue, string, string>> {
+    /**
+     * The property to display.
+     * @required
+     */
     @Input({ required: true })
     property!: TProperty;
 
+    /**
+     * The name of the API to use for the property.
+     * @required
+     * @remarks This is the name of the API as defined in the `RestWorldClientCollection`.
+     */
     @Input({ required: true })
     apiName!: string;
 
@@ -82,8 +104,10 @@ export class RestWorldDisplayComponent<TProperty extends Property<SimpleValue, s
 /**
  * Displays the value of a collection that is automatically created from the given property.
  * The elements and can also be nested.
- * @remarks It is advised to use RestWorldDisplayComponent <rw-display> and control the rendered elements with the passed in property
+ * @remarks It is advised to use {@link RestWorldDisplayComponent} `<rw-display>` and control the rendered elements with the passed in property
  * instead of using this component directly.
+ * @example
+ * <rw-display-collection [property]="property" [apiName]="apiName" [values]="values"></rw-display-collection>
  */
 @Component({
     selector: 'rw-display-collection',
@@ -91,9 +115,18 @@ export class RestWorldDisplayComponent<TProperty extends Property<SimpleValue, s
     styleUrl: './restworld-display-collection/restworld-display-collection.component.css'
 })
 export class RestWorldDisplayCollectionComponent implements OnInit {
+    /**
+     * The property to display.
+     * @required
+     */
     @Input({ required: true })
     property!: Property & { _templates: { default: Template } };
 
+    /**
+     * The name of the API to use for the property.
+     * @required
+     * @remarks This is the name of the API as defined in the `RestWorldClientCollection`.
+     */
     @Input({ required: true })
     apiName!: string;
 
@@ -149,8 +182,10 @@ export class RestWorldDisplayCollectionComponent implements OnInit {
 /**
  * Displays the value of a dropdown that is automatically created from the given property.
  * If set the dropdown will use the `inline` property of the options to render the `selectedValues` Otherwise it will just render the values, but no prompt for them.
- * @remarks It is advised to use RestWorldDisplayComponent <rw-display> and control the rendered elements with the passed in property
+ * @remarks It is advised to use {@link RestWorldDisplayComponent} `<rw-display>` and control the rendered elements with the passed in property
  * instead of using this component directly.
+ * @example
+ * <rw-display-dropdown [property]="property" [apiName]="apiName" [selectedValues]="selectedValues"></rw-display-dropdown>
  */
 @Component({
     selector: 'rw-display-dropdown',
@@ -158,9 +193,18 @@ export class RestWorldDisplayCollectionComponent implements OnInit {
     styleUrl: './restworld-display-dropdown/restworld-display-dropdown.component.css'
 })
 export class RestWorldDisplayDropdownComponent<TProperty extends Property<SimpleValue, string, string> & { options: Options<SimpleValue, string, string> }, TOptionsItem extends ExtractGenericOptionsItemType<TProperty> = ExtractGenericOptionsItemType<TProperty>> implements OnInit {
+    /**
+     * The property to display.
+     * @required
+     */
     @Input({ required: true })
     property!: TProperty;
 
+    /**
+     * The name of the API to use for the property.
+     * @required
+     * @remarks This is the name of the API as defined in the `RestWorldClientCollection`.
+     */
     @Input({ required: true })
     apiName!: string;
 
@@ -334,8 +378,10 @@ export class RestWorldDisplayDropdownComponent<TProperty extends Property<Simple
 /**
  * Displays the value of a complex object with multiple properties that is automatically created from the given property.
  * The object can also be nested.
- * @remarks It is advised to use RestWorldDisplayComponent <rw-display> and control the rendered elements with the passed in property
+ * @remarks It is advised to use {@link RestWorldDisplayComponent} `<rw-display>` and control the rendered elements with the passed in property
  * instead of using this component directly.
+ * @example
+ * <rw-display-object [property]="property" [apiName]="apiName" [value]="value"></rw-display-object>
  */
 @Component({
     selector: 'rw-display-object',
@@ -343,9 +389,18 @@ export class RestWorldDisplayDropdownComponent<TProperty extends Property<Simple
     styleUrl: './restworld-display-object/restworld-display-object.component.css'
 })
 export class RestWorldDisplayObjectComponent {
+    /**
+     * The property to display.
+     * @required
+     */
     @Input({ required: true })
     property!: Property<null, never, never> & { _templates: { default: Template } };
 
+    /**
+     * The name of the API to use for the property.
+     * @required
+     * @remarks This is the name of the API as defined in the `RestWorldClientCollection`.
+     */
     @Input({ required: true })
     apiName!: string;
 
@@ -364,8 +419,10 @@ export class RestWorldDisplayObjectComponent {
 
 /**
  * Displays the value of a simple element, like a string, a number or a Date that is automatically created from the given property.
- * @remarks It is advised to use RestWorldDisplayComponent <rw-display> and control the rendered elements with the passed in property
+ * @remarks It is advised to use {@link RestWorldDisplayComponent} `<rw-display>` and control the rendered elements with the passed in property
  * instead of using this component directly.
+ * @example
+ * <rw-display-simple [property]="property" [apiName]="apiName" [value]="value"></rw-display-simple>
  */
 @Component({
     selector: 'rw-display-simple',
@@ -373,9 +430,18 @@ export class RestWorldDisplayObjectComponent {
     styleUrl: './restworld-display-simple/restworld-display-simple.component.css'
 })
 export class RestWorldDisplaySimpleComponent<TProperty extends Property<SimpleValue, string, string>> {
+    /**
+     * The property to display.
+     * @required
+     */
     @Input({ required: true })
     property!: TProperty;
 
+    /**
+     * The name of the API to use for the property.
+     * @required
+     * @remarks This is the name of the API as defined in the `RestWorldClientCollection`.
+     */
     @Input({ required: true })
     apiName!: string;
 
@@ -422,7 +488,9 @@ export class RestWorldDisplaySimpleComponent<TProperty extends Property<SimpleVa
 }
 
 /**
- * Displays the values of a collection of rw-display-elements automatically created from a template.
+ * Displays the values of a collection of `<rw-display>` elements automatically created from a template.
+ * @example
+ * <rw-display-template [template]="template" [apiName]="apiName" [value]="value"></rw-display-template>
  */
 @Component({
     selector: 'rw-display-template',
@@ -430,9 +498,19 @@ export class RestWorldDisplaySimpleComponent<TProperty extends Property<SimpleVa
     styleUrl: './restworld-display-template/restworld-display-template.component.css'
 })
 export class RestWorldDisplayTemplateComponent {
+    /**
+     * The template to display.
+     * @required
+     * @remarks This is the template that defines the properties to display.
+     */
     @Input({ required: true })
     template!: Template;
 
+    /**
+     * The name of the API to use for the property.
+     * @required
+     * @remarks This is the name of the API as defined in the `RestWorldClientCollection`.
+     */
     @Input({ required: true })
     apiName!: string;
 

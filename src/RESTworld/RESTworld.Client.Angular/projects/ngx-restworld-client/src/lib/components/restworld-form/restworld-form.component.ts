@@ -10,6 +10,26 @@ import { AfterSubmitOkEvent, AfterSubmitRedirectEvent } from '../../models/event
  * A form with Save, Reload and Delete buttons.
  * If you do not want buttons, use RestWorldFormTemplateComponent <rw-form-template>.
  * You can also provide your own buttons by passing in a template.
+ * @example
+ * <rw-form
+ *  [template]="template"
+ *  apiName="apiName"
+ *  rel="rel"
+ *  [allowSubmit]="true"
+ *  [allowDelete]="true"
+ *  [allowReload]="true"
+ *  [showSubmit]="true"
+ *  [showDelete]="true"
+ *  [showReload]="true">
+ *  <ng-template #content let-form="form" let-template="template" let-apiName="apiName">
+ *    <!-- Custom form content here -->
+ *    <!-- This is optional and will replace the default which renders labels and inputs if present -->
+ *  </ng-template>
+ *  <ng-template #buttons let-form="form" let-template="template" let-apiName="apiName">
+ *    <!-- Custom buttons here -->
+ *    <!-- This is optional and will replace the default which renders the Save, Reload and Delete buttons if present -->
+ *  </ng-template>
+ * </rw-form>
  */
 @Component({
   selector: 'rw-form',

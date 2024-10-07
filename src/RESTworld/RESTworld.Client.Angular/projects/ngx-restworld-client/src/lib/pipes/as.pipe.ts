@@ -3,8 +3,9 @@
 /**
  * Cast super type into type using generics
  * Return Type obtained by optional @param type OR assignment type.
+ * @example
+ * <div *ngFor="let item of items | as: Item">
  */
-
 @Pipe({ name: 'as' })
 export class AsPipe implements PipeTransform {
   /**

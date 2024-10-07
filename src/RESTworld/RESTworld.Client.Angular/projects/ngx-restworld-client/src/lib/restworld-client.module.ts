@@ -63,6 +63,36 @@ export function initializeRestWorldClientModule(settingsService: SettingsService
   return async () => await settingsService.ensureInitialized().then(() => opentelemetryService.initialize());
 }
 
+/**
+ * The `RestworldClientModule` is an Angular module that provides various components, services, and pipes
+ * for the RESTworld client application. It imports several Angular and PrimeNG modules to facilitate
+ * the creation of a rich user interface.
+ *
+ * @module RestworldClientModule
+ *
+ * @description
+ * This module includes components for displaying and editing data, various form elements, and utility
+ * services. It also sets up initial configurations using the `APP_INITIALIZER` token.
+ *
+ * @imports
+ * - Angular core and common modules
+ * - PrimeNG modules for UI components
+ * - ngx-valdemort for form validation
+ * - ngx-hal-client for HAL client integration
+ * - ngx-image-cropper for image cropping functionality
+ *
+ * @declarations
+ * - Pipes: `AsPipe`, `ClrFormatPipe`, `PropertyTypeFormatPipe`, `SafeUrlPipe`
+ * - Components: Various components for displaying and editing data, form elements, and utility components
+ *
+ * @providers
+ * - Services: `AvatarGenerator`, `ConfirmationService`, `MessageService`, `OpenTelemetryService`, `RestWorldClientCollection`
+ * - Initialization: `APP_INITIALIZER` to ensure settings and telemetry services are initialized
+ *
+ * @exports
+ * - Pipes: `AsPipe`, `ClrFormatPipe`, `SafeUrlPipe`
+ * - Components: Various components for displaying and editing data, form elements, and utility components
+ */
 @NgModule({
   declarations: [
     AsPipe,

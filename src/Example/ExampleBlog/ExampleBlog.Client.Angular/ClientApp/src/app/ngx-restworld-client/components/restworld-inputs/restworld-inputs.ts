@@ -14,7 +14,9 @@ import { MultiSelect } from 'primeng/multiselect';
 /**
  * A form element with a label that is automatically created from a property in a form template.
  * This may also be a complex object or a collection in which case multiple and nested input elements may be rendered.
- * If you want a form element without a label, use RestWorldFormInput <rw-input>.
+ * If you want a form element without a label, use {@link RestWorldFormInput} `<rw-input>`.
+ * @example
+ * <rw-form-element [property]="property" [apiName]="apiName"></rw-form-element>
  */
 @Component({
   selector: 'rw-form-element',
@@ -23,9 +25,18 @@ import { MultiSelect } from 'primeng/multiselect';
   viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }]
 })
 export class RestWorldFormElementComponent<TProperty extends Property<SimpleValue, string, string>> {
+  /**
+   * The property to display.
+   * @required
+   */
   @Input({ required: true })
   property!: TProperty;
 
+  /**
+   * The name of the API to use for the property.
+   * @required
+   * @remarks This is the name of the API as defined in the `RestWorldClientCollection`.
+   */
   @Input({ required: true })
   apiName!: string;
 }
@@ -33,9 +44,11 @@ export class RestWorldFormElementComponent<TProperty extends Property<SimpleValu
 /**
  * A form input element that is automatically created from a property in a form template.
  * This may also be a complex object or a collection in which case multiple and nested input elements may be rendered.
- * If you also want a label, use RestWorldFormElement <rw-form-element>.
- * You can also use one of the different RestWorldInput... <rw-input-...> elements to render a specific input,
+ * If you also want a label, use {@link RestWorldFormElement} `<rw-form-element>`.
+ * You can also use one of the different RestWorldInput... `<rw-input-...>` elements to render a specific input,
  * but it is advised to control the rendered input through the passed in property.
+ * @example
+ * <rw-input [property]="property" [apiName]="apiName"></rw-input>
  */
 @Component({
   selector: 'rw-input',
@@ -44,10 +57,18 @@ export class RestWorldFormElementComponent<TProperty extends Property<SimpleValu
   viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }]
 })
 export class RestWorldInputComponent<TProperty extends Property<SimpleValue, string, string>> {
-
+  /**
+   * The property to display.
+   * @required
+   */
   @Input({ required: true })
   property!: TProperty;
 
+  /**
+   * The name of the API to use for the property.
+   * @required
+   * @remarks This is the name of the API as defined in the `RestWorldClientCollection`.
+   */
   @Input({ required: true })
   apiName!: string;
 
@@ -64,8 +85,10 @@ export class RestWorldInputComponent<TProperty extends Property<SimpleValue, str
 /**
  * A collection that is automatically created from the given property.
  * The collection supports drag & drop to re order the elements and can also be nested.
- * @remarks It is advised to use RestWorldInputComponent <rw-input> and control the rendered inputs with the passed in property
+ * @remarks It is advised to use {@link RestWorldInputComponent} `<rw-input>` and control the rendered inputs with the passed in property
  * instead of using this component directly.
+ * @example
+ * <rw-input-collection [property]="property" [apiName]="apiName"></rw-input-collection>
  */
 @Component({
   selector: 'rw-input-collection',
@@ -75,9 +98,18 @@ export class RestWorldInputComponent<TProperty extends Property<SimpleValue, str
 })
 export class RestWorldInputCollectionComponent<T extends { [K in keyof T]: AbstractControl<any, any>; }> implements OnInit {
 
+  /**
+   * The property to display.
+   * @required
+   */
   @Input({ required: true })
   property!: Property & { _templates: { default: Template } };
 
+  /**
+   * The name of the API to use for the property.
+   * @required
+   * @remarks This is the name of the API as defined in the `RestWorldClientCollection`.
+   */
   @Input({ required: true })
   apiName!: string;
 
@@ -179,8 +211,10 @@ export type ExtractValueType<TProperty> = TProperty extends Property<infer X, in
  * A dropdown that is automatically created from the given property.
  * The dropdown supports searching through a RESTWorld list endpoint on the backend if the `link` of the options is set.
  * Otherwise the dropdown will use the `inline` of the options.
- * @remarks It is advised to use RestWorldInputComponent <rw-input> and control the rendered inputs with the passed in property
+ * @remarks It is advised to use {@link RestWorldInputComponent} `<rw-input>` and control the rendered inputs with the passed in property
  * instead of using this component directly.
+ * @example
+ * <rw-input-dropdown [property]="property" [apiName]="apiName"></rw-input-dropdown>
  */
 @Component({
   selector: 'rw-input-dropdown',
@@ -189,9 +223,18 @@ export type ExtractValueType<TProperty> = TProperty extends Property<infer X, in
   viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }]
 })
 export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleValue, string, string> & { options: Options<SimpleValue, string, string> }, TOptionsItem extends ExtractGenericOptionsItemType<TProperty> = ExtractGenericOptionsItemType<TProperty>> implements OnInit {
+  /**
+   * The property to display.
+   * @required
+   */
   @Input({ required: true })
   property!: TProperty;
 
+  /**
+   * The name of the API to use for the property.
+   * @required
+   * @remarks This is the name of the API as defined in the `RestWorldClientCollection`.
+   */
   @Input({ required: true })
   apiName!: string;
 
@@ -463,8 +506,10 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
 /**
  * A complex object with multiple properties that is automatically created from the given property.
  * The object can also be nested.
- * @remarks It is advised to use RestWorldInputComponent <rw-input> and control the rendered inputs with the passed in property
+ * @remarks It is advised to use {@link RestWorldInputComponent} `<rw-input>` and control the rendered inputs with the passed in property
  * instead of using this component directly.
+ * @example
+ * <rw-input-object [property]="property" [apiName]="apiName"></rw-input-object>
  */
 @Component({
   selector: 'rw-input-object',
@@ -474,9 +519,18 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
 })
 export class RestWorldInputObjectComponent<T extends { [K in keyof T]: AbstractControl<any, any>; }> implements OnInit {
 
+  /**
+   * The property to display.
+   * @required
+   */
   @Input({ required: true })
   property!: Property<null, never, never> & { _templates: { default: Template } };
 
+  /**
+   * The name of the API to use for the property.
+   * @required
+   * @remarks This is the name of the API as defined in the `RestWorldClientCollection`.
+   */
   @Input({ required: true })
   apiName!: string;
 
@@ -505,8 +559,10 @@ export class RestWorldInputObjectComponent<T extends { [K in keyof T]: AbstractC
 
 /**
  * A simple input element, like a string, a number or a Date that is automatically created from the given property.
- * @remarks It is advised to use RestWorldInputComponent <rw-input> and control the rendered inputs with the passed in property
+ * @remarks It is advised to use {@link RestWorldInputComponent} `<rw-input>` and control the rendered inputs with the passed in property
  * instead of using this component directly.
+ * @example
+ * <rw-input-simple [property]="property" [apiName]="apiName"></rw-input-simple>
  */
 @Component({
   selector: 'rw-input-simple',
@@ -516,6 +572,10 @@ export class RestWorldInputObjectComponent<T extends { [K in keyof T]: AbstractC
 })
 export class RestWorldInputSimpleComponent<TProperty extends Property<SimpleValue, string, string>> implements OnInit {
 
+  /**
+   * The property to display.
+   * @required
+   */
   @Input({ required: true })
   property!: TProperty;
 
@@ -569,9 +629,11 @@ export class RestWorldInputSimpleComponent<TProperty extends Property<SimpleValu
 }
 
 /**
- * A collection of rw-form-elements automatically created from a template.
+ * A collection of `<rw-form>` elements automatically created from a template.
  * Does not have any buttons on its own.
- * If you want buttons, use RestWorldForm <rw-form>.
+ * If you want buttons, use {@link RestWorldForm} `<rw-form>`.
+ * @example
+ * <rw-form-collection [template]="template" [apiName]="apiName"></rw-form-collection>
  */
 @Component({
   selector: 'rw-input-template',
@@ -580,9 +642,19 @@ export class RestWorldInputSimpleComponent<TProperty extends Property<SimpleValu
   viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }]
 })
 export class RestWorldInputTemplateComponent<T extends { [K in keyof T]: AbstractControl<any, any>; }> {
+  /**
+   * The name of the API to use for the property.
+   * @required
+   * @remarks This is the name of the API as defined in the `RestWorldClientCollection`.
+   */
   @Input({ required: true })
   apiName!: string;
 
+  /**
+   * The template to display.
+   * @required
+   * @remarks This is the template that defines the properties to display.
+   */
   @Input({ required: true })
   template!: Template;
 }

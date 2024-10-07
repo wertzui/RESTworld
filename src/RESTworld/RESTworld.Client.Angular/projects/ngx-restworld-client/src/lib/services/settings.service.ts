@@ -1,4 +1,3 @@
-import { HttpBackend, HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { ClientSettings } from "../models/client-settings";
 import { RestWorldOptions } from "../models/restworld-options";
@@ -47,7 +46,7 @@ export class SettingsService {
   /**
    * Call this method in your main.ts before calling bootstrapModule(...)
    *
-   * Example:
+   * @example
    * async function main() {
    *   try {
    *     await SettingsService.ensureSettingsAreLoaded();

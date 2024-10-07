@@ -6,7 +6,9 @@ import { PropertyType } from '@wertzui/ngx-hal-client';
   name: 'propertyTypeFormat'
 })
 /**
- * A pipe that formats the value of a property based on its type.
+ * A pipe that formats the value of a {@link Property} based on its {@link PropertyType}.
+ * @example
+ * <div>{{ value | propertyTypeFormat: property.type }}</div>
  */
 export class PropertyTypeFormatPipe implements PipeTransform {
   private static readonly _dateFormat = new Date(3333, 10, 22) // months start at 0 in JS

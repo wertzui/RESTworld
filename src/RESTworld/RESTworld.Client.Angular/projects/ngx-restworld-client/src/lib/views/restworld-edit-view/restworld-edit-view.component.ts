@@ -10,11 +10,6 @@ import { ValdemortConfig } from 'ngx-valdemort';
 import { Router } from '@angular/router';
 import { AfterSubmitOkEvent, AfterSubmitRedirectEvent } from '../../models/events';
 
-@Component({
-  selector: 'rw-edit',
-  templateUrl: './restworld-edit-view.component.html',
-  styleUrls: ['./restworld-edit-view.component.css']
-})
 /**
  * Component for editing a resource in the RESTworld application.
  * This component loads the forms resource from the API and renders a tab view where every template of the forms resource is rendered as a tab.
@@ -25,13 +20,18 @@ import { AfterSubmitOkEvent, AfterSubmitRedirectEvent } from '../../models/event
  * <rw-edit apiName="api" rel="rel" uri="/api/rel/1"></rw-edit>
  * @example
  * <rw-edit apiName="api" rel="rel" uri="/api/rel/1">
- * <ng-template #extraTabs>
- * <p-tabPanel header="Extra tab">
- * <p>Some extra content</p>
- * </p-tabPanel>
- * </ng-template>
+ *  <ng-template #extraTabs>
+ *    <p-tabPanel header="Extra tab">
+ *      <p>Some extra content</p>
+ *    </p-tabPanel>
+ *  </ng-template>
  * </rw-edit>
  */
+@Component({
+  selector: 'rw-edit',
+  templateUrl: './restworld-edit-view.component.html',
+  styleUrls: ['./restworld-edit-view.component.css']
+})
 export class RESTworldEditViewComponent {
   @ContentChild('extraTabs', { static: false })
   /**

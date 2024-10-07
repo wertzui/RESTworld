@@ -5,6 +5,10 @@ import { RestWorldOptions } from "../models/restworld-options";
 import { lastValueFrom } from 'rxjs';
 import { AbstractControl, FormGroup } from '@angular/forms';
 
+/**
+ * A client that can interact with a RESTworld API.
+ * It leverages the {@link HalClient} to perform HTTP operations and manage resources.
+ */
 export class RestWorldClient {
   private _defaultCurie?: string;
   private _homeResource?: Resource;
@@ -14,6 +18,9 @@ export class RestWorldClient {
     private _options: RestWorldOptions
   ) { }
 
+  /**
+   * Gets the underlying {@link HalClient} that is used by this {@link RestWorldClient}.
+   */
   public get halClient() {
     return this._halClient;
   }
@@ -69,6 +76,13 @@ export class RestWorldClient {
       });
   }
 
+  /**
+   * Deletes the specified resource.
+   *
+   * @param resource - The resource to be deleted.
+   * @returns A promise that resolves to an HttpResponse containing either void or ProblemDetails.
+   * @throws An error if the resource does not have a delete link.
+   */
   public async delete(resource: Resource): Promise<HttpResponse<void | ProblemDetails>> {
     const deleteLink = resource.findLink('delete');
     if (!deleteLink)
@@ -81,6 +95,17 @@ export class RestWorldClient {
     return response;
   }
 
+  /**
+   * Ensures that the home resource is set. If the home resource is not already set,
+   * it attempts to fetch it using the `getHomeForced` method. If the response contains
+   * a problem detail or is empty, an error is thrown. Otherwise, the home resource is
+   * set and the default CURIE is configured.
+   *
+   * @remarks You should never need to call this in your application, as the home resource
+   * is automatically set when the client is created in the {@link RestWorldClientCollection}.
+   * @throws {Error} If the home resource cannot be fetched or the response is empty.
+   * @returns {Promise<void>} A promise that resolves when the home resource is set.
+   */
   public async ensureHomeResourceIsSet(): Promise<void> {
     if (!this._homeResource) {
       const response = await this.getHomeForced();
@@ -94,6 +119,12 @@ export class RestWorldClient {
     }
   }
 
+  /**
+   * Retrieves all forms associated with the given resource.
+   *
+   * @param resource - The resource from which to retrieve form links.
+   * @returns A promise that resolves to an array of HTTP responses, each containing either a `FormsResource` or `ProblemDetails`.
+   */
   public async getAllForms(resource: Resource): Promise<HttpResponse<FormsResource | ProblemDetails>[]> {
     const urls = resource.getFormLinkHrefs();
     const formsPromises = urls.map(url => this.getForm(url));
@@ -101,11 +132,23 @@ export class RestWorldClient {
     return formsAndProblems;
   }
 
+  /**
+   * Fetches a form resource from the specified URL.
+   *
+   * @param {string} url - The URL of the form resource to fetch.
+   * @returns A promise that resolves to an HttpResponse containing either a FormsResource or a ProblemDetails object.
+   */
   public async getForm(url: string): Promise<HttpResponse<FormsResource | ProblemDetails>> {
     const header = RestWorldClient.createHeadersWithoutBody(this._options.Version, 'application/prs.hal-forms+json');
     return this._halClient.get(url, ResourceFactory.createFormResource, header);
   }
 
+  /**
+   * Retrieves all links from the home resource.
+   *
+   * @returns An object where the keys are relation types (rel) and the values are arrays of {@link Link} objects or undefined.
+   * @throws An error if the home resource is not set. Ensure to call {@link ensureHomeResourceIsSet} first.
+   */
   public getAllLinksFromHome(): { [rel: string]: Link[] | undefined; } {
     if (!this._homeResource)
       throw new Error('Home resource is not set. Call ensureHomeResourceIsSet() first.');
@@ -113,6 +156,16 @@ export class RestWorldClient {
     return this._homeResource._links;
   }
 
+  /**
+   * Retrieves all pages from a list resource.
+   *
+   * @template TListDto - The type of the list resource DTO, extending {@link ResourceDto}.
+   * @param {string} rel - The relation name to identify the link.
+   * @param {Object} parameters - The parameters to be sent with the request.
+   * @param {HttpHeaders} [headers] - Optional HTTP headers to be sent with the request.
+   * @param {string} [curie] - Optional CURIE to resolve the link.
+   * @returns {Promise<HttpResponse<PagedListResource<TListDto> | ProblemDetails>>} - A promise that resolves to an HTTP response containing either a paged list resource or problem details.
+   */
   public async getAllPagesFromList<TListDto extends ResourceDto>(rel: string, parameters: {}, headers?: HttpHeaders, curie?: string): Promise<HttpResponse<PagedListResource<TListDto> | ProblemDetails>> {
     const link = this.getLinkFromHome(rel, LinkNames.getList, curie);
     const uri = link.href;
@@ -122,6 +175,19 @@ export class RestWorldClient {
     return response;
   }
 
+  /**
+   * Retrieves all pages from a paginated list by the given URI and combines them into a single response.
+   *
+   * @template TListDto - The type of the list DTO, which extends {@link ResourceDto}.
+   * @param {string} uri - The URI to fetch the list from.
+   * @param {{}} parameters - The parameters to include in the request.
+   * @param {HttpHeaders} [headers] - Optional HTTP headers to include in the request.
+   * @returns {Promise<HttpResponse<PagedListResource<TListDto> | ProblemDetails>>} - A promise that resolves to an HTTP response containing either a combined paginated list resource or problem details.
+   *
+   * @remarks
+   * This method will continue to fetch the next pages as long as there are more pages available, combining all items into a single list.
+   * If any request fails or returns a problem detail, the method will return the response immediately.
+   */
   public async getAllPagesFromListByUri<TListDto extends ResourceDto>(uri: string, parameters: {}, headers?: HttpHeaders): Promise<HttpResponse<PagedListResource<TListDto> | ProblemDetails>> {
     const response = await this.getListByUri<TListDto>(uri, parameters, headers);
 
@@ -154,6 +220,16 @@ export class RestWorldClient {
     return response;
   }
 
+  /**
+   * Retrieves all templates associated with a given resource.
+   *
+   * This method fetches all forms related to the provided {@link Resource} and extracts the templates from the responses.
+   * If any of the form responses indicate a failure, an error is thrown with details about the failed response.
+   *
+   * @param resource - The {@link Resource} for which to retrieve templates.
+   * @returns A promise that resolves to the {@link Templates} associated with the resource.
+   * @throws An error if any of the form responses fail.
+   */
   public async getAllTemplates(resource: Resource): Promise<Templates> {
     const formResponses = await this.getAllForms(resource);
 
@@ -170,6 +246,15 @@ export class RestWorldClient {
     return formTemplates;
   }
 
+  /**
+   * Retrieves a specific link from the home resource based on the provided relation type, name, and curie.
+   *
+   * @param rel - The relation type of the link to retrieve.
+   * @param name - (Optional) The name of the link to retrieve. If not provided, the first link with the specified relation type is returned.
+   * @param curie - (Optional) The CURIE (Compact URI) to use for the relation type.
+   * @returns The {@link Link} that matches the specified criteria.
+   * @throws {Error} If no link matches the specified criteria.
+   */
   public getLinkFromHome(rel: string, name?: string, curie?: string): Link {
     const links = this.getLinksFromHome(rel, curie);
 
@@ -181,6 +266,14 @@ export class RestWorldClient {
     return link;
   }
 
+  /**
+   * Retrieves links from the home resource based on the provided relation type.
+   *
+   * @param rel - The relation type to look for in the home resource.
+   * @param curie - An optional CURIE (Compact URI) to expand the relation type.
+   * @returns An array of {@link Link} objects that match the specified relation type.
+   * @throws Will throw an error if the home resource is not set or if no links are found for the specified relation type.
+   */
   public getLinksFromHome(rel: string, curie?: string): Link[] {
     if (!this._homeResource)
       throw new Error('Home resource is not set. Call ensureHomeResourceIsSet() first.');
@@ -193,6 +286,16 @@ export class RestWorldClient {
     return links;
   }
 
+  /**
+   * Retrieves a list of resources from the REST API.
+   *
+   * @template TListDto - The type of the resource DTO.
+   * @param {string} rel - The relation name to identify the link.
+   * @param {Object} parameters - The query parameters to include in the request.
+   * @param {HttpHeaders} [headers] - Optional HTTP headers to include in the request.
+   * @param {string} [curie] - Optional CURIE to resolve the link.
+   * @returns {Promise<HttpResponse<PagedListResource<TListDto> | ProblemDetails>>} - A promise that resolves to an HTTP response containing either a paged list of resources or problem details.
+   */
   public async getList<TListDto extends ResourceDto>(rel: string, parameters: {}, headers?: HttpHeaders, curie?: string): Promise<HttpResponse<PagedListResource<TListDto> | ProblemDetails>> {
     const link = this.getLinkFromHome(rel, LinkNames.getList, curie);
     const uri = link.href
@@ -202,6 +305,15 @@ export class RestWorldClient {
     return response;
   }
 
+  /**
+   * Fetches a list as a CSV file from the RESTworld API.
+   *
+   * @param rel - The relation name to identify the link.
+   * @param parameters - The parameters to include in the request.
+   * @param headers - Optional HTTP headers to include in the request.
+   * @param curie - Optional CURIE (Compact URI) to resolve the link.
+   * @returns A promise that resolves to an HttpResponse containing a Blob of the CSV data, or undefined if the request fails.
+   */
   public async getListAsCsv(rel: string, parameters: {}, headers?: HttpHeaders, curie?: string): Promise<HttpResponse<Blob> | undefined> {
     const link = this.getLinkFromHome(rel, LinkNames.getList, curie);
     const uri = link.href;
@@ -211,6 +323,15 @@ export class RestWorldClient {
     return response;
   }
 
+  /**
+   * Fetches a list of resources from the specified URI.
+   *
+   * @template TListDto - The type of the resource DTO.
+   * @param {string} uri - The URI to fetch the list from.
+   * @param {Object} parameters - The parameters to fill the URI template.
+   * @param {HttpHeaders} [headers] - Optional HTTP headers to include in the request.
+   * @returns {Promise<HttpResponse<PagedListResource<TListDto> | ProblemDetails>>} - A promise that resolves to an HTTP response containing either a paged list of resources or problem details.
+   */
   public async getListByUri<TListDto extends ResourceDto>(uri: string, parameters: {}, headers?: HttpHeaders): Promise<HttpResponse<PagedListResource<TListDto> | ProblemDetails>> {
     const link = new Link();
     link.href = uri;
@@ -223,6 +344,14 @@ export class RestWorldClient {
     return response;
   }
 
+  /**
+   * Fetches a list from the given URI and returns it as a CSV file.
+   *
+   * @param uri - The URI to fetch the list from.
+   * @param parameters - The parameters to fill the URI template.
+   * @param headers - Optional HTTP headers to include in the request.
+   * @returns A promise that resolves to an HTTP response containing the CSV file as a Blob, or undefined if the request fails.
+   */
   public async getListByUriAsCsv(uri: string, parameters: {}, headers?: HttpHeaders): Promise<HttpResponse<Blob> | undefined> {
     const link = new Link();
     link.href = uri;
@@ -235,6 +364,15 @@ export class RestWorldClient {
     return response;
   }
 
+  /**
+   * Sends a POST request to the specified URI with the given parameters and body, expecting a CSV response.
+   *
+   * @param uri - The URI to send the POST request to.
+   * @param parameters - The parameters to fill the URI template.
+   * @param body - The body of the POST request (optional).
+   * @param headers - Additional headers to include in the request (optional).
+   * @returns A promise that resolves to an HttpResponse containing a Blob of the CSV data, or undefined if the request fails.
+   */
   public async postListByUriAsCsv(uri: string, parameters: {}, body?: any, headers?: HttpHeaders): Promise<HttpResponse<Blob> | undefined> {
     const link = new Link();
     link.href = uri;
@@ -247,6 +385,16 @@ export class RestWorldClient {
     return response;
   }
 
+  /**
+   * Retrieves a single resource or problem details based on the provided relationship and ID.
+   *
+   * @param rel - The relationship name to identify the resource.
+   * @param id - The ID of the resource to retrieve. Must be an integer.
+   * @param headers - Optional HTTP headers to include in the request.
+   * @param curie - Optional CURIE (Compact URI) to resolve the relationship.
+   * @returns A promise that resolves to an HTTP response containing either the resource or problem details.
+   * @throws An error if the provided ID is not an integer.
+   */
   public async getSingle(rel: string, id: number, headers?: HttpHeaders, curie?: string): Promise<HttpResponse<Resource | ProblemDetails>> {
     if (!Number.isInteger(id))
       throw new Error('When supplying a rel, an ID must be supplied too.');
@@ -259,6 +407,14 @@ export class RestWorldClient {
     return response;
   }
 
+  /**
+   * Fetches a single resource by its URI.
+   *
+   * @template TState - The type of the state object.
+   * @param {string} uri - The URI of the resource to fetch.
+   * @param {HttpHeaders} [headers] - Optional HTTP headers to include in the request.
+   * @returns {Promise<HttpResponse<Resource | ProblemDetails>>} - A promise that resolves to the HTTP response containing the resource or problem details.
+   */
   public async getSingleByUri<TState>(uri: string, headers?: HttpHeaders): Promise<HttpResponse<Resource | ProblemDetails>> {
     const defaultHeaders = RestWorldClient.createHeadersWithoutBody(this._options.Version);
     const combinedHeaders = RestWorldClient.combineHeaders(headers, defaultHeaders, false);
@@ -267,6 +423,15 @@ export class RestWorldClient {
     return response;
   }
 
+  /**
+   * Saves the given resource using the appropriate HTTP method (PUT or POST) based on the name of the save link.
+   *
+   * @template TState - The type of the state to be saved.
+   * @param {Resource & TState} resource - The resource to be saved, which must contain a save link.
+   * @returns {Promise<HttpResponse<Resource & TState | ProblemDetails>>} - A promise that resolves to the HTTP response,
+   * which can be either the saved resource or a ProblemDetails object in case of an error.
+   * @throws {Error} - Throws an error if the resource does not have a save link or if the save link does not have a name.
+   */
   public async save<TState>(resource: Resource & TState): Promise<HttpResponse<Resource & TState | ProblemDetails>> {
     const saveLink = resource.findLink('save');
     if (!saveLink)
@@ -293,6 +458,13 @@ export class RestWorldClient {
     return response;
   }
 
+  /**
+   * Submits the form values to the specified template target URI using the appropriate HTTP method.
+   *
+   * @param template - The template containing the target URI and HTTP method.
+   * @param formValues - The form values to be submitted.
+   * @returns A promise that resolves to an {@link HttpResponse} containing either a {@link FormsResource} or {@link ProblemDetails}.
+   */
   public async submit(template: Template, formValues: { }): Promise<HttpResponse<FormsResource | ProblemDetails>> {
     const uri = template.target || '';
     const method = template.method?.toLowerCase();
@@ -342,6 +514,14 @@ export class RestWorldClient {
       this._defaultCurie = curies[0].name;
   }
 
+  /**
+   * Deletes a resource identified by the given template and timestamp supplied by the given form group.
+   *
+   * @param template - The template containing the target URL for the resource to be deleted.
+   * @param formGroup - The form group containing the timestamp.
+   * @returns A promise that resolves to an HttpResponse which can either be void or contain ProblemDetails.
+   * @throws Error if the target URL in the template is undefined.
+   */
   public async deleteByTemplateAndForm(template: Template, formGroup: FormGroup<{ timestamp: AbstractControl<string> }>): Promise<HttpResponse<void | ProblemDetails>> {
     const url = template.target;
     if (url === undefined)
@@ -352,6 +532,13 @@ export class RestWorldClient {
     return this.deleteByUrl(url, timestamp);
   }
 
+  /**
+   * Deletes a resource at the specified URL.
+   *
+   * @param url - The URL of the resource to delete.
+   * @param timestamp - An optional ETag value to include in the request headers.
+   * @returns A promise that resolves to an HttpResponse containing either void or ProblemDetails.
+   */
   public async deleteByUrl(url: string, timestamp?: string): Promise<HttpResponse<void | ProblemDetails>> {
     let header = RestWorldClient.createHeadersWithoutBody(this._options.Version);
 

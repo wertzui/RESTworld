@@ -5,6 +5,8 @@ import { MenuItem } from 'primeng/api';
 /**
  * Displays one button for every `MenuItem` given in the items array.
  * If a `MenuItem` has nested items, a button with a dropdown menu will be displayed.
+ * @example
+ * <rw-menu-button [items]="items"></rw-menu-button>
  */
 @Component({
   selector: 'rw-menu-button',

@@ -8,6 +8,16 @@ import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { CompressionAlgorithm } from '@opentelemetry/otlp-exporter-base';
 import { Context, ContextManager, ROOT_CONTEXT, createContextKey } from "@opentelemetry/api";
 
+/**
+ * This service is responsible for setting up OpenTelemetry.
+ * It will initialize the OpenTelemetry SDK and register the instrumentations.
+ * It will also set up the exporters and samplers.
+ *
+ * The settings for the OpenTelemetry SDK are loaded from the {@link SettingsService}.
+ *
+ * @remarks
+ * This service is automatically initialized by the `APP_INITIALIZER` in the {@link RestworldClientModule}.
+ */
 @Injectable({
   providedIn: "root"
 })

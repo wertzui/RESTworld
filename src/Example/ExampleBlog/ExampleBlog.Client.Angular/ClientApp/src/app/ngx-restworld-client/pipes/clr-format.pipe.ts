@@ -8,13 +8,12 @@ import * as clrFormat from 'clr-format';
 /**
  * A pipe that formats a value using a specified format string.
  * Have a look at https://learn.microsoft.com/en-us/dotnet/standard/base-types/formatting-types to see what is supported.
+ * @example
+ * <div>{{ value | clrFormat: 'yyyy-MM-dd' }}</div>
  */
 export class ClrFormatPipe implements PipeTransform {
 
   private static readonly formatFunction = ClrFormatPipe.getFormatFunction();
-
-  constructor() {
-  }
 
   public transform(value: any, format?: string): string {
     if (format === undefined)
