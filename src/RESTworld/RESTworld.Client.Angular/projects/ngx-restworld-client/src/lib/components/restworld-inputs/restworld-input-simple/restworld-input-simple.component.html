@@ -26,7 +26,7 @@
 
     <p-calendar *ngSwitchCase="PropertyType.DatetimeLocal" [formControlName]="property.name" [id]="property.name" [dateFormat]="dateFormat" [showTime]="true" [showWeek]="false" [showIcon]="true" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-calendar>
 
-    <p-inputNumber *ngSwitchCase="PropertyType.Number" [formControlName]="property.name" [id]="property.name" mode="decimal" [showButtons]="!property.readOnly" class="w-full" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-inputNumber>
+    <p-inputNumber *ngSwitchCase="PropertyType.Number" [formControlName]="property.name" [id]="property.name" mode="decimal" [min]="property.min" [max]="property.max" [step]="property.step" [showButtons]="!property.readOnly" class="w-full" styleClass="w-full" [class.p-disabled]="property.readOnly"></p-inputNumber>
 
     <input *ngSwitchCase="PropertyType.Range" [formControlName]="property.name" [id]="property.name" type="range" [min]="property.min" [max]="property.max" [step]="property.step" pInputText class="w-full" [class.p-disabled]="property.readOnly" />
 

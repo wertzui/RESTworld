@@ -20,6 +20,8 @@ public class TestDto : ConcurrentDtoBase
     public string? MyRequiredString { get; set; }
     public string MyString { get; set; } = default!;
     public int MyInt { get; set; }
+    [Range(42, 100)]
+    public long MyLong { get; set; }
     public char MyChar { get; set; }
     public bool MyBool { get; set; }
     public TestEnum MyEnum { get; set; }
