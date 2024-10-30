@@ -56,9 +56,9 @@ public class SwaggerExampleOperationFilter : IOperationFilter
         // Otherwise these will be really small
         _fixture.Customize<TimeOnly>(composer => composer.FromFactory<DateTime>(TimeOnly.FromDateTime));
 
-        // Allow recursion with depth 3
+        // Omit recursion
         _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList().ForEach(b => _fixture.Behaviors.Remove(b));
-        _fixture.Behaviors.Add(new OmitOnRecursionBehavior(3));
+        _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
 
         _specimenContext = new(_fixture);
 
@@ -106,7 +106,8 @@ public class SwaggerExampleOperationFilter : IOperationFilter
         _fixture
             .Customize(new DtoBaseCustomization())
             .Customize(new ChangeTrackingDtoBaseCustomization())
-            .Customize(new HalFileCustomization());
+            .Customize(new HalFileCustomization())
+            .Customize(new JsonIgnoreCustomization());
     }
 
     /// <inheritdoc/>

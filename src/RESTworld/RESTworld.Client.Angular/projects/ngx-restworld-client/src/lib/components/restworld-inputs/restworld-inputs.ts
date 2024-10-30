@@ -227,8 +227,18 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
    * The property to display.
    * @required
    */
+  public get property(): TProperty {
+    return this._property;
+  }
   @Input({ required: true })
-  property!: TProperty;
+  public set property(value: TProperty) {
+    this._property = value;
+
+    // This is for the case that the property is changed after the component is initialized.
+    if (value?.options !== undefined && this._formControl !== undefined)
+      this.setInitialSelectedOptionsElementForProperty();
+  }
+  private _property!: TProperty;
 
   /**
    * The name of the API to use for the property.
