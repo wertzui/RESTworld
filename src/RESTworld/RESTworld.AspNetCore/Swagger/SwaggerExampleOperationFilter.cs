@@ -58,7 +58,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
 
         // Omit recursion
         _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList().ForEach(b => _fixture.Behaviors.Remove(b));
-        _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
+        _fixture.Behaviors.Add(new OmitOnRecursionBehavior(3));
 
         _specimenContext = new(_fixture);
 
@@ -99,7 +99,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
         _serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
         {
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
-            ReferenceHandler = ReferenceHandler.Preserve
+            ReferenceHandler = ReferenceHandler.IgnoreCycles
         };
         _serializerOptions.Converters.Add(new JsonStringEnumMemberConverter(JsonNamingPolicy.CamelCase));
 
@@ -220,7 +220,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
         {
             var tListDto = controllerType.GenericTypeArguments[indexOfListDtoType];
             var embedded = Enumerable.Repeat<object?>(null, 3).Select(_ => _fixture.Create(tListDto, _specimenContext)).ToList();
-            var resource = resourceFactory.CreateForODataListEndpointUsingSkipTopPaging(embedded, _ => "List", e => ((DtoBase)e).Id, _oDataRawQueryOptions, 50, 10, controllerName);
+            var resource = resourceFactory.CreateForODataListEndpointUsingSkipTopPaging(embedded, _ => Common.Constants.ListItems, e => ((DtoBase)e).Id, _oDataRawQueryOptions, 50, 10, controllerName);
             type.Example = CreateExample(resource);
         }
         else if (actionName == "Get" || actionName == "Post" || actionName == "Put" || actionName == "New")
@@ -267,10 +267,10 @@ public class SwaggerExampleOperationFilter : IOperationFilter
             {
                 // Post and Put either return an object or a collection
                 var states = Enumerable.Repeat<object?>(null, 3).Select(_ => _fixture.Create(tFullDto, _specimenContext)).Cast<ConcurrentDtoBase>().ToList();
-                var CollectionResource = resourceFactory.CreateForListEndpoint(states, _ => "List", d => d.Id, controllerName);
+                var CollectionResource = resourceFactory.CreateForListEndpoint(states, _ => Common.Constants.ListItems, d => d.Id, controllerName);
 
                 type.Examples.Add("Single Object", new OpenApiExample { Value = CreateExample((Resource)resourceFactory.CreateForEndpoint(states[0], controller: controllerName, routeValues: new { id = states[0].Id })) });
-                type.Examples.Add("Collection", new OpenApiExample { Value = CreateExample(resourceFactory.CreateForListEndpoint(states, _ => "List", d => d.Id, controllerName)) });
+                type.Examples.Add("Collection", new OpenApiExample { Value = CreateExample(resourceFactory.CreateForListEndpoint(states, _ => Common.Constants.ListItems, d => d.Id, controllerName)) });
             }
         }
     }
