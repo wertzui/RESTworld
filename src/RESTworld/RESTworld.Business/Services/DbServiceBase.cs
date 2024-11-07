@@ -329,12 +329,14 @@ public abstract partial class DbServiceBase<TContext> : ServiceBase
         if (concurrencyPropertyNames.Count == 0)
             return ServiceResponse.FromFailedValidation<T>(HttpStatusCode.Conflict, validationResults);
 
-        var entityType = entry.Entity.GetType();
+        var entityType = entry.Metadata.ClrType;
         var returnType = typeof(T);
 
         var destinationMemberNames = _mapper.ConfigurationProvider.Internal().GetAllTypeMaps()
             .Where(m => m.DestinationType == returnType && m.SourceType == entityType)
-            .SelectMany(m => m.PropertyMaps.Where(p => concurrencyPropertyNames.Contains(p.SourceMember.Name)).Select(p => p.DestinationMember.Name))
+            .SelectMany(m => m.PropertyMaps)
+            .Where(p => p.SourceMember is not null && p.DestinationMember is not null && concurrencyPropertyNames.Contains(p.SourceMember.Name))
+            .Select(p => p.DestinationMember.Name)
             .ToList();
 
         if (destinationMemberNames.Count == 0)

@@ -11,7 +11,7 @@
     <Authors>wertzui</Authors>
     <PackageProjectUrl>https://github.com/wertzui/RESTworld</PackageProjectUrl>
     <RepositoryUrl>https://github.com/wertzui/RESTworld</RepositoryUrl>
-    <VersionPrefix>19.3.1</VersionPrefix>
+    <VersionPrefix>19.3.2</VersionPrefix>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
