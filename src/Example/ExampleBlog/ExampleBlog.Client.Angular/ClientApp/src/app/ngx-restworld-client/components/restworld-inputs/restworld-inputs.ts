@@ -268,6 +268,13 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
   @Input()
   getTooltip: (item: TOptionsItem) => string = this.getTooltipInternal;
 
+  /**
+   * A flag that indicates if the search should be case sensitive.
+   * The default is false.
+   */
+  @Input()
+  caseSensitive = false;
+
   @ContentChild('inputOptionsSingle', { static: false })
   inputOptionsSingleRef?: TemplateRef<PropertyTemplateContext>;
 
@@ -395,7 +402,7 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
             .map(v => v.trim())
             .map(v => {
               const n = Number.parseFloat(v);
-              return Number.isNaN(n) ? v : n;
+              return Number.isNaN(n) ? this.makeUpperIfCaseInsensitive(v.toUpperCase(), false) : n;
             });
 
           if (!values || values.length === 0)
@@ -404,7 +411,7 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
           const allAreNumbers = values.every(v => typeof v === "number" && !isNaN(v));
           const filter = allAreNumbers
             ? `${options.valueField} in (${values.join(',')})`
-            : `contains(${options.promptField}, '${values.join("', '")}')`;
+            : `contains(${this.makeUpperIfCaseInsensitive(options.promptField, true)}, '${values.join("', '")}')`;
 
           if ((options?.link?.href))
             await this.SetInlineOptionsFromFilter(filter, "");
@@ -420,7 +427,7 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
         else {
           // This is the normal case where the user types in a filter.
 
-          let filter = `contains(${options.promptField}, '${event.filter}')`;
+          let filter = `contains(${this.makeUpperIfCaseInsensitive(options.promptField, true)}, '${event.filter}')`;
           if (options.valueField?.toLowerCase() === 'id' && !Number.isNaN(Number.parseInt(event.filter)))
             filter = `(${options.valueField} eq ${event.filter})  or (${filter})`;
 
@@ -432,6 +439,16 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
     finally {
       this._loading = false;
     }
+  }
+
+  private makeUpperIfCaseInsensitive(filter: string | null | undefined, isOData: boolean): string | null | undefined {
+    if (this.caseSensitive || typeof filter !== "string")
+      return filter;
+
+    if (isOData)
+      return `toupper(${filter})`;
+
+    return filter.toUpperCase();
   }
 
   public onOptionsChanged(event: DropdownChangeEvent<TOptionsItem>) {
