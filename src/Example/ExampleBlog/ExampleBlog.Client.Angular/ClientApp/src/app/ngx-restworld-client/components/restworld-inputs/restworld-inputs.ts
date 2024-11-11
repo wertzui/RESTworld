@@ -427,7 +427,7 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
         else {
           // This is the normal case where the user types in a filter.
 
-          let filter = `contains(${this.makeUpperIfCaseInsensitive(options.promptField, true)}, '${event.filter}')`;
+          let filter = `contains(${this.makeUpperIfCaseInsensitive(options.promptField, true)}, '${this.makeUpperIfCaseInsensitive(event.filter, false)}')`;
           if (options.valueField?.toLowerCase() === 'id' && !Number.isNaN(Number.parseInt(event.filter)))
             filter = `(${options.valueField} eq ${event.filter})  or (${filter})`;
 
