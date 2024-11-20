@@ -19,7 +19,12 @@ var database = builder.AddConnectionString("BlogDatabase");
 var apiService = builder.AddProject<ExampleBlog>(nameof(ExampleBlog))
     // Add a reference to the database
     // because the database has the name "BlogDatabase", this will inject an environment variable ConnectionStrings__BlogDatabase=Server=localhost;Database=BlogDatabase;Integrated Security=True
-    .WithReference(database);
+    .WithReference(database)
+    // Every RESTworld project exposes three health checks which can be used in Kubernetes.
+    // When using builder.AddDbContextFactoryWithDefaults<MyDb>() a health check for the database is automatically added.
+    .WithHttpsHealthCheck("/health/startup")
+    .WithHttpsHealthCheck("/health/live")
+    .WithHttpsHealthCheck("/health/ready");
 
 // Add the Frontend which hosts the Angular client
 var frontendService = builder.AddProject<ExampleBlog_Client_Angular>("ExampleBlog-Client-Angular")
@@ -27,7 +32,12 @@ var frontendService = builder.AddProject<ExampleBlog_Client_Angular>("ExampleBlo
     // This will inject an environment variable services__ExampleBlog__https__0=https://localhost:5432
     // The SettingsController from RestWorld.Client.AspNetCore will read this environment variable and replace the API URLs with the value,
     // so that the Angular client can call the API
-    .WithReference(apiService);
+    .WithReference(apiService)
+    // Every RESTworld project exposes three health checks which can be used in Kubernetes.
+    // For frontend projects this just means that the application is running
+    .WithHttpsHealthCheck("/health/startup")
+    .WithHttpsHealthCheck("/health/live")
+    .WithHttpsHealthCheck("/health/ready");
 
 var app = builder.Build();
 
