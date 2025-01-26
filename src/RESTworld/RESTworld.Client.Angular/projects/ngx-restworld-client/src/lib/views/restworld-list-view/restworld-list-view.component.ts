@@ -1,12 +1,13 @@
-import { Component, Input } from '@angular/core';
-import { PagedListResource, ProblemDetails, Resource, ResourceDto, ResourceOfDto, Template } from '@wertzui/ngx-hal-client';
+import { Component, computed, input, linkedSignal, model, resource } from '@angular/core';
+import { PagedListResource, Resource, ResourceDto, ResourceOfDto, Template, type PropertyDto, type SimpleValue } from '@wertzui/ngx-hal-client';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
-import { RestWorldClient } from '../../services/restworld-client';
 import { RestWorldClientCollection } from '../../services/restworld-client-collection';
 import { AvatarGenerator } from '../../services/avatar-generator';
 import { Router } from '@angular/router';
 import { ODataParameters } from '../../models/o-data';
-import { debounce } from '../../util/debounce';
+import { RestWorldTableComponent } from "../../components/restworld-table/restworld-table.component";
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ProblemService } from "../../services/problem.service";
 
 /**
  * A component that displays a list of resources from a RESTworld API.
@@ -33,193 +34,165 @@ import { debounce } from '../../util/debounce';
  *
  */
 @Component({
-  selector: 'rw-list',
-  templateUrl: './restworld-list-view.component.html',
-  styleUrls: ['./restworld-list-view.component.css']
+    selector: 'rw-list',
+    templateUrl: './restworld-list-view.component.html',
+    styleUrls: ['./restworld-list-view.component.css'],
+    standalone: true,
+    imports: [RestWorldTableComponent, ConfirmDialogModule]
 })
 export class RESTworldListViewComponent<TListDto extends ResourceDto & Record<string, unknown>> {
+    /**
+    * An array of menu items to be displayed in the create button dropdown menu.
+    * That is the menu at the top right of the list.
+    */
+    public readonly createButtonMenu = input<MenuItem[]>();
+    public isLoading = computed(() => this.listResource.isLoading() || this.searchTemplate.isLoading());
+    public readonly filter = model<string | undefined>(undefined, { alias: "$filter" });
+    public readonly orderby = model<string | undefined>(undefined, { alias: "$orderby" });
+    public readonly skip = model<number | undefined>(undefined, { alias: "$skip" });
+    public readonly top = model<number | undefined>(undefined, { alias: "$top" });
 
-  @Input()
-  /**
-   * An array of menu items to be displayed in the create button dropdown menu.
-   * That is the menu at the top right of the list.
-   */
-  public createButtonMenu?: MenuItem[];
-  public isLoading = false;
-  public load = debounce(this.loadInternal, 100);
-  public resource?: PagedListResource<TListDto>;
-
-  private _editLink = '/edit';
-
-  public get editLink() {
-    return this._editLink;
-  }
-
-  @Input()
-  /**
-   * The URL for the edit link of the RESTworld list view.
-   * Use it if you want to use a custom edit view instead of the default `RESTworldEditViewComponent`.
-   * @param value The new value for the edit link URL.
-   */
-  public set editLink(value: string) {
-    if(value)
-      this._editLink = value;
-  }
-  private _lastParameters: ODataParameters = {};
-  private _searchTemplate: Template = new Template({ properties: [] });
-  public _totalRecords = 0;
-
-  public headerMenu: MenuItem[] = [];
-  public rowMenu: (row: ResourceOfDto<TListDto>, openedByRightClick: boolean) => MenuItem[] = (row, openedByRightClick) => {
-    return [
-      {
-        icon: "fas fa-edit",
-        label: openedByRightClick ? "View / Edit" : undefined,
-        tooltip: !openedByRightClick ? "View / Edit" : undefined,
-        tooltipPosition: "left",
-        routerLink: [this.editLink, this.apiName, this.rel, row._links?.self[0].href]
-      }, {
-        icon: "fas fa-trash-alt",
-        label: openedByRightClick ? "Delete" : undefined,
-        tooltip: !openedByRightClick ? "Delete" : undefined,
-        tooltipPosition: "left",
-        styleClass: "p-button-danger",
-        command: () => this.showDeleteConfirmatioModal(row)
-      }
-    ];
-  }
-
-  constructor(
-    private readonly _clients: RestWorldClientCollection,
-    private readonly _confirmationService: ConfirmationService,
-    private readonly _messageService: MessageService,
-    public readonly avatarGenerator: AvatarGenerator,
-    private readonly _router: Router) {
-  }
-
-  private _apiName!: string;
-
-  @Input({ required: true })
-  /**
-   * Sets the name of the API to load and triggers a reload of the data.
-   * @param value The name of the API to load.
-   */
-  public set apiName(value: string) {
-    this._apiName = value;
-    this.load(this._lastParameters);
-  };
-
-  public get apiName() {
-    return this._apiName;
-  }
-
-  public get newHref(): string | undefined {
-    return this.resource?.findLink('new')?.href;
-  }
-
-  private _rel!: string;
-  public get rel(): string {
-    return this._rel;
-  }
-  @Input({ required: true })
-  /**
-   * Sets the rel value for the RESTWorld list view component.
-   * @param value The new rel value to set.
-   */
-  public set rel(value: string) {
-    this._rel = value;
-    this.load(this._lastParameters);
-  }
-
-  @Input()
-  /**
-   * Sets the initial $orderBy value for the RESTWorld list view component.
-   * @param value The new $orderBy value to set.
-   */
-  public set initialOrderby(value: string | undefined) {
-    this._lastParameters.$orderby = value;
-  }
-
-  public get searchTemplate(): Template {
-    return this._searchTemplate;
-  }
-
-  public get totalRecords(): number {
-    return this._totalRecords;
-  }
-
-  public get value(): ResourceOfDto<TListDto>[] {
-    return this.resource?._embedded?.items || [];
-  }
-
-  public createNew(): Promise<boolean> {
-    return this._router.navigate([this.editLink, this.apiName, this.rel, this.newHref]);
-  }
-
-  public async delete(resource: Resource): Promise<void> {
-    if (!this.apiName || !this.rel)
-      return;
-
-    await this.getClient().delete(resource);
-
-    this._messageService.add({ severity: 'success', summary: 'Deleted', detail: 'The resource has been deleted.' });
-
-    this.loadInternal(this._lastParameters);
-  }
-
-  public async loadInternal(parameters: ODataParameters): Promise<void> {
-    if (!this.apiName || !this.rel)
-      return;
-
-    this.isLoading = true;
-
-    const response = await this.getClient().getList<TListDto>(this.rel, parameters);
-    if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body) {
-      this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the resources from the API.', data: response });
-    }
-    else if (response.body) {
-      try {
-        const templates = await this.getClient().getAllTemplates(response.body);
-        const searchTemplate = templates["Search"];
-        if (searchTemplate === undefined)
-          throw new Error("No search template found in the API response.");
-        this._searchTemplate = searchTemplate;
-      }
-      catch (e: unknown) {
-        this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the resources from the API. ' + e, data: e });
-      }
-
-      this.resource = response.body;
-      const rowsPerPage = parameters.$top ?? response.body._embedded.items.length;
-      const totalPages = response.body.totalPages ?? 1;
-      this._totalRecords = totalPages * rowsPerPage;
-
-      this.headerMenu = [
-        {
-          icon: "fas fa-plus",
-          styleClass: "p-button-success",
-          routerLink: [this.editLink, this.apiName, this.rel, this.newHref],
-          items: this.createButtonMenu
-        }
-      ];
-    }
-
-    this.isLoading = false;
-  }
-
-  public showDeleteConfirmatioModal(resource: Resource) {
-    this._confirmationService.confirm({
-      message: 'Do you really want to delete this resource?',
-      header: 'Confirm delete',
-      icon: 'far fa-trash-alt',
-      accept: () => this.delete(resource)
+    public readonly oDataParameters = linkedSignal(() => {
+        const parameters: ODataParameters = {
+            $filter: this.filter(),
+            $orderby: this.orderby(),
+            $skip: this.skip(),
+            $top: this.top()
+        };
+        return parameters;
     });
-  }
 
-  private getClient(): RestWorldClient {
-    if (!this.apiName)
-      throw new Error('Cannot get a client, because the apiName is not set.');
+    /**
+     * The URL for the edit link of the RESTworld list view.
+     * Use it if you want to use a custom edit view instead of the default `RESTworldEditViewComponent`.
+     * @param value The new value for the edit link URL.
+     */
+    public readonly editLink = input("/edit", { transform: (value) => value ?? "/edit" });
 
-    return this._clients.getClient(this.apiName);
-  }
+    public readonly headerMenu = computed(() => [
+        {
+            icon: "fas fa-plus",
+            styleClass: "p-button-success",
+            routerLink: [this.editLink(), this.apiName(), this.rel(), this.newHref()],
+            items: this.createButtonMenu()
+        }
+    ]);
+
+    public readonly rowMenu = computed<(row: ResourceOfDto<TListDto>, openedByRightClick: boolean) => MenuItem[]>(() => (row, openedByRightClick) => {
+        return [
+            {
+                icon: "fas fa-edit",
+                label: openedByRightClick ? "View / Edit" : undefined,
+                tooltip: !openedByRightClick ? "View / Edit" : undefined,
+                tooltipPosition: "left",
+                routerLink: [this.editLink(), this.apiName(), this.rel(), row._links?.self[0].href]
+            }, {
+                icon: "fas fa-trash-alt",
+                label: openedByRightClick ? "Delete" : undefined,
+                tooltip: !openedByRightClick ? "Delete" : undefined,
+                tooltipPosition: "left",
+                styleClass: "p-button-danger",
+                command: () => this.showDeleteConfirmatioModal(row)
+            }
+        ];
+    });
+
+    private static readonly _emptylistResource = new PagedListResource({ _embedded: { items: [] }, _links: { self: [] } });
+
+    private static readonly _emptySearchTemplate: Template<ReadonlyArray<PropertyDto<SimpleValue, string, string>>> = new Template({ properties: [] });
+
+    constructor(
+        private readonly _clients: RestWorldClientCollection,
+        private readonly _confirmationService: ConfirmationService,
+        private readonly _messageService: MessageService,
+        public readonly avatarGenerator: AvatarGenerator,
+        private readonly _router: Router,
+        private readonly _problemService: ProblemService) {
+            this.listResource.set(RESTworldListViewComponent._emptylistResource);
+            this.searchTemplate.set(RESTworldListViewComponent._emptySearchTemplate);
+    }
+
+    /**
+     * Sets the name of the API to load and triggers a reload of the data.
+     * @param value The name of the API to load.
+     */
+    public readonly apiName = input.required<string>();
+    /**
+     * Sets the rel value for the RESTWorld list view component.
+     * @param value The new rel value to set.
+     */
+    public readonly rel = input.required<string>();
+
+    public readonly newHref = computed(() => this.listResource.value()?.findLink('new')?.href);
+    public readonly items = computed(() => this.listResource.value()?._embedded.items || []);
+
+    public createNew(): Promise<boolean> {
+        return this._router.navigate([this.editLink, this.apiName, this.rel, this.newHref]);
+    }
+
+    public async delete(resource: Resource): Promise<void> {
+        const response = await this._client().delete(resource);
+        if (this._problemService.checkResponseAndDisplayErrors(response, undefined, "Error while deleting the resource from the API.", "Error")) {
+            this._messageService.add({ severity: 'success', summary: 'Deleted', detail: 'The resource has been deleted.' });
+
+            this.listResource.reload();
+        }
+    }
+
+    public readonly listResource = resource({
+        request: () => ({ oDataParameters: this.oDataParameters(), rel: this.rel() }),
+        loader: async ({ request }) => {
+            const response = await this._client().getList<TListDto>(request.rel, request.oDataParameters);
+            if (this._problemService.checkResponseAndDisplayErrors(response, undefined, "Error while loading the resources from the API.", "Error")) {
+                return response.body;
+            }
+
+            return RESTworldListViewComponent._emptylistResource;
+        },
+    });
+
+    public readonly totalRecords = computed(() => {
+        const top = this.top();
+        const listResource = this.listResource.value();
+        const rowsPerPage = top ?? listResource?._embedded.items.length ?? 0;
+        const totalPages = listResource?.totalPages ?? 1;
+        const totalRecords = totalPages * rowsPerPage;
+        return totalRecords;
+    });
+
+    public readonly searchTemplate = resource({
+        request: () => ({ resource: this.listResource.value() }),
+        loader: async ({ request }) => {
+            if (request.resource === undefined)
+                return RESTworldListViewComponent._emptySearchTemplate;
+
+            // We only want to load the template once
+            const currentSearchTemplate = this.searchTemplate.value() as Template<ReadonlyArray<PropertyDto<SimpleValue, string, string>>> | undefined;
+            if (currentSearchTemplate !== undefined && currentSearchTemplate !== RESTworldListViewComponent._emptySearchTemplate)
+                return currentSearchTemplate;
+
+            try {
+                const templates = await this._client().getAllTemplates(request.resource);
+                const searchTemplate = templates["Search"];
+                if (searchTemplate === undefined)
+                    throw new Error("No search template found in the API response.");
+                return searchTemplate;
+            }
+            catch (e: unknown) {
+                this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the resources from the API. ' + e, data: e });
+                return RESTworldListViewComponent._emptySearchTemplate;
+            }
+        }
+    });
+
+    public showDeleteConfirmatioModal(resource: Resource) {
+        this._confirmationService.confirm({
+            message: 'Do you really want to delete this resource?',
+            header: 'Confirm delete',
+            icon: 'far fa-trash-alt',
+            accept: () => this.delete(resource)
+        });
+    }
+
+    private readonly _client = computed(() => this._clients.getClient(this.apiName()));
 }

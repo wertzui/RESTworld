@@ -9,8 +9,8 @@ describe('RestworldListViewComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ RESTworldListViewComponent ]
-    })
+    imports: [RESTworldListViewComponent]
+})
     .compileComponents();
   });
 

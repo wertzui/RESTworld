@@ -8,8 +8,8 @@ describe('RestWorldMenuButtonComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ RestWorldMenuButtonComponent ]
-    })
+    imports: [RestWorldMenuButtonComponent]
+})
     .compileComponents();
 
     fixture = TestBed.createComponent(RestWorldMenuButtonComponent);

@@ -1,11 +1,15 @@
-<rw-table
-  [apiName]="apiName"
-  [searchTemplate]="searchTemplate"
-  [rows]="value"
-  [headerMenu]="headerMenu"
-  [rowMenu]="rowMenu"
-  [totalRecords]="totalRecords"
-  [isLoading]="isLoading"
-  (onFilterOrSortChanged)="load($event)">
-</rw-table>
+@let search = searchTemplate.value();
+@if (search) {
+    <rw-table
+        [apiName]="apiName()"
+        [searchTemplate]="search"
+        [rows]="items()"
+        [headerMenu]="headerMenu()"
+        [rowMenu]="rowMenu()"
+        [totalRecords]="totalRecords()"
+        [isLoading]="isLoading()"
+        [(oDataParameters)]="oDataParameters"
+    >
+    </rw-table>
+}
 <p-confirmDialog></p-confirmDialog>

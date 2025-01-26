@@ -1,14 +1,17 @@
-<val-errors *ngIf="property && property.type !== PropertyType.Hidden" [controlName]="property.name">
-    <ng-template valError="required">The field '{{property.prompt ?? property.name}}' is required.</ng-template>
-    <ng-template valError="email">The email must be a valid email address.</ng-template>
-    <ng-template valError="min" let-error="error">'{{property.prompt ?? property.name}}' must be equal or greater than or equal to {{ error.min }}.</ng-template>
-    <ng-template valError="max" let-error="error">'{{property.prompt ?? property.name}}' must be smaller than or equal to {{ error.max }}.</ng-template>
-    <ng-template valError="minlength" let-error="error">The length of '{{property.prompt ?? property.name}}' must be equal or greater than or equal to {{ error.requiredLength }}.</ng-template>
-    <ng-template valError="maxlength" let-error="error">The length of '{{property.prompt ?? property.name}}' must be shorter than or equal to {{ error.requiredLength }}.</ng-template>
-    <ng-template valError="pattern" let-error="error">The value for '{{property.prompt ?? property.name}}' does not match the pattern {{ error }}.</ng-template>
-    <ng-template valError="remote" let-error="error">{{ error }}</ng-template>
-</val-errors>
-
-<val-errors *ngIf="form" [control]="form">
-    <ng-template valError="remote" let-error="error">{{ error }}</ng-template>
-</val-errors>
+@if (property() && property()?.type !== PropertyType.Hidden) {
+    <val-errors [controlName]="name()">
+        <ng-template valError="required"><p-message severity="error" variant="simple" size="small">The field '{{prompt()}}' is required.</p-message></ng-template>
+        <ng-template valError="email"><p-message severity="error" variant="simple" size="small">'{{prompt()}}' must be a valid email address.</p-message></ng-template>
+        <ng-template valError="min" let-error="error"><p-message severity="error" variant="simple" size="small">'{{prompt()}}' must be equal or greater than or equal to {{ error.min }}.</p-message></ng-template>
+        <ng-template valError="max" let-error="error"><p-message severity="error" variant="simple" size="small">'{{prompt()}}' must be smaller than or equal to {{ error.max }}.</p-message></ng-template>
+        <ng-template valError="minlength" let-error="error"><p-message severity="error" variant="simple" size="small">The length of '{{prompt()}}' must be equal or greater than or equal to {{ error.requiredLength }}.</p-message></ng-template>
+        <ng-template valError="maxlength" let-error="error"><p-message severity="error" variant="simple" size="small">The length of '{{prompt()}}' must be shorter than or equal to {{ error.requiredLength }}.</p-message></ng-template>
+        <ng-template valError="pattern" let-error="error"><p-message severity="error" variant="simple" size="small">The value for '{{prompt()}}' does not match the pattern {{ error }}.</p-message></ng-template>
+        <ng-template valError="remote" let-error="error"><p-message severity="error" variant="simple" size="small">{{ error }}</p-message></ng-template>
+    </val-errors>
+}
+@if (form()) {
+    <val-errors [control]="form()!">
+        <ng-template valError="remote" let-error="error"><p-message severity="error" variant="simple" size="small">{{ error }}</p-message></ng-template>
+    </val-errors>
+}

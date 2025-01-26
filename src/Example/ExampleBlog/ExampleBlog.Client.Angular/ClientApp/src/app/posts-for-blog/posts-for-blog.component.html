@@ -1,23 +1,21 @@
-<form>
+<form [formGroup]="formGroup">
   <rw-table
-    [formArray]="formArray"
-    [apiName]="apiName"
-    [searchTemplate]="searchTemplate"
-    [editTemplate]="editTemplate"
-    [rows]="rows"
-    [totalRecords]="totalRecords"
-    [isLoading]="isLoading"
+    formArrayName="posts"
+    [apiName]="apiName()"
+    [searchTemplate]="searchTemplate()"
+    [editTemplate]="editTemplate()"
+    [rows]="items()"
+    [totalRecords]="totalRecords()"
+    [isLoading]="isLoading()"
     [rowStyleClass]="generateRowClasses"
     [cellStyleClass]="generateCellClasses"
-    (onFilterOrSortChanged)="load($event)"
-    (onRowSelect)="onRowSelect($event)"
-    (onRowUnselect)="onRowUnselect($event)"
+    [(oDataParameters)]="oDataParameters"
     selectionMode="multiple"
-    [(selection)]="selection"
+    [(selectedRows)]="selection"
     [rowHover]="true">
   </rw-table>
 </form>
 Selection:
-<pre>{{selection | json}}</pre>
+<pre>{{selection() | json}}</pre>
 Form value:
 <pre>{{formArray.value | json}}</pre>

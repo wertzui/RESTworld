@@ -1,6 +1,8 @@
-import { Component, Input, OnInit } from '@angular/core';
-import { SafeUrl } from '@angular/platform-browser';
+import { Component, computed, input } from '@angular/core';
 import { AvatarGenerator } from '../../services/avatar-generator';
+import { AvatarModule } from "primeng/avatar";
+import { TooltipModule } from "primeng/tooltip";
+import { AsyncPipe } from "@angular/common";
 
 /**
  * This component displays an avatar for a given user.
@@ -10,37 +12,24 @@ import { AvatarGenerator } from '../../services/avatar-generator';
  * <rw-avatar [user]="'John Doe'"></rw-avatar>
  */
 @Component({
-  selector: 'rw-avatar',
-  templateUrl: './restworld-avatar.component.html',
-  styleUrls: ['./restworld-avatar.component.css']
+    selector: 'rw-avatar',
+    templateUrl: './restworld-avatar.component.html',
+    styleUrls: ['./restworld-avatar.component.css'],
+    standalone: true,
+    imports: [AvatarModule, TooltipModule, AsyncPipe]
 })
-export class RestWorldAvatarComponent implements OnInit{
-  @Input({required: true})
-  /**
-   * The username of the user to display an avatar for.
-   */
-  user?: string;
+export class RestWorldAvatarComponent {
+    /**
+     * The username of the user to display an avatar for.
+     */
+    public readonly user = input.required<string>();
+    public readonly image = computed(async () => await this._generator.getImageAsync(this.user()));
+    public readonly label = computed(async () => await this._generator.getLabelAsync(this.user()));
+    public readonly style = computed(async () => await this._generator.getStyleAsync(this.user()));
+    public readonly tooltip = computed(() => this.user() ?? '');
 
-  private _image: SafeUrl = '';
-  public get image(): string { return this._image as string; }
-  private _label: string = '';
-  public get label(): string { return this._label; }
-  private _style?: Record<string, string>;
-  public get style(): Record<string, string> | undefined { return this._style; }
-  public get tooltip(): string { return this.user ?? ''; }
-
-  constructor(
-    private readonly _generator: AvatarGenerator
-  ) {
-
-  }
-
-  async ngOnInit(): Promise<void> {
-    if(this.user === undefined || this.user === null)
-      return;
-
-    this._image = await this._generator.getImageAsync(this.user);
-    this._label = await this._generator.getLabelAsync(this.user);
-    this._style = await this._generator.getStyleAsync(this.user);
-  }
+    constructor(
+        private readonly _generator: AvatarGenerator
+    ) {
+    }
 }

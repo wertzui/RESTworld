@@ -25,7 +25,9 @@ public static class AutoMapperConfiguration
         config
             .CreateMap<PostCreateDto, Post>();
         config
-            .CreateMap<Post, PostListDto>();
+            .CreateMap<Post, PostListDto>()
+            .ForMember(dst => dst.Author, opt => opt.Ignore())
+            .ForMember(dst => dst.Blog, opt => opt.Ignore()); ;
         config
             .CreateMap<Post, PostGetFullDto>()
             .ForMember(dst => dst.Author, opt => opt.Ignore())

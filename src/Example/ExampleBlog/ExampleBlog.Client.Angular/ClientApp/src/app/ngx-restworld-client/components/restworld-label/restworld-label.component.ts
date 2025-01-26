@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { ControlContainer, FormGroupDirective } from '@angular/forms';
 import { Property, PropertyType, SimpleValue } from '@wertzui/ngx-hal-client';
 
@@ -10,18 +10,18 @@ import { Property, PropertyType, SimpleValue } from '@wertzui/ngx-hal-client';
  * <rw-label [property]="property"></rw-label>
  */
 @Component({
-  selector: 'rw-label',
-  templateUrl: './restworld-label.component.html',
-  styleUrls: ['./restworld-label.component.css'],
-  viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }]
+    selector: 'rw-label',
+    templateUrl: './restworld-label.component.html',
+    styleUrls: ['./restworld-label.component.css'],
+    standalone: true,
+    viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }]
 })
 export class RestWorldLabelComponent<TProperty extends Property<SimpleValue, string, string>> {
   /**
    * The property to be displayed.
    * @required
    **/
-  @Input({ required: true })
-  property!: TProperty;
+  readonly property = input.required<TProperty>();
 
   public get PropertyType() {
     return PropertyType;

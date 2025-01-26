@@ -8,8 +8,8 @@ describe('RestWorldLabelComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ RestWorldLabelComponent ]
-    })
+    imports: [RestWorldLabelComponent]
+})
     .compileComponents();
 
     fixture = TestBed.createComponent(RestWorldLabelComponent);

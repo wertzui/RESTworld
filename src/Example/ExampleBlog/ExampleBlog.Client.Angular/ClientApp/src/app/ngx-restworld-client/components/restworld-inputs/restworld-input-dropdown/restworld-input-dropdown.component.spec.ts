@@ -8,8 +8,8 @@ describe('RestWorldInputDropdownComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ RestWorldInputDropdownComponent ]
-    })
+    imports: [RestWorldInputDropdownComponent]
+})
     .compileComponents();
 
     fixture = TestBed.createComponent(RestWorldInputDropdownComponent);

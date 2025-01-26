@@ -295,7 +295,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     {
         var serviceResponse = await _crudService.CreateAsync(dtos, cancellationToken);
 
-        var response = await ResultFactory.CreateCreatedCollectionResultBasedOnOutcomeAsync(serviceResponse, ReturnsReadOnlyFormsResponses);
+        var response = await ResultFactory.CreateCreatedCollectionResultBasedOnOutcomeAsync(serviceResponse, ReturnsReadOnlyFormsResponses, maxTop: Options.MaxNumberForListEndpoint);
 
         return response;
     }
@@ -336,7 +336,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
             }
         }
 
-        var result = await ResultFactory.CreateOkCollectionResultBasedOnOutcomeAsync(response, ReturnsReadOnlyFormsResponses);
+        var result = await ResultFactory.CreateOkCollectionResultBasedOnOutcomeAsync(response, ReturnsReadOnlyFormsResponses, maxTop: Options.MaxNumberForListEndpoint);
 
         return result;
     }

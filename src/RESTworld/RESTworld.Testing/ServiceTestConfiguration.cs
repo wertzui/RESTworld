@@ -220,6 +220,19 @@ public static class ServiceTestConfigurationExtensions
     {
         return builder.With(new ServiceTestConfiguration<TImplementation, TImplementation>(instance));
     }
+
+    /// <summary>
+    /// Adds a service to your tests.
+    /// </summary>
+    /// <typeparam name="TService">The type of the service.</typeparam>
+    /// <param name="builder">The builder to add the configuration to.</param>
+    /// <param name="factory">The factory which creates the instance.</param>
+    /// <returns>The <paramref name="builder"/>.</returns>
+    public static ITestBuilderWithConfig<ServiceTestConfiguration<TService, TService>> WithService<TService>(this ITestBuilder builder, Func<IServiceProvider, TService> factory)
+        where TService : class
+    {
+        return builder.With(new ServiceTestConfiguration<TService, TService>(factory));
+    }
 }
 
 /// <summary>
@@ -230,6 +243,7 @@ public class ServiceTestConfiguration<TService, TImplementation> : ITestConfigur
     where TImplementation : class, TService
 {
     private readonly TImplementation? _instance;
+    private readonly Func<IServiceProvider, TImplementation>? _factory;
 
     /// <summary>
     /// Creates a new instance of the
@@ -237,6 +251,16 @@ public class ServiceTestConfiguration<TService, TImplementation> : ITestConfigur
     /// </summary>
     public ServiceTestConfiguration()
     {
+    }
+
+    /// <summary>
+    /// Creates a new instance of the
+    /// <see cref="ServiceTestConfiguration{TService, TImplementation}"/> class.
+    /// </summary>
+    /// <param name="factory">The factory which creates the instance.</param>
+    public ServiceTestConfiguration(Func<IServiceProvider, TImplementation> factory)
+    {
+        _factory = factory;
     }
 
     /// <summary>
@@ -259,6 +283,8 @@ public class ServiceTestConfiguration<TService, TImplementation> : ITestConfigur
     {
         if (_instance is not null)
             services.AddSingleton<TService>(_instance);
+        else if (_factory is not null)
+            services.AddSingleton<TService>(_factory);
         else
             services.AddSingleton<TService, TImplementation>();
     }

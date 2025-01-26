@@ -1,13 +1,17 @@
-<ng-container [ngSwitch]="property.type">
-    <ng-container *ngSwitchCase="PropertyType.Text">
-        <rw-avatar *ngIf="property.name === 'createdBy' || property.name === 'lastChangedBy'" [user]="$any(value)"></rw-avatar>
-        <span *ngIf="property.name !== 'createdBy' && property.name !== 'lastChangedBy'" class="w-full">{{value | propertyTypeFormat:property.type}}</span>
-    </ng-container>
+@switch (property().type) {
 
-    <ng-container *ngSwitchCase="PropertyType.Bool">
-        <p-checkbox *ngIf="property.required" [(ngModel)]="value" [binary]="true" [readonly]="true" [disabled]="true"></p-checkbox>
-        <p-triStateCheckbox *ngIf="!property.required" [(ngModel)]="value" [readonly]="true" [disabled]="true"></p-triStateCheckbox>
-    </ng-container>
-
-    <span *ngSwitchDefault class="w-full">{{value | propertyTypeFormat:property.type}}</span>
-</ng-container>
+    @case (PropertyType.Text) {
+        @if (property.name === 'createdBy' || property.name === 'lastChangedBy') {
+            <rw-avatar [user]="$any(computedValue())"></rw-avatar>
+        }
+        @else {
+            <span class="w-full">{{computedValue() | propertyTypeFormat:property().type}}</span>
+        }
+    }
+    @case (PropertyType.Bool) {
+        <p-checkbox [value]="computedValue()" [binary]="true" [indeterminate]="!property().required" [readonly]="true" [disabled]="true"></p-checkbox>
+    }
+    @default {
+        <span class="w-full">{{computedValue() | propertyTypeFormat:property().type}}</span>
+    }
+}

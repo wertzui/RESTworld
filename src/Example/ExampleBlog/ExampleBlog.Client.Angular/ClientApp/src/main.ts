@@ -1,31 +1,52 @@
-import { enableProdMode, StaticProvider } from '@angular/core';
-import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+import { enableProdMode } from '@angular/core';
 
-import { AppModule } from './app/app.module';
-import { SettingsService } from './app/ngx-restworld-client/services/settings.service';
 import { environment } from './environments/environment';
-
-export function getBaseUrl() {
-  return document.getElementsByTagName('base')[0].href;
-}
+import { ExampleAvatarGenerator } from './app/ExampleAvatarGenerator';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { bootstrapApplication } from '@angular/platform-browser';
+import { withRouterConfig, provideRouter, withComponentInputBinding } from '@angular/router';
+import { AppRoutes } from './app/app.routes';
+import { provideAnimations } from '@angular/platform-browser/animations';
+import { AppComponent } from './app/app.component';
+import { provideCustomAvatarGenerator, provideRestWorld } from "./app/ngx-restworld-client/provide-restworld";
+import { providePrimeNG } from "primeng/config";
+import Aura from '@primeng/themes/aura';
+import { ConfirmationService, MessageService } from "primeng/api";
+import { ClrFormatPipe } from "./app/ngx-restworld-client/pipes/clr-format.pipe";
+import { definePreset } from "@primeng/themes";
+import * as base from "@primeng/themes/aura/base";
+import { NgHttpCachingStrategy, provideNgHttpCaching, withNgHttpCachingLocalStorage } from "ng-http-caching";
 
 if (environment.production) {
-  enableProdMode();
+    enableProdMode();
 }
 
 async function main() {
-  try {
-    await SettingsService.ensureSettingsAreLoaded();
+    try {
 
-    const providers: StaticProvider[] = [
-      { provide: 'BASE_URL', useFactory: getBaseUrl, deps: [] }
-    ];
-
-    await platformBrowserDynamic(providers).bootstrapModule(AppModule);
-  }
-  catch (e) {
-    console.error(e);
-  }
+        await bootstrapApplication(AppComponent, {
+            providers: [
+                provideRestWorld(),
+                provideCustomAvatarGenerator(ExampleAvatarGenerator),
+                provideHttpClient(withInterceptorsFromDi()),
+                provideRouter(
+                    AppRoutes,
+                    withRouterConfig({ onSameUrlNavigation: 'reload' }),
+                    withComponentInputBinding()),
+                provideAnimations(),
+                providePrimeNG({
+                    ripple: true,
+                    theme: { preset: definePreset(Aura, { semantic: { primary: base.default.primitive.blue} }) }
+                }),
+                MessageService,
+                ConfirmationService,
+                ClrFormatPipe
+            ]
+        });
+    }
+    catch (e) {
+        console.error(e);
+    }
 }
 
 main();

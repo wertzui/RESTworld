@@ -2,12 +2,14 @@
     <div class="brace">
     </div>
     <div class="w-full">
-        <div *ngFor="let template of templates" class="flex align-items-center">
-            <div class="brace">
+        @for (template of templates(); track template) {
+            <div class="flex align-items-center">
+                <div class="brace">
+                </div>
+                <div class="w-full flex justify-content-end">
+                    <rw-display-template [template]="$any(template)" [value]="values() ? $any(values())[template.title!] : undefined" [apiName]="apiName()" class="w-full"></rw-display-template>
+                </div>
             </div>
-            <div class="w-full flex justify-content-end">
-                <rw-display-template [template]="$any(template)" [value]="values ? values[template.title!] : undefined" [apiName]="apiName" class="w-full"></rw-display-template>
-            </div>
-        </div>
+        }
     </div>
 </div>

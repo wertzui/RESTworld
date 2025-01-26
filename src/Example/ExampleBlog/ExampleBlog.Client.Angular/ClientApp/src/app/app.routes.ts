@@ -42,7 +42,7 @@ export const AppMenu: MenuItem[] = [
       {
         label: "Blogs",
         routerLink: ['list', 'ExampleBlog', 'MyEx:Blog'],
-        queryParams: { initialOrderby: 'id desc' }
+        queryParams: { $orderby: 'id desc' }
       },
       {
         label: "Authors",
@@ -51,7 +51,7 @@ export const AppMenu: MenuItem[] = [
       {
         label: "Posts",
         routerLink: ['list', 'ExampleBlog', 'MyEx:Post'],
-        queryParams: { orderBy: 'lastChangedAt desc' }
+        queryParams: { $orderby: 'lastChangedAt desc' }
       },
       {
         label: "Statistics",

@@ -2,10 +2,10 @@
  * Well known link names.
  */
 export enum LinkNames {
-  get = "Get",
-  getList = "GetList",
-  post = "Post",
-  put = "Put",
-  delete = "Delete",
-  new = "New"
+    get = "Get",
+    getList = "GetList",
+    post = "Post",
+    put = "Put",
+    delete = "Delete",
+    new = "New"
 }

@@ -1,31 +1,19 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
+import { RESTworldEditViewComponent } from "../ngx-restworld-client/views/restworld-edit-view/restworld-edit-view.component";
+import { RouterLink } from "@angular/router";
 
 @Component({
   selector: 'app-post-with-author',
   templateUrl: './post-with-author.component.html',
-  styleUrls: ['./post-with-author.component.css']
+  styleUrls: ['./post-with-author.component.css'],
+  standalone: true,
+  imports: [RESTworldEditViewComponent, RouterLink]
 })
-export class PostWithAuthorComponent implements OnInit {
-  @Input()
-  public apiName?: string
-
-  @Input()
-  public rel?: string;
-
-  @Input()
-  public get uri() {
-    return PostWithAuthorComponent.unModifyUri(this.modifiedUri);
-  }
-  public set uri(value: string | undefined) {
-    this.modifiedUri = PostWithAuthorComponent.modifyUri(value);
-  }
-
-  public modifiedUri?: string;
-
-  constructor() { }
-
-  ngOnInit(): void {
-  }
+export class PostWithAuthorComponent {
+  public readonly apiName = input.required<string>();
+  public readonly modifiedUri = computed(() => PostWithAuthorComponent.modifyUri(this.uri()));
+  public readonly rel = input.required<string>();
+  public readonly uri = input.required<string>();
 
   private static modifyUri(uri?: string): string | undefined {
     if (!uri)
@@ -33,12 +21,4 @@ export class PostWithAuthorComponent implements OnInit {
 
     return uri.replace(/\/post\//gmi, '/postwithauthor/',);
   }
-
-  private static unModifyUri(uri?: string): string | undefined {
-    if (!uri)
-      return undefined;
-
-    return uri.replace(/\/postwithauthor\//gmi, '/post/');
-  }
-
 }

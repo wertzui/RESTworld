@@ -18,3 +18,14 @@ a.p-button {
 ::ng-deep rw-table .p-ai-center {
   align-items: center;
 }
+
+::ng-deep rw-table .has-filter filtericon {
+  color: var(--p-datatable-header-cell-selected-color);
+}
+
+::ng-deep rw-table p-columnfilter .p-datatable-column-filter-button {
+    width: unset;
+    height: 23px !important;
+    padding-block-end: 0;
+    padding-block-start: 0;
+}

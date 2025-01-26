@@ -35,8 +35,11 @@ public interface IResultFactory
     /// <param name="listPutMethod">
     /// The name of the put method for the update-multiple endpoint. Default is "Put".
     /// </param>
+    /// <param name="maxTop">
+    /// The maximum number of items per page.
+    /// </param>
     /// <returns>Either a HAL resource, or a HAL-Forms resource containing the given <paramref name="items"/>.</returns>
-    ValueTask<Resource> CreateCollectionResourceAsync<TDto>(IReadOnlyCollection<TDto> items, string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
+    ValueTask<Resource> CreateCollectionResourceAsync<TDto>(IReadOnlyCollection<TDto> items, string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put", long maxTop = 50) where TDto : DtoBase;
 
     /// <summary>
     /// Creates a collection result based on the outcome of a service response. It either contains the
@@ -64,8 +67,11 @@ public interface IResultFactory
     /// The route values. If none are given, the <see cref="DtoBase.Id"/> of the given
     /// <see cref="ServiceResponse{T}.ResponseObject"/> is used.
     /// </param>
+    /// <param name="maxTop">
+    /// The maximum number of items per page.
+    /// </param>
     /// <returns>Either a successful or an error result.</returns>
-    ValueTask<ObjectResult> CreateCreatedCollectionResultBasedOnOutcomeAsync<TDto>(ServiceResponse<IReadOnlyCollection<TDto>> serviceResponse, bool readOnly = false, string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put", object? routeValues = null) where TDto : DtoBase;
+    ValueTask<ObjectResult> CreateCreatedCollectionResultBasedOnOutcomeAsync<TDto>(ServiceResponse<IReadOnlyCollection<TDto>> serviceResponse, bool readOnly = false, string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put", object? routeValues = null, long maxTop = 50) where TDto : DtoBase;
 
     /// <summary>
     /// Creates a result based on the outcome of a service response. It either contains the
@@ -134,8 +140,11 @@ public interface IResultFactory
     /// The route values. If none are given, the <see cref="DtoBase.Id"/> of the given
     /// <see cref="ServiceResponse{T}.ResponseObject"/> is used.
     /// </param>
+    /// <param name="maxTop">
+    /// The maximum number of items per page.
+    /// </param>
     /// <returns>Either a successful or an error result.</returns>
-    ValueTask<ObjectResult> CreateOkCollectionResultBasedOnOutcomeAsync<TDto>(ServiceResponse<IReadOnlyCollection<TDto>> serviceResponse, bool readOnly = false, string action = "Put", string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put", object? routeValues = null) where TDto : DtoBase;
+    ValueTask<ObjectResult> CreateOkCollectionResultBasedOnOutcomeAsync<TDto>(ServiceResponse<IReadOnlyCollection<TDto>> serviceResponse, bool readOnly = false, string action = "Put", string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put", object? routeValues = null, long maxTop = 50) where TDto : DtoBase;
 
     /// <summary>
     /// Creates a result based on the outcome of a service response. It either contains the

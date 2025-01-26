@@ -8,8 +8,8 @@ describe('RESTworldEditViewComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ RESTworldEditViewComponent ]
-    })
+    imports: [RESTworldEditViewComponent]
+})
     .compileComponents();
   });
 

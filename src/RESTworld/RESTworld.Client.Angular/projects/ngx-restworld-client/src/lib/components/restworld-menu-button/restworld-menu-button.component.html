@@ -1,29 +1,30 @@
-<ng-container *ngFor="let item of items; index as i">
-  <p-button
-    *ngIf="!item.items"
-    [label]="item.label!"
-    [icon]="item.icon!"
-    [disabled]="item.disabled!"
-    [style]="item.style"
-    [styleClass]="item.styleClass!"
-    [pTooltip]="item.tooltip!"
-    [tooltipPosition]="item.tooltipPosition!"
-    (onClick)="onClick($event, item)"
-    [class.ml-2]="i > 0">
-  </p-button>
-
-  <p-splitButton
-    *ngIf="item.items"
-    [label]="item.label!"
-    [icon]="item.icon!"
-    [model]="item.items"
-    appendTo="body"
-    [disabled]="item.disabled!"
-    [style]="item.style"
-    [styleClass]="item.styleClass!"
-    [pTooltip]="item.tooltip!"
-    [tooltipPosition]="item.tooltipPosition!"
-    (onClick)="onClick($event, item)"
-    [class.ml-2]="i > 0">
-  </p-splitButton>
-</ng-container>
+@for (item of items(); track item; let i = $index) {
+    @if (!item.items) {
+        <p-button
+            [label]="item.label!"
+            [icon]="item.icon!"
+            [disabled]="item.disabled!"
+            [style]="item.style"
+            [styleClass]="item.styleClass!"
+            [pTooltip]="item.tooltip!"
+            [tooltipPosition]="item.tooltipPosition!"
+            (onClick)="onClick($event, item)"
+            [class.ml-2]="i > 0">
+        </p-button>
+    } 
+    @else {
+        <p-splitButton
+            [label]="item.label!"
+            [icon]="item.icon!"
+            [model]="item.items"
+            appendTo="body"
+            [disabled]="item.disabled!"
+            [style]="item.style"
+            [styleClass]="item.styleClass!"
+            [pTooltip]="item.tooltip!"
+            [tooltipPosition]="item.tooltipPosition!"
+            (onClick)="onClick($event, item)"
+            [class.ml-2]="i > 0">
+        </p-splitButton>
+    }
+}

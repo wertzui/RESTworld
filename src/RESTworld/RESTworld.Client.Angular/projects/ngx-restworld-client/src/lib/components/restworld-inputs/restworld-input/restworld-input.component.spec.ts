@@ -8,8 +8,8 @@ describe('RestWorldInputElementComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ RestWorldInputComponent ]
-    })
+    imports: [RestWorldInputComponent]
+})
     .compileComponents();
 
     fixture = TestBed.createComponent(RestWorldInputComponent);

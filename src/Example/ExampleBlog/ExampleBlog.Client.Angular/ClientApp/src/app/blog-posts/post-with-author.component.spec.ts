@@ -8,8 +8,8 @@ describe('PostWithAuthorComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ PostWithAuthorComponent ]
-    })
+    imports: [PostWithAuthorComponent]
+})
     .compileComponents();
   });
 

@@ -8,8 +8,8 @@ describe('RestWorldImageComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ RestWorldImageComponent ]
-    })
+    imports: [RestWorldImageComponent]
+})
     .compileComponents();
   });
 

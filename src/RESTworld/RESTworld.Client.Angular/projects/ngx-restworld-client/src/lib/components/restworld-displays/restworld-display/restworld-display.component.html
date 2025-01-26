@@ -1,11 +1,18 @@
-<ng-container *ngIf="property.type !== PropertyType.Hidden">
-    <rw-display-dropdown *ngIf="property.options" [property]="$any(property)" [selectedValues]="$any(value)" [apiName]="apiName"></rw-display-dropdown>
-
-    <ng-container *ngIf="!property.options">
-        <ng-container [ngSwitch]="property.type">
-            <rw-display-object *ngSwitchCase="PropertyType.Object" [property]="$any(property)" [value]="$any(value)" [apiName]="apiName"></rw-display-object>
-            <rw-display-collection *ngSwitchCase="PropertyType.Collection" [property]="$any(property)" [values]="$any(value)" [apiName]="apiName"></rw-display-collection>
-            <rw-display-simple *ngSwitchDefault [property]="property" [value]="$any(value)" [apiName]="apiName"></rw-display-simple>
-        </ng-container>
-    </ng-container>
-</ng-container>
+@if (property().type !== PropertyType.Hidden) {
+    @if (property().options) {
+        <rw-display-dropdown [property]="$any(property())" [selectedValues]="$any(computedValue())" [apiName]="apiName()"></rw-display-dropdown>
+    }
+    @else {
+        @switch (property().type) {
+            @case (PropertyType.Object) {
+                <rw-display-object [property]="$any(property())" [value]="$any(computedValue())" [apiName]="apiName()"></rw-display-object>
+            }
+            @case (PropertyType.Collection) {
+                <rw-display-collection [property]="$any(property())" [values]="$any(computedValue())" [apiName]="apiName()"></rw-display-collection>
+            }
+            @default {
+                <rw-display-simple [property]="property()" [value]="$any(computedValue())" [apiName]="apiName()"></rw-display-simple>
+            }
+        }
+    }
+}

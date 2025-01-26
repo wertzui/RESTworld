@@ -1,6 +1,3 @@
-<!-- <ng-template #defaultInputOptions let-property="property" let-selectedValues="selectedValues"> -->
-<ng-container *ngFor="let value of selectedValues; last as last;">
-    <span [pTooltip]="getTooltip(getOptionItem(value))">{{getLabel(getOptionItem(value))}}</span>{{last ? "" : ", "}}
-</ng-container>
-<!-- </ng-template>
-<ng-container *ngTemplateOutlet="inputOptionsRef ?? defaultInputOptions; context: { property: property, selectedValues: selectedValues }"></ng-container> -->
+@for (item of optionsManager.selectedItems(); track item; let last = $last) {
+    <span [pTooltip]="optionsManager.getTooltip()($any(item))">{{optionsManager.getLabel()($any(item))}}</span>{{last ? "" : ", "}}
+}

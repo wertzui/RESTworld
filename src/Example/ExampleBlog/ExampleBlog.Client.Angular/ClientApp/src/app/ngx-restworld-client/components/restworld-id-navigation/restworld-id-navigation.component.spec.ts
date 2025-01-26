@@ -8,8 +8,8 @@ describe('RestWorldIdNavigationComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ RestWorldIdNavigationComponent ]
-    })
+    imports: [RestWorldIdNavigationComponent]
+})
     .compileComponents();
 
     fixture = TestBed.createComponent(RestWorldIdNavigationComponent);

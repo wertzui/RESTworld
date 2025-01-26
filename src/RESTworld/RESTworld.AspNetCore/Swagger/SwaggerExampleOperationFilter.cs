@@ -267,7 +267,6 @@ public class SwaggerExampleOperationFilter : IOperationFilter
             {
                 // Post and Put either return an object or a collection
                 var states = Enumerable.Repeat<object?>(null, 3).Select(_ => _fixture.Create(tFullDto, _specimenContext)).Cast<ConcurrentDtoBase>().ToList();
-                var CollectionResource = resourceFactory.CreateForListEndpoint(states, _ => Common.Constants.ListItems, d => d.Id, controllerName);
 
                 type.Examples.Add("Single Object", new OpenApiExample { Value = CreateExample((Resource)resourceFactory.CreateForEndpoint(states[0], controller: controllerName, routeValues: new { id = states[0].Id })) });
                 type.Examples.Add("Collection", new OpenApiExample { Value = CreateExample(resourceFactory.CreateForListEndpoint(states, _ => Common.Constants.ListItems, d => d.Id, controllerName)) });
@@ -402,15 +401,19 @@ public class SwaggerExampleOperationFilter : IOperationFilter
             {
                 if (type.Example is null)
                 {
-                    var typeId = type.Schema.Reference?.Id;
-                    if (typeId == "ProblemDetailsResource")
+                    try
                     {
-                        AddExampleForProblemResponse(statusCodeInt, response, type);
+                        var typeId = type.Schema.Reference?.Id;
+                        if (typeId == "ProblemDetailsResource")
+                        {
+                            AddExampleForProblemResponse(statusCodeInt, response, type);
+                        }
+                        else
+                        {
+                            AddExampleForSuccessfullResponse(context, statusCodeInt, type);
+                        }
                     }
-                    else
-                    {
-                        AddExampleForSuccessfullResponse(context, statusCodeInt, type);
-                    }
+                    catch { }
                 }
             }
         }

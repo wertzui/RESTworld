@@ -7,23 +7,23 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
  * <img [src]="url | safeUrl"></img>
  */
 @Pipe({
-  name: 'safeUrl'
+    name: 'safeUrl',
+    standalone: true
 })
 export class SafeUrlPipe implements PipeTransform {
+    constructor(private _domSanitizer: DomSanitizer) {
+    }
 
-  constructor(private _domSanitizer: DomSanitizer) {
-  }
+    /**
+     * Sanitizes the given URL and returns a `SafeUrl` object.
+     * @param url The URL to sanitize.
+     * @returns A `SafeUrl` object representing the sanitized URL.
+     * @throws An error if the given URL is not a string.
+     */
+    public transform(url: unknown): SafeUrl {
+        if (typeof url !== 'string')
+            throw new Error(`The given url '${url}' is not a string.`)
 
-  /**
-   * Sanitizes the given URL and returns a `SafeUrl` object.
-   * @param url The URL to sanitize.
-   * @returns A `SafeUrl` object representing the sanitized URL.
-   * @throws An error if the given URL is not a string.
-   */
-  transform(url: unknown): SafeUrl {
-    if (typeof url !== 'string')
-      throw new Error(`The given url '${url}' is not a string.`)
-
-    return this._domSanitizer.bypassSecurityTrustResourceUrl(url);
-  }
+        return this._domSanitizer.bypassSecurityTrustResourceUrl(url);
+    }
 }

@@ -1,12 +1,13 @@
-<ng-template #defaultInputObject let-property="property" let-template="template">
+<ng-template #defaultInputObject let-property="property" let-innerFormGroup="innerFormGroup", let-apiName="apiName">
     <div class="flex align-items-center">
         <div class="brace">
         </div>
         <div class="w-full">
-            <rw-input-template [formGroup]="innerFormGroup" [template]="property._templates.default" [apiName]="apiName"></rw-input-template>
+            <rw-input-template [formGroup]="innerFormGroup()" [template]="property()._templates.default" [apiName]="apiName()"></rw-input-template>
         </div>
     </div>
 </ng-template>
+
 <ng-container>
-    <ng-container *ngTemplateOutlet="inputObjectRef || defaultInputObject; context: { property: property, innerFormGroup: innerFormGroup, apiName: apiName }"></ng-container>
+    <ng-container *ngTemplateOutlet="inputObjectRef() || defaultInputObject; context: { property: property, innerFormGroup: innerFormGroup, apiName: apiName }"></ng-container>
 </ng-container>

@@ -1,5 +1,5 @@
-<rw-edit [uri]="modifiedUri" [apiName]="apiName" [rel]="rel">
+<rw-edit [uri]="modifiedUri()" [apiName]="apiName()" [rel]="rel()">
   <ng-template #visualTabAdditional let-resource>
-    <a [routerLink]="['/edit', apiName, resource?.findLink('Author')?.href]">{{resource?.findLink('Author')?.name}}</a>
+    <a [routerLink]="['/edit', apiName(), resource?.findLink('Author')?.href]">{{resource?.findLink('Author')?.name}}</a>
   </ng-template>
 </rw-edit>

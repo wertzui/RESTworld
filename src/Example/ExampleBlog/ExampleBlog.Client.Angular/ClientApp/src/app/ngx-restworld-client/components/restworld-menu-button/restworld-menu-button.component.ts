@@ -1,6 +1,9 @@
-import { Component, Input } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { Router } from '@angular/router';
 import { MenuItem } from 'primeng/api';
+import { ButtonModule } from "primeng/button";
+import { SplitButtonModule } from "primeng/splitbutton";
+import { TooltipModule } from "primeng/tooltip";
 
 /**
  * Displays one button for every `MenuItem` given in the items array.
@@ -9,16 +12,17 @@ import { MenuItem } from 'primeng/api';
  * <rw-menu-button [items]="items"></rw-menu-button>
  */
 @Component({
-  selector: 'rw-menu-button',
-  templateUrl: './restworld-menu-button.component.html',
-  styleUrls: ['./restworld-menu-button.component.css']
+    selector: 'rw-menu-button',
+    templateUrl: './restworld-menu-button.component.html',
+    styleUrls: ['./restworld-menu-button.component.css'],
+    standalone: true,
+    imports: [ButtonModule, TooltipModule, SplitButtonModule]
 })
 export class RestWorldMenuButtonComponent {
   /**
    * An array of menu items to be displayed.
    */
-  @Input({ required: true })
-  public items: MenuItem[] = [];
+  public readonly items = input.required<MenuItem[]>();
 
   constructor(private readonly _router: Router) {
 

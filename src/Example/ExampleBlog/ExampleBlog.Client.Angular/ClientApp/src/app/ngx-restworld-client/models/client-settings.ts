@@ -5,13 +5,13 @@ import { ApiUrl } from "./api-url";
  * It is then used by the {@link SettingsService} to set everything up.
  */
 export interface ClientSettings {
-  /**
-   * The URLs to the APIs that the client can call.
-   */
-  apiUrls: ApiUrl[];
-  /**
-   * Any extra settings that the client may need.
-   * RESTworld itself does not need these, but get's them from the frontend-backend so you can transport additional when needed.
-   */
-  extensions: { [key: string]: string; }
+    /**
+     * The URLs to the APIs that the client can call.
+     */
+    apiUrls: ApiUrl[];
+    /**
+     * Any extra settings that the client may need.
+     * RESTworld itself does not need these, but get's them from the frontend-backend so you can transport additional when needed.
+     */
+    extensions: { [key: string]: string; }
 }

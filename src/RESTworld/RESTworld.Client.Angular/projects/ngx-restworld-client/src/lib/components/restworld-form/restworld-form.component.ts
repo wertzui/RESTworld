@@ -1,10 +1,17 @@
-import { Component, ContentChild, ElementRef, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
-import { AbstractControl, FormGroup, UntypedFormArray, UntypedFormGroup } from '@angular/forms';
+import { Component, ContentChild, ElementRef, TemplateRef, computed, contentChild, effect, input, model, output, signal } from '@angular/core';
+import { AbstractControl, FormGroup, ReactiveFormsModule, UntypedFormArray, UntypedFormGroup } from '@angular/forms';
 import { FormService, FormsResource, ProblemDetails, PropertyDto, SimpleValue, Template } from '@wertzui/ngx-hal-client';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { RestWorldClient } from '../../services/restworld-client';
 import { RestWorldClientCollection } from '../../services/restworld-client-collection';
 import { AfterSubmitOkEvent, AfterSubmitRedirectEvent } from '../../models/events';
+import { Subscription } from 'rxjs';
+import { RestWorldValidationErrorsComponent } from "../restworld-validation-errors/restworld-validation-errors.component";
+import { RestWorldInputTemplateComponent } from "../restworld-inputs/restworld-inputs";
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { ButtonModule } from "primeng/button";
+import { RippleModule } from "primeng/ripple";
+import { NgTemplateOutlet } from "@angular/common";
+import { ProblemService } from "../../services/problem.service";
 
 /**
  * A form with Save, Reload and Delete buttons.
@@ -32,283 +39,234 @@ import { AfterSubmitOkEvent, AfterSubmitRedirectEvent } from '../../models/event
  * </rw-form>
  */
 @Component({
-  selector: 'rw-form',
-  templateUrl: './restworld-form.component.html',
-  styleUrls: ['./restworld-form.component.css']
+    selector: 'rw-form',
+    templateUrl: './restworld-form.component.html',
+    styleUrls: ['./restworld-form.component.css'],
+    standalone: true,
+    imports: [ReactiveFormsModule, RestWorldValidationErrorsComponent, RestWorldInputTemplateComponent, ProgressSpinnerModule, ButtonModule, RippleModule, NgTemplateOutlet]
 })
 export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<PropertyDto<SimpleValue, string, string>>> {
-  /**
-   * The template used to render the form.
-   */
-  private _template?: Template<TPropertyDtos>;
-  public get template(): Template<TPropertyDtos> | undefined {
-    return this._template;
-  }
-  @Input({ required: true })
-  public set template(value: Template<TPropertyDtos>) {
-    this._template = value;
-    this._formGroup = this._formService.createFormGroupFromTemplate(value);
-  }
+    /**
+     * Emitted after the resource has been deleted.
+     */
+    public readonly afterDelete = output<void>();
+    /**
+     * Emitted after the form has been submitted.
+     */
+    public readonly afterSubmit = output<AfterSubmitOkEvent | AfterSubmitRedirectEvent>();
+    /**
+     * Determines whether to enable the delete button.
+    */
+    public readonly allowDelete = input(true);
+    /**
+     * Determines whether to enable the reload button.
+    */
+    public readonly allowReload = input(true);
+    /**
+     * Determines whether to enable the submit button.
+    */
+    public readonly allowSubmit = input(true);
+    /**
+     * The name of the API to use.
+     */
+    public readonly apiName = input.required<string>();
+    /**
+     * Determines whether the resource can be deleted.
+     */
+    public readonly canDelete = computed(() =>
+        this.allowDelete() &&
+        this.template() !== undefined &&
+        this.template().target !== undefined &&
+        this.template().method == "PUT" &&
+        this.formGroup() !== undefined &&
+        this.formGroup()?.value.id !== undefined &&
+        this.formGroup()?.value.timestamp !== undefined &&
+        !this.isLoading());
+    /**
+     * Determines whether the form can be reloaded.
+     */
+    public readonly canReload = computed(() =>
+        this.allowReload() &&
+        this.template() !== undefined &&
+        this.template().target !== undefined &&
+        this.template().title !== undefined &&
+        this.template().properties.some(p => p.name === "id" && p.value !== undefined && p.value !== null && p.value !== 0) &&
+        !this.isLoading());
+    /**
+     * Determines whether the form can be submitted.
+     */
+    public readonly canSubmit = computed(() =>
+        this.allowSubmit() &&
+        this.template() !== undefined &&
+        this.template().target !== undefined &&
+        !this.isLoading() &&
+        this.formGroup() !== undefined &&
+        this.formGroup()?.valid);
+    /**
+     * The form group that represents the form.
+     */
+    public readonly formGroup = computed(() => this._formService.createFormGroupFromTemplate(this.template()));
+    public readonly isLoading = signal(false);
+    /**
+     * The rel of the form.
+     */
+    public readonly rel = input.required<string>();
+    /**
+     * Determines whether to show the delete button.
+    */
+    public readonly showDelete = input(true);
+    /**
+     * Determines whether to show the reload button.
+    */
+    public readonly showReload = input(true);
+    /**
+     * Determines whether to show the submit button.
+    */
+    public readonly showSubmit = input(true);
+    /**
+     * The template used to render the form.
+     */
+    public readonly template = model.required<Template<TPropertyDtos>>();
+    /**
+     * Emitted when the form value changes.
+     */
+    public readonly valueChanges = output<any>();
 
-  @Input({ required: true })
-  apiName!: string;
+    /**
+     * A reference to a template that can be used to render custom buttons for the form.
+    */
+    public readonly buttonsRef = contentChild<TemplateRef<unknown>>('buttons');
+    /**
+     * A reference to a template that can be used to render custom content inside the <form> element instead of the default form.
+    */
+    public readonly contentRef = contentChild<TemplateRef<unknown>>('content');
 
-  @Input({ required: true })
-  rel!: string;
+    private readonly _client = computed(() => this._clients.getClient(this.apiName()));
 
-  /**
-   * Determines whether to enable the submit button.
-  */
-  @Input()
-  allowSubmit = true;
+    private _formValueChangesSubscription?: Subscription;
 
-  /**
-   * Determines whether to enable the delete button.
-  */
-  @Input()
-  allowDelete = true;
-
-  /**
-   * Determines whether to enable the reload button.
-  */
-  @Input()
-  allowReload = true;
-
-  /**
-   * Determines whether to show the submit button.
-  */
-  @Input()
-  showSubmit = true;
-
-  /**
-   * Determines whether to show the delete button.
-  */
-  @Input()
-  showDelete = true;
-
-  /**
-   * Determines whether to show the reload button.
-  */
-  @Input()
-  showReload = true;
-
-  @Output()
-  afterDelete = new EventEmitter<void>();
-
-  @Output()
-  afterSubmit = new EventEmitter<AfterSubmitOkEvent | AfterSubmitRedirectEvent>();
-
-  /**
-   * A reference to a template that can be used to render custom buttons for the form.
-  */
-  @ContentChild('buttons', { static: false })
-  buttonsRef?: TemplateRef<unknown>;
-
-  /**
-   * A reference to a template that can be used to render custom content inside the <form> element instead of the default form.
-  */
-  @ContentChild('content', { static: false })
-  contentRef?: TemplateRef<unknown>;
-
-  scrollToFirstValidationError(): void {
-    setTimeout(() => {
-      const validationErrorElements = this._elementRef.nativeElement.querySelectorAll('rw-validation-errors>val-errors>div')
-      const firstError = validationErrorElements[0];
-      firstError.scrollIntoView({ behavior: 'smooth', block: 'center'});
-    },
-    100);
-  }
-
-  private _isLoading = false;
-  public get isLoading(): boolean {
-    return this._isLoading;
-  }
-
-  private _formGroup?: FormGroup<any>;
-  public get formGroup(): FormGroup<any> | undefined {
-    return this._formGroup;
-  }
-
-  public get canSubmit() : boolean {
-    return this.allowSubmit &&
-      this.template !== undefined &&
-      this.template.target !== undefined &&
-      !this.isLoading &&
-      this.formGroup !== undefined &&
-      this.formGroup.valid;
-  }
-
-  public get canDelete(): boolean {
-    return this.allowDelete &&
-      this.template !== undefined &&
-      this.template.target !== undefined &&
-      this.template.method == "PUT" &&
-      !this.isLoading;
-  }
-
-  public get canReload(): boolean {
-    return this.allowReload &&
-      this.template !== undefined &&
-      this.template.target !== undefined &&
-      this.template.title !== undefined &&
-      this.template.properties.some(p => p.name === "id" && p.value !== undefined && p.value !== null && p.value !== 0) &&
-      !this.isLoading;
-  }
-
-  constructor(
-    private readonly _clients: RestWorldClientCollection,
-    private readonly _confirmationService: ConfirmationService,
-    private readonly _messageService: MessageService,
-    private readonly _formService: FormService,
-    private readonly _elementRef: ElementRef<HTMLElement>) {
-  }
-
-  public async reload(): Promise<void> {
-    if (!this.canReload || this.template === undefined)
-      return;
-
-    this._isLoading = true;
-
-    try
-    {
-      const response = await this.getClient().getForm(this.template.target!);
-      if (!response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body) {
-        this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the resource from the API.', data: response, sticky: true });
-      }
-      else {
-        this.template = response.body.getTemplateByTitle(this.template.title!) as Template<TPropertyDtos>;
-        this._formGroup = this._formService.createFormGroupFromTemplate(this.template);
-      }
-    }
-    catch (e: unknown) {
-      this._messageService.add({ severity: 'error', summary: 'Error', detail: `An unknown error occurred. ${JSON.stringify(e)}`, sticky: true });
-      console.log(e);
+    constructor(
+        private readonly _clients: RestWorldClientCollection,
+        private readonly _confirmationService: ConfirmationService,
+        private readonly _messageService: MessageService,
+        private readonly _formService: FormService,
+        private readonly _elementRef: ElementRef<HTMLElement>,
+        private readonly _problemService: ProblemService) {
+            // Update the form value changes subscription to always track the current form group.
+            effect(() => {
+                this._formValueChangesSubscription?.unsubscribe();
+                const formGroup = this.formGroup();
+                this._formValueChangesSubscription = formGroup?.valueChanges.subscribe();
+                this.valueChanges.emit(formGroup?.value);
+            });
     }
 
-    this._isLoading = false;
-  }
+    public async delete(): Promise<void> {
+        if (!this.canDelete())
+            return;
 
-  public showDeleteConfirmatioModal() {
-    this._confirmationService.confirm({
-      message: 'Do you really want to delete this resource?',
-      header: 'Confirm delete',
-      icon: 'far fa-trash-alt',
-      accept: () => this.delete()
-    });
-  }
+        const formGroup = this.formGroup();
+        if (formGroup === undefined)
+            throw new Error("formGroup cannot be undefined.");
 
-  public async submit() {
-    if(this.formGroup !== undefined)
-    {
-      this.formGroup.markAllAsTouched();
+        const template = this.template();
+        if (template === undefined)
+            throw new Error("template cannot be undefined.");
 
-      if (!this.formGroup.valid) {
-        this._messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Please correct the errors before submitting.',
-        });
-
-        this.scrollToFirstValidationError();
-      }
+        // canDelete already checks that the timestamp is present, so the cast is safe.
+        const result = await this._client().deleteByTemplateAndForm(template, formGroup as unknown as FormGroup<{ timestamp: AbstractControl<string> }>);
+        if (this._problemService.checkResponseAndDisplayErrors(result, formGroup)) {
+            this._messageService.add({ severity: 'success', summary: 'Deleted', detail: 'The resource has been deleted.' })
+            this.afterDelete.emit();
+        }
     }
 
-    if(!this.canSubmit || this.formGroup === undefined || this.template === undefined)
-      return;
+    public async reload(): Promise<void> {
+        const canReload = this.canReload();
+        const template = this.template();
+        if (!canReload || template === undefined)
+            return;
 
-    this._isLoading = true;
+        this.isLoading.set(true);
 
-    try {
-      const response = await this.getClient().submit(this.template, this.formGroup!.value);
-
-      if (!response.ok) {
-        let summary = 'Error';
-        let detail = 'Error while saving the resource.';
-        if (ProblemDetails.isProblemDetails(response.body)) {
-          const problemDetails = response.body as ProblemDetails;
-          summary = problemDetails.title || summary;
-          detail = problemDetails.detail || detail;
-          // display validation errors
-          if (problemDetails['errors'] as {}) {
-            for (const [key, errorsForKey] of Object.entries(problemDetails['errors'] as {})) {
-              const path = key.split(/\.|\[/).map(e => e.replace("]", ""));
-              // The path might start with a $, indicating the root.
-              if (path.length > 0 && path[0] === '$')
-                path.shift();
-              const formControl = path.reduce<AbstractControl | undefined>(RestWorldFormComponent.getSubControl, this.formGroup);
-              if (formControl) {
-                formControl.setErrors({ ...formControl.errors, ...{ remote: errorsForKey } });
-                formControl.markAsTouched();
-              }
+        try {
+            const response = await this._client().getForm(template.target!);
+            if (this._problemService.checkResponseAndDisplayErrors(response, this.formGroup())) {
+                this.template.set(response.body!.getTemplateByTitle(template.title!) as Template<TPropertyDtos>);
             }
-          }
+        }
+        catch (e: unknown) {
+            this._messageService.add({ severity: 'error', summary: 'Error', detail: `An unknown error occurred. ${JSON.stringify(e)}`, sticky: true });
+            console.log(e);
         }
 
-        this._messageService.add({ severity: 'error', summary: summary, detail: detail, data: response, sticky: true });
-      }
-      else if (response.status == 201) {
-        if (!response.headers.has('Location')) {
-          this._messageService.add({ severity: 'error', summary: 'Error', detail: 'The server returned a 201 Created response, but did not return a Location header.', data: response, sticky: true });
-          return;
+        this.isLoading.set(false);
+    }
+
+    public showDeleteConfirmatioModal() {
+        this._confirmationService.confirm({
+            message: 'Do you really want to delete this resource?',
+            header: 'Confirm delete',
+            icon: 'far fa-trash-alt',
+            accept: () => this.delete()
+        });
+    }
+
+    public async submit() {
+        const formGroup = this.formGroup();
+        const template = this.template();
+        const canSubmit = this.canSubmit();
+
+        if (formGroup !== undefined) {
+            formGroup.markAllAsTouched();
+
+            if (!formGroup.valid) {
+                this._messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Please correct the errors before submitting.',
+                });
+
+                ProblemService.scrollToFirstValidationError(this._elementRef.nativeElement);
+            }
         }
 
-        this._messageService.add({ severity: 'success', summary: 'Created', detail: 'The resource has been created.' });
+        if (!canSubmit || formGroup === undefined || template === undefined)
+            return;
 
-        var createdAtUri = response.headers.get('Location')!;
-        this.afterSubmit.emit({ location: createdAtUri, status: 201 });
-      }
-      else {
-        const templateBeforeSubmit = this.template;
-        const responseResource = (response.body as FormsResource);
-        this.template = responseResource.getTemplateByTitle(this.template.title!) as Template<TPropertyDtos>;
-        this._formGroup = this._formService.createFormGroupFromTemplate(this.template);
+        this.isLoading.set(true);
 
-        this._messageService.add({ severity: 'success', summary: 'Saved', detail: 'The resource has been saved.' });
+        try {
+            const response = await this._client().submit(template, formGroup.value);
 
-        this.afterSubmit.emit({ old: templateBeforeSubmit, new: this.template, status: 200 });
-      }
+            if (!this._problemService.checkResponseAndDisplayErrors(response, formGroup, "Error while saving the resource")) {
+            }
+            else if (response.status == 201) {
+                if (!response.headers.has('Location')) {
+                    this._messageService.add({ severity: 'error', summary: 'Error', detail: 'The server returned a 201 Created response, but did not return a Location header.', data: response, sticky: true });
+                    return;
+                }
+
+                this._messageService.add({ severity: 'success', summary: 'Created', detail: 'The resource has been created.' });
+
+                var createdAtUri = response.headers.get('Location')!;
+                this.afterSubmit.emit({ location: createdAtUri, status: 201 });
+            }
+            else {
+                const responseResource = (response.body as FormsResource);
+                const newTemplate = responseResource.getTemplateByTitle(template.title!) as Template<TPropertyDtos>;
+                this.template.set(newTemplate);
+
+                this._messageService.add({ severity: 'success', summary: 'Saved', detail: 'The resource has been saved.' });
+
+                this.afterSubmit.emit({ old: template, new: newTemplate, status: 200 });
+            }
+        }
+        catch (e: unknown) {
+            this._messageService.add({ severity: 'error', summary: 'Error', detail: `An unknown error occurred. ${JSON.stringify(e)}`, sticky: true });
+            console.log(e);
+        }
+
+        this.isLoading.set(false);
     }
-    catch (e: unknown) {
-      this._messageService.add({ severity: 'error', summary: 'Error', detail: `An unknown error occurred. ${JSON.stringify(e)}`, sticky: true });
-      console.log(e);
-    }
-
-    this._isLoading = false;
-  }
-
-  public async delete(): Promise<void> {
-    if (!this.canDelete)
-      return;
-
-    if (this.formGroup === undefined)
-      throw new Error("formGroup cannot be undefined.");
-
-    if (this.template === undefined)
-      throw new Error("template cannot be undefined.");
-
-    await this.getClient().deleteByTemplateAndForm(this.template, this.formGroup);
-    this._messageService.add({ severity: 'success', summary: 'Deleted', detail: 'The resource has been deleted.' })
-
-    this.afterDelete.emit();
-  }
-
-  private static getSubControl(control: AbstractControl | undefined, pathElement: string): AbstractControl | undefined {
-    if (pathElement === "")
-      return control;
-
-    if (control instanceof UntypedFormGroup)
-      return control.controls[pathElement];
-
-    if (control instanceof UntypedFormArray) {
-      const index = Number.parseInt(pathElement);
-      if (Number.isInteger(index))
-        return control.controls[index];
-    }
-
-    return control;
-  }
-
-  private getClient(): RestWorldClient {
-    return this._clients.getClient(this.apiName);
-  }
 }

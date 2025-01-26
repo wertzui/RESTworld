@@ -1,84 +1,106 @@
-<ng-template #defaultInputOptionsSingle let-property="property" let-template="template">
-    <p-dropdown
-      [formControlName]="property.name"
-      [id]="property.name"
-      [options]="property.options.inline"
-      [filterBy]="promptField + ',' + valueField"
-      [optionLabel]="promptField"
-      [optionValue]="valueField"
-      [readonly]="property.readOnly"
-      [required]="property.required || property.options.minItems > 0"
-      [filter]="true"
-      [filterValue]="filterValue"
-      [autoDisplayFirst]="false"
-      [showClear]="!property.required || property.options.minItems <= 0"
-      (onFilter)="onOptionsFiltered($event)"
-      (onChange)="onOptionsChanged($event)"
-      styleClass="w-full"
-      [panelStyleClass]="loading ? 'loading' : ''"
-      [filterPlaceholder]="property?.options?.link?.href ? 'search for more results' : ''"
-      [emptyFilterMessage]="loading ? 'Loading...' : ''"
-      appendTo="body"
-    >
-        <ng-template let-item pTemplate="selectedItem">
-          <span [pTooltip]="getTooltip(item)">{{getLabel(item)}}</span>
-        </ng-template>
-        <ng-template let-item pTemplate="item">
-          <span [pTooltip]="getTooltip(item)">{{getLabel(item)}}</span>
-        </ng-template>
-        <ng-template pTemplate="filtericon">
-          <SearchIcon *ngIf="!loading"></SearchIcon>
-          <SpinnerIcon *ngIf="loading" [spin]="true"></SpinnerIcon>
-        </ng-template>
-    </p-dropdown>
+<ng-template #defaultInputOptionsSingle let-property="property" let-template="template" let-items="items" let-useTemplateDrivenForms="useTemplateDrivenForms">
+    @if (useTemplateDrivenForms()) {
+        <p-select
+            [propertyAttributes]="property()"
+            [(ngModel)]="model"
+            [options]="optionsManager.items()"
+            (onFilter)="onOptionsFiltered($event)"
+            (onChange)="onOptionsChanged($event)"
+            styleClass="w-full"
+            [panelStyleClass]="optionsManager.loading() ? 'loading' : ''"
+            [emptyFilterMessage]="optionsManager.loading() ? 'Loading...' : ''"
+            [loading]="optionsManager.loading()"
+        >
+            <ng-template #selectedItem let-selectedItem>
+                <span [pTooltip]="optionsManager.getTooltip()(selectedItem)">{{optionsManager.getLabel()(selectedItem)}}</span>
+            </ng-template>
+            <ng-template #item let-item>
+                <span [pTooltip]="optionsManager.getTooltip()(item)">{{optionsManager.getLabel()(item)}}</span>
+            </ng-template>
+        </p-select>
+    }
+    @else {
+        <p-select
+            [formControlProperty]="property()"
+            [options]="optionsManager.items()"
+            (onFilter)="onOptionsFiltered($event)"
+            (onChange)="onOptionsChanged($event)"
+            styleClass="w-full"
+            [panelStyleClass]="optionsManager.loading() ? 'loading' : ''"
+            [emptyFilterMessage]="optionsManager.loading() ? 'Loading...' : ''"
+            [loading]="optionsManager.loading()"
+        >
+            <ng-template #selectedItem let-selectedItem>
+                <span [pTooltip]="optionsManager.getTooltip()(selectedItem)">{{optionsManager.getLabel()(selectedItem)}}</span>
+            </ng-template>
+            <ng-template #item let-item>
+                <span [pTooltip]="optionsManager.getTooltip()(item)">{{optionsManager.getLabel()(item)}}</span>
+            </ng-template>
+        </p-select>
+    }
 </ng-template>
-<ng-container *ngIf="!property.options.maxItems || property.options.maxItems == 1">
-    <ng-container *ngTemplateOutlet="inputOptionsSingleRef ?? defaultInputOptionsSingle; context: { property: property, apiName: apiName }"></ng-container>
-</ng-container>
 
-<ng-template #defaultInputOptionsMultiple let-property="property" let-template="template">
-    <p-multiSelect
-      [formControlName]="property.name"
-      [id]="property.name"
-      [options]="property.options.inline"
-      [filterBy]="promptField + ',' + valueField"
-      [optionLabel]="promptField"
-      [optionValue]="valueField"
-      [readonly]="property.readOnly"
-      [required]="property.required || property.options.minItems > 0"
-      [filter]="true"
-      [filterValue]="filterValue"
-      [showClear]="true"
-      [showToggleAll]="true"
-      (onFilter)="onOptionsFiltered($event)"
-      (onChange)="onOptionsChanged($event)"
-      styleClass="w-full"
-      [panelStyleClass]="loading ? 'loading' : ''"
-      [filterPlaceHolder]="property?.options?.link?.href ? 'search for more results' : ''"
-      [emptyFilterMessage]="loading ? 'Loading...' : ''"
-      [selectionLimit]="property.options.maxItems"
-      display="chip"
-      appendTo="body"
-    >
-    <ng-template let-value pTemplate="selectedItems">
-      <p-chip
-        *ngFor="let item of value; let i = index"
-        [pTooltip]="getTooltip(item)"
-        [label]="getLabel(item)"
-        [removable]="true"
-        (onRemove)="removeByValue(getValue(item))"
-      >
-      </p-chip>
-    </ng-template>
-    <ng-template let-item pTemplate="item">
-        <span [pTooltip]="getTooltip(item)">{{getLabel(item)}}</span>
-    </ng-template>
-    <ng-template pTemplate="filtericon">
-      <SearchIcon *ngIf="!loading"></SearchIcon>
-      <SpinnerIcon *ngIf="loading" [spin]="true"></SpinnerIcon>
-    </ng-template>
-  </p-multiSelect>
+<ng-template #defaultInputOptionsMultiple let-property="property" let-template="template" let-items="items" let-useTemplateDrivenForms="useTemplateDrivenForms">
+    @if (useTemplateDrivenForms()) {
+        <p-multiSelect
+            [propertyAttributes]="property()"
+            [(ngModel)]="model"
+            [options]="optionsManager.items()"
+            (onFilter)="onOptionsFiltered($event)"
+            (onChange)="onOptionsChanged($event)"
+            styleClass="w-full"
+            [panelStyleClass]="optionsManager.loading() ? 'loading' : ''"
+            [emptyFilterMessage]="optionsManager.loading() ? 'Loading...' : ''"
+            [loading]="optionsManager.loading()"
+        >
+        <ng-template #selecteditems let-items let-removeChip="removeChip">
+            @for (item of items; track item; let i = $index) {
+                <p-chip
+                    [pTooltip]="optionsManager.getTooltip()(item)"
+                    [label]="optionsManager.getLabel()(item)"
+                    [removable]="true"
+                    (onRemove)="removeChip(optionsManager.getValue(item), $event)"
+                >
+                </p-chip>
+        }
+        </ng-template>
+        <ng-template #item let-item>
+            <span [pTooltip]="optionsManager.getTooltip()(item)">{{optionsManager.getLabel()(item)}}</span>
+        </ng-template>
+    </p-multiSelect>
+    }
+    @else {
+        <p-multiSelect
+            [formControlProperty]="property()"
+            [options]="optionsManager.items()"
+            (onFilter)="onOptionsFiltered($event)"
+            (onChange)="onOptionsChanged($event)"
+            styleClass="w-full"
+            [panelStyleClass]="optionsManager.loading() ? 'loading' : ''"
+            [emptyFilterMessage]="optionsManager.loading() ? 'Loading...' : ''"
+            [loading]="optionsManager.loading()"
+        >
+        <ng-template #selecteditems let-items let-removeChip="removeChip">
+            @for (item of items; track item; let i = $index) {
+                <p-chip
+                    [pTooltip]="optionsManager.getTooltip()(item)"
+                    [label]="optionsManager.getLabel()(item)"
+                    [removable]="true"
+                    (onRemove)="removeChip(optionsManager.getValue(item), $event)"
+                >
+                </p-chip>
+        }
+        </ng-template>
+        <ng-template #item let-item>
+            <span [pTooltip]="optionsManager.getTooltip()(item)">{{optionsManager.getLabel()(item)}}</span>
+        </ng-template>
+    </p-multiSelect>
+    }
 </ng-template>
-<ng-container *ngIf="(property.options.maxItems ?? 0) > 1">
-    <ng-container *ngTemplateOutlet="inputOptionsMultipleRef ?? defaultInputOptionsMultiple; context: { property: property, apiName: apiName }"></ng-container>
-</ng-container>
+
+@if(!optionsManager.options().maxItems || optionsManager.options().maxItems == 1) {
+    <ng-container *ngTemplateOutlet="inputOptionsSingleRef() ?? defaultInputOptionsSingle; context: { property: property, apiName: apiName, items: optionsManager.items, useTemplateDrivenForms: useTemplateDrivenForms, model: model }"></ng-container>
+}
+@else {
+    <ng-container *ngTemplateOutlet="inputOptionsMultipleRef() ?? defaultInputOptionsMultiple; context: { property: property, apiName: apiName, items: optionsManager.items, useTemplateDrivenForms: useTemplateDrivenForms, model: model }"></ng-container>
+}

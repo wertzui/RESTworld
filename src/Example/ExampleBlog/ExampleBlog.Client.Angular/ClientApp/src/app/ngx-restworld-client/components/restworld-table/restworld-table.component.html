@@ -1,68 +1,86 @@
 <p-table
   #table
-  [value]="rows"
-  [columns]="columns"
+  [value]="rows()"
+  [columns]="columns()"
   [lazy]="true"
   [lazyLoadOnInit]="false"
   (onLazyLoad)="load($event)"
   responsiveLayout="scroll"
   [paginator]="true"
-  [rowsPerPageOptions]="rowsPerPageOptions"
-  [rows]="rowsPerPage"
-  [totalRecords]="totalRecords"
-  [loading]="isLoading"
+  [rowsPerPageOptions]="rowsPerPageOptions()"
+  [rows]="rowsPerPage()"
+  [totalRecords]="totalRecords()"
+  [loading]="isLoading()"
   sortMode="multiple"
-  [multiSortMeta]="multiSortMeta"
-  [styleClass]="styleClass"
-  [tableStyle]="tableStyle"
-  [scrollable]="scrollable"
-  [scrollHeight]="scrollHeight"
-  [selectionMode]="selectionMode"
-  (onRowSelect)="onRowSelectInternal($event)"
-  (onRowUnselect)="onRowUnselectInternal($event)"
-  [rowHover]="rowHover"
-  [(selection)]="_selection"
-  (selectionChange)="onSelectionChangeInternal($event)">
+  [multiSortMeta]="multiSortMeta()"
+  [styleClass]="styleClass()"
+  [tableStyle]="tableStyle()"
+  [scrollable]="scrollable()"
+  [scrollHeight]="scrollHeight()"
+  [selectionMode]="selectionMode()"
+  [rowHover]="rowHover()"
+  [(selection)]="selectedRows"
+  [filters]="$any(filters())"
+  >
 
   <ng-template pTemplate="header" let-columns>
     <tr>
-        <th *ngFor="let col of columns" [pSortableColumn]="col.name">
-            <div class="p-d-flex p-jc-between p-ai-center">
-                {{col.prompt}}
-                <ng-container *ngIf="!col.readOnly">
-                  <p-sortIcon [field]="col.name"></p-sortIcon>
-                  <p-columnFilter
-                    [type]="toColumnFilterType(col.type)"
-                    [maxFractionDigits]="toMaxFractionDigits(col)"
-                    matchMode="noFilter"
-                    [matchModeOptions]="toMatchModeOptions(col)"
-                    [showMatchModes]="true"
-                    [field]="col.name"
-                    display="menu"></p-columnFilter>
-                </ng-container>
-            </div>
-        </th>
-        <th *ngIf="showMenuColumn">
-          <rw-menu-button [items]="headerMenu"></rw-menu-button>
-        </th>
+        @for (col of columns; track col) {
+            <th [pSortableColumn]="col.name">
+                <div class="p-d-flex p-jc-between p-ai-center gap-1">
+                    {{col.prompt}}
+                    @if(!col.readOnly) {
+                        <p-sortIcon [field]="col.name"></p-sortIcon>
+                        <p-columnFilter #f
+                            [type]="toColumnFilterType(col.type)"
+                            [maxFractionDigits]="toMaxFractionDigits(col)"
+                            matchMode="noFilter"
+                            [matchModeOptions]="toMatchModeOptions(col)"
+                            [showMatchModes]="true"
+                            [field]="col.name"
+                            display="menu"
+                            [maxConstraints]="100"
+                            [class.has-filter]="f.hasFilter">
+                        <ng-template #filter let-value let-filterConstraint="filterConstraint" let-field="field">
+                            <rw-table-column-filter-element [property]="col" [value]="value" [apiName]="apiName()" [filterConstraint]="filterConstraint"></rw-table-column-filter-element>
+                        </ng-template>
+                        </p-columnFilter>
+                    }
+                </div>
+            </th>
+        }
+        @if (showMenuColumn()) {
+            <th>
+                <rw-menu-button [items]="headerMenu()"></rw-menu-button>
+            </th>
+        }
     </tr>
   </ng-template>
 
   <ng-template pTemplate="body" let-entity let-columns="columns" let-rowIndex="rowIndex">
-    <tr (contextmenu)="openContextMenu($event, entity)" [pSelectableRow]="entity" [pSelectableRowDisabled]="selectionMode === null" [className]="rowStyleClasses[rowIndex - (table.first ?? 0)]">
-      <td [ngSwitch]="col.type" *ngFor="let col of columns" [className]="cellStyleClasses[rowIndex - (table.first ?? 0)][col.name]">
-          <ng-container *ngIf="showInputField(col); else textField" [formGroup]="formArray!.controls[rowIndex - (table.first ?? 0)]" >
-            <rw-input [apiName]="apiName!" [property]="editProperties[col.name]"></rw-input>
-          </ng-container>
-          <ng-template #textField>
-            <rw-display [property]="col" [value]="entity[col.name]" [apiName]="apiName!"></rw-display>
-          </ng-template>
-        </td>
-        <td *ngIf="showMenuColumn">
-          <rw-menu-button *ngIf="showRowMenuAsColumn" [items]="rowMenus[rowIndex - (table.first ?? 0)]"></rw-menu-button>
-        </td>
+    <tr (contextmenu)="openContextMenu($event, entity)" [pSelectableRow]="entity" [pSelectableRowDisabled]="selectionMode() === null" [className]="rowStyleClasses()[rowIndex - (table.first ?? 0)]">
+        @for (col of columns; track col) {
+            <td [className]="cellStyleClasses()[rowIndex - (table.first ?? 0)][col.name]">
+                @let fomrArray = formArray();
+                @if (showInputField(col) && fomrArray) {
+                    <ng-container [formGroup]="fomrArray.controls[rowIndex - (table.first ?? 0)]" >
+                        <rw-input [apiName]="apiName()" [property]="editProperties()[col.name]"></rw-input>
+                    </ng-container>
+                }
+                @else {
+                    <rw-display [property]="col" [value]="entity[col.name]" [apiName]="apiName()!"></rw-display>
+                }
+            </td>
+        }
+        @if (showMenuColumn()) {
+            <td>
+                @if (showRowMenuAsColumn()) {
+                    <rw-menu-button [items]="rowMenus()[rowIndex - (table.first ?? 0)]"></rw-menu-button>
+                }
+            </td>
+        }
     </tr>
   </ng-template>
 </p-table>
 
-<p-contextMenu #contextMenu appendTo="body" [model]="contextMenuItems"></p-contextMenu>
+<p-contextMenu #contextMenu appendTo="body" [model]="contextMenuItems()"></p-contextMenu>

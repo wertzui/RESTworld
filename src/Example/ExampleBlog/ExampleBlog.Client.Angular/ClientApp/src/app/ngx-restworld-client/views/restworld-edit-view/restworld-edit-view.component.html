@@ -1,42 +1,67 @@
 <div class="grid">
-  <div class="col-12 md:col-10">
-    <h1>Edit resource</h1>
-  </div>
-  <div class="col-12 md:col-2 align-items-center justify-content-end flex">
-    <rw-id-navigation [apiName]="apiName" [rel]="rel"></rw-id-navigation>
-  </div>
+    <div class="col-12 md:col-10">
+        <h1>Edit resource</h1>
+    </div>
+    <div class="col-12 md:col-2 align-items-center justify-content-end flex">
+        <rw-id-navigation [apiName]="apiName()" [rel]="rel()"></rw-id-navigation>
+    </div>
 </div>
 
-<p-tabView>
-
-  <p-tabPanel *ngIf="isLoading; else tabs" header="Loading">
-    <div *ngFor="let i of [1, 2, 3, 4, 5]" class="grid field">
-      <p-skeleton class="col-12 mb-2 md:col-2 md:mb-0" height="39px"></p-skeleton>
-      <div class="col-12 md:col-10">
-        <p-skeleton class="w-full" height="39px"></p-skeleton>
-      </div>
-    </div>
-    <div class="grid">
-      <div class="col">
-        <div class="flex justify-content-end w-full">
-          <p-skeleton width="120px" height="39px" class="mx-2"></p-skeleton>
-          <p-skeleton width="120px" height="39px" class="mx-2"></p-skeleton>
-          <p-skeleton width="120px" height="39px" class="mx-2"></p-skeleton>
-        </div>
-      </div>
-    </div>
-  </p-tabPanel>
-
-  <ng-template #tabs>
-    <p-tabPanel *ngFor="let template of templates" [header]="template.title ?? ''" [disabled]="isLoading">
-      <rw-form [template]="template" [apiName]="apiName" [rel]="rel" (afterDelete)="afterDelete()" (afterSubmit)="afterSubmit($event)"></rw-form>
-    </p-tabPanel>
-</ng-template>
-
-  <ng-template #defaultExtraTabs>
-  </ng-template>
-  <ng-container *ngTemplateOutlet="extraTabsRef || defaultExtraTabs"></ng-container>
-
-</p-tabView>
+<p-tabs [(value)]="displayTab">
+    <p-tablist>
+        @if (templates.isLoading()) {
+            <p-tab value="Loading">Loading</p-tab>
+        }
+        @else {
+            @for (template of templates.value(); track template; let i = $index) {
+                <p-tab [value]="template.title ?? i">{{template.title}}</p-tab>
+            }
+            @if (extraTabsRef) {
+                <p-tab value="Extra">Extra</p-tab>
+            }
+        }
+    </p-tablist>
+    <p-tabpanels>
+        @if (templates.isLoading()) {
+            <p-tabpanel value="Loading">
+                @for(i of [1, 2, 3, 4, 5]; track i) {
+                    <div class="grid field">
+                        <p-skeleton class="col-12 mb-2 md:col-2 md:mb-0" height="39px"></p-skeleton>
+                        <div class="col-12 md:col-10">
+                            <p-skeleton class="w-full" height="39px"></p-skeleton>
+                        </div>
+                    </div>
+                }
+                <div class="grid">
+                    <div class="col">
+                        <div class="flex justify-content-end w-full">
+                            <p-skeleton width="120px" height="39px" class="mx-2"></p-skeleton>
+                            <p-skeleton width="120px" height="39px" class="mx-2"></p-skeleton>
+                            <p-skeleton width="120px" height="39px" class="mx-2"></p-skeleton>
+                        </div>
+                    </div>
+                </div>
+            </p-tabpanel>
+        }
+        @else {
+            @for (template of templates.value(); track template; let i = $index) {
+                <p-tabpanel [value]="template.title ?? i">
+                    <rw-form
+                        [template]="template"
+                        [apiName]="apiName()"
+                        [rel]="rel()"
+                        (afterDelete)="afterDelete()"
+                        (afterSubmit)="afterSubmit($event)"
+                        ></rw-form>
+                </p-tabpanel>
+            }
+            @if (extraTabsRef) {
+                <p-tabpanel value="Extra">
+                    <ng-container *ngTemplateOutlet="extraTabsRef"></ng-container>
+                </p-tabpanel>
+            }
+        }
+    </p-tabpanels>
+</p-tabs>
 
 <p-confirmDialog></p-confirmDialog>

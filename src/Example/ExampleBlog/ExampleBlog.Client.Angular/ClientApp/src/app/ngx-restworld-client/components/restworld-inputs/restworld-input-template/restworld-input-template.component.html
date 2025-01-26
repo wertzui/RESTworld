@@ -1,1 +1,3 @@
-<rw-form-element *ngFor="let property of template.properties" [property]="property" [apiName]="apiName"></rw-form-element>
+@for (property of template().properties; track property) {
+    <rw-form-element [property]="property" [apiName]="apiName()"></rw-form-element>
+}

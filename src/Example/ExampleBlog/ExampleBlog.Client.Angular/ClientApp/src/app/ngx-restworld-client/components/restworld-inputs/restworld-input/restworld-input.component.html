@@ -1,11 +1,20 @@
-<rw-input-dropdown *ngIf="property.options" [apiName]="apiName" [property]="$any(property)"></rw-input-dropdown>
+@if (property()) {
+    @if (property().options) {
+        <rw-input-dropdown [apiName]="apiName()" [property]="$any(property())" [useTemplateDrivenForms]="useTemplateDrivenForms()"></rw-input-dropdown>
+    }
+    @else {
+        @switch (property().type) {
+            @case (PropertyType.Object) {
+                <rw-input-object [apiName]="apiName()" [property]="$any(property())" [useTemplateDrivenForms]="useTemplateDrivenForms()"></rw-input-object>
+            }
+            @case (PropertyType.Collection) {
+                <rw-input-collection [apiName]="apiName()" [property]="$any(property())" [useTemplateDrivenForms]="useTemplateDrivenForms()"></rw-input-collection>
+            }
+            @default {
+                <rw-input-simple [property]="property()" [useTemplateDrivenForms]="useTemplateDrivenForms()"></rw-input-simple>
+            }
+        }
+    }
 
-<ng-container *ngIf="!property.options">
-    <ng-container [ngSwitch]="property.type">
-        <rw-input-object *ngSwitchCase="PropertyType.Object" [apiName]="apiName" [property]="$any(property)"></rw-input-object>
-        <rw-input-collection *ngSwitchCase="PropertyType.Collection" [apiName]="apiName" [property]="$any(property)"></rw-input-collection>
-        <rw-input-simple *ngSwitchDefault [property]="property"></rw-input-simple>
-    </ng-container>
-</ng-container>
-
-<rw-validation-errors [property]="property"></rw-validation-errors>
+    <rw-validation-errors [property]="property()"></rw-validation-errors>
+}

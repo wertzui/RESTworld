@@ -8,8 +8,8 @@ describe('RestWorldAvatarComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ RestWorldAvatarComponent ]
-    })
+    imports: [RestWorldAvatarComponent]
+})
     .compileComponents();
 
     fixture = TestBed.createComponent(RestWorldAvatarComponent);

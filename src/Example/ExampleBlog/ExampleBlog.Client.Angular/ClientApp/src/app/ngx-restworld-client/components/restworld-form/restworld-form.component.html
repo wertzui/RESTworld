@@ -1,34 +1,41 @@
-<form *ngIf="formGroup !== undefined && template !== undefined" [formGroup]="formGroup" (ngSubmit)="submit()">
-  <div class="blockable-container">
-    <div class="blockable-element">
-      <div class="grid field">
-        <div class="col-12 md:col-10 md:col-offset-2">
-          <rw-validation-errors [form]="formGroup"></rw-validation-errors>
+@if (formGroup() !== undefined && template() !== undefined) {
+    <form [formGroup]="formGroup()" (ngSubmit)="submit()">
+        <div class="blockable-container">
+            <div class="blockable-element">
+                <div class="grid field">
+                    <div class="col-12 md:col-10 md:col-offset-2">
+                        <rw-validation-errors [form]="formGroup()"></rw-validation-errors>
+                    </div>
+                </div>
+                <ng-template #defaultContent>
+                    <rw-input-template [template]="template()" [apiName]="apiName()"></rw-input-template>
+                </ng-template>
+                <ng-container
+                    *ngTemplateOutlet="contentRef() ?? defaultContent; context: { form: formGroup, template: template, apiName: apiName() }"></ng-container>
+            </div>
+            @if (isLoading()) {
+                <div class="blockable-overlay">
+                    <p-progressSpinner></p-progressSpinner>
+                </div>
+            }
         </div>
-      </div>
-      <ng-template #defaultContent>
-        <rw-input-template [template]="template" [apiName]="apiName"></rw-input-template>
-      </ng-template>
-      <ng-container *ngTemplateOutlet="contentRef ?? defaultContent; context: { form: formGroup, template: template, apiName: apiName }"></ng-container>
-    </div>
-    <div class="blockable-overlay" *ngIf="isLoading">
-      <p-progressSpinner></p-progressSpinner>
-    </div>
-  </div>
 
-  <div class="grid">
-    <div class="col">
-      <div class="flex justify-content-end w-full">
-        <ng-template #defaultButtons>
-          <button pButton pRipple type="submit" label="Save" icon="far fa-save" class="mx-2 p-button-success"
-            [disabled]="!allowSubmit"></button>
-          <button pButton pRipple type="button" label="Reload" icon="fas fa-redo" class="mx-2 p-button-info"
-            (click)="reload()" [disabled]="!canReload"></button>
-          <button pButton pRipple type="button" label="Delete" icon="far fa-trash-alt" class="ml-2 p-button-danger"
-            (click)="showDeleteConfirmatioModal()" [disabled]="!canDelete"></button>
-        </ng-template>
-        <ng-container *ngTemplateOutlet="buttonsRef ?? defaultButtons; context: { form: formGroup, template: template, apiName: apiName }"></ng-container>
-      </div>
-    </div>
-  </div>
-</form>
+        <div class="grid">
+            <div class="col">
+                <div class="flex justify-content-end w-full">
+                    <ng-template #defaultButtons>
+                        <button pButton pRipple type="submit" label="Save" icon="far fa-save" class="mx-2 p-button-success"
+                            [disabled]="!allowSubmit()"></button>
+                        <button pButton pRipple type="button" label="Reload" icon="fas fa-redo" class="mx-2 p-button-info"
+                            (click)="reload()" [disabled]="!canReload()"></button>
+                        <button pButton pRipple type="button" label="Delete" icon="far fa-trash-alt"
+                            class="ml-2 p-button-danger" (click)="showDeleteConfirmatioModal()"
+                            [disabled]="!canDelete()"></button>
+                    </ng-template>
+                    <ng-container
+                        *ngTemplateOutlet="buttonsRef() ?? defaultButtons; context: { form: formGroup, template: template, apiName: apiName() }"></ng-container>
+                </div>
+            </div>
+        </div>
+    </form>
+}

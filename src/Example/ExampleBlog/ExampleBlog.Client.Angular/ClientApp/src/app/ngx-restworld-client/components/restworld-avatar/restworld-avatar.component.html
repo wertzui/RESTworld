@@ -1,1 +1,8 @@
-<p-avatar [pTooltip]="tooltip" tooltipPosition="top" [image]="image" [label]="label" [style]="style" shape="circle"></p-avatar>
+<p-avatar 
+    [pTooltip]="tooltip()" 
+    tooltipPosition="top" 
+    [image]="$any(image() | async)" 
+    [label]="$any(label() | async)" 
+    [style]="style() | async"
+    shape="circle">
+</p-avatar>

@@ -8,8 +8,8 @@ describe('RestWorldTableComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ RestWorldTableComponent ]
-    })
+    imports: [RestWorldTableComponent]
+})
     .compileComponents();
 
     fixture = TestBed.createComponent(RestWorldTableComponent);

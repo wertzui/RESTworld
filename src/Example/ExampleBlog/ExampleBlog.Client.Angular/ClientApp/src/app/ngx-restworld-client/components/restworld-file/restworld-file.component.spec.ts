@@ -8,8 +8,8 @@ describe('RestWorldFileComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ RestWorldFileComponent ]
-    })
+    imports: [RestWorldFileComponent]
+})
     .compileComponents();
   });
 

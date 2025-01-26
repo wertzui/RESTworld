@@ -8,8 +8,8 @@ describe('RestWorldValidationErrorsComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ RestWorldValidationErrorsComponent ]
-    })
+    imports: [RestWorldValidationErrorsComponent]
+})
     .compileComponents();
 
     fixture = TestBed.createComponent(RestWorldValidationErrorsComponent);
