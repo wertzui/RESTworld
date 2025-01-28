@@ -10,7 +10,7 @@
     <Authors>wertzui</Authors>
     <PackageProjectUrl>https://github.com/wertzui/RESTworld</PackageProjectUrl>
     <RepositoryUrl>https://github.com/wertzui/RESTworld</RepositoryUrl>
-    <VersionPrefix>18.0.1</VersionPrefix>
+    <VersionPrefix>18.0.2</VersionPrefix>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -24,7 +24,7 @@
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="13.0.1" />
-    <PackageReference Include="EntityFrameworkCore.Parallel" Version="5.0.0" />
+    <PackageReference Include="EntityFrameworkCore.Parallel" Version="5.0.1" />
     <PackageReference Include="MockQueryable.EntityFrameworkCore" Version="7.0.3" />
     <PackageReference Include="System.Linq.Async.Queryable" Version="6.0.1" />
   </ItemGroup>
