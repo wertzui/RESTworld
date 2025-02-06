@@ -41,18 +41,18 @@
     }
     @case (PropertyType.Number) {
         @if (useTemplateDrivenForms()) {
-            <p-inputNumber [propertyAttributes]="property()" [(ngModel)]="model" mode="decimal" [showButtons]="!property().readOnly" class="w-full" styleClass="w-full"></p-inputNumber>
+            <p-inputNumber [propertyAttributes]="property()" [(ngModel)]="model" class="w-full" styleClass="w-full"></p-inputNumber>
         }
         @else {
-            <p-inputNumber [formControlProperty]="property()" mode="decimal" [showButtons]="!property().readOnly" class="w-full" styleClass="w-full"></p-inputNumber>
+            <p-inputNumber inputMode="decimal" [formControlProperty]="property()" class="w-full" styleClass="w-full"></p-inputNumber>
         }
     }
     @case (PropertyType.Bool) {
         @if (useTemplateDrivenForms()) {
-            <p-checkbox [propertyAttributes]="property()" [(ngModel)]="model" [binary]="true" [indeterminate]="!property().required"></p-checkbox>
+            <rw-tri-state-checkbox [propertyAttributes]="property()" [(ngModel)]="model" [required]="property().required ?? false"></rw-tri-state-checkbox>
         }
         @else {
-            <p-checkbox [formControlProperty]="property()" [binary]="true" [indeterminate]="!property().required"></p-checkbox>
+            <rw-tri-state-checkbox [formControlProperty]="property()" [required]="property().required"></rw-tri-state-checkbox>
         }
     }
     @case (PropertyType.DatetimeOffset) {

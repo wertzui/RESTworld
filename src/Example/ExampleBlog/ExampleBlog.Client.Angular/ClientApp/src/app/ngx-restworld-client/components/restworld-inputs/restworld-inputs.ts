@@ -26,6 +26,7 @@ import { HalFormsModule } from "../../directives/property.directives";
 import { OptionsManager, OptionsService } from "../../services/options.service";
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { map, merge, mergeMap } from "rxjs";
+import { TriStateCheckbox } from '../restworld-tri-state-checkbox/restworld-tri-state-checkbox.component';
 
 /**
  * This helper type converts a Property<X, Y, Z> to an OptionsItemDto<X, Y, Z> and preserves the generic parameters.
@@ -385,7 +386,7 @@ export class RestWorldInputObjectComponent<TProperty extends Property<SimpleValu
         multi: true
     }],
     viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }],
-    imports: [DatePicker, InputNumber, Checkbox, RestWorldImageComponent, RestWorldFileComponent, InputText, HalFormsModule, FormsModule]
+    imports: [DatePicker, InputNumber, TriStateCheckbox, RestWorldImageComponent, RestWorldFileComponent, InputText, HalFormsModule, FormsModule]
 })
 export class RestWorldInputSimpleComponent<TProperty extends Property<SimpleValue, string, string> = Property<SimpleValue, string, string>> extends RestWorldInputBaseComponent<TProperty> implements ControlValueAccessor {
     private static readonly _dateFormat = new Date(3333, 10, 22) // months start at 0 in JS

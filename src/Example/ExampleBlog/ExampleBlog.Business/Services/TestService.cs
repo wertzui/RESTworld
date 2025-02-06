@@ -42,7 +42,9 @@ public class TestService : CrudServiceBase<BlogDatabase, TestEntity, TestDto, Te
         _fixture.Customize<TestEntity>(composer => composer
             .With(t => t.MyRequiredString, () => null)
             .With(t => t.PostId, () => Random.Shared.NextInt64(1, 250))
-            .With(t => t.MyFlagsEnum, () => TestFlagsEnum.TestFlagA | TestFlagsEnum.TestFlagB | TestFlagsEnum.TestFlagC));
+            .With(t => t.MyFlagsEnum, () => TestFlagsEnum.TestFlagA | TestFlagsEnum.TestFlagB | TestFlagsEnum.TestFlagC)
+            .With(t => t.MyBool, () => Random.Shared.NextDouble() > 0.5)
+            .With(t => t.MyNullableBool, () => { var val = Random.Shared.NextInt64(4); return val == 0 ? true : val == 1 ? false : null; }));
 
         _entities = _fixture.CreateMany<TestEntity>(100)
             .ToArray()

@@ -1,17 +1,19 @@
-@switch (property().type) {
+@let prop = property();
+@let val = computedValue();
+@switch (prop.type) {
 
     @case (PropertyType.Text) {
-        @if (property.name === 'createdBy' || property.name === 'lastChangedBy') {
-            <rw-avatar [user]="$any(computedValue())"></rw-avatar>
+        @if (prop.name === 'createdBy' || prop.name === 'lastChangedBy') {
+            <rw-avatar [user]="$any(val)"></rw-avatar>
         }
         @else {
-            <span class="w-full">{{computedValue() | propertyTypeFormat:property().type}}</span>
+            <span class="w-full">{{val | propertyTypeFormat:prop.type}}</span>
         }
     }
     @case (PropertyType.Bool) {
-        <p-checkbox [value]="computedValue()" [binary]="true" [indeterminate]="!property().required" [readonly]="true" [disabled]="true"></p-checkbox>
+        <rw-tri-state-checkbox [model]="$any(val)" [readonly]="true" [disabled]="true"></rw-tri-state-checkbox>
     }
     @default {
-        <span class="w-full">{{computedValue() | propertyTypeFormat:property().type}}</span>
+        <span class="w-full">{{val | propertyTypeFormat:prop.type}}</span>
     }
 }

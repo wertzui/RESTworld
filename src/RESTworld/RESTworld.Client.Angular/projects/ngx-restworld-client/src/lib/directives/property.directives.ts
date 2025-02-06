@@ -1,11 +1,70 @@
 import { Directive, Host, Inject, input, Optional, Self, SkipSelf, ElementRef, type OnChanges, Renderer2, type SimpleChanges, effect, forwardRef, NgModule, computed } from "@angular/core";
 import { FormControlName, NG_ASYNC_VALIDATORS, NG_VALIDATORS, NG_VALUE_ACCESSOR, type AsyncValidator, type AsyncValidatorFn, ControlContainer, type ControlValueAccessor, type Validator, type ValidatorFn, DefaultValueAccessor, CheckboxControlValueAccessor, SelectControlValueAccessor, RangeValueAccessor, NumberValueAccessor, NgControl, NgControlStatus, ReactiveFormsModule } from "@angular/forms";
 import type { Property, SimpleValue } from "@wertzui/ngx-hal-client";
+import { InputNumber } from "primeng/inputnumber";
 import { MultiSelect } from "primeng/multiselect";
 import { Select } from "primeng/select";
 
 /**
- * This directive sets the attributes of an p-select or p-multiSelect element based on the property.
+ * This directive sets the attributes of a p-inputNumber element based on the property.
+ * It sets the mode, minFractionDigits and maxFractionDigits attributes.
+ * Thses are based on the properties step value.
+ */
+@Directive({
+    selector: "p-inputNumber[formControlProperty], p-inputNumber[propertyAttributes]",
+})
+export class PropertyInputNumberAttributes<TProperty extends Property<SimpleValue, string, string>> {
+    public readonly formControlProperty = input<TProperty>();
+    public readonly propertyAttributes = input<TProperty>();
+
+    constructor(
+        @Self() inputNumber: InputNumber
+    ) {
+        // We need to set it to the maximum value in the constructor, because for some reason lowering it in the effect works, but raising it does not.
+        inputNumber.maxFractionDigits = 100;
+
+        effect(() => {
+            const property = this.formControlProperty() ?? this.propertyAttributes();
+            if (!property) {
+                console.error("Cannot create an instance of the PropertyInputNumberAttributes directive without a property.");
+                return;
+            }
+
+            const element = inputNumber;
+            if (!element) {
+                console.error(`Cannot create an instance of the PropertyInputNumberAttributes directive for the property "${property.name}" without a p-inputNumber element.`);
+                return;
+            }
+
+            element.showButtons = !property.readOnly;
+            element.minFractionDigits = 0;
+            if (property.step)
+                element.step = property.step;
+            if (!property.step || property.step < 0) {
+                element.mode = "decimal";
+            }
+            else if (property.step && property.step >= 1) {
+                element.maxFractionDigits = PropertyInputNumberAttributes.countFractionalDigits(property.value);
+            }
+        });
+    }
+
+    private static countFractionalDigits(value: unknown): number {
+        if (value === null || value === undefined || typeof value !== "number")
+            return 0;
+
+        let count = 0;
+        while (!Number.isInteger(value) && count < 100) { // Prevent infinite loop due to precision issues
+            value *= 10;
+            count++;
+        }
+
+        return count;
+    }
+}
+
+/**
+ * This directive sets the attributes of a p-select or p-multiSelect element based on the property.
  * It sets the optionLabel, optionValue, readonly, filterBy, filter, showClear, required, filterPlaceholder, appendTo, display, selectionLimit, showToggleAll attributes.
  * You need to set either the property or the propertyAttributes input.
  * If both are set, the property input will be used.
@@ -272,7 +331,7 @@ export class PropertyControlStatus extends NgControlStatus {
 }
 
 @NgModule({
-    imports: [FormControlProperty, DefaultPropertyValueAccessor, CheckboxPropertyValueAccessor, SelectPropertyValueAccessor, RangePropertyValueAccessor, NumberPropertyValueAccessor, PropertyControlStatus, PropertySelectAttributes, PropertyAttributes, ReactiveFormsModule],
-    exports: [FormControlProperty, DefaultPropertyValueAccessor, CheckboxPropertyValueAccessor, SelectPropertyValueAccessor, RangePropertyValueAccessor, NumberPropertyValueAccessor, PropertyControlStatus, PropertySelectAttributes, PropertyAttributes, ReactiveFormsModule],
+    imports: [FormControlProperty, DefaultPropertyValueAccessor, CheckboxPropertyValueAccessor, SelectPropertyValueAccessor, RangePropertyValueAccessor, NumberPropertyValueAccessor, PropertyControlStatus, PropertySelectAttributes, PropertyAttributes, PropertyInputNumberAttributes, ReactiveFormsModule],
+    exports: [FormControlProperty, DefaultPropertyValueAccessor, CheckboxPropertyValueAccessor, SelectPropertyValueAccessor, RangePropertyValueAccessor, NumberPropertyValueAccessor, PropertyControlStatus, PropertySelectAttributes, PropertyAttributes, PropertyInputNumberAttributes, ReactiveFormsModule],
 })
 export class HalFormsModule { }

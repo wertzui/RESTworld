@@ -8,6 +8,7 @@ import { PropertyTypeFormatPipe } from "../../pipes/property-type-format.pipe";
 import { CheckboxModule } from "primeng/checkbox";
 import { FormsModule } from "@angular/forms";
 import { OptionsManager, OptionsService } from "../../services/options.service";
+import { TriStateCheckbox } from "../restworld-tri-state-checkbox/restworld-tri-state-checkbox.component";
 
 /**
  * Displays the value of a collection that is automatically created from the given property.
@@ -269,7 +270,7 @@ export class RestWorldDisplayObjectComponent {
     templateUrl: './restworld-display-simple/restworld-display-simple.component.html',
     styleUrl: './restworld-display-simple/restworld-display-simple.component.css',
     standalone: true,
-    imports: [RestWorldAvatarComponent, PropertyTypeFormatPipe, CheckboxModule, FormsModule]
+    imports: [RestWorldAvatarComponent, PropertyTypeFormatPipe, TriStateCheckbox, FormsModule, TriStateCheckbox]
 })
 export class RestWorldDisplaySimpleComponent<TProperty extends Property<SimpleValue, string, string>> {
     private static readonly _dateFormat = new Date(3333, 10, 22) // months start at 0 in JS

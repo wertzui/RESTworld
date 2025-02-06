@@ -14,6 +14,7 @@ export * from "./lib/components/restworld-inputs/restworld-inputs";
 export * from "./lib/components/restworld-label/restworld-label.component";
 export * from "./lib/components/restworld-menu-button/restworld-menu-button.component";
 export * from "./lib/components/restworld-table/restworld-table.component";
+export * from "./lib/components/restworld-tri-state-checkbox/restworld-tri-state-checkbox.component";
 export * from "./lib/components/restworld-validation-errors/restworld-validation-errors.component";
 
 export * from "./lib/constants/link-names";
