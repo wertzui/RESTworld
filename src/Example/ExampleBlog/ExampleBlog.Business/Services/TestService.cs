@@ -44,7 +44,8 @@ public class TestService : CrudServiceBase<BlogDatabase, TestEntity, TestDto, Te
             .With(t => t.PostId, () => Random.Shared.NextInt64(1, 250))
             .With(t => t.MyFlagsEnum, () => TestFlagsEnum.TestFlagA | TestFlagsEnum.TestFlagB | TestFlagsEnum.TestFlagC)
             .With(t => t.MyBool, () => Random.Shared.NextDouble() > 0.5)
-            .With(t => t.MyNullableBool, () => { var val = Random.Shared.NextInt64(4); return val == 0 ? true : val == 1 ? false : null; }));
+            .With(t => t.MyNullableBool, () => { var val = Random.Shared.NextInt64(4); return val == 0 ? true : val == 1 ? false : null; })
+            .With(t => t.MyNullableDecimal, () => (decimal)Random.Shared.NextDouble() * 10));
 
         _entities = _fixture.CreateMany<TestEntity>(100)
             .ToArray()

@@ -156,7 +156,7 @@ export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<Property
             effect(() => {
                 this._formValueChangesSubscription?.unsubscribe();
                 const formGroup = this.formGroup();
-                this._formValueChangesSubscription = formGroup?.valueChanges.subscribe();
+                this._formValueChangesSubscription = formGroup?.valueChanges.subscribe(newValue => this.valueChanges.emit(newValue));
                 this.valueChanges.emit(formGroup?.value);
             });
     }
