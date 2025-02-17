@@ -1,6 +1,7 @@
 import { defaultParser } from "@odata/parser";
 import type { FilterMetadata } from "primeng/api";
 import { OdataVisitor } from "./odata-visitor";
+import type { Property, SimpleValue } from "@wertzui/ngx-hal-client";
 
 
 /**
@@ -8,7 +9,7 @@ import { OdataVisitor } from "./odata-visitor";
  */
 export class ODataFilterParser {
 
-    public static parseFilter(filter: string | undefined): Partial<Record<string, FilterMetadata[]>> {
+    public static parseFilter(filter: string | undefined, properties: Partial<Record<string, Property<SimpleValue, string, string>>>): Partial<Record<string, FilterMetadata[]>> {
         if (!filter)
             return {};
 
@@ -19,7 +20,21 @@ export class ODataFilterParser {
         const visitor = new OdataVisitor();
         const filters = visitor.parse(ast);
 
+        /// OData needs enum values in pascal case, but JSON and therefor HAL-Forms needs them in camel case
+        ODataFilterParser.MakeEnumValuesCamelCase(filters, properties);
+
         return Object.fromEntries(filters);
+    }
+
+    private static MakeEnumValuesCamelCase(filters: Map<string, FilterMetadata[]>, properties: Partial<Record<string, Property<SimpleValue, string, string>>>) {
+        for (const [key, value] of filters) {
+            for (const filter of value) {
+                const options = properties[key]?.options;
+                if (options && !options.link && typeof filter.value === "string") {
+                    filter.value = filter.value.charAt(0).toLowerCase() + filter.value.slice(1);
+                }
+            }
+        }
     }
 
     private static replaceCastExpressions(input: string): string {

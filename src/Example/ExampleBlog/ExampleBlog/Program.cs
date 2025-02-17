@@ -21,7 +21,6 @@ services.AddAutoMapper(AutoMapperConfiguration.ConfigureAutomapper);
 
 // Add the database to the services and create an OData context out of it which can be used for querying..
 rwBuilder.AddDbContextFactoryWithDefaults<BlogDatabase>();
-rwBuilder.AddODataModelForDbContext<BlogDatabase>();
 rwBuilder.MigrateDatabaseDuringStartup<BlogDatabase>();
 
 // Add a simple pipeline.

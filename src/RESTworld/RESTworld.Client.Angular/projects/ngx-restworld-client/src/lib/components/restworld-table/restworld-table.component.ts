@@ -95,10 +95,11 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
     public readonly editTemplate = input<Template>();
     public readonly filters = computed(() => {
         const filter = this.oDataParameters().$filter;
-        if (filter === null || filter === undefined || typeof filter !== "string")
+        const properties = this.searchTemplate()?.propertiesRecord;
+        if (filter === null || filter === undefined || typeof filter !== "string" || properties === undefined)
             return {};
 
-        return ODataService.createFilterMetadataFromODataFilter(filter);
+        return ODataService.createFilterMetadataFromODataFilter(filter, properties);
     });
     /**
      * The form array that contains the form groups for the items.
@@ -226,7 +227,7 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
     public readonly urlParameterPrefix = input("");
 
     //   private _formArray?: FormArray<FormGroup<{ [K in keyof TListItem]: AbstractControl<unknown> }>>;
-    private readonly _filterMatchModeOptions: { [K in keyof PrimeNG["filterMatchModeOptions"]]: SelectItem[] } & { "boolean": SelectItem[] };
+    private readonly _filterMatchModeOptions: { [K in keyof PrimeNG["filterMatchModeOptions"]]: SelectItem[] } & { "boolean": SelectItem[] } & { "enum": SelectItem[] };
     private readonly timeFormat = new Date(1, 1, 1, 22, 33, 44)
         .toLocaleTimeString()
         .replace("22", "hh")
@@ -246,7 +247,8 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
             text: [TranslationKeys.NO_FILTER, ...primeNGConfig.filterMatchModeOptions.text].map(o => ({ label: primeNGConfig.getTranslation(o), value: o })),
             numeric: [TranslationKeys.NO_FILTER, ...primeNGConfig.filterMatchModeOptions.numeric].map(o => ({ label: primeNGConfig.getTranslation(o), value: o })),
             date: [TranslationKeys.NO_FILTER, ...primeNGConfig.filterMatchModeOptions.date].map(o => ({ label: primeNGConfig.getTranslation(o), value: o })),
-            boolean: [TranslationKeys.NO_FILTER, TranslationKeys.EQUALS, TranslationKeys.NOT_EQUALS].map(o => ({ label: primeNGConfig.getTranslation(o), value: o }))
+            boolean: [TranslationKeys.NO_FILTER, TranslationKeys.EQUALS, TranslationKeys.NOT_EQUALS].map(o => ({ label: primeNGConfig.getTranslation(o), value: o })),
+            enum: [TranslationKeys.NO_FILTER, TranslationKeys.EQUALS, TranslationKeys.NOT_EQUALS].map(o => ({ label: primeNGConfig.getTranslation(o), value: o })),
         };
 
         // Update the form array on changes
@@ -302,7 +304,7 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
             return;
 
         const parameters = ODataService.createParametersFromTableLoadEvent(event, searchTemplate);
-        ODataService.createFilterMetadataFromODataFilter(parameters.$filter);
+        ODataService.createFilterMetadataFromODataFilter(parameters.$filter, searchTemplate.propertiesRecord);
         if (currentParameters.$filter !== parameters.$filter || currentParameters.$orderby !== parameters.$orderby || currentParameters.$top !== parameters.$top || currentParameters.$skip !== parameters.$skip)
             this.oDataParameters.set(parameters);
     }
@@ -345,7 +347,7 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
             case PropertyType.DatetimeOffset:
                 return ColumnFilterType.date;
             default:
-                return property.options ? ColumnFilterType.numeric : ColumnFilterType.text;
+                return property.options ? property.options.link ? ColumnFilterType.numeric : ColumnFilterType.enum : ColumnFilterType.text;
         }
     }
 
@@ -419,5 +421,6 @@ enum ColumnFilterType {
     text = 'text',
     numeric = 'numeric',
     boolean = 'boolean',
-    date = 'date'
+    date = 'date',
+    enum = 'enum',
 }

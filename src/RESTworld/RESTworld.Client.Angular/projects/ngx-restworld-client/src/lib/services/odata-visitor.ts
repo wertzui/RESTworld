@@ -29,7 +29,7 @@ export class OdataVisitor {
     private propertyName: string | undefined;
     private value: SimpleValue | null | undefined;
 
-    private static correctFilterMatchMode(matchMode: string, literalValue: SimpleValue | null): string {
+    private static correctFilterMatchMode(matchMode: string, literalValue: SimpleValue | SimpleValue[] | null): string {
         if (literalValue instanceof Date) {
             switch (matchMode) {
                 case FilterMatchMode.EQUALS:
@@ -121,6 +121,7 @@ export class OdataVisitor {
             GreaterOrEqualsExpression: (node: Token) => this.CreateFilter(this.propertyName, this.value, FilterMatchMode.GREATER_THAN_OR_EQUAL_TO),
             LesserThanExpression: (node: Token) => this.CreateFilter(this.propertyName, this.value, FilterMatchMode.LESS_THAN),
             LesserOrEqualsExpression: (node: Token) => this.CreateFilter(this.propertyName, this.value, FilterMatchMode.LESS_THAN_OR_EQUAL_TO),
+            HasExpression: (node: Token) => this.CreateFilter(this.propertyName, [this.value], FilterMatchMode.EQUALS),
             ODataIdentifier: (node: Token) => this.propertyName = node.value.name,
             Literal: (node: Token) => this.value = OdataVisitor.parseLiteralValue(node as LiteralToken),
             AndExpression: (node: Token) => this.operator = "and",
@@ -134,7 +135,7 @@ export class OdataVisitor {
         return this._filters;
     }
 
-    private CreateFilter(propertyName: string | undefined, value: SimpleValue | null, matchMode: string) {
+    private CreateFilter(propertyName: string | undefined, value: SimpleValue | SimpleValue[] | null, matchMode: string) {
         if (propertyName === undefined)
             throw Error(`Cannot add a filter for the value ${value} and the match mode ${matchMode} without a property name`);
 
@@ -142,6 +143,9 @@ export class OdataVisitor {
         const filter = this._filters.get(propertyName);
         if (filter === undefined) {
             this._filters.set(propertyName, [{ value, operator: "and", matchMode: matchMode }]);
+        }
+        else if (filter.length === 1 && Array.isArray(filter[0].value) && Array.isArray(value)) {
+            filter[0].value.push(...value); // Flags enum
         }
         else {
             filter.push({ value, operator: "and", matchMode: matchMode });
