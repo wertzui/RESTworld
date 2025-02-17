@@ -1,11 +1,11 @@
-import { FilterMatchMode, FilterMetadata, TranslationKeys } from 'primeng/api';
-import { Property, PropertyType, SimpleValue, Template } from '@wertzui/ngx-hal-client';
-import { TableLazyLoadEvent } from 'primeng/table';
-import { ODataParameters } from '../models/o-data';
-import { Injectable } from '@angular/core';
-import type { ActivatedRoute } from "@angular/router";
-import { literalValues, type FilterToken } from "@odata/parser";
+import { ODataParameters } from "../models/o-data";
 import { ODataFilterParser } from "./odata-filter-parser";
+import { Injectable } from "@angular/core";
+import { ActivatedRoute } from "@angular/router";
+import { type FilterToken } from "@odata/parser";
+import { Property, PropertyType, SimpleValue, Template } from "@wertzui/ngx-hal-client";
+import { FilterMatchMode, FilterMetadata, TranslationKeys } from "primeng/api";
+import { TableLazyLoadEvent } from "primeng/table";
 
 /**
  * A static class that provides utility methods for creating OData filters, order by clauses, and parameters from {@link TableLazyLoadEvent} objects.
@@ -23,6 +23,10 @@ export class ODataService {
     public static createFilterForProperty(property: Property<SimpleValue, string, string>, filter: FilterMetadata): string | undefined {
         if (filter.matchMode == TranslationKeys.NO_FILTER)
             return undefined;
+
+        // Enums are handled differently
+        if (property.options && !property.options.link)
+            return ODataService.createFilterForEnum(property, filter);
 
         const oDataOperator = ODataService.createODataOperator(
             filter.matchMode,
@@ -87,8 +91,8 @@ export class ODataService {
      * @param filter The OData filter string to parse.
      * @returns A record of property names to filter metadata.
      */
-    public static createFilterMetadataFromODataFilter(filter: string | undefined): Partial<Record<string, FilterMetadata[]>> {
-        const filters = ODataFilterParser.parseFilter(filter);
+    public static createFilterMetadataFromODataFilter(filter: string | undefined, properties: Partial<Record<string, Property<SimpleValue, string, string>>>): Partial<Record<string, FilterMetadata[]>> {
+        const filters = ODataFilterParser.parseFilter(filter, properties);
 
         return filters;
     }
@@ -181,11 +185,11 @@ export class ODataService {
         return event.rows === null ? undefined : event.rows;
     }
 
-    private static createComparisonValue(property: Property<SimpleValue, string, string>, value: unknown): string {
+    private static createComparisonValue(property: Property<SimpleValue, string, string>, value: unknown, isEnum?: boolean): string {
         if (value === null || value === undefined)
             return 'null';
 
-        const type = property.options ? PropertyType.Number : property.type;
+        const type = ODataService.getPropertyType(property, value);
 
         switch (type) {
             case PropertyType.Date:
@@ -206,8 +210,40 @@ export class ODataService {
             case PropertyType.Percent:
                 return '' + ((value as number) / 100);
             default:
-                return `'${value}'`;
+                return `'${isEnum && typeof value === "string" ? value.charAt(0).toUpperCase() + value.slice(1) : value}'`;
         }
+    }
+
+    private static createFilterForEnum(property: Property<SimpleValue, string, string>, filter: FilterMetadata): string | undefined {
+        if (filter.matchMode == TranslationKeys.NO_FILTER)
+            return undefined;
+
+        const options = property.options;
+        if (options === undefined)
+            throw Error(`Property ${property.name} has no options`);
+
+        const maxItems = options.maxItems ?? Number.MAX_SAFE_INTEGER;
+        const oDataOperator = ODataService.createODataOperator(
+            filter.matchMode,
+        );
+
+        // Normal enum
+        if (maxItems === 1) {
+            const comparisonValue = ODataService.createComparisonValue(property, filter.value, true);
+            return `${property.name} ${oDataOperator} ${comparisonValue}`;
+        }
+
+        // Flags enum
+        if (filter.value === null || filter.value === undefined)
+            return undefined;
+
+        const values = Array.isArray(filter.value) ? filter.value : [filter.value];
+        const comparisonValues = values.map(v => ODataService.createComparisonValue(property, v, true));
+
+        const filters = comparisonValues.map(v => `${property.name} has ${v}`);
+        const concatenatedFilters = filters.join(' and ');
+
+        return `(${concatenatedFilters})`;
     }
 
     private static createODataOperator(matchMode?: string): string {
@@ -253,5 +289,18 @@ export class ODataService {
             default:
                 throw Error(`Unknown matchMode ${matchMode}`);
         }
+    }
+
+    private static getPropertyType(property: Property<SimpleValue, string, string>, value: unknown): PropertyType {
+        if (property.options) {
+            if (typeof value === "string" ||
+                Array.isArray(value) && value.every(v => typeof v === "string") ||
+                property.options.inline.some(o => typeof o[property.options.valueField] === "string"))
+                return PropertyType.Text;
+
+            return PropertyType.Number;
+        }
+
+        return property.type;
     }
 }

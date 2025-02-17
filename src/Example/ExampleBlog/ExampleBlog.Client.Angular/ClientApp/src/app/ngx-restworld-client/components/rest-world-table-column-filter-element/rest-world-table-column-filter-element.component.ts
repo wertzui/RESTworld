@@ -50,9 +50,13 @@ export class RestWorldTableColumnFilterElementComponent<TProperty extends Proper
             const property = this.property();
             const value = untracked(() => this.value());
             const formControl = form.controls[property.name];
-            this._formValueChangesSubscription = formControl.valueChanges.subscribe(newValue => this.filterConstraint().value = newValue);
+            this._formValueChangesSubscription = formControl.valueChanges.subscribe(this.setFilterValue.bind(this));
             formControl.setValue(value);
         });
+    }
+
+    private setFilterValue(value: ExtractValueType<TProperty> | null): void {
+        this.filterConstraint().value = value;
     }
 
     public ngOnDestroy(): void {

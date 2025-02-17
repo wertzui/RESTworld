@@ -1,10 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { RestWorldTableColumnFilterElementComponent } from './rest-world-table-column-filter-element.component';
+import { Property, SimpleValue } from "@wertzui/ngx-hal-client";
 
 describe('RestWorldTableColumnFilterElementComponent', () => {
-  let component: RestWorldTableColumnFilterElementComponent;
-  let fixture: ComponentFixture<RestWorldTableColumnFilterElementComponent>;
+  let component: RestWorldTableColumnFilterElementComponent<Property>;
+  let fixture: ComponentFixture<RestWorldTableColumnFilterElementComponent<Property>>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -12,7 +13,7 @@ describe('RestWorldTableColumnFilterElementComponent', () => {
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(RestWorldTableColumnFilterElementComponent);
+    fixture = TestBed.createComponent(RestWorldTableColumnFilterElementComponent<Property>);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
