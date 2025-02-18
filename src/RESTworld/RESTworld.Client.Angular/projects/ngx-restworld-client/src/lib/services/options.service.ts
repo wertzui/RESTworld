@@ -157,7 +157,7 @@ export class OptionsManager<TProperty extends Property<SimpleValue, string, stri
         const property = this.property();
         if (property.cols === undefined || property.cols > 1) {
             const value = this.getValue(itemOrValue);
-            if (typeof value !== "string" || (value !== "" && (value as string).toUpperCase() !== label.toUpperCase()))
+            if (value?.toString().toUpperCase() !== label.toUpperCase())
                 label += ` (${value})`;
         }
 

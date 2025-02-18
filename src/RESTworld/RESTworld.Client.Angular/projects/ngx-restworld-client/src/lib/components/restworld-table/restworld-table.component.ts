@@ -172,9 +172,9 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
     public readonly rowsBeforeCurrentPage = computed(() => this.oDataParameters().$skip ?? 0);
     /**
      * The number of rows per page.
-     * The default is 10.
+     * The default is the first element of rowsPerPageOptions.
      */
-    public readonly rowsPerPage = input(10);
+    public readonly rowsPerPage = computed(() => this.oDataParameters().$top ?? this.rowsPerPageOptions()[0]);
     /**
      * The possible values for the number of rows per page.
      * The default is [10, 25, 50].

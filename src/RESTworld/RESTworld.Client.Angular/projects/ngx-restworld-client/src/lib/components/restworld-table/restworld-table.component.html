@@ -21,6 +21,7 @@
   [rowHover]="rowHover()"
   [(selection)]="selectedRows"
   [filters]="$any(filters())"
+  [first]="rowsBeforeCurrentPage()"
   >
 
   <ng-template pTemplate="header" let-columns>
