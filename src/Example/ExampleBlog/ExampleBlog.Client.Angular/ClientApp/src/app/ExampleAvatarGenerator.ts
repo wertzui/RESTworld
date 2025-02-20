@@ -30,8 +30,8 @@ export class ExampleAvatarGenerator extends AvatarGenerator {
     try {
       const response = await lastValueFrom(this._client.get(uri, { responseType: 'blob', observe: 'response' }));
 
-      if (!response.ok)
-        return undefined;
+      if (!response.ok || response.body === null)
+        return "";
 
       const unsafeUrl = window.URL.createObjectURL(response.body);
       const safeUrl = this._sanitizer.bypassSecurityTrustUrl(unsafeUrl);
@@ -39,7 +39,7 @@ export class ExampleAvatarGenerator extends AvatarGenerator {
       return safeUrl;
     }
     catch (error) {
-      return undefined;
+      return "";
     }
   }
 }

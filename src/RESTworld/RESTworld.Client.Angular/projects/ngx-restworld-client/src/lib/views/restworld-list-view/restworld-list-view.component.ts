@@ -1,4 +1,4 @@
-import { Component, computed, input, linkedSignal, model, resource } from '@angular/core';
+import { Component, computed, effect, input, linkedSignal, model, resource } from '@angular/core';
 import { PagedListResource, Resource, ResourceDto, ResourceOfDto, Template, type PropertyDto, type SimpleValue } from '@wertzui/ngx-hal-client';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { RestWorldClientCollection } from '../../services/restworld-client-collection';
@@ -110,18 +110,19 @@ export class RESTworldListViewComponent<TListDto extends ResourceDto & Record<st
         private readonly _problemService: ProblemService) {
             this.listResource.set(RESTworldListViewComponent._emptylistResource);
             this.searchTemplate.set(RESTworldListViewComponent._emptySearchTemplate);
+            effect(() => console.log((this.rel())));
     }
 
     /**
      * Sets the name of the API to load and triggers a reload of the data.
      * @param value The name of the API to load.
      */
-    public readonly apiName = input.required<string>();
+    public readonly apiName = input<string>();
     /**
      * Sets the rel value for the RESTWorld list view component.
      * @param value The new rel value to set.
      */
-    public readonly rel = input.required<string>();
+    public readonly rel = input<string>();
 
     public readonly newHref = computed(() => this.listResource.value()?.findLink('new')?.href);
     public readonly items = computed(() => this.listResource.value()?._embedded.items || []);
@@ -131,7 +132,14 @@ export class RESTworldListViewComponent<TListDto extends ResourceDto & Record<st
     }
 
     public async delete(resource: Resource): Promise<void> {
-        const response = await this._client().delete(resource);
+        const client = this._client();
+        if (client === undefined) {
+            this._messageService.add({ severity: 'error', summary: 'Error', detail: 'No client found for the API.' });
+            return;
+        }
+
+
+        const response = await client.delete(resource);
         if (this._problemService.checkResponseAndDisplayErrors(response, undefined, "Error while deleting the resource from the API.", "Error")) {
             this._messageService.add({ severity: 'success', summary: 'Deleted', detail: 'The resource has been deleted.' });
 
@@ -142,7 +150,11 @@ export class RESTworldListViewComponent<TListDto extends ResourceDto & Record<st
     public readonly listResource = resource({
         request: () => ({ oDataParameters: this.oDataParameters(), rel: this.rel() }),
         loader: async ({ request }) => {
-            const response = await this._client().getList<TListDto>(request.rel, request.oDataParameters);
+            const client = this._client();
+            if (request.rel === undefined || client === undefined)
+                return RESTworldListViewComponent._emptylistResource;
+
+            const response = await client.getList<TListDto>(request.rel, request.oDataParameters);
             if (this._problemService.checkResponseAndDisplayErrors(response, undefined, "Error while loading the resources from the API.", "Error")) {
                 return response.body;
             }
@@ -163,7 +175,8 @@ export class RESTworldListViewComponent<TListDto extends ResourceDto & Record<st
     public readonly searchTemplate = resource({
         request: () => ({ resource: this.listResource.value() }),
         loader: async ({ request }) => {
-            if (request.resource === undefined)
+            const client = this._client();
+            if (request.resource === undefined || client === undefined)
                 return RESTworldListViewComponent._emptySearchTemplate;
 
             // We only want to load the template once
@@ -172,7 +185,7 @@ export class RESTworldListViewComponent<TListDto extends ResourceDto & Record<st
                 return currentSearchTemplate;
 
             try {
-                const templates = await this._client().getAllTemplates(request.resource);
+                const templates = await client.getAllTemplates(request.resource);
                 const searchTemplate = templates["Search"];
                 if (searchTemplate === undefined)
                     throw new Error("No search template found in the API response.");
@@ -194,5 +207,11 @@ export class RESTworldListViewComponent<TListDto extends ResourceDto & Record<st
         });
     }
 
-    private readonly _client = computed(() => this._clients.getClient(this.apiName()));
+    private readonly _client = computed(() => {
+        const apiName = this.apiName();
+        if (apiName === undefined)
+            return undefined;
+
+        return this._clients.getClient(apiName);
+    });
 }

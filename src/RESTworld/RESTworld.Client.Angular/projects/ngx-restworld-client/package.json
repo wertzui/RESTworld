@@ -1,6 +1,6 @@
 {
   "name": "@wertzui/ngx-restworld-client",
-  "version": "16.1.3",
+  "version": "16.1.4",
   "author": "wertzui",
   "description": "An Angular client to consume a RESTworld service that serves application/hal+json or hal-forms+json.",
   "publishConfig": {

@@ -4,7 +4,7 @@ import { MessageService } from 'primeng/api';
 import { AvatarGenerator } from '../ngx-restworld-client/services/avatar-generator';
 import { ODataParameters } from '../ngx-restworld-client/models/o-data';
 import { PostListDto } from './models';
-import { PagedListResource, Property, ResourceOfDto, Template } from '@wertzui/ngx-hal-client';
+import { PagedListResource, Property, ResourceOfDto, Template, type SimpleValue } from '@wertzui/ngx-hal-client';
 import { FormArray, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { RestWorldTableComponent } from "../ngx-restworld-client/components/restworld-table/restworld-table.component";
 import { JsonPipe } from "@angular/common";
@@ -93,8 +93,8 @@ export class PostsForBlogComponent {
         this.templates.set({ search: PostsForBlogComponent._emptyTemplate, edit: PostsForBlogComponent._emptyTemplate });
     }
 
-    public generateCellClasses(row: ResourceOfDto<PostListDto>, property: Property, rowIndex: number, columnIndex: number) {
-        if (row[property.name] === "Post number 1")
+    public generateCellClasses(row: ResourceOfDto<PostListDto>, property: Property<SimpleValue, string, string>, rowIndex: number, columnIndex: number) {
+        if (row[property.name as keyof PostListDto] === "Post number 1")
             return 'special';
         return columnIndex % 2 === 0 ? 'cell-even' : 'cell-odd';
     }

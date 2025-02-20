@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { NavigationComponent } from "./navigation/navigation.component";
 import { RouterOutlet } from "@angular/router";
 import { ToastModule } from "primeng/toast";

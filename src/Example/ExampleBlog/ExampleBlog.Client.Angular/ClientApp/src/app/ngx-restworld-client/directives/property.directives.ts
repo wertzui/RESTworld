@@ -232,7 +232,7 @@ export class FormControlProperty<TProperty extends Property<SimpleValue, string,
         });
     }
 
-    public ngOnChanges(changes: SimpleChanges): void {
+    public override ngOnChanges(changes: SimpleChanges): void {
         // We cannot purely rely on the effect, because FormControlName used ngOnChanges which runs before any effects.
         // FormControlName reads this.name in ngOnChanges, so we need to set it here to make sure it is set before FormControlName reads it.
         if (!this._propertyAdded) {

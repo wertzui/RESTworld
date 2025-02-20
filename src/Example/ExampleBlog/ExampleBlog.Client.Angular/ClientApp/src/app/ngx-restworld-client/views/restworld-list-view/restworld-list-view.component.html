@@ -1,7 +1,8 @@
 @let search = searchTemplate.value();
-@if (search) {
+@let api = apiName();
+@if (search && api) {
     <rw-table
-        [apiName]="apiName()"
+        [apiName]="api"
         [searchTemplate]="search"
         [rows]="items()"
         [headerMenu]="headerMenu()"

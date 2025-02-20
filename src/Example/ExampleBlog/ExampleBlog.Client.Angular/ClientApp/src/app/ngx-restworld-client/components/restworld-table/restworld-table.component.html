@@ -65,7 +65,7 @@
                 @let fomrArray = formArray();
                 @if (showInputField(col) && fomrArray) {
                     <ng-container [formGroup]="fomrArray.controls[rowIndex - (table.first ?? 0)]" >
-                        <rw-input [apiName]="apiName()" [property]="editProperties()[col.name]"></rw-input>
+                        <rw-input [apiName]="apiName()" [property]="editProperties()[col.name]!"></rw-input>
                     </ng-container>
                 }
                 @else {
