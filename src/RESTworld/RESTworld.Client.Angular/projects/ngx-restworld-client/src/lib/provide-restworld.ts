@@ -1,8 +1,12 @@
-import { EnvironmentProviders, inject, provideAppInitializer, type Provider, type Type } from "@angular/core";
+import { EnvironmentProviders, importProvidersFrom, inject, provideAppInitializer, type Provider, type Type } from "@angular/core";
 import { OpenTelemetryService } from "./services/opentelemetry.service";
 import { SettingsService } from "./services/settings.service";
 import { AvatarGenerator } from "./services/avatar-generator";
 import { NgHttpCachingStrategy, provideNgHttpCaching, withNgHttpCachingLocalStorage, type NgHttpCachingConfig } from "ng-http-caching";
+import { ClrFormatPipe } from "./pipes/clr-format.pipe";
+import { AsPipe } from "./pipes/as.pipe";
+import { PropertyTypeFormatPipe } from "./pipes/property-type-format.pipe";
+import { SafeUrlPipe } from "./pipes/safe-url.pipe";
 
 /**
  * Povides the RESTworld functionality to the application.
@@ -38,7 +42,7 @@ export function provideRestWorld(ngHttpCachingConfig?: NgHttpCachingConfig): Env
 
     const cachingProviders = provideNgHttpCaching(mergedCachingConfig);
 
-    const allProviders = [restWorldInitializer, ...cachingProviders];
+    const allProviders = [ restWorldInitializer, ...cachingProviders ];
 
     return allProviders;
 }

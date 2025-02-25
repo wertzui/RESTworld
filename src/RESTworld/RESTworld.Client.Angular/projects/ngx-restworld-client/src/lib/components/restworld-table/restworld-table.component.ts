@@ -285,7 +285,8 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
             if (!this._initialQueryParamsSet) {
                 this._initialQueryParamsSet = true;
                 const oDataParametersFromUrl = ODataService.createParametersFromRoute(activatedRoute, urlParameterPrefix);
-                this.oDataParameters.set(this.prefixObjectProperties(oDataParametersFromUrl, urlParameterPrefix));
+                const mergedParameters = { ...oDataParameters, ...oDataParametersFromUrl };
+                this.oDataParameters.set(mergedParameters);
                 return;
             }
 
