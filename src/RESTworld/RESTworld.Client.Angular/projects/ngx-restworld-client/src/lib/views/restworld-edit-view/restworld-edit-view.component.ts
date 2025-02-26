@@ -81,7 +81,7 @@ export class RESTworldEditViewComponent {
 
     async afterSubmit($event: AfterSubmitOkEvent | AfterSubmitRedirectEvent) {
         if ($event.status == 201) {
-            await this._router.navigate(["edit", this.apiName, this.rel(), $event.location])
+            await this._router.navigate(["edit", this.apiName(), this.rel(), $event.location])
         }
     }
 
