@@ -9,7 +9,8 @@
     <p-fileUpload class="mr-1" chooseIcon="pi-upload fas fa-upload" [chooseButtonProps]="{ label: '' }" mode="basic" [auto]="true" [accept]="accept()" [customUpload]="true" (uploadHandler)="imageChanged($event)" pTooltip="Upload new image"></p-fileUpload>
 
     @if (uri()) {
-        <img class="thumbnail" [src]="uri() | safeUrl" [alt]="alt()" (click)="showCropDialog()" pTooltip="Zoom and crop" />
+        <img class="thumbnail mr-1" [src]="uri() | safeUrl" [alt]="alt()" (click)="showCropDialog()" pTooltip="Zoom and crop" />
+        <p-button icon="pi pi-times" severity="danger" [text]="true" (onClick)="deleteImage()"/>
     }
 </div>
 

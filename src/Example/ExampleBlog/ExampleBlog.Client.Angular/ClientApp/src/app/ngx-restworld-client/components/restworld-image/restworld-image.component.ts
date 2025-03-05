@@ -86,7 +86,7 @@ export class RestWorldImageComponent implements ControlValueAccessor {
 
     public acceptCroppedImage(): void {
         this.uri.set(this.tempCroppedUri);
-        this.onChange?.(this.uri);
+        this.onChange?.(this.uri());
         this.closeCropDialog();
     }
 
@@ -97,6 +97,11 @@ export class RestWorldImageComponent implements ControlValueAccessor {
 
     public croppedImageChanged(event: ImageCroppedEvent): void {
         this.tempCroppedUri = event.base64 ?? undefined;
+    }
+
+    public deleteImage() {
+        this.uri.set(undefined);
+        this.onChange?.(this.uri());
     }
 
     public imageChanged(event: { files: File[] }): void {

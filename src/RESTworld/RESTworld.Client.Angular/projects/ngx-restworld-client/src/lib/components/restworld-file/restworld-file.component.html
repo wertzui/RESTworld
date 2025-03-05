@@ -6,6 +6,9 @@
     @else {
         <p-button [disabled]="true" icon="pi pi-download" class="mr-1" pTooltip="No file present"></p-button>
     }
-    <p-fileUpload chooseIcon="pi-upload fas fa-upload" [chooseButtonProps]="{ label: '' }" pTooltip="Upload new file" mode="basic" [auto]="true"
+    <p-fileUpload class="mr-1" chooseIcon="pi-upload fas fa-upload" [chooseButtonProps]="{ label: '' }" pTooltip="Upload new file" mode="basic" [auto]="true"
         [accept]="accept()" [customUpload]="true" (uploadHandler)="fileChanged($event)"></p-fileUpload>
+    @if (uri()) {
+        <p-button icon="pi pi-times" severity="danger" [text]="true" (onClick)="deleteFile()"/>
+    }
 </div>

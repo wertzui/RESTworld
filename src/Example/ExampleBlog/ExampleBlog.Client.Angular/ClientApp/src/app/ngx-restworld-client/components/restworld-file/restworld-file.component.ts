@@ -32,12 +32,12 @@ export class RestWorldFileComponent implements ControlValueAccessor {
    * This is a comma-separated list of MIME types or file extensions.
    * If not specified, all file types are accepted.
    */
-    public readonly accept = input("", { transform: (v: string) => v ?? ""});
+    public readonly accept = input("", { transform: (v: string) => v ?? "" });
 
     /**
    * The name of the file to be uploaded.
    */
-    public readonly fileName = input("download", { transform: (v: string) => v ?? "download"});
+    public readonly fileName = input("download", { transform: (v: string) => v ?? "download" });
 
     public readonly disabled = signal(false);
     /**
@@ -63,9 +63,14 @@ export class RestWorldFileComponent implements ControlValueAccessor {
         const reader = new FileReader();
         reader.onload = () => {
             this.uri.set(reader.result as string);
-            this.onChange?.(this.uri);
+            this.onChange?.(this.uri());
         };
 
         reader.readAsDataURL(file);
+    }
+
+    public deleteFile() {
+        this.uri.set(undefined);
+        this.onChange?.(this.uri());
     }
 }
