@@ -119,6 +119,25 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
      * Set this to true while loading new items from the backend when reacting to the `onFilterOrSortChanged` event.
      */
     public readonly isLoading = input(false);
+
+    /**
+     * Indicates whether the table is lazy loaded.
+     * If set to true, sorting and filtering needs to be handled by the `load` event.
+     * If set to false, sorting and filtering is handled by the table component itself.
+     * The default is `true`.
+     * @see load
+     */
+    public readonly lazy = input(true);
+
+    /**
+     * Indicates whether the table has a paginator.
+     * If set to true, the table will display a paginator at the bottom.
+     * If set to false, the table will not display a paginator and all rows will be displayed at once.
+     * The default is `true`.
+     * In order to customize the number of rows per page, you can set the `rowsPerPageOptions` property.
+     * @see rowsPerPageOptions
+     */
+    public readonly paginator = input(true);
     public readonly multiSortMeta = computed(() => {
         const orderBy = this.oDataParameters().$orderby;
         if (orderBy === null || orderBy === undefined || typeof orderBy !== "string")

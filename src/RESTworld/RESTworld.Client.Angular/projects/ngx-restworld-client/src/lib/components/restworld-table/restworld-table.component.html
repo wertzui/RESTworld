@@ -2,11 +2,11 @@
   #table
   [value]="rows()"
   [columns]="columns()"
-  [lazy]="true"
+  [lazy]="lazy()"
   [lazyLoadOnInit]="false"
   (onLazyLoad)="load($event)"
   responsiveLayout="scroll"
-  [paginator]="true"
+  [paginator]="paginator()"
   [rowsPerPageOptions]="rowsPerPageOptions()"
   [rows]="rowsPerPage()"
   [totalRecords]="totalRecords()"
