@@ -79,37 +79,6 @@ public interface ICacheHelper
     Task<TItem> GetOrCreateWithUserAsync<TItem>(string key, string username, string timeoutKey, Func<string, Task<TItem>> factory);
 
     /// <summary>
-    /// Removes all entries associated with the current user that have keys starting with the specified prefix.
-    /// </summary>
-    /// <remarks>This method only affects entries associated with the current user. The comparison type
-    /// determines how the prefix is matched,  allowing for case-sensitive or case-insensitive comparisons depending on
-    /// the specified <paramref name="comparisonType"/>.</remarks>
-    /// <param name="prefix">The prefix to match against the keys of the entries to be removed.</param>
-    /// <param name="comparisonType">The type of string comparison to use when matching the prefix. Defaults to <see cref="StringComparison.Ordinal"/>.</param>
-    void RemoveByPrefixWithCurrentUser(string prefix, StringComparison comparisonType = StringComparison.Ordinal);
-
-    /// <summary>
-    /// Removes all entries from the collection whose keys start with the specified prefix.
-    /// </summary>
-    /// <remarks>This method only removes entries that match the specified prefix.
-    /// The comparison behavior is determined by the <paramref name="comparisonType"/> parameter.</remarks>
-    /// <param name="prefix">The prefix to match against the keys of the entries to be removed.  This value cannot be <see langword="null"/>
-    /// or empty.</param>
-    /// <param name="comparisonType">The type of string comparison to use when matching the prefix.  The default is <see cref="StringComparison.Ordinal"/>.</param>
-    void RemoveByPrefixWithoutUser(string prefix, StringComparison comparisonType = StringComparison.Ordinal);
-
-    /// <summary>
-    /// Removes all entries associated with the specified user that have keys starting with the given prefix.
-    /// </summary>
-    /// <remarks>This method performs a case-sensitive or case-insensitive comparison based on the specified
-    /// <paramref name="comparisonType"/>. Only entries that match both the prefix and the username will be
-    /// removed.</remarks>
-    /// <param name="prefix">The prefix to match against the keys of the entries to be removed.</param>
-    /// <param name="username">The username associated with the entries to be removed. Cannot be <see langword="null"/> or empty.</param>
-    /// <param name="comparisonType">The type of string comparison to use when matching the prefix. Defaults to <see cref="StringComparison.Ordinal"/>.</param>
-    void RemoveByPrefixWithUser(string prefix, string username, StringComparison comparisonType = StringComparison.Ordinal);
-
-    /// <summary>
     /// Removes the entry from the cache.
     /// The current users name is automatically added to the key so use this method to remove something that has been added with a user in mind.
     /// </summary>

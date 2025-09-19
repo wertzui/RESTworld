@@ -13,7 +13,6 @@ using RESTworld.AspNetCore.Results.Abstractions;
 using RESTworld.AspNetCore.Results.Errors.Abstractions;
 using RESTworld.AspNetCore.Serialization;
 using RESTworld.Business.Models;
-using RESTworld.Business.Models.Abstractions;
 using RESTworld.Business.Services.Abstractions;
 using RESTworld.Common.Dtos;
 using RESTworld.EntityFrameworkCore.Models;
@@ -152,25 +151,23 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
             Cache.RemoveGetForAllUsers<ServiceResponse<TGetFullDto>>(id);
             Cache.RemoveGetListForAllUsers<ServiceResponse<TGetFullDto>>();
         }
-            Cache.RemoveGetListWithCurrentUser<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>>();
-        }
 
         var result = ResultFactory.CreateEmptyResultBasedOnOutcome(serviceResponse);
 
         return result;
+    }
 
-        static bool TryParseEncodedTimestamp(string timestamp, [NotNullWhen(true)] out byte[]? timestampBytes)
+    static bool TryParseEncodedTimestamp(string timestamp, [NotNullWhen(true)] out byte[]? timestampBytes)
+    {
+        try
         {
-            try
-            {
-                timestampBytes = Base64UrlTextEncoder.Decode(timestamp);
-                return true;
-            }
-            catch (FormatException)
-            {
-                timestampBytes = null;
-                return false;
-            }
+            timestampBytes = Base64UrlTextEncoder.Decode(timestamp);
+            return true;
+        }
+        catch (FormatException)
+        {
+            timestampBytes = null;
+            return false;
         }
     }
 
@@ -369,8 +366,6 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
         {
             Cache.RemoveGetForAllUsers<ServiceResponse<TGetFullDto>>(serviceResponse.ResponseObject.Id);
             Cache.RemoveGetListForAllUsers<ServiceResponse<TGetFullDto>>();
-        }
-            Cache.RemoveGetListWithCurrentUser<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>>();
         }
 
         var result = await ResultFactory.CreateOkResultBasedOnOutcomeAsync(serviceResponse, ReturnsReadOnlyFormsResponses);

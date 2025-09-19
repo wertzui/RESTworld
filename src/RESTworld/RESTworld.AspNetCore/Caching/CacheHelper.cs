@@ -218,7 +218,7 @@ public partial class CacheHelper : ICacheHelper
         {
             if (!_memoryCacheWarningWasLogged)
             {
-                LogCannotRemoveByPrefix();
+                LogCannotRemoveMultipleEntries();
                 _memoryCacheWarningWasLogged = true;
             }
             return;
@@ -234,4 +234,7 @@ public partial class CacheHelper : ICacheHelper
             cache.Remove(keyToRemove);
         }
     }
+
+    [LoggerMessage(LogLevel.Warning, "Cannot remove multiple entries because the IMemoryCache in use is not of type MemoryCache and therefore the keys cannot be iterated.")]
+    private partial void LogCannotRemoveMultipleEntries();
 }
