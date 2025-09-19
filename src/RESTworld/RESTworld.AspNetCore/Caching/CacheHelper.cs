@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RESTworld.AspNetCore.DependencyInjection;
 using RESTworld.Business.Authorization.Abstractions;
@@ -10,11 +11,13 @@ using System.Threading.Tasks;
 namespace RESTworld.AspNetCore.Caching;
 
 /// <inheritdoc/>
-public class CacheHelper : ICacheHelper
+public partial class CacheHelper : ICacheHelper
 {
     private readonly IMemoryCache _memoryCache;
     private readonly IUserAccessor _userAccessor;
+    private readonly ILogger<CacheHelper> _logger;
     private readonly CachingOptions _options;
+    private bool _memoryCacheWarningWasLogged;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CacheHelper"/> class.
@@ -22,14 +25,17 @@ public class CacheHelper : ICacheHelper
     /// <param name="memoryCache">The memory cache.</param>
     /// <param name="options">The options holding the default timeouts.</param>
     /// <param name="userAccessor">The user accessor.</param>
+    /// <param name="logger"></param>
     /// <exception cref="ArgumentNullException"></exception>
     public CacheHelper(
         IMemoryCache memoryCache,
         IOptions<RestWorldOptions> options,
-        IUserAccessor userAccessor)
+        IUserAccessor userAccessor,
+        ILogger<CacheHelper> logger)
     {
         _memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
         _userAccessor = userAccessor ?? throw new ArgumentNullException(nameof(userAccessor));
+        _logger = logger;
         _options = options?.Value?.Caching ?? throw new ArgumentNullException(nameof(options));
     }
 
@@ -208,17 +214,24 @@ public class CacheHelper : ICacheHelper
 
     private void RemoveKeysMatchingRegex(Regex regex)
     {
-        if (_memoryCache is MemoryCache cache)
+        if (_memoryCache is not MemoryCache cache)
         {
-            var keysToRemove = cache.Keys
-                .OfType<string>()
-                .Where(k => regex.IsMatch(k))
-                .ToList();
-
-            foreach (var keyToRemove in keysToRemove)
+            if (!_memoryCacheWarningWasLogged)
             {
-                cache.Remove(keyToRemove);
+                LogCannotRemoveByPrefix();
+                _memoryCacheWarningWasLogged = true;
             }
+            return;
+        }
+
+        var keysToRemove = cache.Keys
+            .OfType<string>()
+            .Where(k => regex.IsMatch(k))
+            .ToList();
+
+        foreach (var keyToRemove in keysToRemove)
+        {
+            cache.Remove(keyToRemove);
         }
     }
 }
