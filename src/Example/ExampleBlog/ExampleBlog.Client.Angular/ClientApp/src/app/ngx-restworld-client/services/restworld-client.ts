@@ -33,7 +33,7 @@ export class RestWorldClient {
 
         let combinedHeaders = originalHeaders;
 
-        for (const key in headersToAdd.keys) {
+        for (const key of headersToAdd.keys()) {
             if (!combinedHeaders.has(key) || overwriteExisting) {
                 const headerValuesToAdd = headersToAdd.getAll(key);
                 if (headerValuesToAdd)
@@ -56,8 +56,8 @@ export class RestWorldClient {
             });
 
         return new HttpHeaders({
-            'Accept': `${accept ?? 'application/hal+json'};`,
-            'Content-Type': `${contentType ?? 'application/json'};`
+            'Accept': `${accept ?? 'application/hal+json'}`,
+            'Content-Type': `${contentType ?? 'application/json'}`
         });
     }
 
@@ -72,7 +72,7 @@ export class RestWorldClient {
             });
 
         return new HttpHeaders({
-            'Accept': `${accept ?? 'application/hal+json'};`,
+            'Accept': `${accept ?? 'application/hal+json'}`,
         });
     }
 
@@ -83,16 +83,16 @@ export class RestWorldClient {
      * @returns A promise that resolves to an HttpResponse containing either void or ProblemDetails.
      * @throws An error if the resource does not have a delete link.
      */
-    public async delete(resource: Resource): Promise<HttpResponse<void | ProblemDetails>> {
+    public async delete(resource: Resource & { timestamp?: string }): Promise<HttpResponse<void | ProblemDetails>> {
         const deleteLink = resource.findLink('delete');
-        if (!deleteLink)
-            throw new Error(`The resource ${resource} does not have a delete link.`);
-        const uri = deleteLink.href;
-        const header = RestWorldClient.createHeadersWithoutBody(this._options.Version, 'application/hal+json');
+        if (!deleteLink) {
+            const selfLink = resource.findLink('self');
+            const resourceInfo = selfLink ? `Resource with self link: ${selfLink.href}` : 'Resource (no self link)';
+            throw new Error(`The resource does not have a delete link. ${resourceInfo}`);
+        }
+        const url = deleteLink.href;
 
-        const response = await this.halClient.delete(uri, header);
-
-        return response;
+        return this.deleteByUrl(url, resource.timestamp);
     }
 
     /**
@@ -117,14 +117,14 @@ export class RestWorldClient {
      * Deletes a resource at the specified URL.
      *
      * @param url - The URL of the resource to delete.
-     * @param timestamp - An optional ETag value to include in the request headers.
+     * @param timestamp - An optional If-Match value to include in the request headers.
      * @returns A promise that resolves to an HttpResponse containing either void or ProblemDetails.
      */
     public async deleteByUrl(url: string, timestamp?: string): Promise<HttpResponse<void | ProblemDetails>> {
         let header = RestWorldClient.createHeadersWithoutBody(this._options.Version);
 
         if (timestamp !== undefined)
-            header = header.append("ETag", timestamp);
+            header = header.append("If-Match", timestamp);
 
         const response = await this.halClient.delete(url, header);
 
@@ -249,21 +249,65 @@ export class RestWorldClient {
      * Retrieves all templates associated with a given resource.
      *
      * This method fetches all forms related to the provided {@link Resource} and extracts the templates from the responses.
-     * If any of the form responses indicate a failure, an error is thrown with details about the failed response.
+     * If any of the form responses indicate a failure, it creates a combined ProblemDetails object with information from all failures.
      *
      * @param resource - The {@link Resource} for which to retrieve templates.
-     * @returns A promise that resolves to the {@link Templates} associated with the resource.
-     * @throws An error if any of the form responses fail.
+     * @returns A promise that resolves to the {@link Templates} associated with the resource or ProblemDetails if there's an error.
      */
-    public async getAllTemplates(resource: Resource): Promise<Templates> {
+    public async getAllTemplates(resource: Resource): Promise<Templates | ProblemDetails> {
         const formResponses = await this.getAllForms(resource);
 
         const failedResponses = formResponses.filter(response => !response.ok || ProblemDetails.isProblemDetails(response.body) || !response.body);
         if (failedResponses.length !== 0) {
-            for (const response of failedResponses) {
-                throw new Error(`Error while loading the response from ${response.url}, Status ${response.status} - ${response.statusText}, Content: ${JSON.stringify(response.body)}`);
+            // If we have multiple failed responses, create a combined problem details
+            if (failedResponses.length > 1) {
+                const failureDetails = failedResponses.map(response => {
+                    if (ProblemDetails.isProblemDetails(response.body)) {
+                        return response.body.detail || `Problem details from ${response.url}`;
+                    }
+                    return `Error ${response.status} (${response.statusText}) from ${response.url}`;
+                }).join('; ');
+
+                // Check if all failed responses have the same status code
+                const allStatuses = failedResponses.map(response => {
+                    if (ProblemDetails.isProblemDetails(response.body)) {
+                        return response.body.status;
+                    }
+                    return response.status;
+                });
+
+                // Use the common status code if all are the same, otherwise use 500
+                const uniqueStatuses = new Set(allStatuses);
+                const status = uniqueStatuses.size === 1 ? allStatuses[0] : 500;
+
+                const problemDetailsDto = {
+                    _links: { self: [{ href: resource.findLink('self')?.href || "" }] },
+                    detail: `Multiple errors occurred while loading form responses: ${failureDetails}`,
+                    status: status,
+                    title: "Multiple Form Loading Errors",
+                    type: "https://tools.ietf.org/html/rfc7231#section-6.5"
+                };
+
+                return new ProblemDetails(problemDetailsDto);
             }
-            return Promise.resolve({});
+
+            // Single failure case
+            const firstFailedResponse = failedResponses[0];
+            if (ProblemDetails.isProblemDetails(firstFailedResponse.body)) {
+                return firstFailedResponse.body;
+            }
+
+            // If we don't have a ProblemDetails object but the response failed,
+            // create a new ProblemDetails object with the error information
+            const problemDetailsDto = {
+                _links: { self: [{ href: firstFailedResponse.url || "" }] },
+                detail: `Error while loading the response from ${firstFailedResponse.url}`,
+                status: firstFailedResponse.status,
+                title: firstFailedResponse.statusText,
+                type: "https://tools.ietf.org/html/rfc7231#section-6.5.1"
+            };
+
+            return new ProblemDetails(problemDetailsDto);
         }
 
         const formTemplates = Object.assign({}, ...formResponses.map(response => (response.body as FormsResource)._templates)) as Templates;
@@ -470,10 +514,14 @@ export class RestWorldClient {
      */
     public async save<TState>(resource: Resource & TState): Promise<HttpResponse<Resource & TState | ProblemDetails>> {
         const saveLink = resource.findLink('save');
-        if (!saveLink)
-            throw new Error(`The resource ${resource} does not have a save link.`);
-        if (!saveLink.name)
-            throw new Error(`The save link ${saveLink} does not have a save name.`);
+        if (!saveLink) {
+            const selfLink = resource.findLink('self');
+            const resourceInfo = selfLink ? `Resource with self link: ${selfLink.href}` : 'Resource (no self link)';
+            throw new Error(`The resource does not have a save link. ${resourceInfo}`);
+        }
+        if (!saveLink.name) {
+            throw new Error(`The save link with href '${saveLink.href}' does not have a save name.`);
+        }
 
         const uri = saveLink.href;
         const method = saveLink.name.toLowerCase();
@@ -548,5 +596,145 @@ export class RestWorldClient {
             this._defaultCurie = undefined;
         else
             this._defaultCurie = curies[0].name;
+    }
+
+    /**
+     * Retrieves all forms associated with a resource fetched by its URI.
+     *
+     * This method first fetches the resource from the given URI and then retrieves all forms for that resource.
+     * If the resource response contains a problem detail, it returns an array with a single HTTP response containing that problem detail.
+     *
+     * @param uri - The URI of the resource to fetch.
+     * @param headers - Optional HTTP headers to include in the request.
+     * @returns A promise that resolves to an array of HTTP responses, each containing either a `FormsResource` or `ProblemDetails`.
+     */
+    public async getAllFormsByUri(uri: string, headers?: HttpHeaders): Promise<HttpResponse<FormsResource | ProblemDetails>[]> {
+        const resourceResponse = await this.getSingleByUri(uri, headers);
+
+        if (!resourceResponse.ok || ProblemDetails.isProblemDetails(resourceResponse.body)) {
+            // Return the problem details as is, wrapped in an array
+            if (ProblemDetails.isProblemDetails(resourceResponse.body)) {
+                return [resourceResponse as HttpResponse<ProblemDetails>];
+            }
+
+            // If no body or problem details, create a proper ProblemDetails object
+            const problemDetailsDto = {
+                _links: { self: [{ href: uri }] },
+                detail: `Error while loading the resource from ${uri}`,
+                status: resourceResponse.status,
+                title: resourceResponse.statusText,
+                type: "https://tools.ietf.org/html/rfc7231#section-6.5"
+            };
+
+            const problemDetails = new ProblemDetails(problemDetailsDto);
+
+            // Modify the response body to include our problem details
+            const errorResponse = { ...resourceResponse, body: problemDetails } as HttpResponse<ProblemDetails>;
+            return [errorResponse];
+        }
+
+        if (!resourceResponse.body) {
+            // Handle empty response with a proper ProblemDetails object
+            const problemDetailsDto = {
+                _links: { self: [{ href: uri }] },
+                detail: `Resource from ${uri} was empty`,
+                status: 404,
+                title: "Resource Not Found",
+                type: "https://tools.ietf.org/html/rfc7231#section-6.5.4"
+            };
+
+            const problemDetails = new ProblemDetails(problemDetailsDto);
+
+            const errorResponse = { ...resourceResponse, body: problemDetails } as HttpResponse<ProblemDetails>;
+            return [errorResponse];
+        }
+
+        return this.getAllForms(resourceResponse.body);
+    }
+
+    /**
+     * Retrieves all templates associated with a resource fetched by its URI.
+     *
+     * This method first fetches the resource from the given URI and then retrieves all templates for that resource.
+     * It combines functionality from {@link getSingleByUri} and {@link getAllTemplates}.
+     * If the resource response contains a problem detail or if any form responses fail,
+     * the method returns the problem detail rather than throwing an error.
+     *
+     * @param uri - The URI of the resource to fetch.
+     * @param headers - Optional HTTP headers to include in the request.
+     * @returns A promise that resolves to the {@link Templates} associated with the resource or a ProblemDetails object if there was an error.
+     */
+    public async getAllTemplatesByUri(uri: string, headers?: HttpHeaders): Promise<Templates | ProblemDetails> {
+        const resourceResponse = await this.getSingleByUri(uri, headers);
+
+        if (!resourceResponse.ok || ProblemDetails.isProblemDetails(resourceResponse.body)) {
+            if (ProblemDetails.isProblemDetails(resourceResponse.body)) {
+                return resourceResponse.body;
+            }
+
+            // If no problem details in body but response not OK, create a proper ProblemDetails object
+            const problemDetailsDto = {
+                _links: { self: [{ href: uri }] },
+                detail: `Error while loading the resource from ${uri}`,
+                status: resourceResponse.status,
+                title: resourceResponse.statusText,
+                type: "https://tools.ietf.org/html/rfc7231#section-6.5"
+            };
+            return new ProblemDetails(problemDetailsDto);
+        }
+
+        if (!resourceResponse.body) {
+            // Handle empty response with a proper ProblemDetails object
+            const problemDetailsDto = {
+                _links: { self: [{ href: uri }] },
+                detail: `Resource from ${uri} was empty`,
+                status: 404,
+                title: "Resource Not Found",
+                type: "https://tools.ietf.org/html/rfc7231#section-6.5.4"
+            };
+            return new ProblemDetails(problemDetailsDto);
+        }
+
+        return this.getAllTemplates(resourceResponse.body);
+    }
+
+    /**
+     * Retrieves a specific template by title from a resource fetched by its URI.
+     *
+     * This method first fetches all templates from the resource at the given URI and then
+     * returns the template with the specified title. If the resource cannot be fetched,
+     * if it contains a problem detail, or if any form responses fail, this method returns
+     * the problem detail rather than throwing an error.
+     *
+     * @param uri - The URI of the resource to fetch.
+     * @param templateTitle - The title of the template to retrieve.
+     * @param headers - Optional HTTP headers to include in the request.
+     * @returns A promise that resolves to the {@link Template} with the specified title or a ProblemDetails object if there was an error.
+     */
+    public async getTemplateByUri(uri: string, templateTitle: string, headers?: HttpHeaders): Promise<Template | ProblemDetails> {
+        const templatesOrProblemDetails = await this.getAllTemplatesByUri(uri, headers);
+
+        // If we got ProblemDetails instead of Templates, return it
+        if (ProblemDetails.isProblemDetails(templatesOrProblemDetails)) {
+            return templatesOrProblemDetails;
+        }
+
+        const templates = templatesOrProblemDetails as Templates;
+        const template = templates[templateTitle];
+
+        if (template === undefined) {
+            const templateTitles = Object.keys(templates);
+            // Instead of throwing an error, return a properly constructed ProblemDetails object
+            const problemDetailsDto = {
+                _links: { self: [{ href: uri }] },
+                detail: `No template with title '${templateTitle}' found. Available templates are: ${templateTitles.join(', ')}`,
+                status: 404,
+                title: "Template Not Found",
+                type: "https://tools.ietf.org/html/rfc7231#section-6.5.4"
+            };
+            return new ProblemDetails(problemDetailsDto);
+        }
+
+        return template;
     }
 }

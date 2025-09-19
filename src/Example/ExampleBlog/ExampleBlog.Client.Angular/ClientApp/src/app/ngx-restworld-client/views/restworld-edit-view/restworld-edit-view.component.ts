@@ -11,6 +11,7 @@ import { RestWorldFormComponent } from "../../components/restworld-form/restworl
 import { RestWorldIdNavigationComponent } from "../../components/restworld-id-navigation/restworld-id-navigation.component";
 import { AfterSubmitOkEvent, AfterSubmitRedirectEvent } from "../../models/events";
 import { RestWorldClientCollection } from "../../services/restworld-client-collection";
+import { NgTemplateOutlet } from "@angular/common";
 
 /**
 * Component for editing a resource in the RESTworld application.
@@ -34,7 +35,7 @@ import { RestWorldClientCollection } from "../../services/restworld-client-colle
     templateUrl: "./restworld-edit-view.component.html",
     styleUrls: ["./restworld-edit-view.component.css"],
     standalone: true,
-    imports: [RestWorldIdNavigationComponent, SkeletonModule, TabsModule, RestWorldFormComponent, ConfirmDialogModule]
+    imports: [RestWorldIdNavigationComponent, SkeletonModule, TabsModule, RestWorldFormComponent, ConfirmDialogModule, NgTemplateOutlet]
 })
 export class RESTworldEditViewComponent {
     @ContentChild("extraTabs", { static: false })
@@ -74,8 +75,8 @@ export class RESTworldEditViewComponent {
     */
     public apiName = input.required<string>();
     public templates = resource({
-        request: () => ({apiName: this.apiName(), uri: this.uri()}),
-        loader: ({request}) => this.loadInternal(request.apiName, request.uri)
+        params: () => ({ apiName: this.apiName(), uri: this.uri() }),
+        loader: ({ params }) => this.loadInternal(params.apiName, params.uri)
     });
     public displayTab = model("Loading");
 
@@ -92,35 +93,36 @@ export class RESTworldEditViewComponent {
     private async loadInternal(apiName: string, uri: string): Promise<Template[]> {
         if (!apiName || !uri)
             return [];
-
-        const client = this._clients.getClient(apiName);
-        const response = await client.getSingleByUri(uri);
-        if (!response.ok || ProblemDetails.isProblemDetails(response.body) || response.body === null) {
-            if (ProblemDetails.isProblemDetails(response.body))
-                this._messageService.add({ severity: "error", summary: "Error", detail: response.body.detail, data: response, sticky: true });
-            else
-                this._messageService.add({ severity: "error", summary: "Error", detail: "Error while loading the resource from the API.", data: response, sticky: true });
-        }
-        else {
-            const templates = await this.getAllTemplates(response.body, apiName);
-            const templateArray = Object.values(templates).filter((t: Template | undefined): t is Template => t !== undefined);
-            if (templateArray.length > 0)
-                this.displayTab.set(templateArray[0].title!);
-            return templateArray;
-        }
-
-        return [];
-    }
-
-    private async getAllTemplates(resource: Resource, apiName: string): Promise<Templates> {
         try {
             const client = this._clients.getClient(apiName);
-            const templates = await client.getAllTemplates(resource);
-            return templates;
-        }
-        catch (e: unknown) {
-            this._messageService.add({ severity: "error", summary: "Error", detail: "Error while loading the templates from the API. " + e, data: e, sticky: true });
-            return {};
+            const templatesOrProblemDetails = await client.getAllTemplatesByUri(uri);
+
+            // Check if we got ProblemDetails instead of Templates
+            if (ProblemDetails.isProblemDetails(templatesOrProblemDetails)) {
+                this._messageService.add({
+                    severity: "error",
+                    summary: "Error",
+                    detail: `Error from API: ${templatesOrProblemDetails.title} - ${templatesOrProblemDetails.detail}`,
+                    data: templatesOrProblemDetails,
+                    sticky: true
+                });
+                return [];
+            }
+
+            // Process the templates
+            const templates = templatesOrProblemDetails as Templates;
+            const templateArray = Object.values(templates).filter((t): t is Template => t !== undefined);
+            if (templateArray.length > 0)
+                this.displayTab.set(templateArray[0].title!);
+
+            return templateArray;
+        } catch (e: unknown) {
+            if (e instanceof Error)
+                this._messageService.add({ severity: "error", summary: "Error", detail: "Error while loading the templates from the API. " + e.message, data: e, sticky: true });
+            else
+                this._messageService.add({ severity: "error", summary: "Error", detail: "Error while loading the templates from the API. " + e, data: e, sticky: true });
+
+            return [];
         }
     }
 }

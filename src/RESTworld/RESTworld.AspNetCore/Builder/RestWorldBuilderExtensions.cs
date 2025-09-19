@@ -2,8 +2,8 @@
 using AutoMapper.Extensions.ExpressionMapping;
 using HAL.AspNetCore.Abstractions;
 using HAL.AspNetCore.ContentNegotiation;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.OData;
 using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
@@ -228,7 +228,28 @@ public static class RestWorldBuilderExtensions
             }))
             .WithTracing((tracing =>
             {
-                tracing.AddAspNetCoreInstrumentation()
+                tracing
+                    .AddAspNetCoreInstrumentation(opts =>
+                    {
+                        var existingFilter = opts.Filter;
+                        var healthFilter = (HttpContext context) => !context.Request.Path.HasValue || !context.Request.Path.Value.StartsWith("/health/");
+                        var combinedFilter = existingFilter is null ? healthFilter : context => existingFilter(context) && healthFilter(context);
+                        opts.Filter = combinedFilter;
+
+                        var existingRequestEnricher = opts.EnrichWithHttpRequest;
+                        var healthRequestEnricher = (Activity activity, HttpRequest request) =>
+                        {
+                            if (request.Path.HasValue && request.Path.Value.StartsWith("/health/"))
+                                activity.SetTag("app.synthetic_request", true);
+                        };
+                        opts.EnrichWithHttpRequest = existingRequestEnricher is null
+                            ? healthRequestEnricher
+                            : (activity, request) =>
+                            {
+                                existingRequestEnricher(activity, request);
+                                healthRequestEnricher(activity, request);
+                            };
+                    })
                     // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
                     //.AddGrpcClientInstrumentation()
                     .AddHttpClientInstrumentation(opts =>
@@ -253,6 +274,25 @@ public static class RestWorldBuilderExtensions
                             MoveDbStatementTagToDbQueryText(activity);
                             AddDbQueryParameterTagsToActivity(activity, command);
                         };
+
+                        var existingFilter = opts.Filter;
+                        var healthFilter = (string? provider, IDbCommand command) => command.CommandText != "SELECT 1" && !command.CommandText.Contains("__EFMigrationsHistory");
+                        var combinedFilter = existingFilter is null ? healthFilter : (provider, command) => existingFilter(provider, command) && healthFilter(provider, command);
+                        opts.Filter = combinedFilter;
+
+                        var existingRequestEnricher = opts.EnrichWithIDbCommand;
+                        var healthRequestEnricher = (Activity activity, IDbCommand command) =>
+                        {
+                            if (command.CommandText == "SELECT 1" || command.CommandText.Contains("__EFMigrationsHistory"))
+                                activity.SetTag("app.synthetic_request", true);
+                        };
+                        opts.EnrichWithIDbCommand = existingRequestEnricher is null
+                            ? healthRequestEnricher
+                            : (activity, command) =>
+                            {
+                                existingRequestEnricher(activity, command);
+                                healthRequestEnricher(activity, command);
+                            };
                     });
                 // When using both Instrumentations, there is a bug, causing spans to not use the correct parent.
                 // See https://github.com/open-telemetry/opentelemetry-dotnet-contrib/issues/1764
@@ -426,9 +466,7 @@ public static class RestWorldBuilderExtensions
         app.UseEndpoints(_ => { });
         app.MapControllers();
 
-        app.UseHealthChecks("/health/startup", new HealthCheckOptions { Predicate = r => r.Tags.Contains("startup"), ResponseWriter = HealthCheckHALResponseWriter.WriteResponseAsync });
-        app.UseHealthChecks("/health/live", new HealthCheckOptions { Predicate = r => r.Tags.Contains("live"), ResponseWriter = HealthCheckHALResponseWriter.WriteResponseAsync });
-        app.UseHealthChecks("/health/ready", new HealthCheckOptions { Predicate = r => r.Tags.Contains("ready"), ResponseWriter = HealthCheckHALResponseWriter.WriteResponseAsync });
+        app.UseKubernetesHealthChecks(o => o.ResponseWriter = HealthCheckHALResponseWriter.WriteResponseAsync);
 
         app.UseResponseCompression();
 

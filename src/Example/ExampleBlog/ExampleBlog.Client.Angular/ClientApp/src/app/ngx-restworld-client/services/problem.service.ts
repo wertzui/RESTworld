@@ -21,7 +21,10 @@ export class ProblemService {
     public static scrollToFirstValidationError(nativeElement?: HTMLElement): void {
         const enclosingElement = nativeElement ?? document;
         setTimeout(() => {
-            const validationErrorElements = enclosingElement.querySelectorAll('rw-validation-errors>val-errors>div')
+            const validationErrorElements = enclosingElement.querySelectorAll('rw-validation-errors>val-errors>div');
+            if (validationErrorElements.length === 0)
+                return;
+
             const firstError = validationErrorElements[0];
             firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
         },
@@ -42,6 +45,35 @@ export class ProblemService {
         }
 
         return control;
+    }
+
+    /**
+     * Adds errors to a control's existing errors.
+     * @param control The control to add errors to.
+     * @param newErrors The new errors to add.
+     */
+    public addErrors(control: AbstractControl, newErrors: unknown): void {
+        if (!newErrors)
+            return;
+
+        // Get existing remote errors or initialize an empty array
+        const existingErrors = control.errors?.remote;
+
+        // Combine the errors
+        let combinedErrors;
+        if (!existingErrors) {
+            // No existing errors, just use the new ones
+            combinedErrors = [newErrors];
+        } else if (Array.isArray(existingErrors)) {
+            // Existing errors are already an array, add to it
+            combinedErrors = [...existingErrors, newErrors];
+        } else {
+            // Existing errors are not an array, combine with new errors
+            combinedErrors = [existingErrors, newErrors];
+        }
+
+        // Set the combined errors
+        control.setErrors({ ...control.errors, remote: combinedErrors });
     }
 
     /**
@@ -129,17 +161,27 @@ export class ProblemService {
     public displayValidationErrors(problemDetails: ProblemDetails, formGroup: FormGroup, nativeElement?: HTMLElement): void {
         // display validation errors
         if (problemDetails["errors"] as {}) {
+            // Add the problem detail to the form group errors
+            this.addErrors(formGroup, problemDetails.detail);
+
             for (const [key, errorsForKey] of Object.entries(problemDetails["errors"] as {})) {
                 const path = key.split(/\.|\[/).map(e => e.replace("]", ""));
                 // The path might start with a $, indicating the root.
                 if (path.length > 0 && path[0] === "$")
                     path.shift();
                 const formControl = path.reduce<AbstractControl | undefined>(ProblemService.getSubControl, formGroup);
+
                 if (formControl) {
-                    formControl.setErrors({ ...formControl.errors, ...{ remote: errorsForKey } });
+                    // Add the errors to the form control
+                    this.addErrors(formControl, errorsForKey);
                     formControl.markAsTouched();
                 }
+
+                // Add the field-specific errors to the form group as well
+                this.addErrors(formGroup, errorsForKey);
             }
+
+            formGroup.markAsTouched();
         }
 
         ProblemService.scrollToFirstValidationError(nativeElement);

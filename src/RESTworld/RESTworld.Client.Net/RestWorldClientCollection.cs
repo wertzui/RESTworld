@@ -48,11 +48,12 @@ public class RestWorldClientCollection : IRestWorldClientCollection
             throw new Exception(message);
         }
 
+        var tasks = options.Value.ClientSettings.ApiUrls
+            .Where(a => a.Name is not null)
+            .ToDictionary(a => a.Name!, a => RestWorldClient.CreateAsync(halClientFactory.GetClient(a.Name!), a, logger, cancellationToken));
+
         try
         {
-            var tasks = options.Value.ClientSettings.ApiUrls
-                .Where(a => a.Name is not null)
-                .ToDictionary(a => a.Name!, a => RestWorldClient.CreateAsync(halClientFactory.GetClient(a.Name!), a, logger, cancellationToken));
 
             await Task.WhenAll(tasks.Values);
 
@@ -62,7 +63,10 @@ public class RestWorldClientCollection : IRestWorldClientCollection
         }
         catch (Exception e)
         {
-            var message = "Cannot create a RestWorldClientCollection because there was an exception while calling the home endpoints defined in the ApiUrls of the RestWorldClientOptions.";
+            var fails = tasks.Where(t => t.Value.IsFaulted)
+                .Select(t => $"$t.Key: {t.Value.Exception?.Message}");
+            var message = $"Cannot create a RestWorldClientCollection because there was an exception while calling the home endpoints defined in the ApiUrls of the RestWorldClientOptions.{Environment.NewLine}{string.Join(Environment.NewLine, fails)}";
+
             logger.LogCritical(e, message);
             throw new Exception(message, e);
         }

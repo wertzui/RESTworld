@@ -1,5 +1,5 @@
 import { Component, computed, effect, input, linkedSignal, model, resource } from '@angular/core';
-import { PagedListResource, Resource, ResourceDto, ResourceOfDto, Template, type PropertyDto, type SimpleValue } from '@wertzui/ngx-hal-client';
+import { PagedListResource, ProblemDetails, Resource, ResourceDto, ResourceOfDto, Template, type PropertyDto, type SimpleValue } from '@wertzui/ngx-hal-client';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { RestWorldClientCollection } from '../../services/restworld-client-collection';
 import { AvatarGenerator } from '../../services/avatar-generator';
@@ -148,13 +148,13 @@ export class RESTworldListViewComponent<TListDto extends ResourceDto & Record<st
     }
 
     public readonly listResource = resource({
-        request: () => ({ oDataParameters: this.oDataParameters(), rel: this.rel() }),
-        loader: async ({ request }) => {
+        params: () => ({ oDataParameters: this.oDataParameters(), rel: this.rel() }),
+        loader: async ({ params }) => {
             const client = this._client();
-            if (request.rel === undefined || client === undefined)
+            if (params.rel === undefined || client === undefined)
                 return RESTworldListViewComponent._emptylistResource;
 
-            const response = await client.getList<TListDto>(request.rel, request.oDataParameters);
+            const response = await client.getList<TListDto>(params.rel, params.oDataParameters);
             if (this._problemService.checkResponseAndDisplayErrors(response, undefined, "Error while loading the resources from the API.", "Error")) {
                 return response.body;
             }
@@ -173,22 +173,31 @@ export class RESTworldListViewComponent<TListDto extends ResourceDto & Record<st
     });
 
     public readonly searchTemplate = resource({
-        request: () => ({ resource: this.listResource.value() }),
-        loader: async ({ request }) => {
+        params: () => ({ resource: this.listResource.value() }),
+        loader: async ({ params }) => {
             const client = this._client();
-            if (request.resource === undefined || client === undefined)
+            if (params.resource === undefined || client === undefined)
                 return RESTworldListViewComponent._emptySearchTemplate;
-
+            
             // We only want to load the template once
             const currentSearchTemplate = this.searchTemplate.value() as Template<ReadonlyArray<PropertyDto<SimpleValue, string, string>>> | undefined;
             if (currentSearchTemplate !== undefined && currentSearchTemplate !== RESTworldListViewComponent._emptySearchTemplate)
                 return currentSearchTemplate;
-
+            
+            // return RESTworldListViewComponent._emptySearchTemplate;
             try {
-                const templates = await client.getAllTemplates(request.resource);
+                const templates = await client.getAllTemplates(params.resource);
+                if (ProblemDetails.isProblemDetails(templates)) {
+                    this._messageService.add({ severity: 'error', summary: 'Error', detail: `No templates found in the API response.`, data: templates });
+                    return RESTworldListViewComponent._emptySearchTemplate;
+                }
+
                 const searchTemplate = templates["Search"];
-                if (searchTemplate === undefined)
-                    throw new Error("No search template found in the API response.");
+                if (searchTemplate === undefined) {
+                    this._messageService.add({ severity: 'error', summary: 'Error', detail: `No "Search" template found in the API response.`, data: templates });
+                    return RESTworldListViewComponent._emptySearchTemplate;
+                }
+                
                 return searchTemplate;
             }
             catch (e: unknown) {

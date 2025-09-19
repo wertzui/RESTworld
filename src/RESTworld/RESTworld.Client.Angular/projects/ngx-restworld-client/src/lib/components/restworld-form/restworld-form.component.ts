@@ -100,8 +100,7 @@ export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<Property
         this.template() !== undefined &&
         this.template().target !== undefined &&
         !this.isLoading() &&
-        this.formGroup() !== undefined &&
-        this.formGroup()?.valid);
+        this.formGroup() !== undefined);
     /**
      * The form group that represents the form.
      */
@@ -215,7 +214,6 @@ export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<Property
     public async submit() {
         const formGroup = this.formGroup();
         const template = this.template();
-        const canSubmit = this.canSubmit();
 
         if (formGroup !== undefined) {
             formGroup.markAllAsTouched();
@@ -228,10 +226,11 @@ export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<Property
                 });
 
                 ProblemService.scrollToFirstValidationError(this._elementRef.nativeElement);
+                return;
             }
         }
 
-        if (!canSubmit || formGroup === undefined || template === undefined)
+        if (!this.canSubmit() || formGroup === undefined || template === undefined)
             return;
 
         this.isLoading.set(true);

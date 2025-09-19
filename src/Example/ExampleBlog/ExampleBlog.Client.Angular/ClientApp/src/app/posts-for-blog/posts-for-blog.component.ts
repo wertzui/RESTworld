@@ -4,7 +4,7 @@ import { MessageService } from 'primeng/api';
 import { AvatarGenerator } from '../ngx-restworld-client/services/avatar-generator';
 import { ODataParameters } from '../ngx-restworld-client/models/o-data';
 import { PostListDto } from './models';
-import { PagedListResource, Property, ResourceOfDto, Template, type SimpleValue } from '@wertzui/ngx-hal-client';
+import { PagedListResource, ProblemDetails, Property, ResourceOfDto, Template, type SimpleValue } from '@wertzui/ngx-hal-client';
 import { FormArray, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { RestWorldTableComponent } from "../ngx-restworld-client/components/restworld-table/restworld-table.component";
 import { JsonPipe } from "@angular/common";
@@ -39,9 +39,9 @@ export class PostsForBlogComponent {
     public readonly oDataParameters = signal<ODataParameters>({ $top: 10 });
 
     private readonly listResource = resource({
-        request: () => ({ oDataParameters: this.oDataParameters(), rel: this.rel() }),
-        loader: async ({ request }) => {
-            const response = await this._client().getList<PostListDto>(request.rel, request.oDataParameters);
+        params: () => ({ oDataParameters: this.oDataParameters(), rel: this.rel() }),
+        loader: async ({ params }) => {
+            const response = await this._client().getList<PostListDto>(params.rel, params.oDataParameters);
             if (this._problemService.checkResponseAndDisplayErrors(response, undefined, "Error while loading the resources from the API.", "Error")) {
                 return response.body;
             }
@@ -53,21 +53,29 @@ export class PostsForBlogComponent {
     public readonly searchTemplate = computed(() => this.templates.value()?.search ?? PostsForBlogComponent._emptyTemplate);
     public readonly editTemplate = computed(() => this.templates.value()?.edit ?? PostsForBlogComponent._emptyTemplate);
     private readonly templates = resource({
-        request: () => ({ resource: this.listResource.value() }),
-        loader: async ({ request }) => {
-            if (request.resource === undefined)
+        params: () => ({ resource: this.listResource.value() }),
+        loader: async ({ params }) => {
+            if (params.resource === undefined)
                 return { search: PostsForBlogComponent._emptyTemplate, edit: PostsForBlogComponent._emptyTemplate };
 
             try {
-                const templates = await this._client().getAllTemplates(request.resource);
+                const templates = await this._client().getAllTemplates(params.resource);
+                if (ProblemDetails.isProblemDetails(templates)) {
+                    this._messageService.add({ severity: 'error', summary: 'Error', detail: `No templates found in the API response.`, data: templates });
+                    return { search: PostsForBlogComponent._emptyTemplate, edit: PostsForBlogComponent._emptyTemplate };
+                }
 
                 const searchTemplate = templates["Search"];
-                if (searchTemplate === undefined)
-                    throw new Error("No search template found in the API response.");
+                if (searchTemplate === undefined) {
+                    this._messageService.add({ severity: 'error', summary: 'Error', detail: `No "Search" template found in the API response.`, data: templates });
+                    return { search: PostsForBlogComponent._emptyTemplate, edit: PostsForBlogComponent._emptyTemplate };
+                }
 
                 const editTemplate = templates["Edit"];
-                if (editTemplate === undefined)
-                    throw new Error("No edit template found in the API response.");
+                if (editTemplate === undefined) {
+                    this._messageService.add({ severity: 'error', summary: 'Error', detail: `No "Edit" template found in the API response.`, data: templates });
+                    return { search: PostsForBlogComponent._emptyTemplate, edit: PostsForBlogComponent._emptyTemplate };
+                }
 
                 return { search: searchTemplate, edit: editTemplate };
             }

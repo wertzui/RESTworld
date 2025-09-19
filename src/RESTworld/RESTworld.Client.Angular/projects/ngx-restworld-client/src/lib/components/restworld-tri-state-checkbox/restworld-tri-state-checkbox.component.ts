@@ -54,7 +54,6 @@ import {
 import { PrimeTemplate, SharedModule } from 'primeng/api';
 import { BaseComponent } from 'primeng/basecomponent';
 import { CheckboxChangeEvent, CheckboxStyle } from 'primeng/checkbox';
-import { CheckIcon, MinusIcon } from 'primeng/icons';
 
 export const TRI_STATE_CHECKBOX_VALUE_ACCESSOR: any = {
     provide: NG_VALUE_ACCESSOR,
@@ -68,7 +67,7 @@ export const TRI_STATE_CHECKBOX_VALUE_ACCESSOR: any = {
 @Component({
     selector: 'p-tri-state-checkbox, p-tri-state-checkBox, p-tri-state-check-box, rw-tri-state-checkbox, rw-tri-state-checkBox, rw-tri-state-check-box',
     standalone: true,
-    imports: [CommonModule, CheckIcon, MinusIcon, SharedModule],
+    imports: [CommonModule, SharedModule],
     template: `
         <div [style]="style()" [class]="styleClass()" [ngClass]="containerClass()" [attr.data-p-highlight]="model() === true" [attr.data-p-checked]="model() === true" [attr.data-p-disabled]="disabled()" [title]="model()">
             <input
@@ -98,11 +97,11 @@ export const TRI_STATE_CHECKBOX_VALUE_ACCESSOR: any = {
                         <span class="p-checkbox-icon" [ngClass]="checkboxIcon()" [attr.data-pc-section]="'icon'"></span>
                   }
                   @else {
-                        <CheckIcon [styleClass]="'p-checkbox-icon'" [attr.data-pc-section]="'icon'" />
+                        <span class="p-checkbox-icon pi pi-check" [attr.data-pc-section]="'icon'"></span>
                   }
                 }
                 @else if (model() === null) {
-                    <MinusIcon [styleClass]="'p-checkbox-icon'" [attr.data-pc-section]="'icon'" />
+                    <span class="p-checkbox-icon pi pi-minus" [attr.data-pc-section]="'icon'"></span>
                 }
               }
                 <ng-template *ngTemplateOutlet="checkboxIconTemplate() ?? _checkboxIconTemplate ?? null; context: { model: model, class: 'p-checkbox-icon' }"></ng-template>

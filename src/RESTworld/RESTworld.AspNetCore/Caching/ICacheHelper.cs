@@ -101,6 +101,38 @@ public interface ICacheHelper
     void RemoveWithUser(string key, string username);
 
     /// <summary>
+    /// Removes the entry from the cache for all users.
+    /// Note that due to limitations in IMemoryCache, this method can only remove the non-user specific version of the key
+    /// and not all user-specific variants.
+    /// </summary>
+    /// <param name="key">The key in the cache.</param>
+    void RemoveForAllUsers(string key);
+
+    /// <summary>
+    /// Removes all list entries from the cache for the current user that match the given type and action.
+    /// This will remove all entries regardless of the OData query options that were used.
+    /// </summary>
+    /// <param name="typeKey">The type key identifying the list entries (typically the full name of the service response type).</param>
+    /// <param name="action">The action that was used to create the cache entries.</param>
+    void RemoveAllListEntriesWithCurrentUser(string typeKey, string action);
+
+    /// <summary>
+    /// Removes all list entries from the cache without a user that match the given type and action.
+    /// This will remove all entries regardless of the OData query options that were used.
+    /// </summary>
+    /// <param name="typeKey">The type key identifying the list entries (typically the full name of the service response type).</param>
+    /// <param name="action">The action that was used to create the cache entries.</param>
+    void RemoveAllListEntriesWithoutUser(string typeKey, string action);
+
+    /// <summary>
+    /// Removes all list entries from the cache for all users that match the given type and action.
+    /// This will remove all entries regardless of the OData query options that were used.
+    /// </summary>
+    /// <param name="typeKey">The type key identifying the list entries (typically the full name of the service response type).</param>
+    /// <param name="action">The action that was used to create the cache entries.</param>
+    void RemoveAllListEntriesForAllUsers(string typeKey, string action);
+
+    /// <summary>
     /// Sets the item in the cache with the specified key.
     /// The current users name is automatically added to the key so the result is not leaked to user users.
     /// </summary>

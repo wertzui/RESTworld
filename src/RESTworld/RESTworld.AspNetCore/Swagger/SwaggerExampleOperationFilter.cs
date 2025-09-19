@@ -36,7 +36,10 @@ namespace RESTworld.AspNetCore.Swagger;
 /// <seealso cref="IOperationFilter" />
 public class SwaggerExampleOperationFilter : IOperationFilter
 {
-    private static readonly Fixture _fixture;
+    /// <summary>
+    /// The fixture can be used to customize the examples created by this filter.
+    /// </summary>
+    public static Fixture Fixture { get; }
     private static readonly SpecimenContext _specimenContext;
     private static readonly ODataRawQueryOptions _oDataRawQueryOptions;
     private readonly IApiDescriptionGroupCollectionProvider _apiExplorer;
@@ -48,19 +51,26 @@ public class SwaggerExampleOperationFilter : IOperationFilter
 
     static SwaggerExampleOperationFilter()
     {
-        _fixture = new();
+        Fixture = new();
 
         // AutoFixture cannot create DateOnly on its own
-        _fixture.Customize<DateOnly>(composer => composer.FromFactory<DateTime>(DateOnly.FromDateTime));
+        Fixture.Customize<DateOnly>(composer => composer.FromFactory<DateTime>(DateOnly.FromDateTime));
 
         // Otherwise these will be really small
-        _fixture.Customize<TimeOnly>(composer => composer.FromFactory<DateTime>(TimeOnly.FromDateTime));
+        Fixture.Customize<TimeOnly>(composer => composer.FromFactory<DateTime>(TimeOnly.FromDateTime));
 
         // Omit recursion
-        _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList().ForEach(b => _fixture.Behaviors.Remove(b));
-        _fixture.Behaviors.Add(new OmitOnRecursionBehavior(3));
+        Fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList().ForEach(b => Fixture.Behaviors.Remove(b));
+        Fixture.Behaviors.Add(new OmitOnRecursionBehavior(3));
 
-        _specimenContext = new(_fixture);
+        Fixture
+            .Customize(new DtoBaseCustomization())
+            .Customize(new ChangeTrackingDtoBaseCustomization())
+            .Customize(new HalFileCustomization())
+            .Customize(new JsonIgnoreCustomization())
+            .Customize(new IgnoreDataMemberCustomization());
+
+        _specimenContext = new(Fixture);
 
         _oDataRawQueryOptions = new ODataRawQueryOptions();
         typeof(ODataRawQueryOptions).GetProperty(nameof(_oDataRawQueryOptions.Skip))!.SetValue(_oDataRawQueryOptions, "2");
@@ -102,12 +112,6 @@ public class SwaggerExampleOperationFilter : IOperationFilter
             ReferenceHandler = ReferenceHandler.IgnoreCycles
         };
         _serializerOptions.Converters.Add(new JsonStringEnumMemberConverter(JsonNamingPolicy.CamelCase));
-
-        _fixture
-            .Customize(new DtoBaseCustomization())
-            .Customize(new ChangeTrackingDtoBaseCustomization())
-            .Customize(new HalFileCustomization())
-            .Customize(new JsonIgnoreCustomization());
     }
 
     /// <inheritdoc/>
@@ -187,7 +191,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
         if (resourceType.IsGenericType)
         {
             var stateType = resourceType.GenericTypeArguments[0];
-            var state = _fixture.Create(stateType, _specimenContext);
+            var state = Fixture.Create(stateType, _specimenContext);
             if (state is DtoBase dtoBase)
                 routeValues = new { id = dtoBase.Id };
 
@@ -219,7 +223,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
         if (actionName == "GetList")
         {
             var tListDto = controllerType.GenericTypeArguments[indexOfListDtoType];
-            var embedded = Enumerable.Repeat<object?>(null, 3).Select(_ => _fixture.Create(tListDto, _specimenContext)).ToList();
+            var embedded = Enumerable.Repeat<object?>(null, 3).Select(_ => Fixture.Create(tListDto, _specimenContext)).ToList();
             var resource = resourceFactory.CreateForODataListEndpointUsingSkipTopPaging(embedded, _ => Common.Constants.ListItems, e => ((DtoBase)e).Id, _oDataRawQueryOptions, 50, 10, controllerName);
             type.Example = CreateExample(resource);
         }
@@ -230,7 +234,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
             if (actionName == "Get" || actionName == "New")
             {
                 // Get and New only return an object
-                var state = _fixture.Create(tFullDto, _specimenContext);
+                var state = Fixture.Create(tFullDto, _specimenContext);
                 Resource resource;
                 if (actionName == "New")
                 {
@@ -266,7 +270,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
             else if (actionName == "Post" || actionName == "Put")
             {
                 // Post and Put either return an object or a collection
-                var states = Enumerable.Repeat<object?>(null, 3).Select(_ => _fixture.Create(tFullDto, _specimenContext)).Cast<ConcurrentDtoBase>().ToList();
+                var states = Enumerable.Repeat<object?>(null, 3).Select(_ => Fixture.Create(tFullDto, _specimenContext)).Cast<ConcurrentDtoBase>().ToList();
 
                 type.Examples.Add("Single Object", new OpenApiExample { Value = CreateExample((Resource)resourceFactory.CreateForEndpoint(states[0], controller: controllerName, routeValues: new { id = states[0].Id })) });
                 type.Examples.Add("Collection", new OpenApiExample { Value = CreateExample(resourceFactory.CreateForListEndpoint(states, _ => Common.Constants.ListItems, d => d.Id, controllerName)) });
@@ -289,7 +293,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
                     if (bodyParameterType.IsGenericType && bodyParameterType.GetGenericTypeDefinition() == typeof(SingleObjectOrCollection<>))
                     {
                         Type stateType = bodyParameterType.GenericTypeArguments[0];
-                        var states = Enumerable.Repeat<object?>(null, 3).Select(_ => _fixture.Create(stateType, _specimenContext)).ToList();
+                        var states = Enumerable.Repeat<object?>(null, 3).Select(_ => Fixture.Create(stateType, _specimenContext)).ToList();
                         foreach (var state in states)
                         {
                             if (state is ConcurrentDtoBase dtoBase)
@@ -421,7 +425,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
 
     private IOpenApiAny CreateExample(Type type)
     {
-        var exampleObject = _fixture.Create(type, _specimenContext);
+        var exampleObject = Fixture.Create(type, _specimenContext);
         return CreateExample(exampleObject);
     }
 
@@ -433,7 +437,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
 
     private IOpenApiAny CreateManyExamples<T, U>(Func<IEnumerable<T>, U> afterCreation, int? count = default)
     {
-        var exampleObject = count.HasValue ? _fixture.CreateMany<T>(count.Value) : _fixture.CreateMany<T>();
+        var exampleObject = count.HasValue ? Fixture.CreateMany<T>(count.Value) : Fixture.CreateMany<T>();
         var transformedExampleObject = afterCreation(exampleObject);
         return CreateExample(transformedExampleObject);
     }

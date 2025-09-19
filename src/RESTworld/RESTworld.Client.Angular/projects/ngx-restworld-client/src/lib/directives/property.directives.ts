@@ -1,9 +1,16 @@
-import { Directive, Host, Inject, input, Optional, Self, SkipSelf, ElementRef, type OnChanges, Renderer2, type SimpleChanges, effect, forwardRef, NgModule, computed } from "@angular/core";
+import { Directive, Host, Inject, input, Optional, Self, SkipSelf, ElementRef, type OnChanges, Renderer2, type SimpleChanges, effect, forwardRef, NgModule, type InputSignal, type InputSignalWithTransform } from "@angular/core";
 import { FormControlName, NG_ASYNC_VALIDATORS, NG_VALIDATORS, NG_VALUE_ACCESSOR, type AsyncValidator, type AsyncValidatorFn, ControlContainer, type ControlValueAccessor, type Validator, type ValidatorFn, DefaultValueAccessor, CheckboxControlValueAccessor, SelectControlValueAccessor, RangeValueAccessor, NumberValueAccessor, NgControl, NgControlStatus, ReactiveFormsModule } from "@angular/forms";
 import type { Property, SimpleValue } from "@wertzui/ngx-hal-client";
 import { InputNumber } from "primeng/inputnumber";
 import { MultiSelect } from "primeng/multiselect";
 import { Select } from "primeng/select";
+import { SIGNAL, signalSetFn  } from '@angular/core/primitives/signals';
+
+export function setValueOfInputSignal<T, TransformT>(signal: InputSignal<T> | InputSignalWithTransform<T, TransformT>, value: T) {
+  const node = signal[SIGNAL];
+  signalSetFn(node, value);
+  // There is node.applyValueToInputSignal(node, value); too but it does not accept InputSignalWithTransform<T, TransformT>
+}
 
 /**
  * This directive sets the attributes of a p-inputNumber element based on the property.
@@ -18,7 +25,7 @@ export class PropertyInputNumberAttributes<TProperty extends Property<SimpleValu
     public readonly propertyAttributes = input<TProperty>();
 
     constructor(
-        @Self() inputNumber: InputNumber
+        @Self() inputNumber: InputNumber,
     ) {
         // We need to set it to the maximum value in the constructor, because for some reason lowering it in the effect works, but raising it does not.
         inputNumber.maxFractionDigits = 100;
@@ -39,7 +46,7 @@ export class PropertyInputNumberAttributes<TProperty extends Property<SimpleValu
             element.showButtons = !property.readOnly;
             element.minFractionDigits = 0;
             if (property.step)
-                element.step = property.step;
+                setValueOfInputSignal(element.step, property.step);
             if (!property.step || property.step < 0) {
                 element.mode = "decimal";
             }
@@ -87,7 +94,7 @@ export class PropertySelectAttributes<TProperty extends Property<SimpleValue, st
 
     constructor(
         @Self() @Optional() select?: Select,
-        @Self() @Optional() multiSelect?: MultiSelect
+        @Self() @Optional() multiSelect?: MultiSelect,
     ) {
         effect(() => {
             const property = this.formControlProperty() ?? this.propertyAttributes();
@@ -116,10 +123,12 @@ export class PropertySelectAttributes<TProperty extends Property<SimpleValue, st
             element.filterBy = promptField + "," + valueField;
             element.filter = true;
             element.showClear = !property.required || (options.minItems ?? 0) <= 0;
-            element.appendTo = "body";
+            // element.appendTo = "body";
+            setValueOfInputSignal(element.appendTo, "body");
 
             if (element instanceof Select) {
-                element.required = property.required || (options.minItems ?? 0) > 0;
+                // element.required = property.required || (options.minItems ?? 0) > 0;
+                setValueOfInputSignal(element.required, property.required || (options.minItems ?? 0) > 0);
                 element.filterPlaceholder = options.link?.href ? "search for more results" : ""
             }
             else if (element instanceof MultiSelect) {

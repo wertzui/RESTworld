@@ -141,6 +141,72 @@ public static class CacheHelperExtensions
     /// <param name="action">The name of the GET method.</param>
     public static void RemoveGetWithCurrentUser<TServiceResponse, TParam>(this ICacheHelper cache, TParam parameter, string action = nameof(ReadController<EntityBase, DtoBase, DtoBase>.GetAsync))
         => cache.RemoveWithCurrentUser(CacheKeys.CreateCacheKeyForGet<TServiceResponse, TParam>(parameter, action));
+
+    /// <summary>
+    /// Removes an entry from the cache for all users that was previously cached.
+    /// </summary>
+    /// <typeparam name="TServiceResponse">The type of the service response to return. In case of a custom controller this may also be the controller type.</typeparam>
+    /// <param name="cache">The cache.</param>
+    /// <param name="id">The ID of the resource to get.</param>
+    /// <param name="action">The name of the GET method.</param>
+    public static void RemoveGetForAllUsers<TServiceResponse>(this ICacheHelper cache, long id, string action = nameof(ReadController<EntityBase, DtoBase, DtoBase>.GetAsync))
+        => cache.RemoveForAllUsers(CacheKeys.CreateCacheKeyForGet<TServiceResponse>(id, action));
+
+    /// <summary>
+    /// Removes an entry from the cache for all users that was previously cached.
+    /// </summary>
+    /// <typeparam name="TServiceResponse">The type of the service response to return. In case of a custom controller this may also be the controller type.</typeparam>
+    /// <typeparam name="TParam">The type of the parameter to differentiate DTOs. Normally this is some kind of ID.</typeparam>
+    /// <param name="cache">The cache.</param>
+    /// <param name="parameter">A parameter to differentiate DTOs. Normally this is some kind of ID.</param>
+    /// <param name="action">The name of the GET method.</param>
+    public static void RemoveGetForAllUsers<TServiceResponse, TParam>(this ICacheHelper cache, TParam parameter, string action = nameof(ReadController<EntityBase, DtoBase, DtoBase>.GetAsync))
+        => cache.RemoveForAllUsers(CacheKeys.CreateCacheKeyForGet<TServiceResponse, TParam>(parameter, action));
+
+    /// <summary>
+    /// Removes all list entries from the cache that were previously cached for the current user,
+    /// regardless of the OData query options used.
+    /// </summary>
+    /// <typeparam name="TServiceResponse">The type of the service response to return. In case of a custom controller this may also be the controller type.</typeparam>
+    /// <param name="cache">The cache.</param>
+    /// <param name="action">The name of the GET List method.</param>
+    public static void RemoveGetListWithCurrentUser<TServiceResponse>(this ICacheHelper cache, string action = nameof(ReadController<EntityBase, DtoBase, DtoBase>.GetListAsync))
+        => cache.RemoveAllListEntriesWithCurrentUser(typeof(TServiceResponse).FullName ?? typeof(TServiceResponse).Name, action);
+
+    /// <summary>
+    /// Removes all list entries from the cache that were previously cached for the current user,
+    /// regardless of the OData query options used.
+    /// </summary>
+    /// <typeparam name="TServiceResponse">The type of the service response to return. In case of a custom controller this may also be the controller type.</typeparam>
+    /// <typeparam name="TParam">The type of the parameter to differentiate DTOs. Normally this is some kind of ID.</typeparam>
+    /// <param name="cache">The cache.</param>
+    /// <param name="parameter">A parameter to differentiate DTOs. Normally this is some kind of ID.</param>
+    /// <param name="action">The name of the GET List method.</param>
+    public static void RemoveGetListWithCurrentUser<TServiceResponse, TParam>(this ICacheHelper cache, TParam parameter, string action = nameof(ReadController<EntityBase, DtoBase, DtoBase>.GetListAsync))
+        => cache.RemoveAllListEntriesWithCurrentUser(CacheKeys.CreateTypeAndParameterKey<TServiceResponse, TParam>(parameter), action);
+
+    /// <summary>
+    /// Removes all list entries from the cache for all users that were previously cached,
+    /// regardless of the OData query options used.
+    /// </summary>
+    /// <typeparam name="TServiceResponse">The type of the service response to return. In case of a custom controller this may also be the controller type.</typeparam>
+    /// <param name="cache">The cache.</param>
+    /// <param name="action">The name of the GET List method.</param>
+    public static void RemoveGetListForAllUsers<TServiceResponse>(this ICacheHelper cache, string action = nameof(ReadController<EntityBase, DtoBase, DtoBase>.GetListAsync))
+        => cache.RemoveAllListEntriesForAllUsers(typeof(TServiceResponse).FullName ?? typeof(TServiceResponse).Name, action);
+
+    /// <summary>
+    /// Removes all list entries from the cache for all users that were previously cached,
+    /// regardless of the OData query options used.
+    /// </summary>
+    /// <typeparam name="TServiceResponse">The type of the service response to return. In case of a custom controller this may also be the controller type.</typeparam>
+    /// <typeparam name="TParam">The type of the parameter to differentiate DTOs. Normally this is some kind of ID.</typeparam>
+    /// <param name="cache">The cache.</param>
+    /// <param name="parameter">A parameter to differentiate DTOs. Normally this is some kind of ID.</param>
+    /// <param name="action">The name of the GET List method.</param>
+    public static void RemoveGetListForAllUsers<TServiceResponse, TParam>(this ICacheHelper cache, TParam parameter, string action = nameof(ReadController<EntityBase, DtoBase, DtoBase>.GetListAsync))
+        => cache.RemoveAllListEntriesForAllUsers(CacheKeys.CreateTypeAndParameterKey<TServiceResponse, TParam>(parameter), action);
+
     /// <summary>
     /// Caches the result in a GET operation with the default lifetime.
     /// </summary>
@@ -212,4 +278,26 @@ public static class CacheHelperExtensions
     /// <param name="action">The name of the GET method.</param>
     public static void RemoveGet<TServiceResponse, TParam>(this ICacheHelper cache, TParam parameter, string action = nameof(ReadController<EntityBase, DtoBase, DtoBase>.GetAsync))
         => cache.RemoveWithoutUser(CacheKeys.CreateCacheKeyForGet<TServiceResponse, TParam>(parameter, action));
+
+    /// <summary>
+    /// Removes all list entries from the cache that were previously cached without a user,
+    /// regardless of the OData query options used.
+    /// </summary>
+    /// <typeparam name="TServiceResponse">The type of the service response to return. In case of a custom controller this may also be the controller type.</typeparam>
+    /// <param name="cache">The cache.</param>
+    /// <param name="action">The name of the GET List method.</param>
+    public static void RemoveGetListWithoutUser<TServiceResponse>(this ICacheHelper cache, string action = nameof(ReadController<EntityBase, DtoBase, DtoBase>.GetListAsync))
+        => cache.RemoveAllListEntriesWithoutUser(typeof(TServiceResponse).FullName ?? typeof(TServiceResponse).Name, action);
+
+    /// <summary>
+    /// Removes all list entries from the cache that were previously cached without a user,
+    /// regardless of the OData query options used.
+    /// </summary>
+    /// <typeparam name="TServiceResponse">The type of the service response to return. In case of a custom controller this may also be the controller type.</typeparam>
+    /// <typeparam name="TParam">The type of the parameter to differentiate DTOs. Normally this is some kind of ID.</typeparam>
+    /// <param name="cache">The cache.</param>
+    /// <param name="parameter">A parameter to differentiate DTOs. Normally this is some kind of ID.</param>
+    /// <param name="action">The name of the GET List method.</param>
+    public static void RemoveGetListWithoutUser<TServiceResponse, TParam>(this ICacheHelper cache, TParam parameter, string action = nameof(ReadController<EntityBase, DtoBase, DtoBase>.GetListAsync))
+        => cache.RemoveAllListEntriesWithoutUser(CacheKeys.CreateTypeAndParameterKey<TServiceResponse, TParam>(parameter), action);
 }

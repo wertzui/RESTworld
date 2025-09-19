@@ -29,6 +29,15 @@ public static class CacheKeys
     public static string CreateCacheKeyForGet<TDto, TParam>(TParam parameter, [CallerMemberName] string? action = null) => string.Concat(action, "_", typeof(TDto).FullName, "_", parameter);
 
     /// <summary>
+    /// Creates a key combining type and parameter information for pattern-based cache operations.
+    /// </summary>
+    /// <typeparam name="TDto">The type of the DTO.</typeparam>
+    /// <typeparam name="TParam">The type of the parameter.</typeparam>
+    /// <param name="parameter">The parameter value.</param>
+    /// <returns>A key combining type and parameter information.</returns>
+    public static string CreateTypeAndParameterKey<TDto, TParam>(TParam parameter) => string.Concat(typeof(TDto).FullName, "_", parameter);
+
+    /// <summary>
     /// Creates the cache key for a get list operation.
     /// </summary>
     /// <param name="oDataQueryOptions">The raw OData query options.</param>

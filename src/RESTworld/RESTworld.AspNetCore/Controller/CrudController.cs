@@ -147,7 +147,10 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
         var serviceResponse = await _crudService.DeleteAsync(id, timestampBytes, cancellationToken);
 
         if (serviceResponse.Succeeded)
-            Cache.RemoveGetWithCurrentUser<ServiceResponse<TGetFullDto>>(id);
+        {
+            Cache.RemoveGetForAllUsers<ServiceResponse<TGetFullDto>>(id);
+            Cache.RemoveGetListForAllUsers<ServiceResponse<TGetFullDto>>();
+        }
 
         var result = ResultFactory.CreateEmptyResultBasedOnOutcome(serviceResponse);
 
@@ -295,6 +298,9 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     {
         var serviceResponse = await _crudService.CreateAsync(dtos, cancellationToken);
 
+        if (serviceResponse.Succeeded)
+            Cache.RemoveGetListForAllUsers<ServiceResponse<TGetFullDto>>();
+
         var response = await ResultFactory.CreateCreatedCollectionResultBasedOnOutcomeAsync(serviceResponse, ReturnsReadOnlyFormsResponses, maxTop: Options.MaxNumberForListEndpoint);
 
         return response;
@@ -309,9 +315,12 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     /// <returns>The full resource as stored in the database.</returns>
     protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PostSingleAsync(TCreateDto dto, CancellationToken cancellationToken)
     {
-        var response = await _crudService.CreateAsync(dto, cancellationToken);
+        var serviceResponse = await _crudService.CreateAsync(dto, cancellationToken);
 
-        var result = await ResultFactory.CreateCreatedResultBasedOnOutcomeAsync(response, ReturnsReadOnlyFormsResponses);
+        if (serviceResponse.Succeeded)
+            Cache.RemoveGetListForAllUsers<ServiceResponse<TGetFullDto>>();
+
+        var result = await ResultFactory.CreateCreatedResultBasedOnOutcomeAsync(serviceResponse, ReturnsReadOnlyFormsResponses);
 
         return result;
     }
@@ -326,17 +335,18 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PutMultipleAsync(IReadOnlyCollection<TUpdateDto> dtos, CancellationToken cancellationToken)
     {
         var request = new UpdateMultipleRequest<TUpdateDto, TEntity>(dtos, x => x);
-        var response = await _crudService.UpdateAsync(request, cancellationToken);
+        var serviceResponse = await _crudService.UpdateAsync(request, cancellationToken);
 
-        if (response.Succeeded)
+        if (serviceResponse.Succeeded)
         {
-            foreach (var dto in response.ResponseObject)
+            foreach (var dto in serviceResponse.ResponseObject)
             {
-                Cache.RemoveGetWithCurrentUser<ServiceResponse<TGetFullDto>>(dto.Id);
+                Cache.RemoveGetForAllUsers<ServiceResponse<TGetFullDto>>(dto.Id);
             }
+            Cache.RemoveGetListForAllUsers<ServiceResponse<TGetFullDto>>();
         }
 
-        var result = await ResultFactory.CreateOkCollectionResultBasedOnOutcomeAsync(response, ReturnsReadOnlyFormsResponses, maxTop: Options.MaxNumberForListEndpoint);
+        var result = await ResultFactory.CreateOkCollectionResultBasedOnOutcomeAsync(serviceResponse, ReturnsReadOnlyFormsResponses, maxTop: Options.MaxNumberForListEndpoint);
 
         return result;
     }
@@ -350,12 +360,15 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     /// <returns>The full resource as stored in the database.</returns>
     protected virtual async Task<ActionResult<Resource<TGetFullDto>>> PutSingleAsync(TUpdateDto dto, CancellationToken cancellationToken)
     {
-        var response = await _crudService.UpdateAsync(dto, cancellationToken);
+        var serviceResponse = await _crudService.UpdateAsync(dto, cancellationToken);
 
-        if (response.Succeeded)
-            Cache.RemoveGetWithCurrentUser<ServiceResponse<TGetFullDto>>(response.ResponseObject.Id);
+        if (serviceResponse.Succeeded)
+        {
+            Cache.RemoveGetForAllUsers<ServiceResponse<TGetFullDto>>(serviceResponse.ResponseObject.Id);
+            Cache.RemoveGetListForAllUsers<ServiceResponse<TGetFullDto>>();
+        }
 
-        var result = await ResultFactory.CreateOkResultBasedOnOutcomeAsync(response, ReturnsReadOnlyFormsResponses);
+        var result = await ResultFactory.CreateOkResultBasedOnOutcomeAsync(serviceResponse, ReturnsReadOnlyFormsResponses);
 
         return result;
     }

@@ -1,11 +1,16 @@
 import { Injectable } from "@angular/core";
-import { registerInstrumentations } from '@opentelemetry/instrumentation';
-import { AlwaysOffSampler, AlwaysOnSampler, BatchSpanProcessor, ConsoleSpanExporter, ParentBasedSampler, SimpleSpanProcessor, TraceIdRatioBasedSampler, WebTracerProvider } from '@opentelemetry/sdk-trace-web';
+import { NavigationEnd, Router } from "@angular/router";
+import { HTTP_INTERCEPTORS } from "@angular/common/http";
+import { AlwaysOffSampler, AlwaysOnSampler, BatchSpanProcessor, ConsoleSpanExporter, ParentBasedSampler, SimpleSpanProcessor, SpanProcessor, TraceIdRatioBasedSampler, WebTracerProvider } from '@opentelemetry/sdk-trace-web';
 import { SettingsService } from "./settings.service";
-import { ZoneContextManager } from "@opentelemetry/context-zone";
-import { InstrumentationConfigMap, getWebAutoInstrumentations } from "@opentelemetry/auto-instrumentations-web";
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { ZoneContextManager } from "@opentelemetry/context-zone-peer-dep";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-proto";
 import { CompressionAlgorithm } from '@opentelemetry/otlp-exporter-base';
+import { ClientSettings } from "../models/client-settings";
+import { resourceFromAttributes } from "@opentelemetry/resources";
+import { context, trace, Span, SpanKind, Tracer } from '@opentelemetry/api';
+import { filter } from 'rxjs/operators';
+import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
 
 /**
  * This service is responsible for setting up OpenTelemetry.
@@ -21,98 +26,176 @@ import { CompressionAlgorithm } from '@opentelemetry/otlp-exporter-base';
     providedIn: "root"
 })
 export class OpenTelemetryService {
+    private _tracer: any;
+    private _activeNavigationSpan: Span | null = null;
+    private _lastNavigationPath: string | null = null;
 
-    private readonly _defaultInputConfigs: InstrumentationConfigMap = {
-        "@opentelemetry/instrumentation-xml-http-request": {
-            propagateTraceHeaderCorsUrls: /.*/,
-            applyCustomAttributesOnSpan: (span, xhr) => {
-                span.setAttribute("client.address", window.location.href);
-                span.setAttribute("client.port", window.location.port);
-                span.setAttribute("browser.language", navigator.language);
-                if (URL.canParse(xhr.responseURL)) {
-                    const url = new URL(xhr.responseURL);
-                    span.setAttribute("url.domain", url.hostname);
-                    span.setAttribute("url.full", url.href);
-                    span.setAttribute("url.path", url.pathname);
-                    span.setAttribute("url.port", url.port);
-                    span.setAttribute("url.scheme", url.protocol.replace(":", ""));
-                    if (url.search)
-                        span.setAttribute("url.query", url.search.replace("?", ""));
+    constructor(
+        private readonly _settingsService: SettingsService,
+        private readonly _router: Router
+    ) {
+        // Listen for navigation events to create parent spans
+        this._router.events
+            .pipe(filter(event => event instanceof NavigationEnd))
+            .subscribe((event: any) => {
+                this.createNavigationSpan((event as NavigationEnd).urlAfterRedirects);
+            });
 
-                    if ("name" in span && typeof span.name === "string") {
-                        span.updateName(span.name + " " + (url.pathname.startsWith("/") ? url.pathname.substring(1) : url.pathname));
-                    }
-                }
-            }
-        },
-        "@opentelemetry/instrumentation-fetch": {
-            propagateTraceHeaderCorsUrls: /.*/,
-            applyCustomAttributesOnSpan: (span, request) => {
-                span.setAttribute("client.address", window.location.href);
-                span.setAttribute("client.port", window.location.port);
-                span.setAttribute("browser.language", navigator.language);
-                if ("url" in request && typeof request.url === "string" && URL.canParse(request.url)) {
-                    const url = new URL(request.url);
-                    span.setAttribute("url.domain", url.hostname);
-                    span.setAttribute("url.full", url.href);
-                    span.setAttribute("url.path", url.pathname);
-                    span.setAttribute("url.port", url.port);
-                    span.setAttribute("url.scheme", url.protocol.replace(":", ""));
-                    if (url.search)
-                        span.setAttribute("url.query", url.search.replace("?", ""));
-
-                    if ("name" in span && typeof span.name === "string") {
-                        span.updateName(span.name + " " + (url.pathname.startsWith("/") ? url.pathname.substring(1) : url.pathname));
-                    }
-                }
-            }
-        },
-        "@opentelemetry/instrumentation-user-interaction": {
-            enabled: false,
-            shouldPreventSpanCreation: (eventType, element, span) => {
-                const shouldCreate =
-                    this._lastLocation !== window.location.href ||
-                    Date.now() - this._lastTime > 1000 ||
-                    this._lastElement !== element ||
-                    //(eventType === "click" && (element.tagName === "A" || element.tagName === "Button")) ||
-                    (eventType === "submit");
-
-                if (shouldCreate) {
-                    this._lastLocation = window.location.href;
-                    this._lastTime = Date.now();
-                    this._lastElement = element;
-                }
-
-                return !shouldCreate;
-            }
-        }
-    };
-
-    private _lastElement: HTMLElement | null = null;
-    private _lastTime: number = 0;
-    private _lastLocation: string | null = null;
-
-    constructor(private readonly _settingsService: SettingsService) {
+        // Listen for beforeunload event to end the span when user leaves the application
+        window.addEventListener('beforeunload', () => {
+            this.endCurrentNavigationSpan();
+        });
     }
 
-    async initialize(configureOptions?: InstrumentationConfigMap | ((inputConfigs: InstrumentationConfigMap) => InstrumentationConfigMap)): Promise<void> {
+    /**
+     * Sets the current span as active in the global context
+     * This ensures that new spans created after this will automatically
+     * become child spans of this active span
+     */
+    private activateNavigationContext(): void {
+        if (this._activeNavigationSpan) {
+            // Make this span the active span in the current context
+            const activeContext = trace.setSpan(context.active(), this._activeNavigationSpan);
+
+            // Use ZoneContextManager to persist this context across async operations
+            // This is important for Angular applications that use zones
+            context.with(activeContext, () => {
+                // The context remains active for all operations within this callback
+                // and for all asynchronous operations started within this zone
+
+                // Set the context as a property in the window for access by other parts of the application
+                // This helps ensure the context is available for all operations
+                (window as any).__navigationContext = activeContext;
+            });
+        }
+    }
+
+    /**
+     * Creates a new span to track a navigation event.
+     * This will be the parent span for any HTTP requests made during this navigation.
+     * Only creates a new span if the path has changed from the last navigation.
+     * @param url The URL being navigated to
+     */
+    private createNavigationSpan(url: string): void {
+        // Parse the URL to extract route information
+        let routePath = 'unknown';
+        try {
+            const urlObj = new URL(url, window.location.origin);
+            routePath = urlObj.pathname;
+        } catch (e) {
+            routePath = url; // Use the raw URL if parsing fails
+        }
+
+        // If the path hasn't changed, don't create a new span
+        if (this._lastNavigationPath === routePath) {
+            return;
+        }
+
+        // Update the last navigation path
+        this._lastNavigationPath = routePath;
+
+        // End the previous span if it exists
+        if (this._activeNavigationSpan) {
+            this._activeNavigationSpan.end();
+            this._activeNavigationSpan = null;
+        }
+
+        if (!this._tracer) {
+            return; // Not initialized yet
+        }
+
+        // Create a new span for this navigation
+        this._activeNavigationSpan = this._tracer.startSpan(
+            `Navigation to ${routePath}`,
+            {
+                kind: SpanKind.INTERNAL,
+                attributes: {
+                    'component': 'router',
+                    'route.path': routePath,
+                    'client.address': window.location.href,
+                    'client.port': window.location.port,
+                    'browser.language': navigator.language
+                }
+            }
+        );
+
+        // Activate this navigation span as the current context
+        this.activateNavigationContext();
+    }
+
+    async initialize(): Promise<void> {
         await this._settingsService.ensureInitialized();
 
         const clientSettings = this._settingsService.settings;
         if (!clientSettings)
-            throw new Error('Settings are not loaded yet.');
+            throw new Error('Client Settings are not loaded yet.');
+        if (!clientSettings.extensions)
+            throw new Error('Client Settings do not contain extensions.');
 
-        const exporterEndpoint = clientSettings.extensions["OTEL_EXPORTER_OTLP_ENDPOINT"];
-        const exporterHeaders = clientSettings.extensions["OTEL_EXPORTER_OTLP_HEADERS"];
+        const sampler = OpenTelemetryService.GetSampler(clientSettings);
+        const spanProcessors = OpenTelemetryService.GetSpanProcessors(clientSettings);
+        const resource = OpenTelemetryService.GetResource(clientSettings);
+
+        const provider = new WebTracerProvider({
+            sampler: sampler,
+            spanProcessors: spanProcessors,
+            resource: resource,
+        });
+
+        provider.register({
+            // Changing default contextManager to use ZoneContextManager - supports asynchronous operations - optional
+            contextManager: new ZoneContextManager(),
+        });
+
+        // Get a tracer from the provider
+        this._tracer = provider.getTracer('angular-navigation-tracer');
+
+        // Create the initial navigation span based on the current URL
+        if (this._router && this._router.url) {
+            this.createNavigationSpan(this._router.url);
+        }
+    }
+
+    /**
+     * Ends the current navigation span if one exists.
+     * This can be called when the user is leaving the application or when
+     * special navigation events happen that should terminate the current span.
+     */
+    public endCurrentNavigationSpan(): void {
+        if (this._activeNavigationSpan) {
+            this._activeNavigationSpan.end();
+            this._activeNavigationSpan = null;
+            this._lastNavigationPath = null; // Reset the last navigation path when ending the span manually
+        }
+    }
+
+    private static GetResource(clientSettings: ClientSettings) {
         const serviceName = clientSettings.extensions["OTEL_SERVICE_NAME"];
         const resourceAttributes = clientSettings.extensions["OTEL_RESOURCE_ATTRIBUTES"];
-        const tracesSampler = clientSettings.extensions["OTEL_TRACES_SAMPLER"];
-        const tracesSamplerArg = clientSettings.extensions["OTEL_TRACES_SAMPLER_ARG"];
 
-        const provider = new WebTracerProvider({ sampler: OpenTelemetryService.GetSampler(tracesSampler, tracesSamplerArg) });
+        const resource = resourceFromAttributes({});
+
+        if (resourceAttributes) {
+            resourceAttributes
+                .split(",")
+                .map((attribute: string) => {
+                    const [key, value] = attribute.split("=");
+                    resource.attributes[key] = value;
+                });
+        }
+
+        if (serviceName)
+            resource.attributes[ATTR_SERVICE_NAME] = serviceName;
+
+        return resource;
+    }
+
+    private static GetSpanProcessors(clientSettings: ClientSettings): SpanProcessor[] {
+        const exporterEndpoint = clientSettings.extensions["OTEL_EXPORTER_OTLP_ENDPOINT"];
+        const exporterHeaders = clientSettings.extensions["OTEL_EXPORTER_OTLP_HEADERS"];
 
         if (!exporterEndpoint)
-            provider.addSpanProcessor(new SimpleSpanProcessor(new ConsoleSpanExporter()));
+            return[new SimpleSpanProcessor(new ConsoleSpanExporter())];
         else {
             let headersObj = {};
             if (exporterHeaders) {
@@ -133,47 +216,14 @@ export class OpenTelemetryService {
                 compression: "gzip" as CompressionAlgorithm,
             };
 
-            provider.addSpanProcessor(new BatchSpanProcessor(new OTLPTraceExporter(otlpExporterConfiguration)));
+            return[new BatchSpanProcessor(new OTLPTraceExporter(otlpExporterConfiguration))];
         }
-
-        provider.register({
-            // Changing default contextManager to use ZoneContextManager - supports asynchronous operations - optional
-            contextManager: new ZoneContextManager(),
-        });
-
-        if (resourceAttributes) {
-            resourceAttributes
-                .split(",")
-                .map((attribute: string) => {
-                    const [key, value] = attribute.split("=");
-                    provider.resource.attributes[key] = value;
-                });
-        }
-
-        if (serviceName)
-            provider.resource.attributes['service.name'] = serviceName;
-
-        // apply given options
-        let config;
-        if (typeof configureOptions === 'function') {
-            config = configureOptions(this._defaultInputConfigs);
-        }
-        else if (typeof configureOptions === 'object') {
-            config = configureOptions;
-        }
-        else {
-            config = this._defaultInputConfigs;
-        }
-
-        // Registering instrumentations
-        registerInstrumentations({
-            instrumentations: [
-                getWebAutoInstrumentations(config),
-            ]
-        });
     }
 
-    private static GetSampler(tracesSampler?: string, tracesSamplerArg?: string) {
+    private static GetSampler(clientSettings: ClientSettings) {
+        const tracesSampler = clientSettings.extensions["OTEL_TRACES_SAMPLER"];
+        const tracesSamplerArg = clientSettings.extensions["OTEL_TRACES_SAMPLER_ARG"];
+
         switch (tracesSampler) {
             case "always_on":
                 return new AlwaysOnSampler();
@@ -192,5 +242,28 @@ export class OpenTelemetryService {
             default:
                 return new AlwaysOnSampler();
         }
+    }
+
+    /**
+     * Gets the active context that contains the current navigation span.
+     * This is used by the HttpInterceptor to ensure HttpClient requests are
+     * properly associated with the current navigation span.
+     * @returns The active context, or null if no navigation span exists
+     */
+    public getActiveContext(): any {
+        if (this._activeNavigationSpan) {
+            // Create a context with the active navigation span
+            return trace.setSpan(context.active(), this._activeNavigationSpan);
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets the OpenTelemetry tracer instance for creating spans
+     * @returns The tracer instance or undefined if not initialized
+     */
+    public getTracer(): Tracer {
+        return this._tracer;
     }
 }

@@ -3,6 +3,8 @@ using Microsoft.Extensions.Options;
 using RESTworld.AspNetCore.DependencyInjection;
 using RESTworld.Business.Authorization.Abstractions;
 using System;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace RESTworld.AspNetCore.Caching;
@@ -97,6 +99,59 @@ public class CacheHelper : ICacheHelper
     }
 
     /// <inheritdoc/>
+    public void RemoveForAllUsers(string key)
+    {
+        // First remove the non-user specific version of the key
+        RemoveWithoutUser(key);
+
+        // Check if we can access the internal keys collection
+        if (_memoryCache is MemoryCache cache)
+        {
+            // Create regex to find all keys that match the pattern "User_*_{key}"
+            var pattern = $@"^User_[^_]+_{Regex.Escape(key)}$";
+            var regex = new Regex(pattern, RegexOptions.Compiled);
+
+            // Find all keys that match the pattern
+            var keysToRemove = cache.Keys
+                .OfType<string>()
+                .Where(k => regex.IsMatch(k))
+                .ToList();
+
+            // Remove all matching user-specific keys
+            foreach (var keyToRemove in keysToRemove)
+            {
+                cache.Remove(keyToRemove);
+            }
+        }
+    }
+
+    /// <inheritdoc/>
+    public void RemoveAllListEntriesWithCurrentUser(string typeKey, string action)
+    {
+        var username = GetCurrentUserName();
+        var pattern = CreateListKeyPatternRegexForUser(typeKey, username, action);
+        RemoveKeysMatchingRegex(pattern);
+    }
+
+    /// <inheritdoc/>
+    public void RemoveAllListEntriesWithoutUser(string typeKey, string action)
+    {
+        var pattern = CreateListKeyPatternRegexWithoutUser(typeKey, action);
+        RemoveKeysMatchingRegex(pattern);
+    }
+
+    /// <inheritdoc/>
+    public void RemoveAllListEntriesForAllUsers(string typeKey, string action)
+    {
+        // First remove entries without user
+        RemoveAllListEntriesWithoutUser(typeKey, action);
+
+        // Then try to remove all user-specific entries
+        var pattern = CreateListKeyPatternRegexForAllUsers(typeKey, action);
+        RemoveKeysMatchingRegex(pattern);
+    }
+
+    /// <inheritdoc/>
     public TItem SetWithUser<TItem>(string key, string username, string timeoutKey, TItem item)
         => SetWithoutUser(AddUserToKey(key, username), timeoutKey, item);
 
@@ -128,4 +183,42 @@ public class CacheHelper : ICacheHelper
     private static string AddUserToKey(string key, string username) => string.Concat("User_", username, "_", key);
 
     private string AddCurrentUserToKey(string key) => AddUserToKey(key, GetCurrentUserName());
+
+    private static Regex CreateListKeyPatternRegexWithoutUser(string typeKey, string action)
+    {
+        var escapedTypeKey = Regex.Escape(typeKey);
+        var escapedAction = Regex.Escape(action);
+        return new Regex($@"^{escapedTypeKey}_{escapedAction}_GetList");
+    }
+
+    private static Regex CreateListKeyPatternRegexForUser(string typeKey, string username, string action)
+    {
+        var escapedTypeKey = Regex.Escape(typeKey);
+        var escapedUsername = Regex.Escape(username);
+        var escapedAction = Regex.Escape(action);
+        return new Regex($@"^User_{escapedUsername}_{escapedTypeKey}_{escapedAction}_GetList");
+    }
+
+    private static Regex CreateListKeyPatternRegexForAllUsers(string typeKey, string action)
+    {
+        var escapedTypeKey = Regex.Escape(typeKey);
+        var escapedAction = Regex.Escape(action);
+        return new Regex($@"User_[^_]+_{escapedTypeKey}_{escapedAction}_GetList");
+    }
+
+    private void RemoveKeysMatchingRegex(Regex regex)
+    {
+        if (_memoryCache is MemoryCache cache)
+        {
+            var keysToRemove = cache.Keys
+                .OfType<string>()
+                .Where(k => regex.IsMatch(k))
+                .ToList();
+
+            foreach (var keyToRemove in keysToRemove)
+            {
+                cache.Remove(keyToRemove);
+            }
+        }
+    }
 }

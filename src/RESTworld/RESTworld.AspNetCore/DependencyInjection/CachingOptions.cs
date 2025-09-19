@@ -13,9 +13,9 @@ public class CachingOptions : Dictionary<string, TimeSpan>
     /// </summary>
     public CachingOptions()
     {
-        Add(nameof(Get), TimeSpan.FromSeconds(30));
-        Add(nameof(GetList), TimeSpan.FromSeconds(30));
-        Add(nameof(GetHistory), TimeSpan.FromSeconds(30));
+        Add(nameof(Get), TimeSpan.FromSeconds(10));
+        Add(nameof(GetList), TimeSpan.FromSeconds(10));
+        Add(nameof(GetHistory), TimeSpan.FromSeconds(10));
     }
 
     /// <summary>
