@@ -240,6 +240,9 @@ public class ResultFactory : IResultFactory
             _linkFactory.AddFormLinkForExistingLinkTo(resource, Constants.SelfLinkName);
             AddHistoryLinkIfResourceHasHistory(resource, dto);
 
+            if (dto is DtoBase)
+                _linkFactory.AddSaveAndDeleteLinks(resource.CastState<DtoBase>());
+
             return resource;
         }
 
