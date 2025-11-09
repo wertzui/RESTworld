@@ -41,7 +41,7 @@ public class RestWorldClientCollection : IRestWorldClientCollection
             .Where(g => g.Count() > 1)
             .ToList();
 
-        if (duplicateApiUrls.Any())
+        if (duplicateApiUrls.Count != 0)
         {
             var message = $"Cannot create any RestWorldClients, because the following ApiUrls are defined more than once: {string.Join(", ", duplicateApiUrls.Select(g => $"{g.Key}: [{string.Join(", ", g.Select(a => $"{a.Url} (Version: {a.Version})"))}]"))}";
             logger.LogCritical(message);
@@ -64,7 +64,7 @@ public class RestWorldClientCollection : IRestWorldClientCollection
         catch (Exception e)
         {
             var fails = tasks.Where(t => t.Value.IsFaulted)
-                .Select(t => $"$t.Key: {t.Value.Exception?.Message}");
+                .Select(t => $"{t.Key}: {t.Value.Exception?.Message}");
             var message = $"Cannot create a RestWorldClientCollection because there was an exception while calling the home endpoints defined in the ApiUrls of the RestWorldClientOptions.{Environment.NewLine}{string.Join(Environment.NewLine, fails)}";
 
             logger.LogCritical(e, message);

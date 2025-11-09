@@ -86,7 +86,7 @@ public record ServiceResponse<T>
     /// <value><c>true</c> if succeeded; otherwise, <c>false</c>.</value>
     [MemberNotNullWhen(true, nameof(ResponseObject))]
     [MemberNotNullWhen(false, nameof(ProblemDetails))]
-    public bool Succeeded => (int)Status >= 200 && (int)Status < 300;
+    public bool Succeeded => (int)Status is >= 200 and < 300;
 
     /// <summary>
     /// Gets a value indicating whether there are any validation errors or not.
@@ -203,5 +203,5 @@ public static class ServiceResponse
     /// <param name="status">The status.</param>
     /// <returns></returns>
     public static ServiceResponse<T> FromStatus<T>(HttpStatusCode status)
-        => (int)status >= 200 && (int)status < 300 ? new(status) : FromProblem<T>(status, status.ToString());
+        => (int)status is >= 200 and < 300 ? new(status) : FromProblem<T>(status, status.ToString());
 }

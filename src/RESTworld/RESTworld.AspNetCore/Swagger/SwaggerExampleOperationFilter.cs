@@ -146,8 +146,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
 
         if (responseTypeFromApiDescription is not null)
         {
-            var actionContextAccessor = new SwaggerOperationActionContextAccessor(context, _httpContextAccessor);
-            var linkFactory = new LinkFactory(_linkGenerator, actionContextAccessor, _apiExplorer);
+            var linkFactory = new LinkFactory(_linkGenerator, _httpContextAccessor, _apiExplorer);
             var resourceFactory = new ODataResourceFactory(linkFactory, _oDataQueryFactory);
 
             if (context.ApiDescription.ActionDescriptor is ControllerActionDescriptor controllerActionDescriptor)
@@ -227,11 +226,11 @@ public class SwaggerExampleOperationFilter : IOperationFilter
             var resource = resourceFactory.CreateForODataListEndpointUsingSkipTopPaging(embedded, _ => Common.Constants.ListItems, e => ((DtoBase)e).Id, _oDataRawQueryOptions, 50, 10, controllerName);
             type.Example = CreateExample(resource);
         }
-        else if (actionName == "Get" || actionName == "Post" || actionName == "Put" || actionName == "New")
+        else if (actionName is "Get" or "Post" or "Put" or "New")
         {
             var tFullDto = controllerType.GenericTypeArguments[indexOfFullDtoType];
 
-            if (actionName == "Get" || actionName == "New")
+            if (actionName is "Get" or "New")
             {
                 // Get and New only return an object
                 var state = Fixture.Create(tFullDto, _specimenContext);
@@ -267,7 +266,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
 
                 type.Example = CreateExample(resource);
             }
-            else if (actionName == "Post" || actionName == "Put")
+            else if (actionName is "Post" or "Put")
             {
                 // Post and Put either return an object or a collection
                 var states = Enumerable.Repeat<object?>(null, 3).Select(_ => Fixture.Create(tFullDto, _specimenContext)).Cast<ConcurrentDtoBase>().ToList();
@@ -292,7 +291,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
 
                     if (bodyParameterType.IsGenericType && bodyParameterType.GetGenericTypeDefinition() == typeof(SingleObjectOrCollection<>))
                     {
-                        Type stateType = bodyParameterType.GenericTypeArguments[0];
+                        var stateType = bodyParameterType.GenericTypeArguments[0];
                         var states = Enumerable.Repeat<object?>(null, 3).Select(_ => Fixture.Create(stateType, _specimenContext)).ToList();
                         foreach (var state in states)
                         {

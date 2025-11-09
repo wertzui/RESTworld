@@ -65,9 +65,8 @@ public static class RestWorldBuilderExtensions
 
         restWorldBuilder.AddRestWorldOptions();
 
-        var versionParameterName = configuration.GetValue("RESTworld:Versioning:ParameterName", "v");
-        if (versionParameterName is null)
-            throw new ArgumentNullException("RESTworld:Versioning:ParameterName", """The setting for "RESTworld: Versioning:ParameterName" must not be null. If you want the default value ("v"), just leave it out.""");
+        var versionParameterName = configuration.GetValue("RESTworld:Versioning:ParameterName", "v")
+            ?? throw new ArgumentNullException("RESTworld:Versioning:ParameterName", """The setting for "RESTworld: Versioning:ParameterName" must not be null. If you want the default value ("v"), just leave it out.""");
 
         services
             .AddApiVersioning(options =>
@@ -213,20 +212,17 @@ public static class RestWorldBuilderExtensions
         Action<MeterProviderBuilder>? configureMetrics = null,
         Action<TracerProviderBuilder>? configureTracing = null)
     {
+        // Ensure we get the newest version of traces
+        builder.Configuration["OTEL_DOTNET_EXPERIMENTAL_EFCORE_ENABLE_TRACE_DB_QUERY_PARAMETERS"] = "true";
+        builder.Configuration["OTEL_SEMCONV_STABILITY_OPT_IN"] = "database";
+
         builder.Logging.AddOpenTelemetry(configureLogging ?? (logging =>
         {
             logging.IncludeFormattedMessage = true;
             logging.IncludeScopes = true;
         }));
 
-        builder.Services.AddOpenTelemetry()
-            .WithMetrics(configureMetrics ?? (metrics =>
-            {
-                metrics.AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation()
-                    .AddRuntimeInstrumentation();
-            }))
-            .WithTracing((tracing =>
+        var defaultTracingConfiguration = (TracerProviderBuilder tracing) =>
             {
                 tracing
                     .AddAspNetCoreInstrumentation(opts =>
@@ -267,13 +263,11 @@ public static class RestWorldBuilderExtensions
                     })
                     .AddEntityFrameworkCoreInstrumentation(opts =>
                     {
-                        opts.SetDbStatementForStoredProcedure = true;
-                        opts.SetDbStatementForText = true;
-                        opts.EnrichWithIDbCommand = (activity, command) =>
-                        {
-                            MoveDbStatementTagToDbQueryText(activity);
-                            AddDbQueryParameterTagsToActivity(activity, command);
-                        };
+                        //opts.EnrichWithIDbCommand = (activity, command) =>
+                        //{
+                        //    MoveDbStatementTagToDbQueryText(activity);
+                        //    AddDbQueryParameterTagsToActivity(activity, command);
+                        //};
 
                         var existingFilter = opts.Filter;
                         var healthFilter = (string? provider, IDbCommand command) => command.CommandText != "SELECT 1" && !command.CommandText.Contains("__EFMigrationsHistory");
@@ -293,24 +287,33 @@ public static class RestWorldBuilderExtensions
                                 existingRequestEnricher(activity, command);
                                 healthRequestEnricher(activity, command);
                             };
-                    });
-                // When using both Instrumentations, there is a bug, causing spans to not use the correct parent.
-                // See https://github.com/open-telemetry/opentelemetry-dotnet-contrib/issues/1764
-                //.AddSqlClientInstrumentation(opt =>
-                //{
-                //    opt.EnableConnectionLevelAttributes = true;
-                //    opt.RecordException = true;
-                //    opt.SetDbStatementForStoredProcedure = true;
-                //    opt.SetDbStatementForText = true;
-                //    opt.Enrich = (activity, eventName, command) =>
-                //    {
-                //        MoveDbStatementTagToDbQueryText(activity);
+                    })
+                    // When using both Instrumentations, there is a bug, causing spans to not use the correct parent.
+                    // See https://github.com/open-telemetry/opentelemetry-dotnet-contrib/issues/1764
+                    .AddSqlClientInstrumentation(opt =>
+                    {
+                        //opt.
+                        //opt.EnableConnectionLevelAttributes = true;
+                        opt.RecordException = true;
+                        //opt.SetDbStatementForStoredProcedure = true;
+                        //opt.SetDbStatementForText = true;
+                        //opt.Enrich = (activity, eventName, command) =>
+                        //{
+                        //    MoveDbStatementTagToDbQueryText(activity);
 
-                //        if (command is IDbCommand dbCommand)
-                //            AddDbQueryParameterTagsToActivity(activity, dbCommand);
-                //    };
-                //});
-            }));
+                        //    if (command is IDbCommand dbCommand)
+                        //        AddDbQueryParameterTagsToActivity(activity, dbCommand);
+                        //};
+                    });
+            };
+        builder.Services.AddOpenTelemetry()
+            .WithMetrics(configureMetrics ?? (metrics =>
+            {
+                metrics.AddAspNetCoreInstrumentation()
+                    .AddHttpClientInstrumentation()
+                    .AddRuntimeInstrumentation();
+            }))
+            .WithTracing(configureTracing ?? defaultTracingConfiguration);
 
         builder.AddOpenTelemetryExporters();
 

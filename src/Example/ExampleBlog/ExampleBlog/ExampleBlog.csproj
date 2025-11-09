@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AutoMcp.OData" Version="1.0.0-beta-1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\..\RESTworld\RESTworld.AspNetCore\RESTworld.AspNetCore.csproj" />
     <ProjectReference Include="..\ExampleBlog.Business\ExampleBlog.Business.csproj" />
   </ItemGroup>

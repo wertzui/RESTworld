@@ -6,7 +6,6 @@ using RESTworld.AspNetCore.Caching;
 using RESTworld.AspNetCore.Controller;
 using RESTworld.AspNetCore.DependencyInjection;
 using RESTworld.Common.Client;
-using System.Threading;
 
 namespace RESTworld.Client.AspNetCore.Controllers;
 
@@ -42,7 +41,7 @@ public class SettingsController : RestControllerBase
     [HttpGet("")]
     [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
     [ProducesResponseType(200)]
-    public ActionResult<Resource<ClientSettings?>> Get(CancellationToken cancellationToken)
+    public ActionResult<Resource<ClientSettings?>> Get()
     {
         var clientSettings = _options.ClientSettings;
 

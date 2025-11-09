@@ -45,7 +45,7 @@ public class TimestampConcurrencyDetection : IDisposable
 
         foreach (var entity in entities)
         {
-            if (entity.State == EntityState.Modified || entity.State == EntityState.Deleted)
+            if (entity.State is EntityState.Modified or EntityState.Deleted)
             {
                 // entity.Property(e => e.Timestamp) throws if the Timestamp has a [NotMapped] Attribute.
                 var timestampProperty = GetPropertyOrDefault(entity, e => e.Timestamp);
@@ -68,8 +68,8 @@ public class TimestampConcurrencyDetection : IDisposable
 
     private static string GetSimpleMemberName(MemberInfo member)
     {
-        string name = member.Name;
-        int num = name.LastIndexOf('.');
+        var name = member.Name;
+        var num = name.LastIndexOf('.');
         if (num < 0)
         {
             return name;

@@ -29,8 +29,7 @@ public static class ExpressionExtensions
         // Method from C# may lead to an implicit conversion - e.g. if the property or field type is System.Byte,
         // but the supplied value is a System.Int32 value. Since there's an implicit conversion, the resulting
         // expression may be (x => Convert(x.Property)) and we need to unwrap it.
-        var memberExpr = bodyExpr.UnwrapIfConversionExpression() as MemberExpression;
-        if (memberExpr == null)
+        if (bodyExpr.UnwrapIfConversionExpression() is not MemberExpression memberExpr)
         {
             throw new ArgumentException(
                 "The expression's Body is not a MemberExpression. " +

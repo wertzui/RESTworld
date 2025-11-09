@@ -58,10 +58,7 @@ public partial class CacheHelper : ICacheHelper
             return factory(key);
         });
 
-        if (result is null)
-            throw new ArgumentException($"Factory for key {key} returned null", nameof(factory));
-
-        return result;
+        return result is null ? throw new ArgumentException($"Factory for key {key} returned null", nameof(factory)) : result;
     }
 
 
@@ -84,10 +81,7 @@ public partial class CacheHelper : ICacheHelper
             return factory(key);
         });
 
-        if (result is null)
-            throw new ArgumentException($"Factory for key {key} returned null", nameof(factory));
-
-        return result;
+        return result is null ? throw new ArgumentException($"Factory for key {key} returned null", nameof(factory)) : result;
     }
 
     /// <inheritdoc/>

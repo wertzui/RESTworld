@@ -2,11 +2,6 @@ using Projects;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Add an OpenTelemetry collector.
-// This is mostly done, because the Dashboard does not directly accept OTLP over HTTP with CORS.
-// So this collector is a proxy in the middle, accepting OTLP over HTTP and forwarding it to the Dashboard.
-//builder.AddOpenTelemetryCollector();
-
 // This will read the connection string from the appsettings.json or secrets.json file or get it from an environment variable
 // In this example it is stored in appsettings.json, because it just connects to lodaldb without a password.
 var database = builder.AddConnectionString("BlogDatabase");
@@ -15,6 +10,7 @@ var database = builder.AddConnectionString("BlogDatabase");
 //var database = builder.AddSqlServer("ExampleBlog-SQL-Server")
 //    .AddDatabase("BlogDatabase");
 
+
 // Add the backend API as a service
 var apiService = builder.AddProject<ExampleBlog>(nameof(ExampleBlog))
     // Add a reference to the database
@@ -22,7 +18,7 @@ var apiService = builder.AddProject<ExampleBlog>(nameof(ExampleBlog))
     .WithReference(database)
     // Every RESTworld project exposes three health checks which can be used in Kubernetes.
     // When using builder.AddDbContextFactoryWithDefaults<MyDb>() a health check for the database is automatically added.
-    .WithKubernetesHealthChecks();
+    .WithKubernetesHealthProbes();
 
 // Add the Frontend which hosts the Angular client
 var frontendService = builder.AddProject<ExampleBlog_Client_Angular>("ExampleBlog-Client-Angular")
@@ -33,8 +29,12 @@ var frontendService = builder.AddProject<ExampleBlog_Client_Angular>("ExampleBlo
     .WithReference(apiService)
     // Every RESTworld project exposes three health checks which can be used in Kubernetes.
     // For frontend projects this just means that the application is running
-    .WithKubernetesHealthChecks()
-    .WithOtlpExporter();
+    .WithKubernetesHealthProbes()
+    .WithIconName("TabDesktop");
+
+// Add the MCP Inspector which can be used to inspect the mcp service provided by the API
+var mcpInspector = builder.AddMcpInspector("McpInspector", new McpInspectorOptions { InspectorVersion = "0.17.2" })
+    .WithReference(apiService);
 
 var app = builder.Build();
 

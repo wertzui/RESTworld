@@ -1,34 +1,36 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <EnableNETAnalyzers>true</EnableNETAnalyzers>
-    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <PackageLicenseExpression>Unlicense</PackageLicenseExpression>
-    <Authors>wertzui</Authors>
-    <PackageProjectUrl>https://github.com/wertzui/RESTworld</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/wertzui/RESTworld</RepositoryUrl>
-    <VersionPrefix>8.2.1</VersionPrefix>
-    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <EnableNETAnalyzers>true</EnableNETAnalyzers>
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+        <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+        <PackageLicenseExpression>Unlicense</PackageLicenseExpression>
+        <Authors>wertzui</Authors>
+        <PackageProjectUrl>https://github.com/wertzui/RESTworld</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/wertzui/RESTworld</RepositoryUrl>
+        <VersionPrefix>8.3.0</VersionPrefix>
+        <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <Nullable>enable</Nullable>
+        <PackageIcon>RESTworld-256.png</PackageIcon>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <None Include="../../../README.md" Pack="true" PackagePath="/" />
-  </ItemGroup>
+    <ItemGroup>
+        <None Include="../../../README.md" Pack="true" PackagePath="/" />
+        <None Include="../../../logo/RESTworld-256.png" Pack="true" Visible="false" PackagePath="" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="9.0.9" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.9" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="9.0.10" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.10" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\RESTworld.Common\RESTworld.Common.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\RESTworld.Common\RESTworld.Common.csproj" />
+    </ItemGroup>
 
 </Project>

@@ -62,9 +62,16 @@ rwBuilder.AddCrudPipelineWithCustomService<BlogDatabase, TestEntity, TestDto, Te
 services.AddHttpClient();
 services.AddScoped<IPhotoService, PhotoService>();
 
+// RESTworld integrates with AutoMcp to provide an MCP interface for all APIs automatically.
+builder.Services.AddMcpServer()
+    .WithHttpTransport(o => o.Stateless = true)
+    .WithOData()
+    .WithAutoMcp();
+
 var app = builder.Build();
 
 app.UseRestWorld();
+app.MapMcp("mcp");
 
 try
 {

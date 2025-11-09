@@ -2,6 +2,7 @@
 using HAL.AspNetCore.OData.Abstractions;
 using HAL.AspNetCore.Utils;
 using HAL.Common;
+using HAL.Common.Forms;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
@@ -16,6 +17,7 @@ using RESTworld.Business.Services.Abstractions;
 using RESTworld.Common.Dtos;
 using RESTworld.EntityFrameworkCore.Models;
 using System;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
@@ -127,9 +129,11 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
     /// <returns>The full representation for the requested resource.</returns>
     [HttpGet("{id:long}")]
     [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
-    [ProducesResponseType(200)]
+    [ProducesResponseType(typeof(Resource), 200, "application/hal+json")]
+    [ProducesResponseType(typeof(FormsResource), 200, "application/prs.hal-forms+json", "application/hal-forms+json")]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
     [ProducesWithContentNegotiation("application/hal+json", "application/prs.hal-forms+json", "application/hal-forms+json")]
+    [Description("Gets a full representation of the resource with the given ID.")]
     public virtual async Task<ActionResult<Resource<TGetFullDto>>> GetAsync(long id, CancellationToken cancellationToken)
     {
         var response = await Cache.CacheGetWithCurrentUserAsync(id, _ => _readService.GetSingleAsync(id, cancellationToken));
@@ -148,9 +152,11 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
     /// <returns>A paged list of resources matching the filter criteria.</returns>
     [HttpGet]
     [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
-    [ProducesResponseType(200)]
+    [ProducesResponseType(typeof(Resource<Page>), 200, "application/hal+json")]
+    [ProducesResponseType(typeof(FormsResource<Page>), 200, "application/prs.hal-forms+json", "application/hal-forms+json")]
     [ProducesWithContentNegotiation("application/hal+json", "text/csv", "application/prs.hal-forms+json", "application/hal-forms+json")]
-    public virtual async Task<ActionResult<Resource>> GetListAsync(
+    [Description("Gets a paged list of resources matching the filter criteria.")]
+    public virtual async Task<ActionResult<Resource<Page>>> GetListAsync(
         ODataQueryOptions<TGetListDto> options,
         CancellationToken cancellationToken)
     {
@@ -177,8 +183,10 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
     /// <returns>A paged list of resources matching the filter criteria.</returns>
     [HttpGet("history")]
     [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
-    [ProducesResponseType(200)]
+    [ProducesResponseType(typeof(Resource<Page>), 200, "application/hal+json")]
+    [ProducesResponseType(typeof(FormsResource<Page>), 200, "application/prs.hal-forms+json", "application/hal-forms+json")]
     [ProducesWithContentNegotiation("application/hal+json", "text/csv", "application/prs.hal-forms+json", "application/hal-forms+json")]
+    [Description("Gets a paged list of historical resources matching the filter criteria.")]
     public virtual async Task<ActionResult<Resource>> GetHistoryAsync(
         ODataQueryOptions<TGetFullDto> options,
         [FromQuery(Name = "$at")] DateTimeOffset? at,

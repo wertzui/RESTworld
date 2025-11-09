@@ -18,6 +18,7 @@ using RESTworld.Common.Dtos;
 using RESTworld.EntityFrameworkCore.Models;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using System.Reflection;
@@ -120,6 +121,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     [ProducesResponseType(200)]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status409Conflict)]
+    [Description("Deletes the resource with the given ID and timestamp.")]
     public virtual async Task<IActionResult> DeleteAsync(
         long id,
         [FromQuery] string? timestamp,
@@ -180,6 +182,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
     [ProducesResponseType(200)]
     [ProducesWithContentNegotiation("application/hal+json", "application/prs.hal-forms+json", "application/hal-forms+json")]
+    [Description("Returns an empty resource which can be used as a template when creating a new resource.")]
     public virtual async Task<ActionResult<Resource<TCreateDto>>> NewAsync(CancellationToken cancellationToken)
     {
         var dto = CreateEmpty();
@@ -203,6 +206,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(Resource), StatusCodes.Status201Created)]
     [ProducesWithContentNegotiation("application/hal+json", "application/prs.hal-forms+json", "application/hal-forms+json")]
+    [Description("Creates the given new resource(s).")]
     public virtual async Task<ActionResult<Resource<TGetFullDto>>> PostAsync(
         [FromBody] SingleObjectOrCollection<TCreateDto> dto,
         CancellationToken cancellationToken)
@@ -234,6 +238,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status409Conflict)]
     [ProducesWithContentNegotiation("application/hal+json", "application/prs.hal-forms+json", "application/hal-forms+json")]
+    [Description("Updates the given resource(s) with new values.")]
     public virtual async Task<ActionResult<Resource<TGetFullDto>>> PutAsync(
         long? id,
         [FromBody] SingleObjectOrCollection<TUpdateDto> dto,

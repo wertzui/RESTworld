@@ -96,7 +96,7 @@ public class ListRequestFactory : IListRequestFactory
     public Func<IQueryable<TEntity>, IQueryable<TDto>> GetFilterOnlyQuery<TDto, TEntity>(ODataQueryOptions<TDto> oDataQueryOptions, QuerySettings? querySettings = null)
         where TDto : class
     {
-        Expression<Func<TDto, bool>> filter = oDataQueryOptions.ToFilterExpression((querySettings?.ODataSettings?.HandleNullPropagation).GetValueOrDefault(HandleNullPropagationOption.False), querySettings?.ODataSettings?.TimeZone, (querySettings?.ODataSettings?.EnableConstantParameterization).GetValueOrDefault(true));
+        var filter = oDataQueryOptions.ToFilterExpression((querySettings?.ODataSettings?.HandleNullPropagation).GetValueOrDefault(HandleNullPropagationOption.False), querySettings?.ODataSettings?.TimeZone, (querySettings?.ODataSettings?.EnableConstantParameterization).GetValueOrDefault(true));
 
         return query => GetQueryable(query, oDataQueryOptions, querySettings, filter);
     }
@@ -132,9 +132,8 @@ public class ListRequestFactory : IListRequestFactory
     private static MethodInfo GetQueryableMethod()
     {
         var type = typeof(AutoMapper.AspNet.OData.QueryableExtensions);
-        var method = type.GetMethod("GetQueryable", BindingFlags.Static | BindingFlags.NonPublic);
-        if (method is null)
-            throw new InvalidOperationException($"""Unable to create the Count expression for the query. Method "GetQueryable" not found on {type.Name}. The reason is probably a version incompatibility.""");
+        var method = type.GetMethod("GetQueryable", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException($"""Unable to create the Count expression for the query. Method "GetQueryable" not found on {type.Name}. The reason is probably a version incompatibility.""");
         if (!method.IsGenericMethod || method.GetGenericArguments().Length != 2)
             throw new InvalidOperationException($"""Unable to create the Count expression for the query. Method "GetQueryable" is not generic or has the wrong number of generic arguments on {type.Name}. The reason is probably a version incompatibility.""");
         return method;

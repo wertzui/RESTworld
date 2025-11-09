@@ -2,8 +2,8 @@
 using HAL.AspNetCore.Utils;
 using HAL.Common;
 using HAL.Common.Forms;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.WebUtilities;
 using RESTworld.AspNetCore.Controller;
@@ -24,13 +24,13 @@ namespace RESTworld.AspNetCore.Links
         /// Initializes a new instance of the <see cref="CrudLinkFactory"/> class.
         /// </summary>
         /// <param name="linkGenerator">The link generator from ASP.Net Core.</param>
-        /// <param name="actionContextAccessor">The action context accessor.</param>
+        /// <param name="httpContextAccessor">The HTTP context accessor.</param>
         /// <param name="apiExplorer">The API explorer.</param>
         public CrudLinkFactory(
             LinkGenerator linkGenerator,
-            IActionContextAccessor actionContextAccessor,
+            IHttpContextAccessor httpContextAccessor,
             IApiDescriptionGroupCollectionProvider apiExplorer)
-            : base(linkGenerator, actionContextAccessor, apiExplorer)
+            : base(linkGenerator, httpContextAccessor, apiExplorer)
         {
         }
 
@@ -46,7 +46,11 @@ namespace RESTworld.AspNetCore.Links
             var id = dto.Id;
             var timestamp = Base64UrlTextEncoder.Encode(dto.Timestamp);
 
-            var href = LinkGenerator.GetUriByAction(GetHttpContext(), HttpMethod.Delete.Method, values: new { id, timestamp });
+            var httpContext = HttpContextAccessor.HttpContext;
+            if (httpContext is null)
+                return resource;
+
+            var href = LinkGenerator.GetUriByAction(httpContext, HttpMethod.Delete.Method, values: new { id, timestamp });
 
             if (href is null)
                 return resource;
@@ -72,7 +76,11 @@ namespace RESTworld.AspNetCore.Links
 
             var timestamp = Base64UrlTextEncoder.Encode(timestampBytes);
 
-            var href = LinkGenerator.GetUriByAction(GetHttpContext(), HttpMethod.Delete.Method, values: new { id, timestamp });
+            var httpContext = HttpContextAccessor.HttpContext;
+            if (httpContext is null)
+                return resource;
+
+            var href = LinkGenerator.GetUriByAction(httpContext, HttpMethod.Delete.Method, values: new { id, timestamp });
             if (href is null)
                 return resource;
 
@@ -85,7 +93,11 @@ namespace RESTworld.AspNetCore.Links
         {
             ArgumentNullException.ThrowIfNull(resource);
 
-            var href = LinkGenerator.GetUriByAction(GetHttpContext(), "new");
+            var httpContext = HttpContextAccessor.HttpContext;
+            if (httpContext is null)
+                return resource;
+
+            var href = LinkGenerator.GetUriByAction(httpContext, "new");
             if (href is null)
                 return resource;
 
@@ -115,7 +127,11 @@ namespace RESTworld.AspNetCore.Links
 
             var id = resource.State.Id;
 
-            var href = LinkGenerator.GetUriByAction(GetHttpContext(), HttpMethod.Put.Method, values: new { id });
+            var httpContext = HttpContextAccessor.HttpContext;
+            if (httpContext is null)
+                return resource;
+
+            var href = LinkGenerator.GetUriByAction(httpContext, HttpMethod.Put.Method, values: new { id });
             if (href is null)
                 return resource;
 
@@ -139,7 +155,11 @@ namespace RESTworld.AspNetCore.Links
 
             var id = dto.Id;
 
-            var href = LinkGenerator.GetUriByAction(GetHttpContext(), ActionHelper.StripAsyncSuffix(nameof(ReadController<EntityBase, DtoBase, DtoBase>.GetHistoryAsync)), values: new { filter = $"id eq {id}" });
+            var httpContext = HttpContextAccessor.HttpContext;
+            if (httpContext is null)
+                return resource;
+
+            var href = LinkGenerator.GetUriByAction(httpContext, ActionHelper.StripAsyncSuffix(nameof(ReadController<EntityBase, DtoBase, DtoBase>.GetHistoryAsync)), values: new { filter = $"id eq {id}" });
             if (href is null)
                 return resource;
 

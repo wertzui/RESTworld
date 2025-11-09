@@ -11,6 +11,7 @@ using RESTworld.AspNetCore.Controller;
 using RESTworld.AspNetCore.DependencyInjection;
 using RESTworld.AspNetCore.Results.Abstractions;
 using System;
+using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -36,10 +37,11 @@ public class MyCustomController : RestControllerBase
 
     [HttpGet("{id:long}")]
     [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
-    [ProducesResponseType(200)]
+    [ProducesResponseType(typeof(Resource<PostWithAuthorDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
+    [Description("Gets a blog post including the author information.")]
     public async Task<ActionResult<Resource<PostWithAuthorDto>>> GetPostWithAuthorAsync(
-        long id,
+        [Description("The ID of the post")] long id,
         CancellationToken cancellationToken)
     {
         var response = await Cache.GetOrCreateWithCurrentUserAsync(nameof(GetPostWithAuthorAsync) + "_" + id, nameof(CachingOptions.Get), _ => _service.GetPostWithAuthorAsync(id, cancellationToken));

@@ -48,7 +48,6 @@ public class HomeController : HalControllerBase
         _curieName = options.Value.GetCurieOrDefault();
         _resourceFactory = resourceFactory ?? throw new ArgumentNullException(nameof(resourceFactory));
         _linkFactory = linkFactory ?? throw new ArgumentNullException(nameof(linkFactory));
-
         _state ??= CreateState(apiExplorer);
     }
 

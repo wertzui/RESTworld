@@ -12,9 +12,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.4.2" />
-    <PackageReference Include="Aspire.Hosting.SqlServer" Version="9.4.2" />
-    <PackageReference Include="HealthChecks.Kubernetes.Aspire.Hosting" Version="1.1.0" />
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.5.2" />
+    <PackageReference Include="Aspire.Hosting.SqlServer" Version="9.5.2" />
+    <PackageReference Include="CommunityToolkit.Aspire.Hosting.McpInspector" Version="9.9.0" />
+    <PackageReference Include="HealthChecks.Kubernetes.Aspire.Hosting" Version="1.2.1" />
     <PackageReference Include="OpenTelemetryCollector.Aspire.Hosting" Version="1.0.0" />
   </ItemGroup>
 

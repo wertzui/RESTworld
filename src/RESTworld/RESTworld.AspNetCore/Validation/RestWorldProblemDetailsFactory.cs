@@ -19,10 +19,10 @@ namespace RESTworld.AspNetCore.Validation;
 /// <remarks>Partly from https://github.com/dotnet/aspnetcore/blob/main/src/Mvc/Mvc.Core/src/Infrastructure/DefaultProblemDetailsFactory.cs</remarks>
 public class RestWorldProblemDetailsFactory : ProblemDetailsFactory, IRestWorldProblemDetailsFactory
 {
-    private readonly IActionContextAccessor _actionContextAccessor;
     private readonly ApiBehaviorOptions _apiBehaviorOptions;
     private readonly JsonOptions _jsonOptions;
     private readonly LinkGenerator _linkGenerator;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     /// <summary>
     /// Creates a new instance of the <see cref="RestWorldProblemDetailsFactory"/>.
@@ -30,18 +30,18 @@ public class RestWorldProblemDetailsFactory : ProblemDetailsFactory, IRestWorldP
     /// <param name="apiBehaviorOptions">The API behavior options.</param>
     /// <param name="jsonOptions">The JSON options.</param>
     /// <param name="linkGenerator">The link generator which is used to generate the self link.</param>
-    /// <param name="actionContextAccessor"></param>
+    /// <param name="httpContextAccessor">The HTTP context accessor.</param>
     /// <exception cref="ArgumentNullException"></exception>
     public RestWorldProblemDetailsFactory(
         IOptions<ApiBehaviorOptions> apiBehaviorOptions,
         IOptions<JsonOptions> jsonOptions,
         LinkGenerator linkGenerator,
-        IActionContextAccessor actionContextAccessor)
+        IHttpContextAccessor httpContextAccessor)
     {
         _apiBehaviorOptions = apiBehaviorOptions?.Value ?? throw new ArgumentNullException(nameof(apiBehaviorOptions));
         _jsonOptions = jsonOptions?.Value ?? throw new ArgumentNullException(nameof(jsonOptions));
         _linkGenerator = linkGenerator ?? throw new ArgumentNullException(nameof(linkGenerator));
-        _actionContextAccessor = actionContextAccessor ?? throw new ArgumentNullException(nameof(actionContextAccessor));
+        _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
     }
 
     /// <inheritdoc/>
@@ -166,9 +166,9 @@ public class RestWorldProblemDetailsFactory : ProblemDetailsFactory, IRestWorldP
 
     private void AddSelfLink(ProblemDetails problemDetails)
     {
-        var httpContext = (_actionContextAccessor.ActionContext?.HttpContext) ?? throw new Exception("Cannot add the self link to the problem details, because the HttpContext is null.");
+        var httpContext = (_httpContextAccessor.HttpContext) ?? throw new Exception("Cannot add the self link to the problem details, because the HttpContext is null.");
         var path = _linkGenerator.GetUriByAction(httpContext);
-        QueryString queryString = httpContext.Request.QueryString;
+        var queryString = httpContext.Request.QueryString;
         var link = new Link(path + queryString) { Name = Constants.SelfLinkName };
 
         problemDetails.Extensions["_links"] = new Dictionary<string, ICollection<Link>>

@@ -71,8 +71,10 @@ public class RestWorldClient : IRestWorldClient
         var response = await halClient.GetAsync<HomeDto>(new Uri(apiUrl.Url), version: apiUrl.Version?.ToString(), cancellationToken: cancellationToken);
         if (!response.Succeeded || response.Resource is null)
         {
-            var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-            jsonOptions.WriteIndented = true;
+            var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+            {
+                WriteIndented = true
+            };
             var ex = new HttpRequestException($"Unable to get the home resource from {apiUrl.Url} with version {apiUrl.Version}. Response was:{Environment.NewLine}{JsonSerializer.Serialize(response, jsonOptions)}", null, response.StatusCode);
             ex.Data["Response"] = response;
             throw ex;
@@ -116,10 +118,7 @@ public class RestWorldClient : IRestWorldClient
         => _halClient.DeleteFormAsync(requestUri, eTag, uriParameters, headers, version, cancellationToken);
 
     /// <inheritdoc/>
-    public IDictionary<string, ICollection<Link>> GetAllLinksFromHome()
-    {
-        return _homeResource.Links ?? new Dictionary<string, ICollection<Link>>();
-    }
+    public IDictionary<string, ICollection<Link>> GetAllLinksFromHome() => _homeResource.Links ?? new Dictionary<string, ICollection<Link>>();
 
     /// <inheritdoc/>
     public async Task<HalResponse<FormsResource<Page>>> GetAllPagesFormListAsync(
@@ -138,7 +137,7 @@ public class RestWorldClient : IRestWorldClient
         if (!response.Succeeded || response.Resource is null || response.Resource.Embedded is null || !response.Resource.Embedded.TryGetValue(Common.Constants.ListItems, out var items))
             return response;
 
-        items ??= new List<Resource>();
+        items ??= [];
 
         var lastResponse = response;
 
@@ -186,7 +185,7 @@ public class RestWorldClient : IRestWorldClient
         if (!response.Succeeded || response.Resource is null || response.Resource.Embedded is null || !response.Resource.Embedded.TryGetValue(Common.Constants.ListItems, out var items))
             return response;
 
-        items ??= new List<Resource>();
+        items ??= [];
 
         var lastResponse = response;
 

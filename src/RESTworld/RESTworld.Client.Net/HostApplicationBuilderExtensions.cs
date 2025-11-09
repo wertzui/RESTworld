@@ -25,8 +25,7 @@ public static class HostApplicationBuilderExtensions
 
         var configSection = builder.Configuration.GetSection("RESTworld");
 
-        if (clientConfigurations is null)
-            clientConfigurations = new Dictionary<string, Action<IServiceProvider, HttpClient>?>();
+        clientConfigurations ??= new Dictionary<string, Action<IServiceProvider, HttpClient>?>();
 
         var options = configSection.Get<RestWorldClientOptions>();
         if (options?.ClientSettings?.ApiUrls is not null)

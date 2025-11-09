@@ -28,7 +28,7 @@ public class ODataEnumFix : HAL.AspNetCore.Forms.Customization.IFormsResourceGen
         return title == "Search" && contentType == "application/x-www-form-urlencoded" && formsResource.Embedded is not null;
     }
 
-    private bool TryGetItemType(FormsResource formsResource, [NotNullWhen(true)] out Type? type)
+    private static bool TryGetItemType(FormsResource formsResource, [NotNullWhen(true)] out Type? type)
     {
         type = null;
         if (formsResource.Embedded is null || !formsResource.Embedded.TryGetValue("items", out var items))

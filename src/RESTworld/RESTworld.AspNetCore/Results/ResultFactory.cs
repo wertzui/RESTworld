@@ -6,7 +6,6 @@ using HAL.Common.Forms;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.OData.Query;
 using RESTworld.AspNetCore.Links.Abstractions;
 using RESTworld.AspNetCore.Results.Abstractions;
@@ -27,7 +26,7 @@ namespace RESTworld.AspNetCore.Results;
 /// <inheritdoc/>
 public class ResultFactory : IResultFactory
 {
-    private readonly IActionContextAccessor _actionContextAccessor;
+    private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IErrorResultFactory _errorResultFactory;
     private readonly IODataFormFactory _formFactory;
     private readonly ICrudLinkFactory _linkFactory;
@@ -40,28 +39,28 @@ public class ResultFactory : IResultFactory
     /// <param name="formFactory">The form factory.</param>
     /// <param name="linkFactory">The link factory.</param>
     /// <param name="errorResultFactory">The error result factory.</param>
-    /// <param name="actionContextAccessor">The ActionContext accessor.</param>
+    /// <param name="httpContextAccessor">The HTTP context accessor.</param>
     /// <exception cref="ArgumentNullException"></exception>
     public ResultFactory(
         IODataResourceFactory resourceFactory,
         IODataFormFactory formFactory,
         ICrudLinkFactory linkFactory,
         IErrorResultFactory errorResultFactory,
-        IActionContextAccessor actionContextAccessor)
+        IHttpContextAccessor httpContextAccessor)
     {
         _resourceFactory = resourceFactory ?? throw new ArgumentNullException(nameof(resourceFactory));
         _formFactory = formFactory ?? throw new ArgumentNullException(nameof(formFactory));
         _linkFactory = linkFactory ?? throw new ArgumentNullException(nameof(linkFactory));
         _errorResultFactory = errorResultFactory ?? throw new ArgumentNullException(nameof(errorResultFactory));
-        _actionContextAccessor = actionContextAccessor ?? throw new ArgumentNullException(nameof(actionContextAccessor));
+        _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
     }
 
     /// <inheritdoc/>
     public async ValueTask<Resource> CreateCollectionResourceAsync<TDto>(IReadOnlyCollection<TDto> items, string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put", long maxTop = 50)
         where TDto : DtoBase
     {
-        version ??= GetHttpContext().GetRequestedApiVersion();
-        var urlHelper = GetUrlHelper();
+        var httpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("No HTTP context present.");
+        version ??= httpContext.GetRequestedApiVersion();
 
         var options = new ODataRawQueryOptions();
         var filter = CreateODataFilterForIds(items.Select(i => i.Id));
@@ -69,7 +68,7 @@ public class ResultFactory : IResultFactory
 
         Resource result;
 
-        if (GetHttpContext().GetAcceptHeaders().AcceptsHalFormsOverHal())
+        if (httpContext.GetAcceptHeaders().AcceptsHalFormsOverHal())
         {
             result = await _formFactory.CreateForODataListEndpointUsingSkipTopPagingAsync(items, _ => Common.Constants.ListItems, m => m.Id, options, maxTop, items.Count, controller, version, listGetMethod, singleGetMethod, listPutMethod);
         }
@@ -161,11 +160,11 @@ public class ResultFactory : IResultFactory
     public async ValueTask<Resource> CreatePagedCollectionResourceAsync<TDto>(ODataRawQueryOptions options, int? maxTop, IReadOnlyPagedCollection<TDto> page, string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put")
         where TDto : DtoBase
     {
-        version ??= GetHttpContext().GetRequestedApiVersion();
-        var urlHelper = GetUrlHelper();
+        var httpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("No HTTP context present.");
+        version ??= httpContext.GetRequestedApiVersion();
         Resource result;
 
-        if (GetHttpContext().GetAcceptHeaders().AcceptsHalFormsOverHal())
+        if (httpContext.GetAcceptHeaders().AcceptsHalFormsOverHal())
         {
             result = await _formFactory.CreateForODataListEndpointUsingSkipTopPagingAsync(page.Items, _ => Common.Constants.ListItems, m => m.Id, options, maxTop ?? 50, page.TotalCount, controller, version, listGetMethod, singleGetMethod, listPutMethod);
         }
@@ -220,9 +219,10 @@ public class ResultFactory : IResultFactory
     /// <inheritdoc/>
     public async ValueTask<Resource> CreateResourceAsync<TDto>(TDto dto, HttpMethod method, bool readOnly = true, string action = "Get", string? controller = null, object? routeValues = null)
     {
+        var httpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("No HTTP context present.");
         routeValues = UseIdAsRouteValuesIfPresent(dto, routeValues);
 
-        if (GetHttpContext().GetAcceptHeaders().AcceptsHalFormsOverHal())
+        if (httpContext.GetAcceptHeaders().AcceptsHalFormsOverHal())
         {
             var formsResource = await _formFactory.CreateResourceForEndpointAsync(dto, method, "View", action: action, controller: controller, routeValues: routeValues);
 
@@ -346,10 +346,4 @@ public class ResultFactory : IResultFactory
             routeValues = new { id = dtoBase.Id };
         return routeValues;
     }
-
-    private ActionContext GetActionContext() => _actionContextAccessor.ActionContext ?? throw new InvalidOperationException("Unable to get the current HttpContext.");
-
-    private HttpContext GetHttpContext() => GetActionContext().HttpContext;
-
-    private UrlHelper GetUrlHelper() => new(GetActionContext());
 }
