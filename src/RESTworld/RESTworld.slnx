@@ -1,0 +1,14 @@
+<Solution>
+  <Project Path="RESTworld.AspNetCore/RESTworld.AspNetCore.csproj" />
+  <Project Path="RESTworld.Business/RESTworld.Business.csproj" />
+  <Project Path="RESTworld.Client.Angular/RESTworld.Client.Angular.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="RESTworld.Client.AspNetCore/RESTworld.Client.AspNetCore.csproj" />
+  <Project Path="RESTworld.Client.Net/RESTworld.Client.Net.csproj" />
+  <Project Path="RESTworld.Common/RESTworld.Common.csproj" />
+  <Project Path="RESTworld.EntityFrameworkCore/RESTworld.EntityFrameworkCore.csproj" />
+  <Project Path="RESTworld.Testing/RESTworld.Testing.csproj" />
+  <Project Path="RESTworld.Tests/RESTworld.Tests.csproj" />
+</Solution>

@@ -39,7 +39,7 @@ public class CsvOutputFormatter : TextOutputFormatter
     }
 
     /// <inheritdoc/>
-    public override IReadOnlyList<string>? GetSupportedContentTypes(string contentType, Type objectType)
+    public override IReadOnlyList<string>? GetSupportedContentTypes(string? contentType, Type objectType)
     {
         return base.GetSupportedContentTypes(contentType, objectType);
     }

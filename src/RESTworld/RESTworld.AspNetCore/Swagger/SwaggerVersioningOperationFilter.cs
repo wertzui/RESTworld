@@ -1,10 +1,9 @@
 ﻿using HAL.AspNetCore.Controllers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Linq;
-using System.Text.Json;
 
 namespace RESTworld.AspNetCore.Swagger;
 
@@ -39,9 +38,9 @@ public class SwaggerVersioningOperationFilter : IOperationFilter
         {
             // REF: https://github.com/domaindrivendev/Swashbuckle.AspNetCore/blob/b7cf75e7905050305b115dd96640ddd6e74c7ac9/src/Swashbuckle.AspNetCore.SwaggerGen/SwaggerGenerator/SwaggerGenerator.cs#L383-L387
             var responseKey = responseType.IsDefaultResponse ? "default" : responseType.StatusCode.ToString();
-            var response = operation.Responses[responseKey];
+            var response = operation.Responses?[responseKey];
 
-            if (_versionparameterName is null)
+            if (_versionparameterName is null || response?.Content is null)
                 continue;
 
             foreach (var content in response.Content.ToList())
@@ -66,28 +65,27 @@ public class SwaggerVersioningOperationFilter : IOperationFilter
 
         // REF: https://github.com/domaindrivendev/Swashbuckle.AspNetCore/issues/412
         // REF: https://github.com/domaindrivendev/Swashbuckle.AspNetCore/pull/413
-        foreach (var parameter in operation.Parameters)
-        {
-            var description = apiDescription.ParameterDescriptions.FirstOrDefault(p => p.Name == parameter.Name);
+        //foreach (var parameter in operation.Parameters)
+        //{
+        //    var description = apiDescription.ParameterDescriptions.FirstOrDefault(p => p.Name == parameter.Name);
 
-            // The description may be null if the parameter is not present in the API explorer. e.g. it has been added by a Swagger Filter.
-            if (description is null)
-                continue;
+        //    // The description may be null if the parameter is not present in the API explorer. e.g. it has been added by a Swagger Filter.
+        //    if (description is null)
+        //        continue;
 
-            parameter.Description ??= description.ModelMetadata?.Description;
+        //    parameter.Description ??= description.ModelMetadata?.Description;
 
-            if (parameter.Schema.Default == null && description.DefaultValue != null)
-            {
-                // REF: https://github.com/Microsoft/aspnet-api-versioning/issues/429#issuecomment-605402330
-                var modelType = description.ModelMetadata?.ModelType;
-                if (modelType is not null)
-                {
-                    var json = JsonSerializer.Serialize(description.DefaultValue, modelType);
-                    parameter.Schema.Default = OpenApiAnyFactory.CreateFromJson(json);
-                }
-            }
-
-            parameter.Required |= description.IsRequired;
-        }
+        //    if (parameter.Schema.Default == null && description.DefaultValue != null)
+        //    {
+        //        // REF: https://github.com/Microsoft/aspnet-api-versioning/issues/429#issuecomment-605402330
+        //        var modelType = description.ModelMetadata?.ModelType;
+        //        if (modelType is not null)
+        //        {
+        //            var node = JsonSerializer.SerializeToNode(description.DefaultValue, modelType);
+        //            parameter.Schema.Default = node;
+        //        }
+        //    }
+        //    parameter.Required |= description.IsRequired;
+        //}
     }
 }

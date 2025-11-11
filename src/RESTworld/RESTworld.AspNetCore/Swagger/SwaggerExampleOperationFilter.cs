@@ -12,8 +12,7 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Options;
-using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using RESTworld.AspNetCore.AutoFixture.Customizations;
 using RESTworld.AspNetCore.Controller;
 using RESTworld.AspNetCore.DependencyInjection;
@@ -26,6 +25,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 namespace RESTworld.AspNetCore.Swagger;
@@ -129,7 +129,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
         return bodyParameter?.ParameterType;
     }
 
-    private void AddExampleForProblemResponse(int statusCodeInt, OpenApiResponse response, OpenApiMediaType type)
+    private void AddExampleForProblemResponse(int statusCodeInt, IOpenApiResponse response, OpenApiMediaType type)
     {
         type.Example = CreateExample(new ProblemDetails { Detail = response.Description, Title = response.Description, Status = statusCodeInt != 0 ? statusCodeInt : null });
     }
@@ -271,6 +271,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
                 // Post and Put either return an object or a collection
                 var states = Enumerable.Repeat<object?>(null, 3).Select(_ => Fixture.Create(tFullDto, _specimenContext)).Cast<ConcurrentDtoBase>().ToList();
 
+                type.Examples ??= new Dictionary<string, IOpenApiExample>();
                 type.Examples.Add("Single Object", new OpenApiExample { Value = CreateExample((Resource)resourceFactory.CreateForEndpoint(states[0], controller: controllerName, routeValues: new { id = states[0].Id })) });
                 type.Examples.Add("Collection", new OpenApiExample { Value = CreateExample(resourceFactory.CreateForListEndpoint(states, _ => Common.Constants.ListItems, d => d.Id, controllerName)) });
             }
@@ -279,7 +280,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
 
     private void AddExamplesForBodyParameter(OpenApiOperation operation, OperationFilterContext context)
     {
-        if (operation.RequestBody is not null)
+        if (operation.RequestBody?.Content is not null)
         {
             foreach (var type in operation.RequestBody.Content.Values)
             {
@@ -315,6 +316,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
                             }
                         }
 
+                        type.Examples ??= new Dictionary<string, IOpenApiExample>();
                         type.Examples.Add("Single Object", new OpenApiExample { Value = CreateExample(states[0]) });
                         type.Examples.Add("Collection", new OpenApiExample { Value = CreateExample(states) });
                     }
@@ -336,44 +338,49 @@ public class SwaggerExampleOperationFilter : IOperationFilter
 
     private void AddExamplesForQueryPamateters(OpenApiOperation operation)
     {
-        foreach (var parameter in operation.Parameters)
+        if (operation.Parameters is null)
+            return;
+
+        foreach (var parameter in operation.Parameters.OfType<OpenApiParameter>())
         {
+            parameter.Examples ??= new Dictionary<string, IOpenApiExample>();
+
             // OData filters
             if (parameter.In == ParameterLocation.Query)
             {
                 switch (parameter.Name)
                 {
                     case "$filter":
-                        parameter.Examples["none"] = new OpenApiExample { Value = new OpenApiNull() };
-                        parameter.Examples["changet today"] = new OpenApiExample { Value = new OpenApiString($"{nameof(ChangeTrackingEntityBase.LastChangedAt)} ge {new DateTimeOffset(DateTime.Today)}") };
-                        parameter.Examples["changed by"] = new OpenApiExample { Value = new OpenApiString($"{nameof(ChangeTrackingEntityBase.LastChangedAt)} eq Adam") };
+                        parameter.Examples["none"] = new OpenApiExample { Value = null };
+                        parameter.Examples["changed today"] = new OpenApiExample { Value = $"{nameof(ChangeTrackingEntityBase.LastChangedAt)} ge {new DateTimeOffset(DateTime.Today)}" };
+                        parameter.Examples["changed by"] = new OpenApiExample { Value = $"{nameof(ChangeTrackingEntityBase.LastChangedAt)} eq Adam" };
                         break;
 
                     case "$orderby":
-                        parameter.Examples["none"] = new OpenApiExample { Value = new OpenApiNull() };
-                        parameter.Examples["id asc"] = new OpenApiExample { Value = new OpenApiString($"{nameof(ChangeTrackingEntityBase.Id)} asc") };
-                        parameter.Examples["last changed at asc"] = new OpenApiExample { Value = new OpenApiString($"{nameof(ChangeTrackingEntityBase.LastChangedAt)} asc") };
-                        parameter.Examples["last changed at desc"] = new OpenApiExample { Value = new OpenApiString($"{nameof(ChangeTrackingEntityBase.LastChangedAt)} desc") };
+                        parameter.Examples["none"] = new OpenApiExample { Value = null };
+                        parameter.Examples["id asc"] = new OpenApiExample { Value = $"{nameof(ChangeTrackingEntityBase.Id)} asc" };
+                        parameter.Examples["last changed at asc"] = new OpenApiExample { Value = $"{nameof(ChangeTrackingEntityBase.LastChangedAt)} asc" };
+                        parameter.Examples["last changed at desc"] = new OpenApiExample { Value = $"{nameof(ChangeTrackingEntityBase.LastChangedAt)} desc" };
                         break;
 
                     case "$top":
-                        parameter.Examples["server default"] = new OpenApiExample { Value = new OpenApiNull() };
-                        parameter.Examples[" 5"] = new OpenApiExample { Value = new OpenApiString("5") };
-                        parameter.Examples[" 10"] = new OpenApiExample { Value = new OpenApiString("10") };
-                        parameter.Examples[" 50"] = new OpenApiExample { Value = new OpenApiString("50") };
-                        parameter.Examples[" 100"] = new OpenApiExample { Value = new OpenApiString("100") };
+                        parameter.Examples["server default"] = new OpenApiExample { Value = null };
+                        parameter.Examples["5"] = new OpenApiExample { Value = 5 };
+                        parameter.Examples["10"] = new OpenApiExample { Value = 10 };
+                        parameter.Examples["50"] = new OpenApiExample { Value = 50 };
+                        parameter.Examples["100"] = new OpenApiExample { Value = 100 };
                         break;
 
                     case "$skip":
-                        parameter.Examples["server default (0)"] = new OpenApiExample { Value = new OpenApiNull() };
-                        parameter.Examples[" 5"] = new OpenApiExample { Value = new OpenApiString("5") };
-                        parameter.Examples[" 10"] = new OpenApiExample { Value = new OpenApiString("10") };
-                        parameter.Examples[" 50"] = new OpenApiExample { Value = new OpenApiString("50") };
-                        parameter.Examples[" 100"] = new OpenApiExample { Value = new OpenApiString("100") };
+                        parameter.Examples["server default (0)"] = new OpenApiExample { Value = null };
+                        parameter.Examples["5"] = new OpenApiExample { Value = 5 };
+                        parameter.Examples["10"] = new OpenApiExample { Value = 10 };
+                        parameter.Examples["50"] = new OpenApiExample { Value = 50 };
+                        parameter.Examples["100"] = new OpenApiExample { Value = 100 };
                         break;
 
                     case "timestamp":
-                        parameter.Examples["none (timestamp is specified in If-Match header, preferred)"] = new OpenApiExample { Value = new OpenApiNull() };
+                        parameter.Examples["none (timestamp is specified in If-Match header, preferred)"] = new OpenApiExample { Value = null };
                         parameter.Examples["specified in query (if the calling application cannot send a header)"] = new OpenApiExample { Value = CreateManyExamples<byte, byte[]>(e => e.ToArray(), 8) };
                         break;
 
@@ -386,27 +393,32 @@ public class SwaggerExampleOperationFilter : IOperationFilter
             if (parameter.In == ParameterLocation.Header && parameter.Name == "If-Match")
             {
                 parameter.Examples["specified in header (preferred)"] = new OpenApiExample { Value = CreateManyExamples<byte, byte[]>(e => e.ToArray(), 8) };
-                parameter.Examples["none (timestamp is specified in query, if the calling application cannot send a header)"] = new OpenApiExample { Value = new OpenApiNull() };
+                parameter.Examples["none (timestamp is specified in query, if the calling application cannot send a header)"] = new OpenApiExample { Value = null };
             }
         }
     }
 
     private void AddExamplesForResponses(OpenApiOperation operation, OperationFilterContext context)
     {
+        if (operation.Responses is null)
+            return;
+
         foreach (var pair in operation.Responses)
         {
             var statusCode = pair.Key;
             _ = int.TryParse(statusCode, out var statusCodeInt);
 
             var response = pair.Value;
+            if (response.Content is null)
+                continue;
 
             foreach (var type in response.Content.Values)
             {
-                if (type.Example is null)
+                if (type.Example is null && type.Schema is OpenApiSchemaReference reference)
                 {
                     try
                     {
-                        var typeId = type.Schema.Reference?.Id;
+                        var typeId = reference.Reference.Id;
                         if (typeId == "ProblemDetailsResource")
                         {
                             AddExampleForProblemResponse(statusCodeInt, response, type);
@@ -422,19 +434,18 @@ public class SwaggerExampleOperationFilter : IOperationFilter
         }
     }
 
-    private IOpenApiAny CreateExample(Type type)
+    private JsonNode? CreateExample(Type type)
     {
         var exampleObject = Fixture.Create(type, _specimenContext);
         return CreateExample(exampleObject);
     }
 
-    private IOpenApiAny CreateExample<T>(T exampleObject)
+    private JsonNode? CreateExample<T>(T exampleObject)
     {
-        var exampleJson = JsonSerializer.Serialize(exampleObject, _serializerOptions);
-        return OpenApiAnyFactory.CreateFromJson(exampleJson);
+        return JsonSerializer.SerializeToNode(exampleObject, _serializerOptions);
     }
 
-    private IOpenApiAny CreateManyExamples<T, U>(Func<IEnumerable<T>, U> afterCreation, int? count = default)
+    private JsonNode? CreateManyExamples<T, U>(Func<IEnumerable<T>, U> afterCreation, int? count = default)
     {
         var exampleObject = count.HasValue ? Fixture.CreateMany<T>(count.Value) : Fixture.CreateMany<T>();
         var transformedExampleObject = afterCreation(exampleObject);

@@ -160,8 +160,7 @@ public class RestWorldClient : IRestWorldClient
         }
 
         // We combined everything, so there is just one big page
-        if (response.Resource.State is not null)
-            response.Resource.State.TotalPages = 1;
+        response.Resource.State?.TotalPages = 1;
 
         response.Resource.Links!.Remove("next");
 
@@ -208,8 +207,7 @@ public class RestWorldClient : IRestWorldClient
         }
 
         // We combined everything, so there is just one big page
-        if (response.Resource.State is not null)
-            response.Resource.State.TotalPages = 1;
+        response.Resource.State?.TotalPages = 1;
 
         response.Resource.Links!.Remove("next");
 

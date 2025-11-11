@@ -1,7 +1,7 @@
 ﻿using Asp.Versioning.ApiExplorer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
 
@@ -13,7 +13,7 @@ namespace RESTworld.AspNetCore.Swagger;
 /// <seealso cref="IConfigureOptions{SwaggerGenOptions}" />
 public class ConfigureVersioningWithSwaggerOptions : IConfigureOptions<SwaggerGenOptions>
 {
-    private readonly IApiVersionDescriptionProvider provider;
+    private readonly IApiVersionDescriptionProvider _provider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ConfigureVersioningWithSwaggerOptions"/> class.
@@ -21,14 +21,14 @@ public class ConfigureVersioningWithSwaggerOptions : IConfigureOptions<SwaggerGe
     /// <param name="provider">The provider.</param>
     public ConfigureVersioningWithSwaggerOptions(IApiVersionDescriptionProvider provider)
     {
-        this.provider = provider;
+        _provider = provider;
     }
 
     /// <inheritdoc/>
     public void Configure(SwaggerGenOptions options)
     {
         var assemblyName = Assembly.GetEntryAssembly()?.GetName().Name;
-        foreach (var description in provider.ApiVersionDescriptions)
+        foreach (var description in _provider.ApiVersionDescriptions)
         {
             options.SwaggerDoc(
               description.GroupName,

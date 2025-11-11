@@ -204,8 +204,8 @@ public class RestWorldProblemDetailsFactory : ProblemDetailsFactory, IRestWorldP
 
     private string CreateKey(string key)
     {
-        var keyWithoutSinglePrefix = RemovePrefix(key, nameof(SingleObjectOrCollection<object>.SingleObject));
-        var keyWithoutCollectionPrefix = RemovePrefix(keyWithoutSinglePrefix, nameof(SingleObjectOrCollection<object>.Collection));
+        var keyWithoutSinglePrefix = RemovePrefix(key, nameof(SingleObjectOrCollection<>.SingleObject));
+        var keyWithoutCollectionPrefix = RemovePrefix(keyWithoutSinglePrefix, nameof(SingleObjectOrCollection<>.Collection));
         var casedKey = _jsonOptions?.JsonSerializerOptions?.PropertyNamingPolicy?.ConvertName(keyWithoutCollectionPrefix) ?? keyWithoutCollectionPrefix;
 
         return casedKey;

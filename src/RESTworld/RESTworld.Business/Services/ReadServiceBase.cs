@@ -285,8 +285,8 @@ public class ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>
             _authorizationHandlerWarningWasLogged = true;
 
             _logger.LogWarning("No {TReadAuthorizationHandler} is configured. No authorization will be performed for any methods of {TReadServiceBase}.",
-                $"{nameof(IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>)}<{typeof(TEntity).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}>",
-                $"{nameof(ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>)}<{typeof(TEntity).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}>");
+                $"{nameof(IReadAuthorizationHandler<,,>)}<{typeof(TEntity).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}>",
+                $"{nameof(ReadServiceBase<,,,>)}<{typeof(TEntity).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}>");
         }
     }
 }

@@ -5,8 +5,6 @@
 /// </summary>
 public class ApiUrl
 {
-    private string? _url;
-
     /// <summary>
     /// The name of the API.
     /// </summary>
@@ -17,8 +15,8 @@ public class ApiUrl
     /// </summary>
     public string? Url
     {
-        get => _url;
-        set => _url = (value?.EndsWith('/')).GetValueOrDefault() ? value : value + '/';
+        get;
+        set => field = (value?.EndsWith('/')).GetValueOrDefault() ? value : value + '/';
     }
 
     /// <summary>

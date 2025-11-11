@@ -1,4 +1,4 @@
-﻿using Microsoft.OpenApi.Models;
+﻿using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Linq;
 using System.Reflection;
@@ -18,7 +18,7 @@ public class SwaggerIgnoreOperationFilter : IOperationFilter
             .Select(p => p.Name)
             .ToHashSet();
 
-        if (!ignoredParameterNames.Any())
+        if (ignoredParameterNames.Count == 0 || operation.Parameters is null)
             return;
 
         var parametersToIgnore = operation.Parameters

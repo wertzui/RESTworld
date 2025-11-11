@@ -15,6 +15,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 using Microsoft.OData.ModelBuilder;
+using Microsoft.OpenApi;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -153,7 +154,7 @@ public static class RestWorldBuilderExtensions
             // Remove the ODataQueryOptions which is used on the GetList endpoint from the schema and the operation.
             options.OperationFilter<SwaggerODataOperationFilter>();
             options.OperationFilter<SwaggerIgnoreOperationFilter>();
-            options.MapType(typeof(ODataQueryOptions<>), () => new());
+            options.MapType(typeof(ODataQueryOptions<>), () => new OpenApiSchema());
 
             // Add versioning through media type.
             options.OperationFilter<SwaggerVersioningOperationFilter>(versionParameterName);

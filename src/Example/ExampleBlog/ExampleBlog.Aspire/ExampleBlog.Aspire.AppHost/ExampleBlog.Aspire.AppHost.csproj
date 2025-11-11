@@ -1,27 +1,27 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0" />
+    <Sdk Name="Aspire.AppHost.Sdk" Version="13.0.0" />
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <IsAspireHost>true</IsAspireHost>
-    <UserSecretsId>ee17b5a8-658e-494e-9d0c-926d7dcc924b</UserSecretsId>
-  </PropertyGroup>
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsAspireHost>true</IsAspireHost>
+        <UserSecretsId>ee17b5a8-658e-494e-9d0c-926d7dcc924b</UserSecretsId>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.5.2" />
-    <PackageReference Include="Aspire.Hosting.SqlServer" Version="9.5.2" />
-    <PackageReference Include="CommunityToolkit.Aspire.Hosting.McpInspector" Version="9.9.0" />
-    <PackageReference Include="HealthChecks.Kubernetes.Aspire.Hosting" Version="1.2.1" />
-    <PackageReference Include="OpenTelemetryCollector.Aspire.Hosting" Version="1.0.0" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Aspire.Hosting.AppHost" Version="13.0.0" />
+        <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.0.0" />
+        <PackageReference Include="CommunityToolkit.Aspire.Hosting.McpInspector" Version="9.9.0" />
+        <PackageReference Include="HealthChecks.Kubernetes.Aspire.Hosting" Version="2.0.0" />
+        <PackageReference Include="OpenTelemetryCollector.Aspire.Hosting" Version="1.0.0" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\ExampleBlog.Client.Angular\ExampleBlog.Client.Angular.csproj" />
-    <ProjectReference Include="..\..\ExampleBlog\ExampleBlog.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\ExampleBlog.Client.Angular\ExampleBlog.Client.Angular.csproj" />
+        <ProjectReference Include="..\..\ExampleBlog\ExampleBlog.csproj" />
+    </ItemGroup>
 
 </Project>

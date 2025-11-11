@@ -133,8 +133,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFul
     {
         var entry = context.Entry(entity);
         var timestampProperty = System.Linq.Enumerable.SingleOrDefault(entry.Properties, p => p.Metadata.Name == nameof(ConcurrentEntityBase.Timestamp));
-        if (timestampProperty is not null)
-            timestampProperty.OriginalValue = dto.Timestamp;
+        timestampProperty?.OriginalValue = dto.Timestamp;
     }
 
     /// <summary>
@@ -536,8 +535,8 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFul
             _authorizationHandlerWarningWasLogged = true;
 
             _logger.LogWarning("No {TCrudAuthorizationHandler} is configured. No authorization will be performed for any methods of {TCrudServiceBase}.",
-                $"{nameof(ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}>",
-                $"{nameof(CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}>");
+                $"{nameof(ICrudAuthorizationHandler<,,,,>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}>",
+                $"{nameof(CrudServiceBase<,,,,,>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}>");
         }
     }
 }
