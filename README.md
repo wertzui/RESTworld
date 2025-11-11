@@ -1,7 +1,32 @@
-# RESTworld
+# <img src="logo/RESTworld.svg" alt="RESTworld logo" width="50" /> RESTworld
 
-<!-- markdownlint-disable-next-line MD033 -->
-<img src="logo/RESTworld.svg" alt="RESTworld logo" width="128" />
+[![License: Unlicense](https://img.shields.io/badge/License-Unlicense-blue.svg)
+](LICENSE)
+
+[![NuGet Version](https://img.shields.io/nuget/v/RESTworld.AspNetCore?logo=dotnet&label=RESTworld.AspNetCore)](https://www.nuget.org/packages/RESTworld.AspNetCore/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/RESTworld.AspNetCore?logo=&label=)](https://www.nuget.org/packages/RESTworld.AspNetCore/)
+
+[![NuGet Version](https://img.shields.io/nuget/v/RESTworld.Business?logo=dotnet&label=RESTworld.Business)](https://www.nuget.org/packages/RESTworld.Business/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/RESTworld.Business?label=)](https://www.nuget.org/packages/RESTworld.Business/)
+
+[![NuGet Version](https://img.shields.io/nuget/v/RESTworld.Client.AspNetCore?logo=dotnet&label=RESTworld.Client.AspNetCore)](https://www.nuget.org/packages/RESTworld.Client.AspNetCore/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/RESTworld.Client.AspNetCore?label=)](https://www.nuget.org/packages/RESTworld.Client.AspNetCore/)
+
+[![NuGet Version](https://img.shields.io/nuget/v/RESTworld.Client.Net?logo=dotnet&label=RESTworld.Client.Net)](https://www.nuget.org/packages/RESTworld.Client.Net/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/RESTworld.Client.Net?label=)](https://www.nuget.org/packages/RESTworld.Client.Net/)
+
+[![NuGet Version](https://img.shields.io/nuget/v/RESTworld.Common?logo=dotnet&label=RESTworld.Common)](https://www.nuget.org/packages/RESTworld.Common/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/RESTworld.Common?label=)](https://www.nuget.org/packages/RESTworld.Common/)
+
+[![NuGet Version](https://img.shields.io/nuget/v/RESTworld.EntityFrameworkCore?logo=dotnet&label=RESTworld.EntityFrameworkCore)](https://www.nuget.org/packages/RESTworld.EntityFrameworkCore/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/RESTworld.EntityFrameworkCore?label=)](https://www.nuget.org/packages/RESTworld.EntityFrameworkCore/)
+
+[![NuGet Version](https://img.shields.io/nuget/v/RESTworld.Testing?logo=dotnet&label=RESTworld.Testing)](https://www.nuget.org/packages/RESTworld.Testing/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/RESTworld.Testing?label=)](https://www.nuget.org/packages/RESTworld.Testing/)
+
+[![NPM Version](https://img.shields.io/npm/v/%40wertzui%2Fngx-restworld-client?logo=angular&label=%40wertzui%2Fngx-restworld-client)](https://www.npmjs.com/package/@wertzui/ngx-restworld-client)
+[![NPM Downloads](https://img.shields.io/npm/d18m/%40wertzui%2Fngx-restworld-client?label=)](https://www.npmjs.com/package/@wertzui/ngx-restworld-client)
+
 
 RESTworld is a developer-focused framework that turns ASP.NET Core and Entity Framework Core into a fully RESTful, HAL-compliant platform. It combines well-known building blocks with batteries-included conventions so you can deliver production-ready APIs quickly.
 
