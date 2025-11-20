@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.OData;
 using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -149,6 +150,11 @@ public static class RestWorldBuilderExtensions
         });
 
         services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureVersioningWithSwaggerOptions>();
+        services.AddOpenApi(options =>
+        {
+            options.OpenApiVersion = OpenApiSpecVersion.OpenApi3_1;
+
+        });
         services.AddSwaggerGen(options =>
         {
             // Remove the ODataQueryOptions which is used on the GetList endpoint from the schema and the operation.
@@ -214,8 +220,8 @@ public static class RestWorldBuilderExtensions
         Action<TracerProviderBuilder>? configureTracing = null)
     {
         // Ensure we get the newest version of traces
-        builder.Configuration["OTEL_DOTNET_EXPERIMENTAL_EFCORE_ENABLE_TRACE_DB_QUERY_PARAMETERS"] = "true";
-        builder.Configuration["OTEL_SEMCONV_STABILITY_OPT_IN"] = "database";
+        Environment.SetEnvironmentVariable("OTEL_DOTNET_EXPERIMENTAL_EFCORE_ENABLE_TRACE_DB_QUERY_PARAMETERS", "true");
+        Environment.SetEnvironmentVariable("OTEL_SEMCONV_STABILITY_OPT_IN", "database");
 
         builder.Logging.AddOpenTelemetry(configureLogging ?? (logging =>
         {
@@ -230,7 +236,8 @@ public static class RestWorldBuilderExtensions
                     {
                         var existingFilter = opts.Filter;
                         var healthFilter = (HttpContext context) => !context.Request.Path.HasValue || !context.Request.Path.Value.StartsWith("/health/");
-                        var combinedFilter = existingFilter is null ? healthFilter : context => existingFilter(context) && healthFilter(context);
+                        var corsFilter = (HttpContext context) => !string.Equals(context.Request.Method, "OPTIONS", StringComparison.OrdinalIgnoreCase);
+                        Func<HttpContext, bool> combinedFilter = existingFilter is null ? context => healthFilter(context) && corsFilter(context) : context => existingFilter(context) && healthFilter(context) && corsFilter(context);
                         opts.Filter = combinedFilter;
 
                         var existingRequestEnricher = opts.EnrichWithHttpRequest;
@@ -264,12 +271,6 @@ public static class RestWorldBuilderExtensions
                     })
                     .AddEntityFrameworkCoreInstrumentation(opts =>
                     {
-                        //opts.EnrichWithIDbCommand = (activity, command) =>
-                        //{
-                        //    MoveDbStatementTagToDbQueryText(activity);
-                        //    AddDbQueryParameterTagsToActivity(activity, command);
-                        //};
-
                         var existingFilter = opts.Filter;
                         var healthFilter = (string? provider, IDbCommand command) => command.CommandText != "SELECT 1" && !command.CommandText.Contains("__EFMigrationsHistory");
                         var combinedFilter = existingFilter is null ? healthFilter : (provider, command) => existingFilter(provider, command) && healthFilter(provider, command);
@@ -291,20 +292,28 @@ public static class RestWorldBuilderExtensions
                     })
                     // When using both Instrumentations, there is a bug, causing spans to not use the correct parent.
                     // See https://github.com/open-telemetry/opentelemetry-dotnet-contrib/issues/1764
-                    .AddSqlClientInstrumentation(opt =>
+                    .AddSqlClientInstrumentation(opts =>
                     {
-                        //opt.
-                        //opt.EnableConnectionLevelAttributes = true;
-                        opt.RecordException = true;
-                        //opt.SetDbStatementForStoredProcedure = true;
-                        //opt.SetDbStatementForText = true;
-                        //opt.Enrich = (activity, eventName, command) =>
-                        //{
-                        //    MoveDbStatementTagToDbQueryText(activity);
+                        opts.RecordException = true;
 
-                        //    if (command is IDbCommand dbCommand)
-                        //        AddDbQueryParameterTagsToActivity(activity, dbCommand);
-                        //};
+                        var existingFilter = opts.Filter;
+                        var healthFilter = (object command) => command is SqlCommand sqlCommand && sqlCommand.CommandText != "SELECT 1" && !sqlCommand.CommandText.Contains("__EFMigrationsHistory");
+                        var combinedFilter = existingFilter is null ? healthFilter : (command) => existingFilter(command) && healthFilter(command);
+                        opts.Filter = combinedFilter;
+
+                        var existingRequestEnricher = opts.EnrichWithSqlCommand;
+                        var healthRequestEnricher = (Activity activity, object command) =>
+                        {
+                            if (command is SqlCommand sqlCommand && (sqlCommand.CommandText == "SELECT 1" || sqlCommand.CommandText.Contains("__EFMigrationsHistory")))
+                                activity.SetTag("app.synthetic_request", true);
+                        };
+                        opts.EnrichWithSqlCommand = existingRequestEnricher is null
+                            ? healthRequestEnricher
+                            : (activity, command) =>
+                            {
+                                existingRequestEnricher(activity, command);
+                                healthRequestEnricher(activity, command);
+                            };
                     });
             };
         builder.Services.AddOpenTelemetry()
@@ -319,27 +328,6 @@ public static class RestWorldBuilderExtensions
         builder.AddOpenTelemetryExporters();
 
         return builder;
-    }
-
-    private static void AddDbQueryParameterTagsToActivity(Activity activity, IDbCommand command)
-    {
-        foreach (IDataParameter parameter in command.Parameters)
-        {
-            var key = "db.query.parameter." + parameter.ParameterName;
-            activity.SetTag(key, parameter.Value);
-        }
-    }
-
-    private static void MoveDbStatementTagToDbQueryText(Activity activity)
-    {
-        var statement = activity.GetTagItem("db.statement");
-        var queryText = activity.GetTagItem("db.query.text");
-        if (statement is not null)
-        {
-            activity.SetTag("db.statement", null);
-            if (queryText is null)
-                activity.SetTag("db.query.text", statement);
-        }
     }
 
     private static void AddHttpHeadersToActivity(Activity activity, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers, JsonSerializerOptions jsonOptions)
@@ -459,6 +447,8 @@ public static class RestWorldBuilderExtensions
                 """
                 .Replace("\r", "").Replace("\n", ""));
         });
+
+        app.MapOpenApi();
 
         app.UseCors();
 

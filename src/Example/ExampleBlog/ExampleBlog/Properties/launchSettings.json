@@ -5,7 +5,6 @@
         "commandName": "Project",
         "dotnetRunMessages": true,
         "launchBrowser": false,
-        "launchUrl": "https://hal-explorer.com/#uri=https://localhost:5432",
         "applicationUrl": "https://localhost:5432",
         "environmentVariables": {
             "ASPNETCORE_ENVIRONMENT": "Development"

@@ -18,7 +18,23 @@ var apiService = builder.AddProject<ExampleBlog>(nameof(ExampleBlog))
     .WithReference(database)
     // Every RESTworld project exposes three health checks which can be used in Kubernetes.
     // When using builder.AddDbContextFactoryWithDefaults<MyDb>() a health check for the database is automatically added.
-    .WithKubernetesHealthProbes();
+    .WithKubernetesHealthProbes()
+    .WithUrls(context =>
+    {
+        if (!context.Resource.TryGetEndpoints(out var endpoints))
+            return;
+
+        foreach (var endpoint in endpoints)
+        {
+            var uri = endpoint.AllocatedEndpoint?.UriString;
+            if (uri is null)
+                continue;
+
+            context.Urls.Add(new ResourceUrlAnnotation { Url = $"https://hal-explorer.com/#uri={uri}", DisplayText = $"HAL-Explorer ({endpoint.Name})" });
+            context.Urls.Add(new ResourceUrlAnnotation { Url = $"{uri}/swagger", DisplayText = $"Swagger ({endpoint.Name})" });
+        }
+
+    });
 
 // Add the Frontend which hosts the Angular client
 var frontendService = builder.AddProject<ExampleBlog_Client_Angular>("ExampleBlog-Client-Angular")
@@ -34,7 +50,7 @@ var frontendService = builder.AddProject<ExampleBlog_Client_Angular>("ExampleBlo
 
 // Add the MCP Inspector which can be used to inspect the mcp service provided by the API
 var mcpInspector = builder.AddMcpInspector("McpInspector", new McpInspectorOptions { InspectorVersion = "0.17.2" })
-    .WithReference(apiService);
+    .WithMcpServer(apiService);
 
 var app = builder.Build();
 
