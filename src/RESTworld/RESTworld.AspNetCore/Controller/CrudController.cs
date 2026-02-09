@@ -2,6 +2,7 @@
 using HAL.AspNetCore.OData.Abstractions;
 using HAL.AspNetCore.Utils;
 using HAL.Common;
+using HAL.Common.Forms;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
@@ -180,7 +181,8 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     /// <returns>An empty resource.</returns>
     [HttpGet("new")]
     [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
-    [ProducesResponseType(200)]
+    [ProducesResponseType(typeof(FormsResource), 200, "application/prs.hal-forms+json", "application/hal-forms+json")]
+    [ProducesResponseType(typeof(void), 200, "application/hal+json")]
     [ProducesWithContentNegotiation("application/hal+json", "application/prs.hal-forms+json", "application/hal-forms+json")]
     [Description("Returns an empty resource which can be used as a template when creating a new resource.")]
     public virtual async Task<ActionResult<Resource<TCreateDto>>> NewAsync(CancellationToken cancellationToken)
@@ -203,8 +205,8 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     [HttpPost]
     [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Post))]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status409Conflict)]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(Resource), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(FormsResource), StatusCodes.Status201Created, "application/prs.hal-forms+json", "application/hal-forms+json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "application/hal+json")]
     [ProducesWithContentNegotiation("application/hal+json", "application/prs.hal-forms+json", "application/hal-forms+json")]
     [Description("Creates the given new resource(s).")]
     public virtual async Task<ActionResult<Resource<TGetFullDto>>> PostAsync(
@@ -233,8 +235,8 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     /// <returns>The full resource(s) as stored in the database.</returns>
     [HttpPut("{id:long?}")]
     [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Put))]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(Resource), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(FormsResource), StatusCodes.Status200OK, "application/prs.hal-forms+json", "application/hal-forms+json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status200OK, "application/hal+json")]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status409Conflict)]
     [ProducesWithContentNegotiation("application/hal+json", "application/prs.hal-forms+json", "application/hal-forms+json")]

@@ -129,8 +129,8 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
     /// <returns>The full representation for the requested resource.</returns>
     [HttpGet("{id:long}")]
     [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
-    [ProducesResponseType(typeof(Resource), 200, "application/hal+json")]
     [ProducesResponseType(typeof(FormsResource), 200, "application/prs.hal-forms+json", "application/hal-forms+json")]
+    [ProducesResponseType(typeof(void), 200, "application/hal+json")]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
     [ProducesWithContentNegotiation("application/hal+json", "application/prs.hal-forms+json", "application/hal-forms+json")]
     [Description("Gets a full representation of the resource with the given ID.")]
@@ -152,8 +152,8 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
     /// <returns>A paged list of resources matching the filter criteria.</returns>
     [HttpGet]
     [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
-    [ProducesResponseType(typeof(Resource<Page>), 200, "application/hal+json")]
     [ProducesResponseType(typeof(FormsResource<Page>), 200, "application/prs.hal-forms+json", "application/hal-forms+json")]
+    [ProducesResponseType(typeof(void), 200, "application/hal+json")]
     [ProducesWithContentNegotiation("application/hal+json", "text/csv", "application/prs.hal-forms+json", "application/hal-forms+json")]
     [Description("Gets a paged list of resources matching the filter criteria.")]
     public virtual async Task<ActionResult<Resource<Page>>> GetListAsync(
@@ -183,11 +183,11 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
     /// <returns>A paged list of resources matching the filter criteria.</returns>
     [HttpGet("history")]
     [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
-    [ProducesResponseType(typeof(Resource<Page>), 200, "application/hal+json")]
     [ProducesResponseType(typeof(FormsResource<Page>), 200, "application/prs.hal-forms+json", "application/hal-forms+json")]
+    [ProducesResponseType(typeof(void), 200, "application/hal+json")]
     [ProducesWithContentNegotiation("application/hal+json", "text/csv", "application/prs.hal-forms+json", "application/hal-forms+json")]
     [Description("Gets a paged list of historical resources matching the filter criteria.")]
-    public virtual async Task<ActionResult<Resource>> GetHistoryAsync(
+    public virtual async Task<ActionResult<Resource<Page>>> GetHistoryAsync(
         ODataQueryOptions<TGetFullDto> options,
         [FromQuery(Name = "$at")] DateTimeOffset? at,
         [FromQuery(Name = "$from")] DateTimeOffset? from,

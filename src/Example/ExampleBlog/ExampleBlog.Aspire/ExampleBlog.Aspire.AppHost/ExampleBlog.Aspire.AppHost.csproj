@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <Sdk Name="Aspire.AppHost.Sdk" Version="13.0.0" />
+    <Sdk Name="Aspire.AppHost.Sdk" Version="13.1.0" />
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -12,9 +12,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Aspire.Hosting.AppHost" Version="13.0.0" />
-        <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.0.0" />
-        <PackageReference Include="CommunityToolkit.Aspire.Hosting.McpInspector" Version="13.0.0-beta.444" />
+        <PackageReference Include="Aspire.Hosting.AppHost" Version="13.1.0" />
+        <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.1.0" />
+        <PackageReference Include="CommunityToolkit.Aspire.Hosting.McpInspector" Version="13.1.1" />
         <PackageReference Include="HealthChecks.Kubernetes.Aspire.Hosting" Version="2.0.0" />
         <PackageReference Include="OpenTelemetryCollector.Aspire.Hosting" Version="1.0.0" />
     </ItemGroup>

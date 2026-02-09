@@ -162,8 +162,17 @@ public static class RestWorldBuilderExtensions
             options.OperationFilter<SwaggerIgnoreOperationFilter>();
             options.MapType(typeof(ODataQueryOptions<>), () => new OpenApiSchema());
 
+            // Add correct schema for Resource<TState> and corresponding FormsResource
+            options.SchemaFilter<SwaggerResourceSchemaFilter>();
+
+            // Add the generated FormsResource schemas to the corresponding operations.
+            options.OperationFilter<SwaggerFormsResourceOperationFilter>();
+
             // Add versioning through media type.
             options.OperationFilter<SwaggerVersioningOperationFilter>(versionParameterName);
+
+            // Remove the body parameters for OData endpoints as these are not used and only confuse users of the API.
+            options.OperationFilter<SwaggerRemoveOdataBodyParametersOperationFilter>();
 
             // Add meaningful examples.
             options.OperationFilter<SwaggerExampleOperationFilter>();
