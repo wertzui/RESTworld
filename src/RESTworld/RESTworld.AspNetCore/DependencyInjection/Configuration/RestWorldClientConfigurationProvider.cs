@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.ServiceDiscovery;
 using RESTworld.Common.Client;
+using System;
 using System.Linq;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -65,9 +65,9 @@ public class RestWorldClientConfigurationProvider : ConfigurationProvider
         _restWorldConfigSection[$"{nameof(RestWorldClientOptions.ClientSettings)}:{nameof(ClientSettings.Extensions)}:{configKey}"] = _rootConfiguration.GetValue<string?>(environmentVariableToReadFrom);
     }
 
-    private void SetApiUrl(int apiIndex, string apiUrl)
+    private void SetApiUrl(int apiIndex, Uri apiUrl)
     {
-        _restWorldConfigSection[$"{nameof(RestWorldClientOptions.ClientSettings)}:{nameof(ClientSettings.ApiUrls)}:{apiIndex}:{nameof(ApiUrl.Url)}"] = apiUrl;
+        _restWorldConfigSection[$"{nameof(RestWorldClientOptions.ClientSettings)}:{nameof(ClientSettings.ApiUrls)}:{apiIndex}:{nameof(ApiUrl.Url)}"] = apiUrl.ToString();
     }
 
     private async ValueTask ApplyServiceDiscovery(ClientSettings? clientSettings, CancellationToken cancellationToken)
@@ -87,27 +87,16 @@ public class RestWorldClientConfigurationProvider : ConfigurationProvider
             return;
 
         var endpoints = await _serviceEndpointResolver.GetEndpointsAsync("https+http://" + api.Name, cancellationToken);
-        // A check to filter only for endpoints which are UrlEndpoint would be better, but
-        // that class is internal. See https://github.com/dotnet/aspire/issues/4224
-        if (endpoints.Endpoints.Count <= 0)
-            return;
 
-        var endpoint = endpoints.Endpoints[0].EndPoint;
-
-        try
+        foreach (var endpoint in endpoints.Endpoints.Select(e => e.EndPoint))
         {
-            if (endpoint.AddressFamily == AddressFamily.Unspecified)
-                return;
-        }
-        catch
-        {
-            // We expect a NotImplementedException if the endpoint is an URL.
-        }
+            if (endpoint is not UriEndPoint uriEndpoint)
+                continue;
 
-        var uri = endpoint.ToString();
-        if (uri is null || (!uri.StartsWith("http://") && !uri.StartsWith("https://")))
-            return;
+            if (uriEndpoint.Uri.Scheme is not "http" and not "https")
+                continue;
 
-        SetApiUrl(index, uri);
+            SetApiUrl(index, uriEndpoint.Uri);
+        }
     }
 }
