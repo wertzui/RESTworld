@@ -24,6 +24,10 @@
             <div class="col">
                 <div class="flex justify-content-end w-full">
                     <ng-template #defaultButtons>
+                        @if (beforeButtonsRef(); as beforeButtons) {
+                            <ng-container
+                                *ngTemplateOutlet="beforeButtons; context: { form: formGroup, template: template, apiName: apiName() }"></ng-container>
+                        }
                         <button pButton pRipple type="submit" label="Save" icon="far fa-save" class="mx-2 p-button-success"
                             [disabled]="!allowSubmit()"></button>
                         <button pButton pRipple type="button" label="Reload" icon="fas fa-redo" class="mx-2 p-button-info"
@@ -31,6 +35,10 @@
                         <button pButton pRipple type="button" label="Delete" icon="far fa-trash-alt"
                             class="ml-2 p-button-danger" (click)="showDeleteConfirmatioModal()"
                             [disabled]="!canDelete()"></button>
+                        @if (afterButtonsRef(); as afterButtons) {
+                            <ng-container
+                                *ngTemplateOutlet="afterButtons; context: { form: formGroup, template: template, apiName: apiName() }"></ng-container>
+                        }
                     </ng-template>
                     <ng-container
                         *ngTemplateOutlet="buttonsRef() ?? defaultButtons; context: { form: formGroup, template: template, apiName: apiName() }"></ng-container>
