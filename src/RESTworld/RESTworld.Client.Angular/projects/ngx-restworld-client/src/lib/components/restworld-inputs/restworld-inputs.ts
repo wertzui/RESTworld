@@ -495,5 +495,5 @@ export class RestWorldInputTemplateComponent<T extends { [K in keyof T]: Abstrac
      * @required
      * @remarks This is the template that defines the properties to display.
      */
-    public readonly template = input.required<Template>();
+    public readonly template = input.required<Template | NumberTemplate>();
 }

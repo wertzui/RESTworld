@@ -18,12 +18,12 @@ import { ProblemService } from "../ngx-restworld-client/services/problem.service
     imports: [RestWorldTableComponent, JsonPipe, ReactiveFormsModule]
 })
 export class PostsForBlogComponent {
-    public readonly apiName = input.required<string>();
+    public readonly apiName = input<string>();
     public readonly formArray = new FormArray([]);
     public readonly formGroup = new FormGroup({ posts: this.formArray });
     public readonly isLoading = computed(() => this.listResource.isLoading() || this.templates.isLoading());
     // public readonly load = debounce(this.loadInternal, 100);
-    public readonly rel = input.required<string>();
+    public readonly rel = input<string>();
     public readonly items = computed(() => this.listResource.value()?._embedded.items || []);
     // public readonly searchTemplate = signal<Template>(new Template({ properties: [] }));
     public readonly selection = model<ResourceOfDto<PostListDto>[]>([]);
@@ -41,7 +41,11 @@ export class PostsForBlogComponent {
     private readonly listResource = resource({
         params: () => ({ oDataParameters: this.oDataParameters(), rel: this.rel() }),
         loader: async ({ params }) => {
-            const response = await this._client().getList<PostListDto>(params.rel, params.oDataParameters);
+            const client = this._client();
+            if (params.rel === undefined || client === undefined)
+                return PostsForBlogComponent._emptylistResource;
+
+            const response = await client.getList<PostListDto>(params.rel, params.oDataParameters);
             if (this._problemService.checkResponseAndDisplayErrors(response, undefined, "Error while loading the resources from the API.", "Error")) {
                 return response.body;
             }
@@ -55,11 +59,12 @@ export class PostsForBlogComponent {
     private readonly templates = resource({
         params: () => ({ resource: this.listResource.value() }),
         loader: async ({ params }) => {
-            if (params.resource === undefined)
+            const client = this._client();
+            if (params.resource === undefined || client === undefined)
                 return { search: PostsForBlogComponent._emptyTemplate, edit: PostsForBlogComponent._emptyTemplate };
 
             try {
-                const templates = await this._client().getAllTemplates(params.resource);
+                const templates = await client.getAllTemplates(params.resource);
                 if (ProblemDetails.isProblemDetails(templates)) {
                     this._messageService.add({ severity: 'error', summary: 'Error', detail: `No templates found in the API response.`, data: templates });
                     return { search: PostsForBlogComponent._emptyTemplate, edit: PostsForBlogComponent._emptyTemplate };
@@ -86,7 +91,13 @@ export class PostsForBlogComponent {
         },
     });
 
-    private readonly _client = computed(() => this._clients.getClient(this.apiName()));
+    private readonly _client = computed(() => {
+        const apiName = this.apiName();
+        if (apiName === undefined)
+            return undefined;
+
+        return this._clients.getClient(apiName);
+    });
 
     private static readonly _emptylistResource = new PagedListResource({ _embedded: { items: [] }, _links: { self: [] } });
 

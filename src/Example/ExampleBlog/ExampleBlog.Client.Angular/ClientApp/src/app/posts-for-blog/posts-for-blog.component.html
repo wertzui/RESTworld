@@ -1,21 +1,24 @@
-<form [formGroup]="formGroup">
-  <rw-table
-    formArrayName="posts"
-    [apiName]="apiName()"
-    [searchTemplate]="searchTemplate()"
-    [editTemplate]="editTemplate()"
-    [rows]="items()"
-    [totalRecords]="totalRecords()"
-    [isLoading]="isLoading()"
-    [rowStyleClass]="generateRowClasses"
-    [cellStyleClass]="generateCellClasses"
-    [(oDataParameters)]="oDataParameters"
-    selectionMode="multiple"
-    [(selectedRows)]="selection"
-    [rowHover]="true">
-  </rw-table>
-</form>
-Selection:
-<pre>{{selection() | json}}</pre>
-Form value:
-<pre>{{formArray.value | json}}</pre>
+@let _apiName = apiName();
+@if (_apiName) {
+    <form [formGroup]="formGroup">
+      <rw-table
+        formArrayName="posts"
+        [apiName]="_apiName"
+        [searchTemplate]="searchTemplate()"
+        [editTemplate]="editTemplate()"
+        [rows]="items()"
+        [totalRecords]="totalRecords()"
+        [isLoading]="isLoading()"
+        [rowStyleClass]="generateRowClasses"
+        [cellStyleClass]="generateCellClasses"
+        [(oDataParameters)]="oDataParameters"
+        selectionMode="multiple"
+        [(selectedRows)]="selection"
+        [rowHover]="true">
+      </rw-table>
+    </form>
+    Selection:
+    <pre>{{selection() | json}}</pre>
+    Form value:
+    <pre>{{formArray.value | json}}</pre>
+}

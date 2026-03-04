@@ -136,6 +136,14 @@ export class RestWorldFormComponent<TPropertyDtos extends ReadonlyArray<Property
     */
     public readonly buttonsRef = contentChild<TemplateRef<unknown>>('buttons');
     /**
+     * A reference to a template that can be used to render content before the default buttons.
+    */
+    public readonly beforeButtonsRef = contentChild<TemplateRef<unknown>>('beforeButtons');
+    /**
+     * A reference to a template that can be used to render content after the default buttons.
+    */
+    public readonly afterButtonsRef = contentChild<TemplateRef<unknown>>('afterButtons');
+    /**
      * A reference to a template that can be used to render custom content inside the <form> element instead of the default form.
     */
     public readonly contentRef = contentChild<TemplateRef<unknown>>('content');
