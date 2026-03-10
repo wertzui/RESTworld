@@ -1,141 +1,118 @@
-﻿using AutoMapper;
-using AutoMapper.AspNet.OData;
-using Microsoft.AspNetCore.OData.Query;
-using Microsoft.Extensions.Caching.Memory;
+﻿using Microsoft.AspNetCore.OData.Query;
+using RESTworld.Business.Mapping;
 using RESTworld.Business.Models;
 using RESTworld.Business.Models.Abstractions;
 using System;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 
 namespace RESTworld.AspNetCore.Controller;
 
 /// <summary>
-/// Creates <see cref="IGetListRequest{TDto, TEntity}"/>.
+/// Creates <see cref="IGetListRequest{TQueryDto, TGetListDto, TEntity}"/>.
 /// This is used to convert the ODataQueryOptions into a request which can be used to call the service.
 /// </summary>
-public class ListRequestFactory : IListRequestFactory
+/// <typeparam name="TEntity">The type of the entity which is queried in the database.</typeparam>
+/// <typeparam name="TQueryDto">The type of the DTO which is used for the query.</typeparam>
+/// <typeparam name="TGetListDto">The type of the DTO which is returned.</typeparam>
+/// <typeparam name="TGetFullDto">The type of the DTO which is returned for history requests.</typeparam>
+public class ListRequestFactory<TEntity, TQueryDto, TGetListDto, TGetFullDto> : IListRequestFactory<TEntity, TQueryDto, TGetListDto, TGetFullDto>
+    where TEntity : class
+    where TQueryDto : class
+    where TGetListDto : class
+    where TGetFullDto : class
 {
-    private static readonly MethodInfo _getQueryableMethod = GetQueryableMethod();
     private static readonly PropertyInfo _skipProperty = typeof(ODataQueryOptions).GetProperty(nameof(ODataQueryOptions.Skip))!;
     private static readonly PropertyInfo _skipTokenProperty = typeof(ODataQueryOptions).GetProperty(nameof(ODataQueryOptions.SkipToken))!;
     private static readonly PropertyInfo _topProperty = typeof(ODataQueryOptions).GetProperty(nameof(ODataQueryOptions.Top))!;
-    private readonly IMapper _mapper;
-    private readonly IMemoryCache _cache;
+
+    private readonly IReadMapper<TEntity, TQueryDto, TGetListDto, TGetFullDto> _mapper;
 
     /// <summary>
-    /// Creates a new instance of the <see cref="ListRequestFactory"/> class.
+    /// Creates a new instance of the <see cref="ListRequestFactory{TQueryDto, TGetListDto, TGetFullDto, TEntity}"/> class.
     /// </summary>
-    /// <param name="mapper">The mapper to convert the entities to DTOs and vice versa.</param>
-    /// <param name="cache">The cache.</param>
-    public ListRequestFactory(
-        IMapper mapper,
-        IMemoryCache cache)
+    public ListRequestFactory(IReadMapper<TEntity, TQueryDto, TGetListDto, TGetFullDto> mapper)
     {
         _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
-        _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     }
 
     /// <inheritdoc/>
-    public IGetHistoryRequest<TDto, TEntity> CreateHistoryRequest<TDto, TEntity>(ODataQueryOptions<TDto> oDataQueryOptions, DateTimeOffset? validFrom, DateTimeOffset? validTo, bool calculateTotalCount)
-        where TDto : class
-        where TEntity : class
+    public IGetHistoryRequest<TEntity, TQueryDto, TGetFullDto> CreateHistoryRequest(ODataQueryOptions<TQueryDto> oDataQueryOptions, DateTimeOffset? validFrom, DateTimeOffset? validTo, bool calculateTotalCount)
     {
         ArgumentNullException.ThrowIfNull(oDataQueryOptions);
 
-        Func<IQueryable<TEntity>, IQueryable<TDto>> filter = source => source.GetQuery(_mapper, oDataQueryOptions);
+        var filter = GetQuery(oDataQueryOptions, _mapper.MapQueryToFullQueryable);
 
         if (calculateTotalCount)
         {
-            var filterForTotalCount = GetFilterOnlyQuery<TDto, TEntity>(oDataQueryOptions);
-            return new GetHistoryRequest<TDto, TEntity>(filter, filterForTotalCount, validFrom, validTo);
+            var filterForTotalCount = GetFilterOnlyHistoryQuery(oDataQueryOptions);
+            return new GetHistoryRequest<TEntity, TQueryDto, TGetFullDto>(filter, filterForTotalCount, validFrom, validTo);
         }
         else
         {
-            return new GetHistoryRequest<TDto, TEntity>(filter, validFrom, validTo);
+            return new GetHistoryRequest<TEntity, TQueryDto, TGetFullDto>(filter, validFrom, validTo);
         }
     }
 
     /// <inheritdoc/>
-    public IGetListRequest<TDto, TEntity> CreateListRequest<TDto, TEntity>(ODataQueryOptions<TDto> oDataQueryOptions, bool calculateTotalCount)
-        where TDto : class
-        where TEntity : class
+    public IGetListRequest<TEntity, TQueryDto, TGetListDto> CreateListRequest(ODataQueryOptions<TQueryDto> oDataQueryOptions, bool calculateTotalCount)
     {
         ArgumentNullException.ThrowIfNull(oDataQueryOptions);
 
-        Func<IQueryable<TEntity>, IQueryable<TDto>> filter = source =>
-            source.GetQuery(
-                _mapper,
-                oDataQueryOptions,
-                // The AutoMapper.AspNetCore.OData.EFCore library does not support getting the MaxTop from the DefaultQueryConfigurations, so we need to set it explicitly.
-                new QuerySettings { ODataSettings = new ODataSettings { PageSize = oDataQueryOptions.Context.DefaultQueryConfigurations.MaxTop } }
-            );
+        var filter = GetQuery(oDataQueryOptions, _mapper.MapQueryToListQueryable);
 
         if (calculateTotalCount)
         {
-            // The total count must be calculated without any given $top value.
-            var totalCountOptions = new ODataQueryOptions<TDto>(oDataQueryOptions.Context, oDataQueryOptions.Request);
-            if (totalCountOptions.Skip != null)
-                _skipProperty.SetValue(totalCountOptions, null);
-            if (totalCountOptions.SkipToken != null)
-                _skipTokenProperty.SetValue(totalCountOptions, null);
-            if (totalCountOptions.Top != null)
-                _topProperty.SetValue(totalCountOptions, null);
-
-            var filterForTotalCount = GetFilterOnlyQuery<TDto, TEntity>(totalCountOptions);
-            return new GetListRequest<TDto, TEntity>(filter, filterForTotalCount);
+            var filterForTotalCount = GetFilterOnlyListQuery(oDataQueryOptions);
+            return new GetListRequest<TEntity, TQueryDto, TGetListDto>(filter, filterForTotalCount);
         }
         else
         {
-            return new GetListRequest<TDto, TEntity>(filter);
+            return new GetListRequest<TEntity, TQueryDto, TGetListDto>(filter);
         }
     }
 
     /// <inheritdoc/>
-    public Func<IQueryable<TEntity>, IQueryable<TDto>> GetFilterOnlyQuery<TDto, TEntity>(ODataQueryOptions<TDto> oDataQueryOptions, QuerySettings? querySettings = null)
-        where TDto : class
-    {
-        var filter = oDataQueryOptions.ToFilterExpression((querySettings?.ODataSettings?.HandleNullPropagation).GetValueOrDefault(HandleNullPropagationOption.False), querySettings?.ODataSettings?.TimeZone, (querySettings?.ODataSettings?.EnableConstantParameterization).GetValueOrDefault(true));
+    public Func<IQueryable<TEntity>, IQueryable<TGetListDto>> GetFilterOnlyListQuery(ODataQueryOptions<TQueryDto> oDataQueryOptions)
+        => GetFilterOnlyQuery(oDataQueryOptions, _mapper.MapQueryToListQueryable);
 
-        return query => GetQueryable(query, oDataQueryOptions, querySettings, filter);
+    public Func<IQueryable<TEntity>, IQueryable<TGetFullDto>> GetFilterOnlyHistoryQuery(ODataQueryOptions<TQueryDto> oDataQueryOptions)
+        => GetFilterOnlyQuery(oDataQueryOptions, _mapper.MapQueryToFullQueryable);
+
+    private Func<IQueryable<TEntity>, IQueryable<TResult>> GetQuery<TResult>(ODataQueryOptions<TQueryDto> oDataQueryOptions, Func<IQueryable<TQueryDto>, IQueryable<TResult>> mapFromQueryToResult)
+    {
+        IQueryable<TResult> apply(IQueryable<TEntity> source) => ApplyODataQueryOptions(source, oDataQueryOptions, mapFromQueryToResult);
+
+        return apply;
     }
 
-    private IQueryable<TModel> GetQueryable<TModel, TData>(
-        IQueryable<TData> query,
-        ODataQueryOptions<TModel> options,
-        QuerySettings? querySettings,
-        Expression<Func<TModel, bool>> filter)
-        where TModel : class
+    private Func<IQueryable<TEntity>, IQueryable<TResult>> GetFilterOnlyQuery<TResult>(ODataQueryOptions<TQueryDto> oDataQueryOptions, Func<IQueryable<TQueryDto>, IQueryable<TResult>> mapFromQueryToResult)
     {
-        var func = GetQueryableFunc<TModel, TData>();
-
-        var queryable = func(query, _mapper, options, querySettings, filter);
-
-        return queryable;
+        // The total count must be calculated without any given $skip and $top value.
+        var totalCountOptions = CreateQueryOptionsWithoutPagination(oDataQueryOptions);
+        return source => ApplyODataQueryOptions(source, totalCountOptions, mapFromQueryToResult);
     }
 
-    private Func<IQueryable<TData>, IMapper, ODataQueryOptions<TModel>, QuerySettings?, Expression<Func<TModel, bool>>, IQueryable<TModel>> GetQueryableFunc<TModel, TData>() where TModel : class
+    private static ODataQueryOptions<TQueryDto> CreateQueryOptionsWithoutPagination(ODataQueryOptions<TQueryDto> oDataQueryOptions)
     {
-        var key = (typeof(TModel), typeof(TData));
-
-        if (!_cache.TryGetValue(key, out Func<IQueryable<TData>, IMapper, ODataQueryOptions<TModel>, QuerySettings?, Expression<Func<TModel, bool>>, IQueryable<TModel>>? func) || func is null)
-        {
-            var genericMethod = _getQueryableMethod.MakeGenericMethod(key.Item1, key.Item2);
-            func = genericMethod.CreateDelegate<Func<IQueryable<TData>, IMapper, ODataQueryOptions<TModel>, QuerySettings?, Expression<Func<TModel, bool>>, IQueryable<TModel>>>();
-            _cache.Set(key, func);
-        }
-
-        return func;
+        var totalCountOptions = new ODataQueryOptions<TQueryDto>(oDataQueryOptions.Context, oDataQueryOptions.Request);
+        if (totalCountOptions.Skip != null)
+            _skipProperty.SetValue(totalCountOptions, null);
+        if (totalCountOptions.SkipToken != null)
+            _skipTokenProperty.SetValue(totalCountOptions, null);
+        if (totalCountOptions.Top != null)
+            _topProperty.SetValue(totalCountOptions, null);
+        return totalCountOptions;
     }
 
-    private static MethodInfo GetQueryableMethod()
+    private IQueryable<TResult> ApplyODataQueryOptions<TResult>(IQueryable<TEntity> source, ODataQueryOptions<TQueryDto> oDataQueryOptions, Func<IQueryable<TQueryDto>, IQueryable<TResult>> mapFromQueryToResult)
     {
-        var type = typeof(AutoMapper.AspNet.OData.QueryableExtensions);
-        var method = type.GetMethod("GetQueryable", BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException($"""Unable to create the Count expression for the query. Method "GetQueryable" not found on {type.Name}. The reason is probably a version incompatibility.""");
-        if (!method.IsGenericMethod || method.GetGenericArguments().Length != 2)
-            throw new InvalidOperationException($"""Unable to create the Count expression for the query. Method "GetQueryable" is not generic or has the wrong number of generic arguments on {type.Name}. The reason is probably a version incompatibility.""");
-        return method;
+        var mappedQuery = _mapper.MapEntityToQuery(source);
+        var appliedQuery = oDataQueryOptions.ApplyTo(mappedQuery);
+        if (appliedQuery is not IQueryable<TQueryDto> query)
+            throw new InvalidOperationException($"The applied query must be of type {typeof(IQueryable<TQueryDto>).FullName}, but was {appliedQuery.GetType().FullName}.");
+        var resultingQuery = mapFromQueryToResult(query);
+
+        return resultingQuery;
     }
 }

@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using RESTworld.Business.Authorization.Abstractions;
+using RESTworld.Business.Mapping;
 using RESTworld.Business.Services;
 using RESTworld.Business.Validation.Abstractions;
 using RESTworld.Common.Dtos;
@@ -125,6 +126,7 @@ public class TestBuilderTests
             .WithAutomapper(cfg => { })
             .WithoutUser()
             .WithValidation()
+            .WithCrudAutoMapper<TestModel, TestDto, TestDto, TestDto, TestDto, TestDto>()
             .Build<MyService>();
 
         // Act
@@ -142,6 +144,7 @@ public class TestBuilderTests
             .WithInMemoryDatabase<TestDatabase>()
             .WithAutomapper(cfg => { })
             .WithoutUser()
+            .WithReadAutoMapper<TestModel, TestDto, TestDto, TestDto>()
             .WithReadService<TestDatabase, TestModel, TestDto>()
             .BuildWithServiceAsSut();
 
@@ -161,6 +164,7 @@ public class TestBuilderTests
             .WithAutomapper(cfg => { })
             .WithoutUser()
             .WithValidation()
+            .WithCrudAutoMapper<TestModel, TestDto, TestDto, TestDto, TestDto, TestDto>()
             .WithCrudService<TestDatabase, TestModel, TestDto>()
             .BuildWithServiceAsSut();
 
@@ -216,16 +220,16 @@ public class TestOptions
     public string? Bar { get; set; }
 }
 
-public class MyService : CrudServiceBase<TestDatabase, TestModel, TestDto, TestDto, TestDto, TestDto>
+public class MyService : CrudServiceBase<TestDatabase, TestModel, TestDto, TestDto, TestDto, TestDto, TestDto>
 {
     public MyService(
         IDbContextFactory<TestDatabase> contextFactory,
-        IMapper mapper,
-        IEnumerable<ICrudAuthorizationHandler<TestModel, TestDto, TestDto, TestDto, TestDto>> authorizationHandlers,
-        IValidationService<TestDto, TestDto, TestModel> validators,
+        ICrudMapper<TestModel, TestDto, TestDto, TestDto, TestDto, TestDto> mapper,
+        IEnumerable<ICrudAuthorizationHandler<TestModel, TestDto, TestDto, TestDto, TestDto, TestDto>> authorizationHandlers,
+        IValidationService<TestDto, TestDto, TestModel>? validationService,
         IUserAccessor userAccessor,
-        ILogger<CrudServiceBase<TestDatabase, TestModel, TestDto, TestDto, TestDto, TestDto>> logger) :
-        base(contextFactory, mapper, authorizationHandlers, validators, userAccessor, logger)
+        ILogger<CrudServiceBase<TestDatabase, TestModel, TestDto, TestDto, TestDto, TestDto, TestDto>> logger)
+        : base(contextFactory, mapper, authorizationHandlers, validationService, userAccessor, logger)
     {
     }
 }

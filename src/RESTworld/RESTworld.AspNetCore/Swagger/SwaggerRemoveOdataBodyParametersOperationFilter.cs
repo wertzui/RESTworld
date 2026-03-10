@@ -12,7 +12,7 @@ internal class SwaggerRemoveOdataBodyParametersOperationFilter : IOperationFilte
     {
         if (context.ApiDescription.ActionDescriptor is not ControllerActionDescriptor controllerActionDescriptor ||
             !controllerActionDescriptor.ControllerTypeInfo.IsGenericType ||
-            controllerActionDescriptor.ControllerTypeInfo.GetGenericTypeDefinition() != typeof(CrudController<,,,,>))
+            controllerActionDescriptor.ControllerTypeInfo.GetGenericTypeDefinition() != typeof(CrudController<,,,,,>))
             return;
 
         var bodyContent = operation.RequestBody?.Content;

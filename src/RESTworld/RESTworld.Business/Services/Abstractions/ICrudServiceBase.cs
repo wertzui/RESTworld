@@ -15,11 +15,13 @@ namespace RESTworld.Business.Services.Abstractions;
 /// </summary>
 /// <typeparam name="TEntity">The type of the database entity.</typeparam>
 /// <typeparam name="TCreateDto">The type of the DTO that is used for CREATE operations.</typeparam>
+/// <typeparam name="TQueryDto">The type of the DTO that is used for READ-list filtering and sorting.</typeparam>
 /// <typeparam name="TGetListDto">The type of the DTO that is used for READ-list operations.</typeparam>
 /// <typeparam name="TGetFullDto">The type of the DTO that is used for READ-single operations.</typeparam>
 /// <typeparam name="TUpdateDto">The type of the DTO that is used for UPDATE operations.</typeparam>
-public interface ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> : IReadServiceBase<TEntity, TGetListDto, TGetFullDto>
+public interface ICrudServiceBase<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto> : IReadServiceBase<TEntity, TQueryDto, TGetListDto, TGetFullDto>
     where TEntity : ConcurrentEntityBase
+    where TQueryDto : class
     where TGetListDto : DtoBase
     where TGetFullDto : ConcurrentDtoBase
     where TUpdateDto : ConcurrentDtoBase

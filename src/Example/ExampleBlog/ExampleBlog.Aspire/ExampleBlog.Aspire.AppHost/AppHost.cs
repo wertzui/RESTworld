@@ -49,7 +49,7 @@ var frontendService = builder.AddProject<ExampleBlog_Client_Angular>("ExampleBlo
     .WithIconName("TabDesktop");
 
 // Add the MCP Inspector which can be used to inspect the mcp service provided by the API
-var mcpInspector = builder.AddMcpInspector("McpInspector", new McpInspectorOptions { InspectorVersion = "0.17.2" })
+var mcpInspector = builder.AddMcpInspector("McpInspector", new McpInspectorOptions { InspectorVersion = "0.21.1" })
     .WithMcpServer(apiService);
 
 var app = builder.Build();

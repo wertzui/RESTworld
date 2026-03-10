@@ -7,8 +7,9 @@ namespace RESTworld.Business.Models.Abstractions;
 /// A request for a list of records.
 /// </summary>
 /// <typeparam name="TEntity">The type of the entity in the database.</typeparam>
+/// <typeparam name="TQueryDto">The type of the DTO used to query the database. This is usually the same as <typeparamref name="TGetListDto"/> but can be different if the query DTO contains additional properties which are not mapped to the entity and are only used for filtering.</typeparam>
 /// <typeparam name="TGetListDto">The type of the DTO used to query the database.</typeparam>
-public interface IGetListRequest<TGetListDto, TEntity>
+public interface IGetListRequest<TEntity, TQueryDto, TGetListDto>
 {
     /// <summary>
     /// Gets or sets a value indicating whether the total count should be calculated for list endpoints.

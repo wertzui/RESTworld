@@ -134,10 +134,7 @@ public class AuthorizationResult<TEntity> : AuthorizationResultWithoutDb
     public AuthorizationResult(HttpStatusCode status, Func<IQueryable<TEntity>, IQueryable<TEntity>>? filter = null)
         : base(status)
     {
-        if (filter is null)
-            Filter = _defaultFilter;
-        else
-            Filter = filter;
+        Filter = filter is null ? _defaultFilter : filter;
     }
 
     /// <summary>

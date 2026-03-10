@@ -18,5 +18,5 @@ public class PostListDto : ChangeTrackingDtoBase
     public virtual AuthorDto? Author { get; set; }
 
     [JsonIgnore]
-    public virtual BlogDto? Blog { get; set; }
+    public virtual BlogGetFullDto? Blog { get; set; }
 }

@@ -1,5 +1,4 @@
 ﻿using ExampleBlog.Common.Dtos;
-using ExampleBlog.Data.Models;
 using HAL.AspNetCore.Abstractions;
 using HAL.AspNetCore.Forms.Abstractions;
 using HAL.AspNetCore.Forms.Customization;
@@ -31,7 +30,7 @@ public class AuthorForPostCustomizationV1 : IFormsResourceGenerationCustomizatio
         if (value is PostWithAuthorDtoV1 dto)
         {
             // When getting a form, instead of a link to the author, we just add another form with the author already filled in
-            var authorLink = _linkFactory.Create(ActionHelper.StripAsyncSuffix(nameof(ReadController<Author, AuthorDto, AuthorDto>.GetAsync)), RestControllerNameConventionAttribute.CreateNameFromType<AuthorDto>(), new { id = dto.AuthorId }).Href ?? "";
+            var authorLink = _linkFactory.Create(ActionHelper.StripAsyncSuffix(nameof(ReadController<,,,>.GetAsync)), RestControllerNameConventionAttribute.CreateNameFromType<AuthorDto>(), new { id = dto.AuthorId }).Href ?? "";
             var authorForm = await formFactory.CreateFormAsync(dto.Author, authorLink, HttpMethod.Get, "Author");
             formsResource.Templates["The author"] = authorForm;
         }

@@ -22,12 +22,10 @@ public static class HostApplicationBuilderExtensions
     /// <typeparam name="TRequest">The type of the request.</typeparam>
     /// <typeparam name="TResponse">The type of the response.</typeparam>
     /// <typeparam name="TService">
-    /// The type of the custom <see cref="ICrudServiceBase{TEntity, TCreateDto, TGetListDto,
-    /// TGetFullDto, TUpdateDto}"/> implementation.
+    /// The type of the custom <see cref="ICrudServiceBase{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/> implementation.
     /// </typeparam>
     /// <typeparam name="TAuthorizationHandler">
-    /// The type of the <see cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto,
-    /// TGetFullDto, TUpdateDto}"/>.
+    /// The type of the <see cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/>.
     /// </typeparam>
     /// <param name="builder">The host application builder.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
@@ -54,12 +52,10 @@ public static class HostApplicationBuilderExtensions
     /// <typeparam name="TRequest">The type of the request.</typeparam>
     /// <typeparam name="TResponse">The type of the response.</typeparam>
     /// <typeparam name="TService">
-    /// The type of the custom <see cref="ICrudServiceBase{TEntity, TCreateDto, TGetListDto,
-    /// TGetFullDto, TUpdateDto}"/> implementation.
+    /// The type of the custom <see cref="ICrudServiceBase{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/> implementation.
     /// </typeparam>
     /// <typeparam name="TAuthorizationHandler">
-    /// The type of the <see cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto,
-    /// TGetFullDto, TUpdateDto}"/>.
+    /// The type of the <see cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/>.
     /// </typeparam>
     /// <param name="builder">The host application builder.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>

@@ -152,7 +152,7 @@ public class ResultFactory : IResultFactory
     }
 
     /// <inheritdoc/>
-    public ValueTask<Resource> CreatePagedCollectionResourceAsync<TEntity, TDto>(ODataQueryOptions<TEntity> options, IReadOnlyPagedCollection<TDto> page, string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put")
+    public ValueTask<Resource> CreatePagedCollectionResourceAsync<TQueryDto, TDto>(ODataQueryOptions<TQueryDto> options, IReadOnlyPagedCollection<TDto> page, string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put")
         where TDto : DtoBase
         => CreatePagedCollectionResourceAsync(options.RawValues, options.Context.DefaultQueryConfigurations.MaxTop, page, controller, version, listGetMethod, singleGetMethod, listPutMethod);
 
@@ -193,7 +193,7 @@ public class ResultFactory : IResultFactory
     }
 
     /// <inheritdoc/>
-    public async ValueTask<ObjectResult> CreatePagedCollectionResultBasedOnOutcomeAsync<TEntity, TDto>(ODataQueryOptions<TEntity> options, ServiceResponse<IReadOnlyPagedCollection<TDto>> serviceResponse, string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put")
+    public async ValueTask<ObjectResult> CreatePagedCollectionResultBasedOnOutcomeAsync<TQueryDto, TDto>(ODataQueryOptions<TQueryDto> options, ServiceResponse<IReadOnlyPagedCollection<TDto>> serviceResponse, string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put")
         where TDto : DtoBase
     {
         if (!serviceResponse.Succeeded)

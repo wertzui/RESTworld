@@ -30,16 +30,16 @@ public class SwaggerHistoryDocumentFilter : IDocumentFilter
         if (actionDescriptor is not ControllerActionDescriptor controllerActionDescriptor || !controllerActionDescriptor.ControllerTypeInfo.IsGenericType)
             return false;
 
-        var indexOfGetFullDtoType = controllerActionDescriptor.ControllerTypeInfo.GetGenericTypeDefinition() == typeof(ReadController<,,>)
+        var indexOfGetFullDtoType = controllerActionDescriptor.ControllerTypeInfo.GetGenericTypeDefinition() == typeof(ReadController<,,,>)
             ? RestControllerNameConventionAttribute.ReadControllerIndexOfFullDtoType
-            : controllerActionDescriptor.ControllerTypeInfo.GetGenericTypeDefinition() == typeof(CrudController<,,,,>)
+            : controllerActionDescriptor.ControllerTypeInfo.GetGenericTypeDefinition() == typeof(CrudController<,,,,,>)
                 ? RestControllerNameConventionAttribute.CrudControllerIndexOfFullDtoType
                 : -1;
 
         if (indexOfGetFullDtoType == -1)
             return false;
 
-        if (controllerActionDescriptor.ActionName != ActionHelper.StripAsyncSuffix(nameof(ReadController<,,>.GetHistoryAsync)))
+        if (controllerActionDescriptor.ActionName != ActionHelper.StripAsyncSuffix(nameof(ReadController<,,,>.GetHistoryAsync)))
             return false;
 
         var getFullDtoType = controllerActionDescriptor.ControllerTypeInfo.GenericTypeArguments[indexOfGetFullDtoType];

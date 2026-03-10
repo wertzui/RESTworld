@@ -44,7 +44,7 @@ public class TestDto : ConcurrentDtoBase
     public NestedTestDto? MyNestedObject { get; set; }
 
     [JsonIgnore]
-    public virtual ICollection<BlogDto>? Blogs { get; }
+    public virtual ICollection<BlogGetListDto>? Blogs { get; }
 
     [JsonIgnore]
     public virtual PostListDto? Post { get; }
@@ -60,6 +60,9 @@ public class ListTestDto
 {
     public string MyListString { get; set; } = default!;
     public int MyListInt { get; set; }
+    public long PostId { get; set; }
+    [JsonIgnore]
+    public PostListDto Post { get; set; } = null!;
 }
 
 public class DictionaryTestDto

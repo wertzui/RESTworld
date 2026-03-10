@@ -36,6 +36,7 @@ namespace RESTworld.AspNetCore.Controller;
 /// </summary>
 /// <typeparam name="TEntity">The type of the entity.</typeparam>
 /// <typeparam name="TCreateDto">The type of the DTO for a Create operation.</typeparam>
+/// <typeparam name="TQueryDto">The type of the DTO for a query in a List operation.</typeparam>
 /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
 /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
 /// <typeparam name="TUpdateDto">The type of the DTO for an Update operation.</typeparam>
@@ -45,8 +46,9 @@ namespace RESTworld.AspNetCore.Controller;
 [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status403Forbidden)]
 [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status503ServiceUnavailable)]
 [ProducesErrorResponseType(typeof(Resource<ProblemDetails>))]
-public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> : ReadController<TEntity, TGetListDto, TGetFullDto>
+public class CrudController<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto> : ReadController<TEntity, TQueryDto, TGetListDto, TGetFullDto>
     where TEntity : ConcurrentEntityBase
+    where TQueryDto : class
     where TGetListDto : ConcurrentDtoBase
     where TGetFullDto : ConcurrentDtoBase
     where TUpdateDto : ConcurrentDtoBase
@@ -57,7 +59,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     /// </summary>
     private static readonly JsonSerializerOptions _createNewResourceJsonSettings;
 
-    private readonly ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> _crudService;
+    private readonly ICrudServiceBase<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto> _crudService;
 
     static CrudController()
     {
@@ -71,8 +73,7 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     }
 
     /// <summary>
-    /// Creates a new instance of the <see cref="CrudController{TEntity, TCreateDto,
-    /// TGetListDto, TGetFullDto, TUpdateDto}"/> class.
+    /// Creates a new instance of the <see cref="CrudController{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/> class.
     /// </summary>
     /// <param name="service">The service which handles the business operations.</param>
     /// <param name="resourceFactory">
@@ -88,11 +89,11 @@ public class CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpda
     /// The options which are used to determine the max number of entries for the List endpoint.
     /// </param>
     public CrudController(
-        ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> service,
+        ICrudServiceBase<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto> service,
         IODataResourceFactory resourceFactory,
         ILinkFactory linkFactory,
         IODataFormFactory formFactory,
-        IListRequestFactory listRequestFactory,
+        IListRequestFactory<TEntity, TQueryDto, TGetListDto, TGetFullDto> listRequestFactory,
         IResultFactory resultFactory,
         IErrorResultFactory errorResultFactory,
         ICacheHelper cache,

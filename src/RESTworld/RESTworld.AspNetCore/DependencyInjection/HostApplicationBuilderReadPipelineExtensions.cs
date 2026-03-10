@@ -18,11 +18,12 @@ namespace Microsoft.Extensions.DependencyInjection;
 public static class HostApplicationBuilderReadPipelineExtensions
 {
     /// <summary>
-    /// Adds a complete CRUD pipeline without authorization, using the <see cref="ReadController{TEntity, TGetListDto, TGetFullDto}"/> and
-    /// the <see cref="ReadServiceBase{TContext, TEntity, TGetListDto, TGetFullDto}"/>.
+    /// Adds a complete CRUD pipeline without authorization, using the <see cref="ReadController{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/> and
+    /// the <see cref="ReadServiceBase{TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto}"/>.
     /// </summary>
     /// <typeparam name="TContext">The type of the <see cref="DbContext"/>.</typeparam>
     /// <typeparam name="TEntity">The type of the entity.</typeparam>
+    /// <typeparam name="TQueryDto">The type of the DTO for a query.</typeparam>
     /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
     /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
     /// <param name="builder">The host application builder.</param>
@@ -31,32 +32,32 @@ public static class HostApplicationBuilderReadPipelineExtensions
     /// if set to <c>true</c> the pipeline with this version is treated as deprecated.
     /// </param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    public static IHostApplicationBuilder AddReadPipeline<TContext, TEntity, TGetListDto, TGetFullDto>(this IHostApplicationBuilder builder, ApiVersion? apiVersion = null, bool isDeprecated = false)
-                where TContext : DbContextBase
+    public static IHostApplicationBuilder AddReadPipeline<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto>(this IHostApplicationBuilder builder, ApiVersion? apiVersion = null, bool isDeprecated = false)
+        where TContext : DbContextBase
         where TEntity : EntityBase
+        where TQueryDto : class
         where TGetListDto : DtoBase
         where TGetFullDto : DtoBase
 
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-#pragma warning disable CS0618 // Type or member is obsolete
-        builder.Services.AddReadPipeline<TContext, TEntity, TGetListDto, TGetFullDto>(apiVersion, isDeprecated);
-#pragma warning restore CS0618 // Type or member is obsolete
+        builder.Services.AddReadPipeline<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto>(apiVersion, isDeprecated);
 
         return builder;
     }
 
     /// <summary>
-    /// Adds a complete CRUD pipeline with authorization, using the <see cref="ReadController{TEntity, TGetListDto, TGetFullDto}"/>, the
-    /// <see cref="ReadServiceBase{TContext, TEntity, TGetListDto, TGetFullDto}"/> and the <typeparamref name="TAuthorizationHandler"/>.
+    /// Adds a complete CRUD pipeline with authorization, using the <see cref="ReadController{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/>, the
+    /// <see cref="ReadServiceBase{TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto}"/> and the <typeparamref name="TAuthorizationHandler"/>.
     /// </summary>
     /// <typeparam name="TContext">The type of the <see cref="DbContext"/>.</typeparam>
     /// <typeparam name="TEntity">The type of the entity.</typeparam>
+    /// <typeparam name="TQueryDto">The type of the DTO for a query.</typeparam>
     /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
     /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
     /// <typeparam name="TAuthorizationHandler">
-    /// The type of the <see cref="IReadAuthorizationHandler{TEntity, TGetListDto, TGetFullDto}"/>.
+    /// The type of the <see cref="IReadAuthorizationHandler{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/>.
     /// </typeparam>
     /// <param name="builder">The host application builder.</param>
     /// <param name="apiVersion">An optional API version.</param>
@@ -64,83 +65,81 @@ public static class HostApplicationBuilderReadPipelineExtensions
     /// if set to <c>true</c> the pipeline with this version is treated as deprecated.
     /// </param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    public static IHostApplicationBuilder AddReadPipelineWithAuthorization<TContext, TEntity, TGetListDto, TGetFullDto, TAuthorizationHandler>(this IHostApplicationBuilder builder, ApiVersion? apiVersion = null, bool isDeprecated = false)
+    public static IHostApplicationBuilder AddReadPipelineWithAuthorization<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto, TAuthorizationHandler>(this IHostApplicationBuilder builder, ApiVersion? apiVersion = null, bool isDeprecated = false)
         where TContext : DbContextBase
         where TEntity : EntityBase
+        where TQueryDto : class
         where TGetListDto : DtoBase
         where TGetFullDto : DtoBase
 
-        where TAuthorizationHandler : class, IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>
+        where TAuthorizationHandler : class, IReadAuthorizationHandler<TEntity, TQueryDto, TGetListDto, TGetFullDto>
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-#pragma warning disable CS0618 // Type or member is obsolete
-        builder.Services.AddReadPipelineWithAuthorization<TContext, TEntity, TGetListDto, TGetFullDto, TAuthorizationHandler>(builder.Configuration, apiVersion, isDeprecated);
-#pragma warning restore CS0618 // Type or member is obsolete
+        builder.Services.AddReadPipelineWithAuthorization<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto, TAuthorizationHandler>(builder.Configuration, apiVersion, isDeprecated);
 
         return builder;
     }
 
     /// <summary>
-    /// Adds a complete CRUD pipeline without authorization, using the <see cref="ReadController{TEntity, TGetListDto, TGetFullDto}"/> and a
+    /// Adds a complete CRUD pipeline without authorization, using the <see cref="ReadController{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/> and a
     /// custom <typeparamref name="TService"/>.
     /// </summary>
     /// <typeparam name="TContext">The type of the <see cref="DbContext"/>.</typeparam>
     /// <typeparam name="TEntity">The type of the entity.</typeparam>
+    /// <typeparam name="TQueryDto">The type of the DTO for a query.</typeparam>
     /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
     /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
     /// <typeparam name="TService">
-    /// The type of the custom <see cref="IReadServiceBase{TEntity, TGetListDto, TGetFullDto}"/> implementation.
+    /// The type of the custom <see cref="IReadServiceBase{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/> implementation.
     /// </typeparam>
     /// <param name="builder">The host application builder.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    public static IHostApplicationBuilder AddReadPipelineWithCustomService<TContext, TEntity, TGetListDto, TGetFullDto, TService>(this IHostApplicationBuilder builder)
+    public static IHostApplicationBuilder AddReadPipelineWithCustomService<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto, TService>(this IHostApplicationBuilder builder)
         where TContext : DbContextBase
         where TEntity : EntityBase
+        where TQueryDto : class
         where TGetListDto : DtoBase
         where TGetFullDto : DtoBase
-
-        where TService : class, IReadServiceBase<TEntity, TGetListDto, TGetFullDto>
+        where TService : class, IReadServiceBase<TEntity, TQueryDto, TGetListDto, TGetFullDto>
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-#pragma warning disable CS0618 // Type or member is obsolete
-        builder.Services.AddReadPipelineWithCustomService<TContext, TEntity, TGetListDto, TGetFullDto, TService>();
-#pragma warning restore CS0618 // Type or member is obsolete
+        builder.Services.AddReadPipelineWithCustomService<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto, TService>();
 
         return builder;
     }
 
     /// <summary>
-    /// Adds a complete CRUD pipeline with authorization, using the <see cref="ReadController{TEntity, TGetListDto, TGetFullDto}"/>, a
+    /// Adds a complete CRUD pipeline with authorization, using the <see cref="ReadController{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/>, a
     /// custom <typeparamref name="TService"/> and the <typeparamref name="TAuthorizationHandler"/>.
     /// </summary>
     /// <typeparam name="TContext">The type of the <see cref="DbContext"/>.</typeparam>
     /// <typeparam name="TEntity">The type of the entity.</typeparam>
+    /// <typeparam name="TQueryDto">The type of the DTO for a query.</typeparam>
     /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
     /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
     /// <typeparam name="TService">
-    /// The type of the custom <see cref="IReadServiceBase{TEntity, TGetListDto, TGetFullDto}"/> implementation.
+    /// The type of the custom <see cref="IReadServiceBase{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/> implementation.
     /// </typeparam>
     /// <typeparam name="TAuthorizationHandler">
-    /// The type of the <see cref="IReadAuthorizationHandler{TEntity, TGetListDto, TGetFullDto}"/>.
+    /// The type of the <see cref="IReadAuthorizationHandler{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/>.
     /// </typeparam>
     /// <param name="builder">The host application builder.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    public static IHostApplicationBuilder AddReadPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TGetListDto, TGetFullDto, TService, TAuthorizationHandler>(this IHostApplicationBuilder builder)
+    public static IHostApplicationBuilder AddReadPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto, TService, TAuthorizationHandler>(this IHostApplicationBuilder builder)
         where TContext : DbContextBase
         where TEntity : EntityBase
+        where TQueryDto : class
         where TGetListDto : DtoBase
         where TGetFullDto : DtoBase
 
-        where TService : class, IReadServiceBase<TEntity, TGetListDto, TGetFullDto>
-        where TAuthorizationHandler : class, IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>
+        where TService : class, IReadServiceBase<TEntity, TQueryDto, TGetListDto, TGetFullDto>
+        where TAuthorizationHandler : class, IReadAuthorizationHandler<TEntity, TQueryDto, TGetListDto, TGetFullDto>
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-#pragma warning disable CS0618 // Type or member is obsolete
-        builder.Services.AddReadPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TGetListDto, TGetFullDto, TService, TAuthorizationHandler>(builder.Configuration);
-#pragma warning restore CS0618 // Type or member is obsolete
+        builder.Services.AddReadPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto, TService, TAuthorizationHandler>(builder.Configuration);
 
         return builder;
     }

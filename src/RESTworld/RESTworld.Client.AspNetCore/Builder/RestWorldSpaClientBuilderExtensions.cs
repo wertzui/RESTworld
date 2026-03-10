@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.SpaServices.AngularCli;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.SpaServices.AngularCli;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RESTworld.AspNetCore.Controller;
@@ -16,11 +18,12 @@ public static class RestWorldSpaClientBuilderExtensions
 {
     /// <summary>
     /// Adds everything needed to use RESTworld with an Angular frontend.
-    /// Don't forget to call <see cref="UseRestWorldWithSpaFrontend(WebApplication, string)"/> afterwards.
+    /// Don't forget to call <see cref="UseRestWorldWithSpaFrontend{TApplication}(TApplication, string)"/> afterwards.
     /// </summary>
     /// <param name="builder">The builder.</param>
     /// <param name="contentRoot">The path from where the compiled Angular application is served in the published application in a production environment.</param>
-    public static RestWorldWebApplicationBuilder AddRestWorldWithSpaFrontend(this WebApplicationBuilder builder, string contentRoot = "ClientApp/dist")
+    public static TBuilder AddRestWorldWithSpaFrontend<TBuilder>(this TBuilder builder, string contentRoot = "ClientApp/dist")
+        where TBuilder : IHostApplicationBuilder
     {
         ArgumentNullException.ThrowIfNull(builder);
         ArgumentException.ThrowIfNullOrWhiteSpace(contentRoot);
@@ -33,7 +36,7 @@ public static class RestWorldSpaClientBuilderExtensions
             configuration.RootPath = contentRoot;
         });
 
-        var rwBuilder = builder.AddRestWorld();
+        builder.AddRestWorld();
 
         // The default Home Controller interferes with our SPA so we have to remove it.
         services
@@ -44,16 +47,17 @@ public static class RestWorldSpaClientBuilderExtensions
                 manager.FeatureProviders.Add(new SettingsControllerFeatureProvider());
             });
 
-        return rwBuilder;
+        return builder;
     }
 
     /// <summary>
     /// Adds everything needed to use RESTworld with an Angular frontend.
-    /// Don't forget to call <see cref="AddRestWorldWithSpaFrontend(WebApplicationBuilder, string)"/> before this.
+    /// Don't forget to call <see cref="AddRestWorldWithSpaFrontend{TBuilder}(TBuilder, string)"/> before this.
     /// </summary>
     /// <param name="app">The web application.</param>
     /// <param name="sourcePath">The path of the directory that contains the SPA source files during development. The directory may not exist in published applications.</param>
-    public static WebApplication UseRestWorldWithSpaFrontend(this WebApplication app, string sourcePath = "ClientApp")
+    public static TApplication UseRestWorldWithSpaFrontend<TApplication>(this TApplication app, string sourcePath = "ClientApp")
+        where TApplication : IHost, IApplicationBuilder, IEndpointRouteBuilder
     {
         ArgumentNullException.ThrowIfNull(app);
         ArgumentException.ThrowIfNullOrWhiteSpace(sourcePath);
@@ -61,7 +65,7 @@ public static class RestWorldSpaClientBuilderExtensions
         app.UseRestWorld();
 
         app.UseStaticFiles();
-        if (!app.Environment.IsDevelopment())
+        if (!app.Services.GetRequiredService<IWebHostEnvironment>().IsDevelopment())
         {
             app.UseSpaStaticFiles();
         }
@@ -73,7 +77,7 @@ public static class RestWorldSpaClientBuilderExtensions
 
             spa.Options.SourcePath = sourcePath;
 
-            if (app.Environment.IsDevelopment())
+            if (app.Services.GetRequiredService<IWebHostEnvironment>().IsDevelopment())
             {
                 spa.UseAngularCliServer(npmScript: "start");
             }

@@ -113,6 +113,40 @@ public record ServiceResponse<T>
     /// Gets the results of the a validation process if there have been validation errors.
     /// </summary>
     public IValidationResults? ValidationResults { get; }
+
+    /// <summary>
+    /// Creates a new service response with the specified type parameter, preserving the current status and response
+    /// data where possible.
+    /// </summary>
+    /// <remarks>
+    /// Use this method to transform the response type when handling service responses with different
+    /// expected result types. The method preserves the status and validation or problem details from the original
+    /// response.
+    /// </remarks>
+    /// <typeparam name="TNew">The type to which the response object should be converted.</typeparam>
+    /// <returns>
+    /// A new <see cref="ServiceResponse{TNew}"/> instance containing the converted response object if possible, or a response with
+    /// the same status and validation or problem details.
+    /// </returns>
+    /// <exception cref="InvalidOperationException">Thrown if the response object cannot be cast to the specified type parameter TNew.</exception>
+    public ServiceResponse<TNew> ChangeType<TNew>()
+    {
+        if (Succeeded)
+        {
+            if (ResponseObject is null)
+                return new ServiceResponse<TNew>(Status);
+
+            if (ResponseObject is TNew newResponseObject)
+                return new ServiceResponse<TNew>(Status, newResponseObject);
+
+            throw new InvalidOperationException($"Cannot change the service response type from {typeof(T).Name} to {typeof(TNew).Name}, because {typeof(TNew).Name} does not inherit {typeof(T).Name}.");
+        }
+
+        if (ValidationResults is not null)
+            return new ServiceResponse<TNew>(Status, ValidationResults);
+
+        return new ServiceResponse<TNew>(Status, ProblemDetails);
+    }
 }
 
 /// <summary>

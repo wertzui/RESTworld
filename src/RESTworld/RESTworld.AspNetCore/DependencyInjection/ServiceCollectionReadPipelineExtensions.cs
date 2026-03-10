@@ -8,7 +8,6 @@ using RESTworld.Business.Services.Abstractions;
 using RESTworld.Common.Dtos;
 using RESTworld.EntityFrameworkCore;
 using RESTworld.EntityFrameworkCore.Models;
-using System;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -18,11 +17,12 @@ namespace Microsoft.Extensions.DependencyInjection;
 public static class ServiceCollectionReadPipelineExtensions
 {
     /// <summary>
-    /// Adds a complete CRUD pipeline without authorization, using the <see cref="ReadController{TEntity, TGetListDto, TGetFullDto}"/> and
-    /// the <see cref="ReadServiceBase{TContext, TEntity, TGetListDto, TGetFullDto}"/>.
+    /// Adds a complete CRUD pipeline without authorization, using the <see cref="ReadController{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/> and
+    /// the <see cref="ReadServiceBase{TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto}"/>.
     /// </summary>
     /// <typeparam name="TContext">The type of the <see cref="DbContext"/>.</typeparam>
     /// <typeparam name="TEntity">The type of the entity.</typeparam>
+    /// <typeparam name="TQueryDto">The type of the DTO for a Query operation.</typeparam>
     /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
     /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
     /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
@@ -31,20 +31,20 @@ public static class ServiceCollectionReadPipelineExtensions
     /// if set to <c>true</c> the pipeline with this version is treated as deprecated.
     /// </param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    [Obsolete("Use HostApplicationBuilderReadPipelineExtensions.AddReadPipeline instead.")]
-    public static IServiceCollection AddReadPipeline<TContext, TEntity, TGetListDto, TGetFullDto>(this IServiceCollection services, ApiVersion? apiVersion = null, bool isDeprecated = false)
-                where TContext : DbContextBase
+    public static IServiceCollection AddReadPipeline<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto>(this IServiceCollection services, ApiVersion? apiVersion = null, bool isDeprecated = false)
+        where TContext : DbContextBase
         where TEntity : EntityBase
+        where TQueryDto : class
         where TGetListDto : DtoBase
         where TGetFullDto : DtoBase
 
     {
-        services.AddScoped<IReadServiceBase<TEntity, TGetListDto, TGetFullDto>, ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>>();
+        services.AddScoped<IReadServiceBase<TEntity, TQueryDto, TGetListDto, TGetFullDto>, ReadServiceBase<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto>>();
         services.AddForeignKeyForFormTo<TGetListDto>();
-        RestControllerFeatureProvider.AddReadController<TEntity, TGetListDto, TGetFullDto>();
+        RestControllerFeatureProvider.AddReadController<TEntity, TQueryDto, TGetListDto, TGetFullDto>();
         services.Configure<MvcApiVersioningOptions>(options =>
         {
-            var controllerConvention = options.Conventions.Controller<ReadController<TEntity, TGetListDto, TGetFullDto>>();
+            var controllerConvention = options.Conventions.Controller<ReadController<TEntity, TQueryDto, TGetListDto, TGetFullDto>>();
             if (apiVersion is null)
             {
                 controllerConvention.IsApiVersionNeutral();
@@ -62,15 +62,16 @@ public static class ServiceCollectionReadPipelineExtensions
     }
 
     /// <summary>
-    /// Adds a complete CRUD pipeline with authorization, using the <see cref="ReadController{TEntity, TGetListDto, TGetFullDto}"/>, the
-    /// <see cref="ReadServiceBase{TContext, TEntity, TGetListDto, TGetFullDto}"/> and the <typeparamref name="TAuthorizationHandler"/>.
+    /// Adds a complete CRUD pipeline with authorization, using the <see cref="ReadController{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/>, the
+    /// <see cref="ReadServiceBase{TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto}"/> and the <typeparamref name="TAuthorizationHandler"/>.
     /// </summary>
     /// <typeparam name="TContext">The type of the <see cref="DbContext"/>.</typeparam>
     /// <typeparam name="TEntity">The type of the entity.</typeparam>
+    /// <typeparam name="TQueryDto">The type of the DTO for a query.</typeparam>
     /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
     /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
     /// <typeparam name="TAuthorizationHandler">
-    /// The type of the <see cref="IReadAuthorizationHandler{TEntity, TGetListDto, TGetFullDto}"/>.
+    /// The type of the <see cref="IReadAuthorizationHandler{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/>.
     /// </typeparam>
     /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
     /// <param name="configuration">
@@ -81,81 +82,83 @@ public static class ServiceCollectionReadPipelineExtensions
     /// if set to <c>true</c> the pipeline with this version is treated as deprecated.
     /// </param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    [Obsolete("Use HostApplicationBuilderReadPipelineExtensions.AddReadPipelineWithAuthorization instead.")]
-    public static IServiceCollection AddReadPipelineWithAuthorization<TContext, TEntity, TGetListDto, TGetFullDto, TAuthorizationHandler>(this IServiceCollection services, IConfiguration configuration, ApiVersion? apiVersion = null, bool isDeprecated = false)
+    public static IServiceCollection AddReadPipelineWithAuthorization<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto, TAuthorizationHandler>(this IServiceCollection services, IConfiguration configuration, ApiVersion? apiVersion = null, bool isDeprecated = false)
         where TContext : DbContextBase
         where TEntity : EntityBase
+        where TQueryDto : class
         where TGetListDto : DtoBase
         where TGetFullDto : DtoBase
 
-        where TAuthorizationHandler : class, IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>
+        where TAuthorizationHandler : class, IReadAuthorizationHandler<TEntity, TQueryDto, TGetListDto, TGetFullDto>
     {
-        services.AddReadPipeline<TContext, TEntity, TGetListDto, TGetFullDto>(apiVersion, isDeprecated);
-        services.AddReadAuthorizationHandler<TAuthorizationHandler, TEntity, TGetListDto, TGetFullDto>(configuration);
+        services.AddReadPipeline<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto>(apiVersion, isDeprecated);
+        services.AddReadAuthorizationHandler<TAuthorizationHandler, TEntity, TQueryDto, TGetListDto, TGetFullDto>(configuration);
 
         return services;
     }
 
     /// <summary>
-    /// Adds a complete CRUD pipeline without authorization, using the <see cref="ReadController{TEntity, TGetListDto, TGetFullDto}"/> and a
+    /// Adds a complete CRUD pipeline without authorization, using the <see cref="ReadController{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/> and a
     /// custom <typeparamref name="TService"/>.
     /// </summary>
     /// <typeparam name="TContext">The type of the <see cref="DbContext"/>.</typeparam>
     /// <typeparam name="TEntity">The type of the entity.</typeparam>
+    /// <typeparam name="TQueryDto">The type of the DTO for a Query operation.</typeparam>
     /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
     /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
     /// <typeparam name="TService">
-    /// The type of the custom <see cref="IReadServiceBase{TEntity, TGetListDto, TGetFullDto}"/> implementation.
+    /// The type of the custom <see cref="IReadServiceBase{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/> implementation.
     /// </typeparam>
     /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    [Obsolete("Use HostApplicationBuilderReadPipelineExtensions.AddReadPipelineWithCustomService instead.")]
-    public static IServiceCollection AddReadPipelineWithCustomService<TContext, TEntity, TGetListDto, TGetFullDto, TService>(this IServiceCollection services)
+    public static IServiceCollection AddReadPipelineWithCustomService<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto, TService>(this IServiceCollection services)
         where TContext : DbContextBase
         where TEntity : EntityBase
+        where TQueryDto : class
         where TGetListDto : DtoBase
         where TGetFullDto : DtoBase
 
-        where TService : class, IReadServiceBase<TEntity, TGetListDto, TGetFullDto>
+        where TService : class, IReadServiceBase<TEntity, TQueryDto, TGetListDto, TGetFullDto>
     {
-        services.AddScoped<IReadServiceBase<TEntity, TGetListDto, TGetFullDto>, TService>();
-        RestControllerFeatureProvider.AddReadController<TEntity, TGetListDto, TGetFullDto>();
+        services.AddScoped<IReadServiceBase<TEntity, TQueryDto, TGetListDto, TGetFullDto>, TService>();
+        RestControllerFeatureProvider.AddReadController<TEntity, TQueryDto, TGetListDto, TGetFullDto>();
         services.AddForeignKeyForFormTo<TGetListDto>();
 
         return services;
     }
 
     /// <summary>
-    /// Adds a complete CRUD pipeline with authorization, using the <see cref="ReadController{TEntity, TGetListDto, TGetFullDto}"/>, a
+    /// Adds a complete CRUD pipeline with authorization, using the <see cref="ReadController{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/>, a
     /// custom <typeparamref name="TService"/> and the <typeparamref name="TAuthorizationHandler"/>.
     /// </summary>
     /// <typeparam name="TContext">The type of the <see cref="DbContext"/>.</typeparam>
     /// <typeparam name="TEntity">The type of the entity.</typeparam>
+    /// <typeparam name="TQueryDto">The type of the DTO for a query.</typeparam>
     /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
     /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
     /// <typeparam name="TService">
-    /// The type of the custom <see cref="IReadServiceBase{TEntity, TGetListDto, TGetFullDto}"/> implementation.
+    /// The type of the custom <see cref="IReadServiceBase{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/> implementation.
     /// </typeparam>
     /// <typeparam name="TAuthorizationHandler">
-    /// The type of the <see cref="IReadAuthorizationHandler{TEntity, TGetListDto, TGetFullDto}"/>.
+    /// The type of the <see cref="IReadAuthorizationHandler{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/>.
     /// </typeparam>
     /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
     /// <param name="configuration">
     /// The <see cref="IConfiguration"/> instance which holds the RESTWorld configuration.
     /// </param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    [Obsolete("Use HostApplicationBuilderReadPipelineExtensions.AddReadPipelineWithCustomServiceAndAuthorization instead.")]
-    public static IServiceCollection AddReadPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TGetListDto, TGetFullDto, TService, TAuthorizationHandler>(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddReadPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto, TService, TAuthorizationHandler>(this IServiceCollection services, IConfiguration configuration)
         where TContext : DbContextBase
         where TEntity : EntityBase
+        where TQueryDto : class
         where TGetListDto : DtoBase
         where TGetFullDto : DtoBase
 
-        where TService : class, IReadServiceBase<TEntity, TGetListDto, TGetFullDto>
-        where TAuthorizationHandler : class, IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>
+        where TService : class, IReadServiceBase<TEntity, TQueryDto, TGetListDto, TGetFullDto>
+        where TAuthorizationHandler : class, IReadAuthorizationHandler<TEntity, TQueryDto, TGetListDto, TGetFullDto>
     {
-        services.AddReadPipelineWithCustomService<TContext, TEntity, TGetListDto, TGetFullDto, TService>();
-        services.AddReadAuthorizationHandler<TAuthorizationHandler, TEntity, TGetListDto, TGetFullDto>(configuration);
+        services.AddReadPipelineWithCustomService<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto, TService>();
+        services.AddReadAuthorizationHandler<TAuthorizationHandler, TEntity, TQueryDto, TGetListDto, TGetFullDto>(configuration);
 
         return services;
     }

@@ -12,7 +12,7 @@ For list endpoints, the default pipeline runs through these stages:
 4. **Controller** delegates work to the business service.
 5. **Authorization (pre-processing)** can validate or adjust the request.
 6. **Data access** loads entities via Entity Framework Core.
-7. **Mapping** converts entities to DTOs through AutoMapper.
+7. **Mapping** converts entities to DTOs through the registered mapper (AutoMapper, Mapperly, or a custom implementation — see [Mapping and Versioning](mapping-and-versioning.md)).
 8. **Authorization (post-processing)** can inspect or modify the response.
 9. **HAL response building** wraps the payload with links and metadata.
 10. **Result** is serialized and returned to the client.

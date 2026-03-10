@@ -21,7 +21,7 @@ public class PostWithAuthorDtoV1
     // No JsonIgnore here, because in this custom DTO we want to render the Author inline.
     public virtual AuthorDtoV1? Author { get; set; }
     [JsonIgnore]
-    public virtual BlogDto? Blog { get; set; }
+    public virtual BlogGetFullDto? Blog { get; set; }
     [DataType(DataType.ImageUrl)]
     public HalFile? Image { get; set; }
     [DataType(DataType.Upload)]

@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using RESTworld.Business.Authorization.Abstractions;
 using RESTworld.Business.Models;
 using RESTworld.Business.Services;
@@ -16,10 +15,9 @@ public class PhotoService : ServiceBase, IPhotoService
     private readonly IHttpClientFactory _httpClientFactory;
 
     public PhotoService(IHttpClientFactory httpClientFactory,
-        IMapper mapper,
         IUserAccessor userAccessor,
         ILogger<PhotoService> logger)
-        : base(mapper, userAccessor, logger)
+        : base(userAccessor, logger)
     {
         _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
     }

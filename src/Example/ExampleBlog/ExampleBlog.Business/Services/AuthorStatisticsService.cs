@@ -1,11 +1,11 @@
-﻿using AutoMapper;
-using ExampleBlog.Common.Dtos;
+﻿using ExampleBlog.Common.Dtos;
 using ExampleBlog.Data;
 using ExampleBlog.Data.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RESTworld.Business.Authorization;
 using RESTworld.Business.Authorization.Abstractions;
+using RESTworld.Business.Mapping;
 using RESTworld.Business.Services;
 using System;
 using System.Collections.Generic;
@@ -15,12 +15,12 @@ using System.Threading.Tasks;
 
 namespace ExampleBlog.Business.Services;
 
-public class AuthorStatisticsService : ReadServiceBase<BlogDatabase, Author, AuthorStatisticsListDto, AuthorStatisticsFullDto>
+public class AuthorStatisticsService : ReadServiceBase<BlogDatabase, Author, AuthorStatisticsListDto, AuthorStatisticsListDto, AuthorStatisticsFullDto>
 {
     public AuthorStatisticsService(
         IDbContextFactory<BlogDatabase> contextFactory,
-        IMapper mapper,
-        IEnumerable<IReadAuthorizationHandler<Author, AuthorStatisticsListDto, AuthorStatisticsFullDto>> authorizationHandlers,
+        IReadMapper<Author, AuthorStatisticsListDto, AuthorStatisticsListDto, AuthorStatisticsFullDto> mapper,
+        IEnumerable<IReadAuthorizationHandler<Author, AuthorStatisticsListDto, AuthorStatisticsListDto, AuthorStatisticsFullDto>> authorizationHandlers,
         IUserAccessor userAccessor,
         ILogger<AuthorStatisticsService> logger) :
         base(contextFactory, mapper, authorizationHandlers, userAccessor, logger)

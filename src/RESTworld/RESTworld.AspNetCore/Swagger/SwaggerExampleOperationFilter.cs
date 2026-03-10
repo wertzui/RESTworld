@@ -31,7 +31,7 @@ using System.Text.Json.Serialization;
 namespace RESTworld.AspNetCore.Swagger;
 
 /// <summary>
-/// This filter adds examples for all <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>s and for the <see cref="HomeController"/> to the Open API description.
+/// This filter adds examples for all <see cref="CrudController{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/>s and for the <see cref="HomeController"/> to the Open API description.
 /// </summary>
 /// <seealso cref="IOperationFilter" />
 public class SwaggerExampleOperationFilter : IOperationFilter
@@ -152,13 +152,13 @@ public class SwaggerExampleOperationFilter : IOperationFilter
             if (context.ApiDescription.ActionDescriptor is ControllerActionDescriptor controllerActionDescriptor)
             {
                 if (controllerActionDescriptor.ControllerTypeInfo.IsGenericType
-                && controllerActionDescriptor.ControllerTypeInfo.GetGenericTypeDefinition() == typeof(ReadController<,,>))
+                && controllerActionDescriptor.ControllerTypeInfo.GetGenericTypeDefinition() == typeof(ReadController<,,,>))
                 {
                     // Examples for READ Controller
                     AddExampleForSucessfullCrudResponse(type, linkFactory, resourceFactory, controllerActionDescriptor, RestControllerNameConventionAttribute.ReadControllerIndexOfListDtoType, RestControllerNameConventionAttribute.ReadControllerIndexOfFullDtoType);
                 }
                 else if (controllerActionDescriptor.ControllerTypeInfo.IsGenericType
-                && controllerActionDescriptor.ControllerTypeInfo.GetGenericTypeDefinition() == typeof(CrudController<,,,,>))
+                && controllerActionDescriptor.ControllerTypeInfo.GetGenericTypeDefinition() == typeof(CrudController<,,,,,>))
                 {
                     // Examples for CRUD Controller
                     AddExampleForSucessfullCrudResponse(type, linkFactory, resourceFactory, controllerActionDescriptor, RestControllerNameConventionAttribute.CrudControllerIndexOfListDtoType, RestControllerNameConventionAttribute.CrudControllerIndexOfFullDtoType);

@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.WebUtilities;
 using RESTworld.AspNetCore.Controller;
 using RESTworld.AspNetCore.Links.Abstractions;
 using RESTworld.Common.Dtos;
-using RESTworld.EntityFrameworkCore.Models;
 using System;
 using System.Linq;
 using System.Net.Http;
@@ -159,7 +158,7 @@ public class CrudLinkFactory : LinkFactory, ICrudLinkFactory
         if (httpContext is null)
             return resource;
 
-        var href = LinkGenerator.GetUriByAction(httpContext, ActionHelper.StripAsyncSuffix(nameof(ReadController<,,>.GetHistoryAsync)), values: new { filter = $"id eq {id}" });
+        var href = LinkGenerator.GetUriByAction(httpContext, ActionHelper.StripAsyncSuffix(nameof(ReadController<,,,>.GetHistoryAsync)), values: new { filter = $"id eq {id}" });
         if (href is null)
             return resource;
 

@@ -18,7 +18,7 @@ public static class ServiceCollectionValidationExtensions
     /// <summary>
     /// Adds an <see cref="ICreateValidator{TCreateDto, TEntity}"/> to the service collection.
     /// It is automatically used in any
-    /// <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
+    /// <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
     /// for validation.
     /// </summary>
     /// <typeparam name="TValidator">The type of the validator.</typeparam>
@@ -50,7 +50,7 @@ public static class ServiceCollectionValidationExtensions
     /// <summary>
     /// Adds an <see cref="IUpdateValidator{TUpdateDto, TEntity}"/> to the service collection.
     /// It is automatically used in any
-    /// <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
+    /// <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
     /// for validation.
     /// </summary>
     /// <typeparam name="TValidator">The type of the validator.</typeparam>
@@ -85,7 +85,7 @@ public static class ServiceCollectionValidationExtensions
     /// <summary>
     /// Adds an <see cref="IValidator{TCreateDto, TUpdateDto, TEntity}"/> to the service
     /// collection. It is automatically used in any
-    /// <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
+    /// <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
     /// for validation.
     /// </summary>
     /// <typeparam name="TValidator">The type of the validator.</typeparam>

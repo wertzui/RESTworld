@@ -30,6 +30,7 @@ namespace RESTworld.AspNetCore.Controller;
 /// A basic READ controller offering operations for Read(List).
 /// </summary>
 /// <typeparam name="TEntity">The type of the entity.</typeparam>
+/// <typeparam name="TQueryDto">The type of the DTO for queries.</typeparam>
 /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
 /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
 [Route("[controller]")]
@@ -38,16 +39,17 @@ namespace RESTworld.AspNetCore.Controller;
 [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status403Forbidden)]
 [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status503ServiceUnavailable)]
 [ProducesErrorResponseType(typeof(Resource<ProblemDetails>))]
-public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerBase
+public class ReadController<TEntity, TQueryDto, TGetListDto, TGetFullDto> : RestControllerBase
     where TEntity : EntityBase
+    where TQueryDto : class
     where TGetListDto : DtoBase
     where TGetFullDto : DtoBase
 {
-    private readonly IReadServiceBase<TEntity, TGetListDto, TGetFullDto> _readService;
+    private readonly IReadServiceBase<TEntity, TQueryDto, TGetListDto, TGetFullDto> _readService;
 
     /// <summary>
     /// Creates a new instance of the
-    /// <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> class.
+    /// <see cref="CrudController{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/> class.
     /// </summary>
     /// <param name="service">The service which handles the business operations.</param>
     /// <param name="resourceFactory">
@@ -63,11 +65,11 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
     /// The options which are used to determine the max number of entries for the List endpoint.
     /// </param>
     public ReadController(
-        IReadServiceBase<TEntity, TGetListDto, TGetFullDto> service,
+        IReadServiceBase<TEntity, TQueryDto, TGetListDto, TGetFullDto> service,
         IODataResourceFactory resourceFactory,
         ILinkFactory linkFactory,
         IODataFormFactory formFactory,
-        IListRequestFactory listRequestFactory,
+        IListRequestFactory<TEntity, TQueryDto, TGetListDto, TGetFullDto> listRequestFactory,
         IResultFactory resultFactory,
         IErrorResultFactory errorResultFactory,
         ICacheHelper cache,
@@ -103,7 +105,7 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
     /// <summary>
     /// The factory to create list requests out of OData parameters.
     /// </summary>
-    public IListRequestFactory ListRequestFactory { get; }
+    public IListRequestFactory<TEntity, TQueryDto, TGetListDto, TGetFullDto> ListRequestFactory { get; }
 
     /// <summary>
     /// The link factory to add links to resources.
@@ -157,12 +159,12 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
     [ProducesWithContentNegotiation("application/hal+json", "text/csv", "application/prs.hal-forms+json", "application/hal-forms+json")]
     [Description("Gets a paged list of resources matching the filter criteria.")]
     public virtual async Task<ActionResult<Resource<Page>>> GetListAsync(
-        ODataQueryOptions<TGetListDto> options,
+        ODataQueryOptions<TQueryDto> options,
         CancellationToken cancellationToken)
     {
         options.Context.DefaultQueryConfigurations.MaxTop = Options.MaxNumberForListEndpoint;
 
-        var getListrequest = ListRequestFactory.CreateListRequest<TGetListDto, TEntity>(options, Options.CalculateTotalCountForListEndpoint);
+        var getListrequest = ListRequestFactory.CreateListRequest(options, Options.CalculateTotalCountForListEndpoint);
 
         var response = await Cache.CacheGetListWithCurrentUserAsync(options.RawValues, _ => _readService.GetListAsync(getListrequest, cancellationToken));
 
@@ -188,7 +190,7 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
     [ProducesWithContentNegotiation("application/hal+json", "text/csv", "application/prs.hal-forms+json", "application/hal-forms+json")]
     [Description("Gets a paged list of historical resources matching the filter criteria.")]
     public virtual async Task<ActionResult<Resource<Page>>> GetHistoryAsync(
-        ODataQueryOptions<TGetFullDto> options,
+        ODataQueryOptions<TQueryDto> options,
         [FromQuery(Name = "$at")] DateTimeOffset? at,
         [FromQuery(Name = "$from")] DateTimeOffset? from,
         [FromQuery(Name = "$to")] DateTimeOffset? to,
@@ -208,12 +210,12 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
     }
 
     private bool TryParseTemporalQuery(
-        ODataQueryOptions<TGetFullDto> options,
+        ODataQueryOptions<TQueryDto> options,
         DateTimeOffset? at,
         DateTimeOffset? from,
         DateTimeOffset? to,
         DateTimeOffset? toInclusive,
-        [NotNullWhen(true)] out IGetHistoryRequest<TGetFullDto, TEntity>? getHistoryRequest,
+        [NotNullWhen(true)] out IGetHistoryRequest<TEntity, TQueryDto, TGetFullDto>? getHistoryRequest,
         [NotNullWhen(false)] out ObjectResult? error)
     {
         getHistoryRequest = null;
@@ -233,7 +235,7 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
                 return false;
             }
 
-            getHistoryRequest = ListRequestFactory.CreateHistoryRequest<TGetFullDto, TEntity>(options, at, at.Value.AddTicks(1), Options.CalculateTotalCountForListEndpoint);
+            getHistoryRequest = ListRequestFactory.CreateHistoryRequest(options, at, at.Value.AddTicks(1), Options.CalculateTotalCountForListEndpoint);
             return true;
         }
 
@@ -243,7 +245,7 @@ public class ReadController<TEntity, TGetListDto, TGetFullDto> : RestControllerB
             return false;
         }
 
-        getHistoryRequest = ListRequestFactory.CreateHistoryRequest<TGetFullDto, TEntity>(options, from ?? DateTimeOffset.MinValue, to ?? toInclusive?.AddTicks(1) ?? DateTimeOffset.MaxValue, Options.CalculateTotalCountForListEndpoint);
+        getHistoryRequest = ListRequestFactory.CreateHistoryRequest(options, from ?? DateTimeOffset.MinValue, to ?? toInclusive?.AddTicks(1) ?? DateTimeOffset.MaxValue, Options.CalculateTotalCountForListEndpoint);
         return true;
     }
 }

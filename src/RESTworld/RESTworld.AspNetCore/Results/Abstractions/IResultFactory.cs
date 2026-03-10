@@ -173,7 +173,7 @@ public interface IResultFactory
     /// Creates a paged collection result which is either a HAL resource, or a HAL-Forms resource
     /// based on the accept header.
     /// </summary>
-    /// <typeparam name="TEntity">
+    /// <typeparam name="TQueryDto">
     /// The underlying entity type which has been queried through OData.
     /// </typeparam>
     /// <typeparam name="TDto">The type of the DTOs in the list.</typeparam>
@@ -193,7 +193,7 @@ public interface IResultFactory
     /// The name of the put method for the update-multiple endpoint. Default is "Put".
     /// </param>
     /// <returns>Either a HAL resource, or a HAL-Forms resource containing the given <paramref name="page"/>.</returns>
-    ValueTask<Resource> CreatePagedCollectionResourceAsync<TEntity, TDto>(ODataQueryOptions<TEntity> options, IReadOnlyPagedCollection<TDto> page, string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
+    ValueTask<Resource> CreatePagedCollectionResourceAsync<TQueryDto, TDto>(ODataQueryOptions<TQueryDto> options, IReadOnlyPagedCollection<TDto> page, string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
 
     /// <summary>
     /// Creates a paged collection result which is either a HAL resource, or a HAL-Forms resource
@@ -224,7 +224,7 @@ public interface IResultFactory
     /// contains the successful result, or an error result. If the result is successful, it will be
     /// a HAL resource, or a HAL-Forms resource based on the accept header.
     /// </summary>
-    /// <typeparam name="TEntity">
+    /// <typeparam name="TQueryDto">
     /// The underlying entity type which has been queried through OData.
     /// </typeparam>
     /// <typeparam name="TDto">The type of the DTOs in the list.</typeparam>
@@ -244,7 +244,7 @@ public interface IResultFactory
     /// The name of the put method for the update-multiple endpoint. Default is "Put".
     /// </param>
     /// <returns>Either a successful or an error result.</returns>
-    ValueTask<ObjectResult> CreatePagedCollectionResultBasedOnOutcomeAsync<TEntity, TDto>(ODataQueryOptions<TEntity> options, ServiceResponse<IReadOnlyPagedCollection<TDto>> serviceResponse, string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
+    ValueTask<ObjectResult> CreatePagedCollectionResultBasedOnOutcomeAsync<TQueryDto, TDto>(ODataQueryOptions<TQueryDto> options, ServiceResponse<IReadOnlyPagedCollection<TDto>> serviceResponse, string? controller = null, ApiVersion? version = null, string listGetMethod = "GetList", string singleGetMethod = "Get", string listPutMethod = "Put") where TDto : DtoBase;
 
     /// <summary>
     /// Creates a paged collection result based on the outcome of a service response. It either

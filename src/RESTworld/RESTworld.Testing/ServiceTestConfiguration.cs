@@ -86,73 +86,90 @@ public static class ServiceTestConfigurationExtensions
     }
 
     /// <summary>
-    /// Adds an <see cref="ICrudServiceBase{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> to your tests.
+    /// Adds an <see cref="ICrudServiceBase{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/> to your tests.
     /// </summary>
     /// <param name="builder">The builder to add the configuration to.</param>
     /// <returns>The <paramref name="builder"/>.</returns>
-    public static ITestBuilderWithConfig<ServiceTestConfiguration<ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>>> WithCrudService<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(this ITestBuilder builder)
+    public static ITestBuilderWithConfig<ServiceTestConfiguration<ICrudServiceBase<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>, CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>>> WithCrudService<TContext, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>(this ITestBuilder builder)
         where TContext : DbContextBase
         where TEntity : ConcurrentEntityBase
+        where TQueryDto : class
         where TGetListDto : ConcurrentDtoBase
         where TGetFullDto : ConcurrentDtoBase
         where TUpdateDto : ConcurrentDtoBase
     {
         return builder
-            .WithService<ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>>();
+            .WithService<ICrudServiceBase<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>, CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>>();
     }
 
     /// <summary>
-    /// Adds an <see cref="ICrudServiceBase{TEntity, TGetFullDto, TGetFullDto, TGetFullDto, TGetFullDto}"/> to your tests.
+    /// Adds an <see cref="ICrudServiceBase{TEntity, TGetFullDto, TGetFullDto, TGetFullDto, TGetFullDto, TGetFullDto}"/> to your tests.
     /// </summary>
     /// <param name="builder">The builder to add the configuration to.</param>
     /// <returns>The <paramref name="builder"/>.</returns>
-    public static ITestBuilderWithConfig<ServiceTestConfiguration<ICrudServiceBase<TEntity, TGetFullDto, TGetFullDto, TGetFullDto, TGetFullDto>, CrudServiceBase<TContext, TEntity, TGetFullDto, TGetFullDto, TGetFullDto, TGetFullDto>>> WithCrudService<TContext, TEntity, TGetFullDto>(this ITestBuilder builder)
+    public static ITestBuilderWithConfig<ServiceTestConfiguration<ICrudServiceBase<TEntity, TGetFullDto, TGetFullDto, TGetFullDto, TGetFullDto, TGetFullDto>, CrudServiceBase<TContext, TEntity, TGetFullDto, TGetFullDto, TGetFullDto, TGetFullDto, TGetFullDto>>> WithCrudService<TContext, TEntity, TGetFullDto>(this ITestBuilder builder)
         where TContext : DbContextBase
         where TEntity : ConcurrentEntityBase
         where TGetFullDto : ConcurrentDtoBase
     {
-        return builder.WithCrudService<TContext, TEntity, TGetFullDto, TGetFullDto, TGetFullDto, TGetFullDto>();
+        return builder.WithCrudService<TContext, TEntity, TGetFullDto, TGetFullDto, TGetFullDto, TGetFullDto, TGetFullDto>();
     }
 
     /// <summary>
-    /// Adds an <see cref="ICrudServiceBase{TEntity, TGetFullDto, TGetListDto, TGetFullDto, TGetFullDto}"/> to your tests.
+    /// Adds an <see cref="ICrudServiceBase{TEntity, TGetFullDto, TQueryDto, TGetListDto, TGetFullDto, TGetFullDto}"/> to your tests.
     /// </summary>
     /// <param name="builder">The builder to add the configuration to.</param>
     /// <returns>The <paramref name="builder"/>.</returns>
-    public static ITestBuilderWithConfig<ServiceTestConfiguration<ICrudServiceBase<TEntity, TGetFullDto, TGetListDto, TGetFullDto, TGetFullDto>, CrudServiceBase<TContext, TEntity, TGetFullDto, TGetListDto, TGetFullDto, TGetFullDto>>> WithCrudService<TContext, TEntity, TGetListDto, TGetFullDto>(this ITestBuilder builder)
+    public static ITestBuilderWithConfig<ServiceTestConfiguration<ICrudServiceBase<TEntity, TGetFullDto, TQueryDto, TGetListDto, TGetFullDto, TGetFullDto>, CrudServiceBase<TContext, TEntity, TGetFullDto, TQueryDto, TGetListDto, TGetFullDto, TGetFullDto>>> WithCrudService<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto>(this ITestBuilder builder)
         where TContext : DbContextBase
         where TEntity : ConcurrentEntityBase
+        where TQueryDto : class
         where TGetListDto : ConcurrentDtoBase
         where TGetFullDto : ConcurrentDtoBase
     {
-        return builder.WithCrudService<TContext, TEntity, TGetFullDto, TGetListDto, TGetFullDto, TGetFullDto>();
+        return builder.WithCrudService<TContext, TEntity, TGetFullDto, TQueryDto, TGetListDto, TGetFullDto, TGetFullDto>();
     }
 
     /// <summary>
-    /// Adds an <see cref="IReadServiceBase{TEntity, TGetListDto, TGetFullDto}"/> to your tests.
+    /// Adds an <see cref="IReadServiceBase{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/> to your tests.
     /// </summary>
     /// <param name="builder">The builder to add the configuration to.</param>
     /// <returns>The <paramref name="builder"/>.</returns>
-    public static ITestBuilderWithConfig<ServiceTestConfiguration<IReadServiceBase<TEntity, TGetListDto, TGetFullDto>, ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>>> WithReadService<TContext, TEntity, TGetListDto, TGetFullDto>(this ITestBuilder builder)
+    public static ITestBuilderWithConfig<ServiceTestConfiguration<IReadServiceBase<TEntity, TQueryDto, TGetListDto, TGetFullDto>, ReadServiceBase<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto>>> WithReadService<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto>(this ITestBuilder builder)
         where TContext : DbContextBase
         where TEntity : EntityBase
+        where TQueryDto : class
         where TGetListDto : DtoBase
         where TGetFullDto : DtoBase
     {
-        return builder.WithService<IReadServiceBase<TEntity, TGetListDto, TGetFullDto>, ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>>();
+        return builder.WithService<IReadServiceBase<TEntity, TQueryDto, TGetListDto, TGetFullDto>, ReadServiceBase<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto>>();
     }
 
     /// <summary>
-    /// Adds an <see cref="IReadServiceBase{TEntity, TGetFullDto, TGetFullDto}"/> to your tests.
+    /// Adds an <see cref="IReadServiceBase{TEntity, TQueryDto, TGetFullDto, TGetFullDto}"/> to your tests.
     /// </summary>
     /// <param name="builder">The builder to add the configuration to.</param>
     /// <returns>The <paramref name="builder"/>.</returns>
-    public static ITestBuilderWithConfig<ServiceTestConfiguration<IReadServiceBase<TEntity, TGetFullDto, TGetFullDto>, ReadServiceBase<TContext, TEntity, TGetFullDto, TGetFullDto>>> WithReadService<TContext, TEntity, TGetFullDto>(this ITestBuilder builder)
+    public static ITestBuilderWithConfig<ServiceTestConfiguration<IReadServiceBase<TEntity, TQueryDto, TGetFullDto, TGetFullDto>, ReadServiceBase<TContext, TEntity, TQueryDto, TGetFullDto, TGetFullDto>>> WithReadService<TContext, TEntity, TQueryDto, TGetFullDto>(this ITestBuilder builder)
+        where TContext : DbContextBase
+        where TEntity : EntityBase
+        where TQueryDto : class
+        where TGetFullDto : DtoBase
+    {
+        return builder.WithReadService<TContext, TEntity, TQueryDto, TGetFullDto, TGetFullDto>();
+    }
+
+    /// <summary>
+    /// Adds an <see cref="IReadServiceBase{TEntity, TGetFullDto, TGetFullDto, TGetFullDto}"/> to your tests.
+    /// </summary>
+    /// <param name="builder">The builder to add the configuration to.</param>
+    /// <returns>The <paramref name="builder"/>.</returns>
+    public static ITestBuilderWithConfig<ServiceTestConfiguration<IReadServiceBase<TEntity, TGetFullDto, TGetFullDto, TGetFullDto>, ReadServiceBase<TContext, TEntity, TGetFullDto, TGetFullDto, TGetFullDto>>> WithReadService<TContext, TEntity, TGetFullDto>(this ITestBuilder builder)
         where TContext : DbContextBase
         where TEntity : EntityBase
         where TGetFullDto : DtoBase
     {
-        return builder.WithReadService<TContext, TEntity, TGetFullDto, TGetFullDto>();
+        return builder.WithReadService<TContext, TEntity, TGetFullDto, TGetFullDto, TGetFullDto>();
     }
 
     /// <summary>

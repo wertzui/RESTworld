@@ -10,37 +10,41 @@ using System.Reflection;
 namespace RESTworld.AspNetCore.Controller;
 
 /// <summary>
-/// Provides generic <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>s to the ASP pipeline when they have been registered through one of the static methods.
+/// Provides generic <see cref="CrudController{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/>s to the ASP pipeline when they have been registered through one of the static methods.
 /// </summary>
 public class RestControllerFeatureProvider : IApplicationFeatureProvider<ControllerFeature>
 {
     private static readonly ICollection<TypeInfo> _controllerTypes = new List<TypeInfo>();
 
     /// <summary>
-    /// Adds a <see cref="ReadController{TEntity, TGetListDto, TGetFullDto}"/> to the controllers.
+    /// Adds a <see cref="ReadController{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/> to the controllers.
     /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
-    /// <typeparam name="TGetListDto"></typeparam>
-    /// <typeparam name="TGetFullDto"></typeparam>
-    public static void AddReadController<TEntity, TGetListDto, TGetFullDto>()
+    /// <typeparam name="TEntity">The type of the entity.</typeparam>
+    /// <typeparam name="TQueryDto">The type of the DTO for queries on a get List operation.</typeparam>
+    /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
+    /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
+    public static void AddReadController<TEntity, TQueryDto, TGetListDto, TGetFullDto>()
         where TEntity : EntityBase
+        where TQueryDto : class
         where TGetListDto : DtoBase
         where TGetFullDto : DtoBase
-    => AddCustomReadController<TEntity, TGetListDto, TGetFullDto, ReadController<TEntity, TGetListDto, TGetFullDto>>();
+    => AddCustomReadController<TEntity, TQueryDto, TGetListDto, TGetFullDto, ReadController<TEntity, TQueryDto, TGetListDto, TGetFullDto>>();
 
     /// <summary>
     /// Adds a custom controller to the controllers.
     /// Note that if you place a Controller in the 'Controller' folder of you startup program, ASP will automatically recognize it.
     /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
-    /// <typeparam name="TGetListDto"></typeparam>
-    /// <typeparam name="TGetFullDto"></typeparam>
-    /// <typeparam name="TController"></typeparam>
-    public static void AddCustomReadController<TEntity, TGetListDto, TGetFullDto, TController>()
+    /// <typeparam name="TEntity">The type of the entity.</typeparam>
+    /// <typeparam name="TQueryDto">The type of the DTO for queries on a get List operation.</typeparam>
+    /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
+    /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
+    /// <typeparam name="TController">The type of the controller.</typeparam>
+    public static void AddCustomReadController<TEntity, TQueryDto, TGetListDto, TGetFullDto, TController>()
         where TEntity : EntityBase
+        where TQueryDto : class
         where TGetListDto : DtoBase
         where TGetFullDto : DtoBase
-        where TController : ReadController<TEntity, TGetListDto, TGetFullDto>
+        where TController : ReadController<TEntity, TQueryDto, TGetListDto, TGetFullDto>
     {
         var controllerType = typeof(TController)
             .GetTypeInfo();
@@ -49,36 +53,40 @@ public class RestControllerFeatureProvider : IApplicationFeatureProvider<Control
     }
 
     /// <summary>
-    /// Adds a <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> to the controllers.
+    /// Adds a <see cref="CrudController{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/> to the controllers.
     /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
-    /// <typeparam name="TCreateDto"></typeparam>
-    /// <typeparam name="TGetListDto"></typeparam>
-    /// <typeparam name="TGetFullDto"></typeparam>
-    /// <typeparam name="TUpdateDto"></typeparam>
-    public static void AddCrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>()
+    /// <typeparam name="TEntity">The type of the entity.</typeparam>
+    /// <typeparam name="TCreateDto">The type of the DTO for a Create operation.</typeparam>
+    /// <typeparam name="TQueryDto">The type of the DTO for queries on a get List operation.</typeparam>
+    /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
+    /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
+    /// <typeparam name="TUpdateDto">The type of the DTO for an Update operation.</typeparam>
+    public static void AddCrudController<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>()
         where TEntity : ConcurrentEntityBase
+        where TQueryDto : class
         where TGetListDto : ConcurrentDtoBase
         where TGetFullDto : ConcurrentDtoBase
         where TUpdateDto : ConcurrentDtoBase
-    => AddCustomCrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>>();
+    => AddCustomCrudController<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto, CrudController<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>>();
 
     /// <summary>
     /// Adds a custom controller to the controllers.
     /// Note that if you place a Controller in the 'Controller' folder of you startup program, ASP will automatically recognize it.
     /// </summary>
-    /// <typeparam name="TEntity"></typeparam>
-    /// <typeparam name="TCreateDto"></typeparam>
-    /// <typeparam name="TGetListDto"></typeparam>
-    /// <typeparam name="TGetFullDto"></typeparam>
-    /// <typeparam name="TUpdateDto"></typeparam>
-    /// <typeparam name="TController"></typeparam>
-    public static void AddCustomCrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, TController>()
+    /// <typeparam name="TEntity">The type of the entity.</typeparam>
+    /// <typeparam name="TCreateDto">The type of the DTO for a Create operation.</typeparam>
+    /// <typeparam name="TQueryDto">The type of the DTO for queries on a get List operation.</typeparam>
+    /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
+    /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
+    /// <typeparam name="TUpdateDto">The type of the DTO for an Update operation.</typeparam>
+    /// <typeparam name="TController">The type of the controller.</typeparam>
+    public static void AddCustomCrudController<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto, TController>()
         where TEntity : ConcurrentEntityBase
+        where TQueryDto : class
         where TGetListDto : ConcurrentDtoBase
         where TGetFullDto : ConcurrentDtoBase
         where TUpdateDto : ConcurrentDtoBase
-        where TController : CrudController<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
+        where TController : CrudController<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>
     {
         var controllerType = typeof(TController)
             .GetTypeInfo();

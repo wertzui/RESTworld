@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RESTworld.Business.Authorization;
 using RESTworld.Business.Authorization.Abstractions;
@@ -23,14 +22,12 @@ public abstract class ServiceBase
 {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
     protected readonly ILogger _logger;
-    protected readonly IMapper _mapper;
     protected readonly IUserAccessor _userAccessor;
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ServiceBase"/> class.
     /// </summary>
-    /// <param name="mapper">The mapper.</param>
     /// <param name="userAccessor">The user accessor.</param>
     /// <param name="logger">The logger.</param>
     /// <exception cref="System.ArgumentNullException">
@@ -41,11 +38,9 @@ public abstract class ServiceBase
     /// logger
     /// </exception>
     public ServiceBase(
-        IMapper mapper,
         IUserAccessor userAccessor,
         ILogger logger)
     {
-        _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         _userAccessor = userAccessor ?? throw new ArgumentNullException(nameof(userAccessor));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }

@@ -15,13 +15,14 @@ namespace RESTworld.Business.Authorization;
 /// It will not check if the user is authenticated during response handling as this is not needed, because the user cannot change between a request and the associated response.
 /// </summary>
 /// <typeparam name="TEntity">The type of the entity.</typeparam>
+/// <typeparam name="TQueryDto">The type of the query DTO.</typeparam>
 /// <typeparam name="TGetListDto">The type of the get list DTO.</typeparam>
 /// <typeparam name="TGetFullDto">The type of the get full DTO.</typeparam>
-/// <seealso cref="ReadAuthorizationHandlerBase&lt;TEntity, TGetListDto, TGetFullDto&gt;" />
-public class UserIsAuthorizedReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto> : ReadAuthorizationHandlerBase<TEntity, TGetListDto, TGetFullDto>
+/// <seealso cref="ReadAuthorizationHandlerBase{TEntity, TQueryDto, TGetListDto, TGetFullDto}" />
+public class UserIsAuthorizedReadAuthorizationHandler<TEntity, TQueryDto, TGetListDto, TGetFullDto> : ReadAuthorizationHandlerBase<TEntity, TQueryDto, TGetListDto, TGetFullDto>
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="UserIsAuthorizedReadAuthorizationHandler{TEntity, TGetListDto, TGetFullDto}"/> class.
+    /// Initializes a new instance of the <see cref="UserIsAuthorizedReadAuthorizationHandler{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/> class.
     /// </summary>
     /// <param name="userAccessor">The user accessor.</param>
     /// <exception cref="ArgumentNullException">userAccessor</exception>
@@ -39,7 +40,7 @@ public class UserIsAuthorizedReadAuthorizationHandler<TEntity, TGetListDto, TGet
     protected IUserAccessor UserAccessor { get; }
 
     /// <inheritdoc/>
-    public override Task<AuthorizationResult<TEntity, IGetListRequest<TGetListDto, TEntity>>> HandleGetListRequestAsync(AuthorizationResult<TEntity, IGetListRequest<TGetListDto, TEntity>> previousResult, CancellationToken cancellationToken)
+    public override Task<AuthorizationResult<TEntity, IGetListRequest<TEntity, TQueryDto, TGetListDto>>> HandleGetListRequestAsync(AuthorizationResult<TEntity, IGetListRequest<TEntity, TQueryDto, TGetListDto>> previousResult, CancellationToken cancellationToken)
     {
         var user = GetUser();
 
@@ -89,16 +90,14 @@ public class UserIsAuthorizedReadAuthorizationHandler<TEntity, TGetListDto, TGet
     protected virtual ClaimsPrincipal? GetUser() => UserAccessor.User;
 
     /// <summary>
-    /// This method is the same as <see cref="HandleGetListRequestAsync(AuthorizationResult{TEntity, IGetListRequest{TGetListDto, TEntity}}, CancellationToken)" /> but also gives access to the current <paramref name="user" />.
+    /// This method is the same as <see cref="HandleGetListRequestAsync(AuthorizationResult{TEntity, IGetListRequest{TEntity, TQueryDto, TGetListDto}}, CancellationToken)" /> but also gives access to the current <paramref name="user" />.
     /// </summary>
     /// <param name="previousResult">The previous result.</param>
     /// <param name="user">The user.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
-    protected virtual Task<AuthorizationResult<TEntity, IGetListRequest<TGetListDto, TEntity>>> HandleGetListRequestWithUserAsync(AuthorizationResult<TEntity, IGetListRequest<TGetListDto, TEntity>> previousResult, ClaimsPrincipal user, CancellationToken cancellationToken)
-    {
-        return base.HandleGetListRequestAsync(previousResult, cancellationToken);
-    }
+    protected virtual Task<AuthorizationResult<TEntity, IGetListRequest<TEntity, TQueryDto, TGetListDto>>> HandleGetListRequestWithUserAsync(AuthorizationResult<TEntity, IGetListRequest<TEntity, TQueryDto, TGetListDto>> previousResult, ClaimsPrincipal user, CancellationToken cancellationToken)
+        => base.HandleGetListRequestAsync(previousResult, cancellationToken);
 
     /// <summary>
     /// This method is the same as <see cref="HandleGetListResponseAsync(ServiceResponse{IReadOnlyPagedCollection{TGetListDto}}, CancellationToken)" /> but also gives access to the current <paramref name="user" />.
@@ -108,9 +107,7 @@ public class UserIsAuthorizedReadAuthorizationHandler<TEntity, TGetListDto, TGet
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
     protected virtual Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> HandleGetListResponseWithUserAsync(ServiceResponse<IReadOnlyPagedCollection<TGetListDto>> previousResponse, ClaimsPrincipal user, CancellationToken cancellationToken)
-    {
-        return base.HandleGetListResponseAsync(previousResponse, cancellationToken);
-    }
+        => base.HandleGetListResponseAsync(previousResponse, cancellationToken);
 
     /// <summary>
     /// This method is the same as <see cref="HandleGetSingleRequestAsync(AuthorizationResult{TEntity, long}, CancellationToken)" /> but also gives access to the current <paramref name="user" />.
@@ -120,9 +117,7 @@ public class UserIsAuthorizedReadAuthorizationHandler<TEntity, TGetListDto, TGet
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
     protected virtual Task<AuthorizationResult<TEntity, long>> HandleGetSingleRequestWithUserAsync(AuthorizationResult<TEntity, long> previousResult, ClaimsPrincipal user, CancellationToken cancellationToken)
-    {
-        return base.HandleGetSingleRequestAsync(previousResult, cancellationToken);
-    }
+        => base.HandleGetSingleRequestAsync(previousResult, cancellationToken);
 
     /// <summary>
     /// This method is the same as <see cref="HandleGetSingleResponseAsync(ServiceResponse{TGetFullDto}, CancellationToken)" /> but also gives access to the current <paramref name="user" />.
@@ -132,7 +127,5 @@ public class UserIsAuthorizedReadAuthorizationHandler<TEntity, TGetListDto, TGet
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
     protected virtual Task<ServiceResponse<TGetFullDto>> HandleGetSingleResponseWithUserAsync(ServiceResponse<TGetFullDto> previousResponse, ClaimsPrincipal user, CancellationToken cancellationToken)
-    {
-        return base.HandleGetSingleResponseAsync(previousResponse, cancellationToken);
-    }
+        => base.HandleGetSingleResponseAsync(previousResponse, cancellationToken);
 }

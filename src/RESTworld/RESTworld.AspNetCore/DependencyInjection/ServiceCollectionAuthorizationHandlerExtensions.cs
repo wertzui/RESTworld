@@ -4,7 +4,6 @@ using RESTworld.Business.Authorization.Abstractions;
 using RESTworld.Business.Services;
 using RESTworld.Common.Dtos;
 using RESTworld.EntityFrameworkCore.Models;
-using System;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -22,7 +21,6 @@ public static class ServiceCollectionAuthorizationHandlerExtensions
     /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
     /// <param name="configuration">The configuration instance which holds the RESTWorld configuration.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    [Obsolete("Use HostApplicationBuilderAuthorizationHandlerExtensions.AddBasicAuthorizationHandler instead.")]
     public static IServiceCollection AddBasicAuthorizationHandler<TAuthorizationHandler, TResponse>(this IServiceCollection services, IConfiguration configuration)
         where TAuthorizationHandler : class, IBasicAuthorizationHandler<TResponse>
     {
@@ -45,7 +43,6 @@ public static class ServiceCollectionAuthorizationHandlerExtensions
     /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
     /// <param name="configuration">The configuration instance which holds the RESTWorld configuration.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    [Obsolete("Use HostApplicationBuilderAuthorizationHandlerExtensions.AddBasicAuthorizationHandler instead.")]
     public static IServiceCollection AddBasicAuthorizationHandler<TAuthorizationHandler, TRequest, TResponse>(this IServiceCollection services, IConfiguration configuration)
         where TAuthorizationHandler : class, IBasicAuthorizationHandler<TRequest, TResponse>
     {
@@ -69,7 +66,6 @@ public static class ServiceCollectionAuthorizationHandlerExtensions
     /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
     /// <param name="configuration">The configuration instance which holds the RESTWorld configuration.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    [Obsolete("Use HostApplicationBuilderAuthorizationHandlerExtensions.AddBasicAuthorizationHandler instead.")]
     public static IServiceCollection AddBasicAuthorizationHandler<TAuthorizationHandler, TEntity, TRequest, TResponse>(this IServiceCollection services, IConfiguration configuration)
         where TAuthorizationHandler : class, IBasicAuthorizationHandler<TEntity, TRequest, TResponse>
         where TEntity : ConcurrentEntityBase
@@ -84,29 +80,30 @@ public static class ServiceCollectionAuthorizationHandlerExtensions
     }
 
     /// <summary>
-    /// Adds an <see cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
-    /// which will automatically be called by any <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>.
+    /// Adds an <see cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
+    /// which will automatically be called by any <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/>.
     /// </summary>
     /// <typeparam name="TAuthorizationHandler">The type of the authorization handler.</typeparam>
     /// <typeparam name="TEntity">The type of the entity.</typeparam>
     /// <typeparam name="TCreateDto">The type of the DTO for a Create operation.</typeparam>
+    /// <typeparam name="TQueryDto">The type of the DTO for a Query operation.</typeparam>
     /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
     /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
     /// <typeparam name="TUpdateDto">The type of the DTO for an Update operation.</typeparam>
     /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
     /// <param name="configuration">The configuration instance which holds the RESTWorld configuration.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    [Obsolete("Use HostApplicationBuilderAuthorizationHandlerExtensions.AddCrudAuthorizationHandler instead.")]
-    public static IServiceCollection AddCrudAuthorizationHandler<TAuthorizationHandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(this IServiceCollection services, IConfiguration configuration)
-        where TAuthorizationHandler : class, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
+    public static IServiceCollection AddCrudAuthorizationHandler<TAuthorizationHandler, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>(this IServiceCollection services, IConfiguration configuration)
+        where TAuthorizationHandler : class, ICrudAuthorizationHandler<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>
         where TEntity : ConcurrentEntityBase
+        where TQueryDto : class
         where TGetListDto : ConcurrentDtoBase
         where TGetFullDto : ConcurrentDtoBase
         where TUpdateDto : ConcurrentDtoBase
     {
         if (!configuration.GetValue<bool>($"{nameof(RESTworld)}:{nameof(RestWorldOptions.DisableAuthorization)}"))
         {
-            services.AddScoped<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>, TAuthorizationHandler>();
+            services.AddScoped<ICrudAuthorizationHandler<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>, TAuthorizationHandler>();
             services.AddScoped<TAuthorizationHandler>();
         }
 
@@ -114,26 +111,27 @@ public static class ServiceCollectionAuthorizationHandlerExtensions
     }
 
     /// <summary>
-    /// Adds an <see cref="IReadAuthorizationHandler{TEntity, TGetListDto, TGetFullDto}"/>
-    /// which will automatically be called by any <see cref="ReadServiceBase{TContext, TEntity, TGetListDto, TGetFullDto}"/>.
+    /// Adds an <see cref="IReadAuthorizationHandler{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/>
+    /// which will automatically be called by any <see cref="ReadServiceBase{TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto}"/>.
     /// </summary>
     /// <typeparam name="TAuthorizationHandler">The type of the authorization handler.</typeparam>
     /// <typeparam name="TEntity">The type of the entity.</typeparam>
+    /// <typeparam name="TQueryDto">The type of the DTO for queries of a List operation.</typeparam>
     /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
     /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
     /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
     /// <param name="configuration">The configuration instance which holds the RESTWorld configuration.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    [Obsolete("Use HostApplicationBuilderAuthorizationHandlerExtensions.AddReadAuthorizationHandler instead.")]
-    public static IServiceCollection AddReadAuthorizationHandler<TAuthorizationHandler, TEntity, TGetListDto, TGetFullDto>(this IServiceCollection services, IConfiguration configuration)
-        where TAuthorizationHandler : class, IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>
+    public static IServiceCollection AddReadAuthorizationHandler<TAuthorizationHandler, TEntity, TQueryDto, TGetListDto, TGetFullDto>(this IServiceCollection services, IConfiguration configuration)
+        where TAuthorizationHandler : class, IReadAuthorizationHandler<TEntity, TQueryDto, TGetListDto, TGetFullDto>
         where TEntity : EntityBase
+        where TQueryDto : class
         where TGetListDto : DtoBase
         where TGetFullDto : DtoBase
     {
         if (!configuration.GetValue<bool>($"{nameof(RESTworld)}:{nameof(RestWorldOptions.DisableAuthorization)}"))
         {
-            services.AddScoped<IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>, TAuthorizationHandler>();
+            services.AddScoped<IReadAuthorizationHandler<TEntity, TQueryDto, TGetListDto, TGetFullDto>, TAuthorizationHandler>();
             services.AddScoped<TAuthorizationHandler>();
         }
 

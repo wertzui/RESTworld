@@ -1,5 +1,5 @@
-﻿using AutoMapper;
-using ExampleBlog.Business.Authorization;
+﻿using ExampleBlog.Business.Authorization;
+using ExampleBlog.Business.Mapping;
 using ExampleBlog.Common.Dtos;
 using ExampleBlog.Data;
 using ExampleBlog.Data.Models;
@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RESTworld.Business.Authorization;
 using RESTworld.Business.Authorization.Abstractions;
+using RESTworld.Business.Mapping;
+using RESTworld.Business.Mapping.Exceptions;
 using RESTworld.Business.Models;
 using RESTworld.Business.Services;
 using System;
@@ -20,16 +22,21 @@ namespace ExampleBlog.Business.Services;
 
 public class MyCustomService : DbServiceBase<BlogDatabase>
 {
+    private readonly IReadMapper<Post, PostWithAuthorDto, PostWithAuthorDto, PostWithAuthorDto> _postMapper;
+    private readonly AuthorPostMapper _authorMapper;
     private readonly IEnumerable<MyCustomAuthorizationHandler> _authorizationHandlers;
 
     public MyCustomService(
         IDbContextFactory<BlogDatabase> contextFactory,
-        IMapper mapper,
+        IReadMapper<Post, PostWithAuthorDto, PostWithAuthorDto, PostWithAuthorDto> postMapper,
+        AuthorPostMapper authorMapper,
         IUserAccessor userAccessor,
         ILogger<MyCustomService> logger,
         IEnumerable<MyCustomAuthorizationHandler> authorizationHandlers)
-        : base(contextFactory, mapper, userAccessor, logger)
+        : base(contextFactory, [.. ExceptionTranslatorFactory.CreateExceptionTranslators(postMapper, contextFactory), .. ExceptionTranslatorFactory.CreateExceptionTranslators(authorMapper, contextFactory)], userAccessor, logger)
     {
+        _postMapper = postMapper ?? throw new ArgumentNullException(nameof(postMapper));
+        _authorMapper = authorMapper ?? throw new ArgumentNullException(nameof(authorMapper));
         _authorizationHandlers = authorizationHandlers ?? throw new ArgumentNullException(nameof(authorizationHandlers));
     }
 
@@ -62,8 +69,10 @@ public class MyCustomService : DbServiceBase<BlogDatabase>
             return ServiceResponse.FromStatus<PostWithAuthorDto>(HttpStatusCode.NotFound);
 
         // Map to DTO.
-        var dto = _mapper.Map<PostWithAuthorDto>(postTask.Result);
-        _mapper.Map(authorTask.Result, dto);
+        var dto = _postMapper.MapEntityToFull(postTask.Result);
+
+        if (authorTask.Result is not null)
+            _authorMapper.AddToGetFull(authorTask.Result, dto);
 
         return ServiceResponse.FromResult(dto);
     }

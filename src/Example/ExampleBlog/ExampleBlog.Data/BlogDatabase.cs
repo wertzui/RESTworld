@@ -44,7 +44,7 @@ public class BlogDatabase : DbContextBase
             {
                 for (var authorId = 1; authorId <= 2; authorId++)
                 {
-                    for (int postNumber = 1; postNumber <= 42; postNumber++)
+                    for (var postNumber = 1; postNumber <= 42; postNumber++)
                     {
                         entity.HasData(new Post
                         {

@@ -9,14 +9,15 @@ namespace RESTworld.Business.Models;
 /// A request for a list of records.
 /// </summary>
 /// <typeparam name="TEntity">The type of the entity in the database.</typeparam>
-/// <typeparam name="TDto">The type of the DTO used to query the database.</typeparam>
-public record GetListRequest<TDto, TEntity> : IGetListRequest<TDto, TEntity>
+/// <typeparam name="TQueryDto">The type of the DTO used to query the database.</typeparam>
+/// <typeparam name="TGetListDto">The type of the DTO that is returned.</typeparam>
+public record GetListRequest<TEntity, TQueryDto, TGetListDto> : IGetListRequest<TEntity, TQueryDto, TGetListDto>
 {
     /// <summary>
-    /// Creates a new instance of the <see cref="GetListRequest{TDto, TEntity}"/> class with the given filter.
+    /// Creates a new instance of the <see cref="GetListRequest{TEntity, TQueryDto, TDto}"/> class with the given filter.
     /// </summary>
     /// <param name="filter">The filter which should be applied to the request.</param>
-    public GetListRequest(Func<IQueryable<TEntity>, IQueryable<TDto>> filter)
+    public GetListRequest(Func<IQueryable<TEntity>, IQueryable<TGetListDto>> filter)
     {
         Filter = filter ?? throw new ArgumentNullException(nameof(filter));
         CalculateTotalCount = false;
@@ -24,11 +25,11 @@ public record GetListRequest<TDto, TEntity> : IGetListRequest<TDto, TEntity>
     }
 
     /// <summary>
-    /// Creates a new instance of the <see cref="GetListRequest{TDto, TEntity}"/> class with the given filters.
+    /// Creates a new instance of the <see cref="GetListRequest{TQueryDto, TDto, TEntity}"/> class with the given filters.
     /// </summary>
     /// <param name="filter">The filter which should be applied to the request.</param>
     /// <param name="filterForTotalCount">The filter for the total count which should be applied to the request.</param>
-    public GetListRequest(Func<IQueryable<TEntity>, IQueryable<TDto>> filter, Func<IQueryable<TEntity>, IQueryable<TDto>> filterForTotalCount)
+    public GetListRequest(Func<IQueryable<TEntity>, IQueryable<TGetListDto>> filter, Func<IQueryable<TEntity>, IQueryable<TGetListDto>> filterForTotalCount)
     {
         Filter = filter ?? throw new ArgumentNullException(nameof(filter));
         CalculateTotalCount = true;
@@ -36,9 +37,9 @@ public record GetListRequest<TDto, TEntity> : IGetListRequest<TDto, TEntity>
     }
 
     /// <inheritdoc/>
-    public Func<IQueryable<TEntity>, IQueryable<TDto>> Filter { get; }
+    public Func<IQueryable<TEntity>, IQueryable<TGetListDto>> Filter { get; }
     /// <inheritdoc/>
     public bool CalculateTotalCount { get; }
     /// <inheritdoc/>
-    public Func<IQueryable<TEntity>, IQueryable<TDto>>? FilterForTotalCount { get; }
+    public Func<IQueryable<TEntity>, IQueryable<TGetListDto>>? FilterForTotalCount { get; }
 }

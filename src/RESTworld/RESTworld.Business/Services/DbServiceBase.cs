@@ -1,20 +1,14 @@
-﻿using AutoMapper;
-using AutoMapper.Internal;
-using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RESTworld.Business.Authorization;
 using RESTworld.Business.Authorization.Abstractions;
+using RESTworld.Business.Mapping;
 using RESTworld.Business.Models;
-using RESTworld.Business.Validation;
 using RESTworld.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Net;
-using System.Reflection;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,29 +27,27 @@ public abstract partial class DbServiceBase<TContext> : ServiceBase
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
     protected static bool _databaseIsMigratedToLatestVersion;
     protected readonly IDbContextFactory<TContext> _contextFactory;
-    protected static readonly Regex _foreignKeyRegex = GenerateForeignKeyRegex();
+    private readonly IEnumerable<IExceptionTranslator> _exceptionTranslators;
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-
-
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DbServiceBase{TContext}"/> class.
     /// </summary>
     /// <param name="contextFactory">The context factory.</param>
-    /// <param name="mapper">The mapper.</param>
+    /// <param name="exceptionTranslators">The exception translators.</param>
     /// <param name="userAccessor">The user accessor.</param>
     /// <param name="logger">The logger.</param>
     /// <exception cref="ArgumentNullException">contextFactory</exception>
     public DbServiceBase(
         IDbContextFactory<TContext> contextFactory,
-        IMapper mapper,
+        IEnumerable<IExceptionTranslator> exceptionTranslators,
         IUserAccessor userAccessor,
         ILogger logger)
-        : base(mapper, userAccessor, logger)
+        : base(userAccessor, logger)
     {
         _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
+        _exceptionTranslators = exceptionTranslators ?? throw new ArgumentNullException(nameof(exceptionTranslators));
     }
-
 
     /// <summary>
     /// Gets all pending migrations if the database is relational.
@@ -72,7 +64,7 @@ public abstract partial class DbServiceBase<TContext> : ServiceBase
             return pendingMigrations;
         }
 
-        return Array.Empty<string>();
+        return [];
     }
 
     /// <summary>
@@ -99,22 +91,18 @@ public abstract partial class DbServiceBase<TContext> : ServiceBase
 
             return await function(cancellationToken);
         }
-        catch (DbUpdateConcurrencyException e)
-        {
-            return GetConcurrencyException<T>(e);
-        }
-        catch (DbUpdateException e) when (e.InnerException is SqlException se && se.Number == 547)
-        {
-            return GetForeignKeyExceptionResponse<T>(se);
-        }
         catch (Exception e)
         {
+            foreach (var translator in _exceptionTranslators)
+            {
+                if (translator.TryTranslate(e, out var response))
+                    return response.ChangeType<T>();
+            }
+
             _logger.LogError(e, "Error while executing a service call");
             return ServiceResponse.FromException<T>(e);
         }
     }
-
-
 
     /// <summary>
     /// Calls the Handle...RequestAsync for all <paramref name="authorizationHandlers"/> with one parameter.
@@ -316,107 +304,4 @@ public abstract partial class DbServiceBase<TContext> : ServiceBase
 
         return resultAuthResponse;
     }
-
-    private ServiceResponse<T> GetConcurrencyException<T>(DbUpdateConcurrencyException e)
-    {
-        var validationResults = new ValidationResults("", "Concurrency validation failed. Please reload the resource.");
-
-        var entry = e.Entries.FirstOrDefault();
-        if (entry is null)
-            return ServiceResponse.FromFailedValidation<T>(HttpStatusCode.Conflict, validationResults);
-
-        var concurrencyPropertyNames = entry.CurrentValues.Properties.Where(p => p.IsConcurrencyToken).Select(p => p.Name).ToHashSet();
-        if (concurrencyPropertyNames.Count == 0)
-            return ServiceResponse.FromFailedValidation<T>(HttpStatusCode.Conflict, validationResults);
-
-        var entityType = entry.Metadata.ClrType;
-        var returnType = typeof(T);
-
-        var destinationMemberNames = _mapper.ConfigurationProvider.Internal().GetAllTypeMaps()
-            .Where(m => m.DestinationType == returnType && m.SourceType == entityType)
-            .SelectMany(m => m.PropertyMaps)
-            .Where(p => p.SourceMember is not null && p.DestinationMember is not null && concurrencyPropertyNames.Contains(p.SourceMember.Name))
-            .Select(p => p.DestinationMember.Name)
-            .ToList();
-
-        if (destinationMemberNames.Count == 0)
-            return ServiceResponse.FromFailedValidation<T>(HttpStatusCode.Conflict, validationResults);
-
-        foreach (var destinationMemberName in destinationMemberNames)
-        {
-            validationResults.AddValidationFailure(destinationMemberName, "Concurrency validation failed.");
-        }
-
-        return ServiceResponse.FromFailedValidation<T>(HttpStatusCode.Conflict, validationResults);
-    }
-
-    private ServiceResponse<T> GetForeignKeyExceptionResponse<T>(SqlException e)
-    {
-        if (e.Message is null)
-            return ServiceResponse.FromException<T>(e);
-
-        var match = _foreignKeyRegex.Match(e.Message);
-        if (!match.Success)
-            return ServiceResponse.FromException<T>(e);
-
-        if (match.Groups.TryGetValue("ForeignKeyName", out var foreignKeyName))
-        {
-            // If we have a foreign key name we try to walk the whole path backwards from the entity that defines the key, to the dto, to the property on the dto that caused the failure.
-            using var context = _contextFactory.CreateDbContext();
-            var foreignKeyContraint = context.Model.GetEntityTypes().SelectMany(t => t.GetForeignKeys()).FirstOrDefault(f => f.GetConstraintName() == foreignKeyName.Value);
-
-            if (foreignKeyContraint is not null)
-            {
-                var entityType = foreignKeyContraint.PrincipalEntityType.ClrType;
-                var returnType = typeof(T);
-                var returnTypeProperties = returnType.GetProperties();
-
-                var maps = _mapper.ConfigurationProvider.Internal().GetAllTypeMaps().Where(m => m.DestinationType == entityType);
-                var sourceTypes = maps.Select(m => m.SourceType).ToHashSet();
-
-                var foreignKeyPropertyOnDto = returnTypeProperties
-                    .Where(p => sourceTypes.Contains(p.PropertyType))
-                    .Select(p => FindForeignKeyProperty(returnType, returnTypeProperties, p))
-                    .Where(a => a is not null)
-                    .FirstOrDefault();
-
-                if (foreignKeyPropertyOnDto is not null)
-                {
-                    var validationResults = new ValidationResults(foreignKeyPropertyOnDto, $"Foreign key was violated.");
-                    return ServiceResponse.FromFailedValidation<T>(HttpStatusCode.Conflict, validationResults);
-                }
-            }
-
-            // If that fails, we simply return a global failure.
-            return ServiceResponse.FromProblem<T>(HttpStatusCode.Conflict, $"Invalid relationship. The foreign key '{foreignKeyName}' was violated.");
-        }
-
-        if (match.Groups.TryGetValue("PrimaryTable", out var primaryTable))
-            return ServiceResponse.FromProblem<T>(HttpStatusCode.Conflict, $"Invalid relationship. '{primaryTable}' was not found.");
-
-        return ServiceResponse.FromException<T>(HttpStatusCode.Conflict, e);
-    }
-
-    private static string? FindForeignKeyProperty(Type dtoType, PropertyInfo[] returnTypeProperties, PropertyInfo property)
-    {
-        // First look for a ForeignKeyAttribute on the property itself
-        var foreignKeyAttributeFromProperty = property.PropertyType.GetCustomAttribute<ForeignKeyAttribute>();
-        if (foreignKeyAttributeFromProperty is not null)
-            return foreignKeyAttributeFromProperty.Name;
-
-        // Then look for a ForeignKeyAttribute pointing to this property
-        var propertyWithForeignKeyAttributeToForeignKeyProperty = returnTypeProperties.FirstOrDefault(p => p.GetCustomAttribute<ForeignKeyAttribute>()?.Name == property.Name);
-        if (propertyWithForeignKeyAttributeToForeignKeyProperty is not null)
-            return propertyWithForeignKeyAttributeToForeignKeyProperty.Name;
-
-        // Lastly check the convention with the Id suffix
-        var nameWithId = property.Name + "Id";
-        var propertyWithIdSuffix = dtoType.GetProperty(nameWithId, BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.IgnoreCase);
-
-        // May be null if it is not found.
-        return propertyWithIdSuffix?.Name;
-    }
-
-    [GeneratedRegex("FOREIGN KEY constraint \"(?<ForeignKeyName>(FK_(?<ForeignTable>\\w+)_(?<PrimaryTable>\\w+)_(?<ForeignKeyProperty>\\w+))|[^\"]+)\"")]
-    private static partial Regex GenerateForeignKeyRegex();
 }

@@ -10,17 +10,18 @@ namespace RESTworld.Business.Authorization;
 
 /// <summary>
 /// This class can be used as a base for your CRUD authorization handlers.
-/// Use it if you have a <see cref="ICrudServiceBase{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> and want to check for authorization.
+/// Use it if you have a <see cref="ICrudServiceBase{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/> and want to check for authorization.
 /// It does not check anything, but implements the interface.
 /// This allows you to only override the methods which you need to implement.
 /// </summary>
 /// <typeparam name="TEntity">The type of the entity.</typeparam>
 /// <typeparam name="TCreateDto">The type of the create DTO.</typeparam>
+/// <typeparam name="TQueryDto">The type of the query DTO.</typeparam>
 /// <typeparam name="TGetListDto">The type of the get list DTO.</typeparam>
 /// <typeparam name="TGetFullDto">The type of the get full DTO.</typeparam>
 /// <typeparam name="TUpdateDto">The type of the update DTO.</typeparam>
-/// <seealso cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}" />
-public abstract class CrudAuthorizationHandlerBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto> : ReadAuthorizationHandlerBase<TEntity, TGetListDto, TGetFullDto>, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
+/// <seealso cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}" />
+public abstract class CrudAuthorizationHandlerBase<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto> : ReadAuthorizationHandlerBase<TEntity, TQueryDto, TGetListDto, TGetFullDto>, ICrudAuthorizationHandler<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>
 {
     /// <inheritdoc/>
     public virtual Task<AuthorizationResult<TEntity, TCreateDto>> HandleCreateRequestAsync(AuthorizationResult<TEntity, TCreateDto> previousResult, CancellationToken cancellationToken) => Task.FromResult(previousResult);

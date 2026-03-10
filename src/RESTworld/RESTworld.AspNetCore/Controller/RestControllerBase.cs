@@ -9,7 +9,7 @@ using System;
 namespace RESTworld.AspNetCore.Controller;
 
 /// <summary>
-/// A base class for custom controllers which do not fit the <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>.
+/// A base class for custom controllers which do not fit the <see cref="CrudController{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/>.
 /// </summary>
 [Route("[controller]")]
 [RestControllerNameConvention(0)]

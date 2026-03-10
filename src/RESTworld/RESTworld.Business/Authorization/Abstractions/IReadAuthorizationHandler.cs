@@ -12,9 +12,10 @@ namespace RESTworld.Business.Authorization.Abstractions;
 /// If multiple handlers are registered for the same types in the ServiceCollection, they will be executed in the direction they have been registered.
 /// </summary>
 /// <typeparam name="TEntity">The type of the entity.</typeparam>
+/// <typeparam name="TQueryDto">The type of the DTO which is used for queries.</typeparam>
 /// <typeparam name="TGetListDto">The type of the DTO which is used when getting a list.</typeparam>
 /// <typeparam name="TGetFullDto">The type of the DTO which is used when getting a full record.</typeparam>
-public interface IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto> : IAuthorizationHandler
+public interface IReadAuthorizationHandler<TEntity, TQueryDto, TGetListDto, TGetFullDto> : IAuthorizationHandler
 {
     /// <summary>
     /// This method is called BEFORE the GET-HISTORY request is executed on the database.
@@ -23,7 +24,7 @@ public interface IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto> : 
     /// <param name="previousResult">The result from the handler which was executed before this one, or an initial unmodified result.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns>A result which might be modified depending on its internal authorization logic.</returns>
-    Task<AuthorizationResult<TEntity, IGetHistoryRequest<TGetFullDto, TEntity>>> HandleGetHistoryRequestAsync(AuthorizationResult<TEntity, IGetHistoryRequest<TGetFullDto, TEntity>> previousResult, CancellationToken cancellationToken);
+    Task<AuthorizationResult<TEntity, IGetHistoryRequest<TEntity, TQueryDto, TGetFullDto>>> HandleGetHistoryRequestAsync(AuthorizationResult<TEntity, IGetHistoryRequest<TEntity, TQueryDto, TGetFullDto>> previousResult, CancellationToken cancellationToken);
 
     /// <summary>
     /// This method is called AFTER the GET-HISTORY request is executed on the database.
@@ -41,7 +42,7 @@ public interface IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto> : 
     /// <param name="previousResult">The result from the handler which was executed before this one, or an initial unmodified result.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns>A result which might be modified depending on its internal authorization logic.</returns>
-    Task<AuthorizationResult<TEntity, IGetListRequest<TGetListDto, TEntity>>> HandleGetListRequestAsync(AuthorizationResult<TEntity, IGetListRequest<TGetListDto, TEntity>> previousResult, CancellationToken cancellationToken);
+    Task<AuthorizationResult<TEntity, IGetListRequest<TEntity, TQueryDto, TGetListDto>>> HandleGetListRequestAsync(AuthorizationResult<TEntity, IGetListRequest<TEntity, TQueryDto, TGetListDto>> previousResult, CancellationToken cancellationToken);
 
     /// <summary>
     /// This method is called AFTER the GET-LIST request is executed on the database.

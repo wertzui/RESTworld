@@ -9,18 +9,25 @@ public class PostCreateDto
 {
     [Display(Name = "Author")]
     public long AuthorId { get; set; }
+
     [Display(Name = "Blog")]
     public long BlogId { get; set; }
+
     [Required]
     public string Headline { get; set; } = default!;
+
     public PostState State { get; set; }
+
     [DataType(DataType.MultilineText)]
     [Required]
     public string Text { get; set; } = default!;
+
     [JsonIgnore]
-    public virtual AuthorDto? Author { get; set; }
+    public AuthorDto? Author { get; set; }
+
     [JsonIgnore]
-    public virtual BlogDto? Blog { get; set; }
+    public BlogGetListDto? Blog { get; set; }
+
     [RestWorldImage(
         AspectRatio = 120.0 / 40.0,
         ContainWithinAspectRatio = true,
@@ -30,6 +37,7 @@ public class PostCreateDto
         ResizeToWidth = 120
         )]
     public HalFile? Image { get; set; }
+
     [DataType(DataType.Upload)]
     public HalFile? Attachement { get; set; }
 }

@@ -32,8 +32,8 @@ public abstract class BasicAuthorizationHandlerBase<TRequest, TResponse> : IBasi
 /// <typeparam name="TEntity">The type of the entity.</typeparam>
 /// <typeparam name="TRequest">The type of the request.</typeparam>
 /// <typeparam name="TResponse">The type of the response.</typeparam>
-/// <seealso cref="IBasicAuthorizationHandler&lt;TEntity, TRequest, TResponse&gt;" />
-/// <seealso cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}" />
+/// <seealso cref="IBasicAuthorizationHandler{TEntity, TRequest, TResponse}" />
+/// <seealso cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}" />
 public abstract class BasicAuthorizationHandlerBase<TEntity, TRequest, TResponse> : IBasicAuthorizationHandler<TEntity, TRequest, TResponse>
 {
     /// <inheritdoc/>

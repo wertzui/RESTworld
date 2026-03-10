@@ -1,5 +1,4 @@
 ﻿using AutoFixture;
-using AutoMapper;
 using ExampleBlog.Common.Dtos;
 using ExampleBlog.Data;
 using ExampleBlog.Data.Models;
@@ -8,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using MockQueryable;
 using RESTworld.Business.Authorization;
 using RESTworld.Business.Authorization.Abstractions;
+using RESTworld.Business.Mapping;
 using RESTworld.Business.Models;
 using RESTworld.Business.Models.Abstractions;
 using RESTworld.Business.Services;
@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 
 namespace ExampleBlog.Business.Services;
 
-public class TestService : CrudServiceBase<BlogDatabase, TestEntity, TestDto, TestDto, TestDto, TestDto>
+public class TestService : CrudServiceBase<BlogDatabase, TestEntity, TestDto, TestDto, TestDto, TestDto, TestDto>
 {
     // This array simulates a cached result which might come from a database.
     private static readonly IQueryable<TestEntity> _entities;
@@ -49,6 +49,9 @@ public class TestService : CrudServiceBase<BlogDatabase, TestEntity, TestDto, Te
             .With(t => t.MyNullableBool, () => { var val = Random.Shared.NextInt64(4); return val == 0 ? true : val == 1 ? false : null; })
             .With(t => t.MyNullableDecimal, () => (decimal)Random.Shared.NextDouble() * 10));
 
+        _fixture.Customize<ListTestDto>(composer => composer
+            .With(t => t.PostId, () => Random.Shared.NextInt64(1, 250)));
+
         _entities = _fixture.CreateMany<TestEntity>(100)
             .ToArray()
             .BuildMock(); // BuildMock() basically allows EF Core to query the in-memory collection.
@@ -56,8 +59,8 @@ public class TestService : CrudServiceBase<BlogDatabase, TestEntity, TestDto, Te
 
     public TestService(
         IDbContextFactory<BlogDatabase> contextFactory,
-        IMapper mapper,
-        IEnumerable<ICrudAuthorizationHandler<TestEntity, TestDto, TestDto, TestDto, TestDto>> authorizationHandlers,
+        ICrudMapper<TestEntity, TestDto, TestDto, TestDto, TestDto, TestDto> mapper,
+        IEnumerable<ICrudAuthorizationHandler<TestEntity, TestDto, TestDto, TestDto, TestDto, TestDto>> authorizationHandlers,
         IValidationService<TestDto, TestDto, TestEntity>? validationService,
         IUserAccessor userAccessor,
         ILogger<TestService> logger)
@@ -136,7 +139,7 @@ public class TestService : CrudServiceBase<BlogDatabase, TestEntity, TestDto, Te
         return base.OnGotSingleInternalAsync(authorizationResult, dto, entity, cancellationToken);
     }
 
-    protected override Task OnGotListInternalAsync(AuthorizationResult<TestEntity, IGetListRequest<TestDto, TestEntity>> authorizationResult, IReadOnlyPagedCollection<TestDto> pagedCollection, CancellationToken cancellationToken)
+    protected override Task OnGotListInternalAsync(AuthorizationResult<TestEntity, IGetListRequest<TestEntity, TestDto, TestDto>> authorizationResult, IReadOnlyPagedCollection<TestDto> pagedCollection, CancellationToken cancellationToken)
     {
         var dtos = pagedCollection.Items;
 

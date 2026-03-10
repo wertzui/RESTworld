@@ -12,29 +12,29 @@ namespace RESTworld.AspNetCore.Controller;
 /// <seealso cref="System.Attribute"/>
 /// <seealso cref="IControllerModelConvention"/>
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
-public sealed class RestControllerNameConventionAttribute : Attribute, IControllerModelConvention
+public sealed partial class RestControllerNameConventionAttribute : Attribute, IControllerModelConvention
 {
     /// <summary>
     /// The index of the TGetFullDto generic type argument of
-    /// <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
+    /// <see cref="CrudController{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
     /// </summary>
     public const int CrudControllerIndexOfFullDtoType = 3;
 
     /// <summary>
     /// The index of the TGetListDto generic type argument of
-    /// <see cref="CrudController{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
+    /// <see cref="CrudController{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
     /// </summary>
     public const int CrudControllerIndexOfListDtoType = 2;
 
     /// <summary>
     /// The index of the TGetFullDto generic type argument of
-    /// <see cref="ReadController{TEntity, TGetListDto, TGetFullDto}"/>
+    /// <see cref="ReadController{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/>
     /// </summary>
     public const int ReadControllerIndexOfFullDtoType = 2;
 
     /// <summary>
     /// The index of the TGetListDto generic type argument of
-    /// <see cref="ReadController{TEntity, TGetListDto, TGetFullDto}"/>
+    /// <see cref="ReadController{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/>
     /// </summary>
     public const int ReadControllerIndexOfListDtoType = 1;
 
@@ -79,7 +79,7 @@ public sealed class RestControllerNameConventionAttribute : Attribute, IControll
     {
         var dtoName = readDtoType.Name;
 
-        var match = Regex.Match(dtoName, "^(?<tbl>tbl)?(?<name>.*?)(?<get>get)?(?<full>full)?(?<list>list)?(?<dto>dto)?(?<version>v(er(sion)?)?\\d+)?$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+        var match = ExtractControllerNameFromDtoName.Match(dtoName);
         var groups = match.Groups;
 
         var controllerName = groups["name"].Value;
@@ -101,4 +101,7 @@ public sealed class RestControllerNameConventionAttribute : Attribute, IControll
         var readDtoType = controller.ControllerType.GenericTypeArguments[_indexOfReadDtoType];
         controller.ControllerName = CreateNameFromType(readDtoType);
     }
+
+    [GeneratedRegex("^(?<tbl>tbl)?(?<name>.*?)(?<get>get)?(?<full>full)?(?<list>list)?(?<dto>dto)?(?<version>v(er(sion)?)?\\d+)?$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture, "de-DE")]
+    private static partial Regex ExtractControllerNameFromDtoName { get; }
 }

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.OData;
 using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -53,19 +54,19 @@ public static class RestWorldBuilderExtensions
     /// <summary>
     /// Adds RESTworld to the application.
     /// It will automatically add everything which is needed for a REST pipeline to work.
-    /// Don't forget to call <see cref="UseRestWorld(WebApplication)"/> afterwards.
+    /// Don't forget to call <see cref="UseRestWorld{TApplication}(TApplication)"/> afterwards.
     /// </summary>
     /// <param name="builder">The builder.</param>
     /// <returns>A <see cref="RestWorldWebApplicationBuilder"/> which wraps the given <see cref="WebApplicationBuilder"/> and additionally exposes <see cref="RestWorldWebApplicationBuilder.ODataModelBuilder"/> to configure OData.</returns>
     /// <exception cref="ArgumentNullException">The setting for "RESTworld: Versioning:ParameterName" must not be null. If you want the default value ("v"), just leave it out.</exception>
     /// <exception cref="ArgumentOutOfRangeException">The setting for "RESTworld:Versioning:DefaultVersion" was neither "*" nor a valid API version.</exception>
-    public static RestWorldWebApplicationBuilder AddRestWorld(this WebApplicationBuilder builder)
+    public static TBuilder AddRestWorld<TBuilder>(this TBuilder builder)
+        where TBuilder : IHostApplicationBuilder
     {
-        var restWorldBuilder = new RestWorldWebApplicationBuilder(builder);
         var configuration = builder.Configuration;
         var services = builder.Services;
 
-        restWorldBuilder.AddRestWorldOptions();
+        builder.AddRestWorldOptions();
 
         var versionParameterName = configuration.GetValue("RESTworld:Versioning:ParameterName", "v")
             ?? throw new ArgumentNullException("RESTworld:Versioning:ParameterName", """The setting for "RESTworld: Versioning:ParameterName" must not be null. If you want the default value ("v"), just leave it out.""");
@@ -110,13 +111,10 @@ public static class RestWorldBuilderExtensions
             })
             .AddMvc();
 
-        services.AddSingleton(_ => restWorldBuilder.ODataModelBuilder.GetEdmModel());
-
         services.AddSingleton<ICacheHelper, CacheHelper>();
         services.AddSingleton<IResultFactory, ResultFactory>();
         services.AddSingleton<ICrudLinkFactory, CrudLinkFactory>();
         services.AddSingleton<ILinkFactory, CrudLinkFactory>();
-        services.AddSingleton<IListRequestFactory, ListRequestFactory>();
 
         services
             .AddControllers(options =>
@@ -219,7 +217,7 @@ public static class RestWorldBuilderExtensions
 
         builder.Services.AddAutoMapper(cfg => cfg.AddExpressionMapping());
 
-        return restWorldBuilder;
+        return builder;
     }
 
     private static IHostApplicationBuilder ConfigureOpenTelemetry(
@@ -244,17 +242,17 @@ public static class RestWorldBuilderExtensions
                     .AddAspNetCoreInstrumentation(opts =>
                     {
                         var existingFilter = opts.Filter;
-                        var healthFilter = (HttpContext context) => !context.Request.Path.HasValue || !context.Request.Path.Value.StartsWith("/health/");
-                        var corsFilter = (HttpContext context) => !string.Equals(context.Request.Method, "OPTIONS", StringComparison.OrdinalIgnoreCase);
+                        static bool healthFilter(HttpContext context) => !context.Request.Path.HasValue || !context.Request.Path.Value.StartsWith("/health/");
+                        static bool corsFilter(HttpContext context) => !string.Equals(context.Request.Method, "OPTIONS", StringComparison.OrdinalIgnoreCase);
                         Func<HttpContext, bool> combinedFilter = existingFilter is null ? context => healthFilter(context) && corsFilter(context) : context => existingFilter(context) && healthFilter(context) && corsFilter(context);
                         opts.Filter = combinedFilter;
 
                         var existingRequestEnricher = opts.EnrichWithHttpRequest;
-                        var healthRequestEnricher = (Activity activity, HttpRequest request) =>
+                        static void healthRequestEnricher(Activity activity, HttpRequest request)
                         {
                             if (request.Path.HasValue && request.Path.Value.StartsWith("/health/"))
                                 activity.SetTag("app.synthetic_request", true);
-                        };
+                        }
                         opts.EnrichWithHttpRequest = existingRequestEnricher is null
                             ? healthRequestEnricher
                             : (activity, request) =>
@@ -281,16 +279,16 @@ public static class RestWorldBuilderExtensions
                     .AddEntityFrameworkCoreInstrumentation(opts =>
                     {
                         var existingFilter = opts.Filter;
-                        var healthFilter = (string? provider, IDbCommand command) => command.CommandText != "SELECT 1" && !command.CommandText.Contains("__EFMigrationsHistory");
-                        var combinedFilter = existingFilter is null ? healthFilter : (provider, command) => existingFilter(provider, command) && healthFilter(provider, command);
+                        static bool healthFilter(string? provider, IDbCommand command) => command.CommandText != "SELECT 1" && !command.CommandText.Contains("__EFMigrationsHistory");
+                        var combinedFilter = existingFilter is null ? (Func<string?, IDbCommand, bool>)healthFilter : (provider, command) => existingFilter(provider, command) && healthFilter(provider, command);
                         opts.Filter = combinedFilter;
 
                         var existingRequestEnricher = opts.EnrichWithIDbCommand;
-                        var healthRequestEnricher = (Activity activity, IDbCommand command) =>
+                        static void healthRequestEnricher(Activity activity, IDbCommand command)
                         {
                             if (command.CommandText == "SELECT 1" || command.CommandText.Contains("__EFMigrationsHistory"))
                                 activity.SetTag("app.synthetic_request", true);
-                        };
+                        }
                         opts.EnrichWithIDbCommand = existingRequestEnricher is null
                             ? healthRequestEnricher
                             : (activity, command) =>
@@ -306,16 +304,16 @@ public static class RestWorldBuilderExtensions
                         opts.RecordException = true;
 
                         var existingFilter = opts.Filter;
-                        var healthFilter = (object command) => command is SqlCommand sqlCommand && sqlCommand.CommandText != "SELECT 1" && !sqlCommand.CommandText.Contains("__EFMigrationsHistory");
-                        var combinedFilter = existingFilter is null ? healthFilter : (command) => existingFilter(command) && healthFilter(command);
+                        static bool healthFilter(object command) => command is SqlCommand sqlCommand && sqlCommand.CommandText != "SELECT 1" && !sqlCommand.CommandText.Contains("__EFMigrationsHistory");
+                        var combinedFilter = existingFilter is null ? (Func<object, bool>)healthFilter : (command) => existingFilter(command) && healthFilter(command);
                         opts.Filter = combinedFilter;
 
                         var existingRequestEnricher = opts.EnrichWithSqlCommand;
-                        var healthRequestEnricher = (Activity activity, object command) =>
+                        static void healthRequestEnricher(Activity activity, object command)
                         {
                             if (command is SqlCommand sqlCommand && (sqlCommand.CommandText == "SELECT 1" || sqlCommand.CommandText.Contains("__EFMigrationsHistory")))
                                 activity.SetTag("app.synthetic_request", true);
-                        };
+                        }
                         opts.EnrichWithSqlCommand = existingRequestEnricher is null
                             ? healthRequestEnricher
                             : (activity, command) =>
@@ -398,13 +396,14 @@ public static class RestWorldBuilderExtensions
     /// <summary>
     /// Configures the application to use RESTworld and all needed middle ware.
     /// It will automatically add everything which is needed for a REST pipeline to work.
-    /// Don't forget to call <see cref="AddRestWorld(WebApplicationBuilder)"/> before.
+    /// Don't forget to call <see cref="AddRestWorld{TBuilder}(TBuilder)"/> before.
     /// </summary>
-    public static WebApplication UseRestWorld(this WebApplication app)
+    public static TApplication UseRestWorld<TApplication>(this TApplication app)
+        where TApplication : IHost, IApplicationBuilder, IEndpointRouteBuilder
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        if (app.Environment.IsDevelopment())
+        if (app.Services.GetRequiredService<IWebHostEnvironment>().IsDevelopment())
             app.UseDeveloperExceptionPage();
 
         app.UseAcceptHeaders();

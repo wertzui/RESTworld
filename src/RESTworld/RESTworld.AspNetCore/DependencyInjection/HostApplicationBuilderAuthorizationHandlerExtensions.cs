@@ -25,9 +25,7 @@ public static class HostApplicationBuilderAuthorizationHandlerExtensions
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-#pragma warning disable CS0618 // Type or member is obsolete
         builder.Services.AddBasicAuthorizationHandler<TAuthorizationHandler, TResponse>(builder.Configuration);
-#pragma warning restore CS0618 // Type or member is obsolete
         return builder;
     }
 
@@ -45,9 +43,7 @@ public static class HostApplicationBuilderAuthorizationHandlerExtensions
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-#pragma warning disable CS0618 // Type or member is obsolete
         builder.Services.AddBasicAuthorizationHandler<TAuthorizationHandler, TRequest, TResponse>(builder.Configuration);
-#pragma warning restore CS0618 // Type or member is obsolete
 
         return builder;
     }
@@ -68,62 +64,60 @@ public static class HostApplicationBuilderAuthorizationHandlerExtensions
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-#pragma warning disable CS0618 // Type or member is obsolete
         builder.Services.AddBasicAuthorizationHandler<TAuthorizationHandler, TEntity, TRequest, TResponse>(builder.Configuration);
-#pragma warning restore CS0618 // Type or member is obsolete
 
         return builder;
     }
 
     /// <summary>
-    /// Adds an <see cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
-    /// which will automatically be called by any <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/>.
+    /// Adds an <see cref="ICrudAuthorizationHandler{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
+    /// which will automatically be called by any <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/>.
     /// </summary>
     /// <typeparam name="TAuthorizationHandler">The type of the authorization handler.</typeparam>
     /// <typeparam name="TEntity">The type of the entity.</typeparam>
     /// <typeparam name="TCreateDto">The type of the DTO for a Create operation.</typeparam>
+    /// <typeparam name="TQueryDto">The type of the DTO for a Query operation.</typeparam>
     /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
     /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
     /// <typeparam name="TUpdateDto">The type of the DTO for an Update operation.</typeparam>
     /// <param name="builder">The host application builder.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    public static IHostApplicationBuilder AddCrudAuthorizationHandler<TAuthorizationHandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(this IHostApplicationBuilder builder)
-        where TAuthorizationHandler : class, ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
+    public static IHostApplicationBuilder AddCrudAuthorizationHandler<TAuthorizationHandler, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>(this IHostApplicationBuilder builder)
+        where TAuthorizationHandler : class, ICrudAuthorizationHandler<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>
         where TEntity : ConcurrentEntityBase
+        where TQueryDto : class
         where TGetListDto : ConcurrentDtoBase
         where TGetFullDto : ConcurrentDtoBase
         where TUpdateDto : ConcurrentDtoBase
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-#pragma warning disable CS0618 // Type or member is obsolete
-        builder.Services.AddCrudAuthorizationHandler<TAuthorizationHandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>(builder.Configuration);
-#pragma warning restore CS0618 // Type or member is obsolete
+        builder.Services.AddCrudAuthorizationHandler<TAuthorizationHandler, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>(builder.Configuration);
 
         return builder;
     }
 
     /// <summary>
-    /// Adds an <see cref="IReadAuthorizationHandler{TEntity, TGetListDto, TGetFullDto}"/>
-    /// which will automatically be called by any <see cref="ReadServiceBase{TContext, TEntity, TGetListDto, TGetFullDto}"/>.
+    /// Adds an <see cref="IReadAuthorizationHandler{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/>
+    /// which will automatically be called by any <see cref="ReadServiceBase{TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto}"/>.
     /// </summary>
     /// <typeparam name="TAuthorizationHandler">The type of the authorization handler.</typeparam>
     /// <typeparam name="TEntity">The type of the entity.</typeparam>
+    /// <typeparam name="TQueryDto">The type of the DTO for a query.</typeparam>
     /// <typeparam name="TGetListDto">The type of the DTO for a List operation.</typeparam>
     /// <typeparam name="TGetFullDto">The type of the DTO for a Get operation.</typeparam>
     /// <param name="builder">The host application builder.</param>
     /// <returns>A reference to this instance after the operation has completed.</returns>
-    public static IHostApplicationBuilder AddReadAuthorizationHandler<TAuthorizationHandler, TEntity, TGetListDto, TGetFullDto>(this IHostApplicationBuilder builder)
-        where TAuthorizationHandler : class, IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>
+    public static IHostApplicationBuilder AddReadAuthorizationHandler<TAuthorizationHandler, TEntity, TQueryDto, TGetListDto, TGetFullDto>(this IHostApplicationBuilder builder)
+        where TAuthorizationHandler : class, IReadAuthorizationHandler<TEntity, TQueryDto, TGetListDto, TGetFullDto>
         where TEntity : EntityBase
+        where TQueryDto : class
         where TGetListDto : DtoBase
         where TGetFullDto : DtoBase
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-#pragma warning disable CS0618 // Type or member is obsolete
-        builder.Services.AddReadAuthorizationHandler<TAuthorizationHandler, TEntity, TGetListDto, TGetFullDto>(builder.Configuration);
-#pragma warning restore CS0618 // Type or member is obsolete
+        builder.Services.AddReadAuthorizationHandler<TAuthorizationHandler, TEntity, TQueryDto, TGetListDto, TGetFullDto>(builder.Configuration);
 
         return builder;
     }

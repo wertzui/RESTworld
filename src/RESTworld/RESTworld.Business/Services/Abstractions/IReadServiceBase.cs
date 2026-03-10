@@ -13,10 +13,12 @@ namespace RESTworld.Business.Services.Abstractions;
 /// However it might be easier if you implement the ReadServiceBase class and just add or override specific methods.
 /// </summary>
 /// <typeparam name="TEntity">The type of the database entity.</typeparam>
+/// <typeparam name="TQueryDto">The type of the DTO that is used for filtering and querying.</typeparam>
 /// <typeparam name="TGetListDto">The type of the DTO that is used for READ-list operations.</typeparam>
 /// <typeparam name="TGetFullDto">The type of the DTO that is used for READ-single operations.</typeparam>
-public interface IReadServiceBase<TEntity, TGetListDto, TGetFullDto>
+public interface IReadServiceBase<TEntity, TQueryDto, TGetListDto, TGetFullDto>
     where TEntity : EntityBase
+    where TQueryDto : class
     where TGetListDto : DtoBase
     where TGetFullDto : DtoBase
 {
@@ -26,7 +28,7 @@ public interface IReadServiceBase<TEntity, TGetListDto, TGetFullDto>
     /// <param name="request">Specifies filtering, paging and ordering through its Filter and if the total count shall be returned.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
-    Task<ServiceResponse<IReadOnlyPagedCollection<TGetFullDto>>> GetHistoryAsync(IGetHistoryRequest<TGetFullDto, TEntity> request, CancellationToken cancellationToken);
+    Task<ServiceResponse<IReadOnlyPagedCollection<TGetFullDto>>> GetHistoryAsync(IGetHistoryRequest<TEntity, TQueryDto, TGetFullDto> request, CancellationToken cancellationToken);
 
     /// <summary>
     /// Gets multiple entries from the database, filtered and paged as defined in the <paramref name="request"/>.
@@ -35,7 +37,7 @@ public interface IReadServiceBase<TEntity, TGetListDto, TGetFullDto>
     /// <param name="request">Specifies filtering, paging and ordering through its Filter and if the total count shall be returned.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
-    Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListAsync(IGetListRequest<TGetListDto, TEntity> request, CancellationToken cancellationToken);
+    Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListAsync(IGetListRequest<TEntity, TQueryDto, TGetListDto> request, CancellationToken cancellationToken);
 
     /// <summary>
     /// Gets a single entry, defined by the <paramref name="id"/>.

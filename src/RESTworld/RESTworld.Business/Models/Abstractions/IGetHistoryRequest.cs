@@ -6,8 +6,9 @@ namespace RESTworld.Business.Models.Abstractions;
 /// A request for a list of historical records.
 /// </summary>
 /// <typeparam name="TEntity">The type of the entity in the database.</typeparam>
+/// <typeparam name="TQueryDto">The type of the DTO used to query the database.</typeparam>
 /// <typeparam name="TGetFullDto">The type of the DTO used to query the database.</typeparam>
-public interface IGetHistoryRequest<TGetFullDto, TEntity> : IGetListRequest<TGetFullDto, TEntity>
+public interface IGetHistoryRequest<TEntity, TQueryDto, TGetFullDto> : IGetListRequest<TEntity, TQueryDto, TGetFullDto>
 {
     /// <summary>
     /// The inclusive lower bound of the time range.

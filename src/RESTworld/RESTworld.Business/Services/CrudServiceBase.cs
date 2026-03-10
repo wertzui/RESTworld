@@ -1,8 +1,8 @@
-﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RESTworld.Business.Authorization;
 using RESTworld.Business.Authorization.Abstractions;
+using RESTworld.Business.Mapping;
 using RESTworld.Business.Models;
 using RESTworld.Business.Models.Abstractions;
 using RESTworld.Business.Services.Abstractions;
@@ -21,10 +21,11 @@ using System.Threading.Tasks;
 namespace RESTworld.Business.Services;
 
 /// <inheritdoc/>
-public class CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
-    : ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>, ICrudServiceBase<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
+public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>
+    : ReadServiceBase<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto>, ICrudServiceBase<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>
     where TContext : DbContextBase
     where TEntity : ConcurrentEntityBase
+    where TQueryDto : class
     where TGetListDto : ConcurrentDtoBase
     where TGetFullDto : ConcurrentDtoBase
     where TUpdateDto : ConcurrentDtoBase
@@ -33,10 +34,10 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFul
 
     /// <summary>
     /// Creates a new instance of the
-    /// <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> class.
+    /// <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/> class.
     /// </summary>
     /// <param name="contextFactory">The factory used to create a <see cref="DbContext"/>.</param>
-    /// <param name="mapper">The AutoMapper instance which maps between DTOs and entities.</param>
+    /// <param name="mapper">The Mapper instance which maps between DTOs and entities.</param>
     /// <param name="authorizationHandlers">
     /// All AuthorizationHandlers which will be called during authorization.
     /// </param>
@@ -45,25 +46,28 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFul
     /// <param name="logger">The logger.</param>
     public CrudServiceBase(
         IDbContextFactory<TContext> contextFactory,
-        IMapper mapper,
-        IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> authorizationHandlers,
+        ICrudMapper<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto> mapper,
+        IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>> authorizationHandlers,
         IValidationService<TCreateDto, TUpdateDto, TEntity>? validationService,
         IUserAccessor userAccessor,
-        ILogger<CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> logger)
+        ILogger<CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>> logger)
         : base(contextFactory, mapper, authorizationHandlers, userAccessor, logger)
     {
+        Mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         CrudAuthorizationHandlers = authorizationHandlers ?? throw new ArgumentNullException(nameof(authorizationHandlers));
         ValidationService = validationService;
         LogAuthoriztaionHandlerWarningOnlyOneTimeIfNoHandlersArePresent(authorizationHandlers);
     }
 
+    protected override ICrudMapper<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto> Mapper { get; }
+
     /// <summary>
     /// The authorization handlers which are used for all CRUD operations.
     /// </summary>
-    protected virtual IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> CrudAuthorizationHandlers { get; }
+    protected virtual IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>> CrudAuthorizationHandlers { get; }
 
     /// <inheritdoc/>
-    protected override IEnumerable<IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>> ReadAuthorizationHandlers => CrudAuthorizationHandlers;
+    protected override IEnumerable<IReadAuthorizationHandler<TEntity, TQueryDto, TGetListDto, TGetFullDto>> ReadAuthorizationHandlers => CrudAuthorizationHandlers;
 
     /// <summary>
     /// The validation service which is used to validate create and update operations.
@@ -155,7 +159,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFul
         if (!validationResultsBeforeCreate.ValidationSucceeded)
             return ServiceResponse.FromFailedValidation<TGetFullDto>(validationResultsBeforeCreate);
 
-        var entity = _mapper.Map<TEntity>(dto);
+        var entity = Mapper.MapCreateToEntity(dto);
 
         context.Add(entity);
 
@@ -167,7 +171,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFul
 
         await context.SaveChangesAsync(GetCurrentUsersName(), cancellationToken);
 
-        var resultDto = _mapper.Map<TGetFullDto>(entity);
+        var resultDto = Mapper.MapEntityToFull(entity);
 
         await OnCreatedInternalAsync(authorizationResult, resultDto, entity, cancellationToken);
 
@@ -193,7 +197,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFul
         if (!validationResultsBeforeCreate.ValidationSucceeded)
             return ServiceResponse.FromFailedValidation<IReadOnlyCollection<TGetFullDto>>(validationResultsBeforeCreate);
 
-        var entities = _mapper.Map<IReadOnlyCollection<TEntity>>(dtos);
+        var entities = dtos.Select(Mapper.MapCreateToEntity).ToList();
 
         context.AddRange(entities);
 
@@ -205,11 +209,11 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFul
 
         await context.SaveChangesAsync(GetCurrentUsersName(), cancellationToken);
 
-        var resultDto = _mapper.Map<IReadOnlyCollection<TGetFullDto>>(entities);
+        var resultDto = entities.Select(Mapper.MapEntityToFull).ToList();
 
         await OnCreatedInternalAsync(authorizationResult, resultDto, entities, cancellationToken);
 
-        return ServiceResponse.FromResult(resultDto);
+        return ServiceResponse.FromResult<IReadOnlyCollection<TGetFullDto>>(resultDto);
     }
 
     /// <summary>
@@ -462,7 +466,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFul
 
         SetTimestampOriginalValue(dto, context, entity);
 
-        _mapper.Map(dto, entity);
+        Mapper.MapUpdateToEntity(dto, entity);
 
         var validationResultsAfterCreate = ValidationService is null ? SuccessfullValidationResults.Instance : await ValidationService.ValidateAllAfterUpdateAsync(dto, entity, cancellationToken);
         if (!validationResultsAfterCreate.ValidationSucceeded)
@@ -472,7 +476,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFul
 
         await context.SaveChangesAsync(GetCurrentUsersName(), cancellationToken);
 
-        var resultDto = _mapper.Map<TGetFullDto>(entity);
+        var resultDto = Mapper.MapEntityToFull(entity);
 
         await OnUpdatedInternalAsync(authorizationResult, resultDto, entity, cancellationToken);
 
@@ -510,7 +514,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFul
         {
             var entity = entities[dto.Id];
             SetTimestampOriginalValue(dto, context, entity);
-            _mapper.Map(dto, entity);
+            Mapper.MapUpdateToEntity(dto, entity);
         }
 
         var validationResultsAfterUpdate = ValidationService is null ? SuccessfullValidationResults.Instance : await ValidationService.ValidateAllCollectionsAfterUpdateAsync(dtos.Select(d => (d, entities[d.Id])), cancellationToken);
@@ -521,22 +525,22 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TGetListDto, TGetFul
 
         await context.SaveChangesAsync(GetCurrentUsersName(), cancellationToken);
 
-        var resultDto = _mapper.Map<IReadOnlyCollection<TGetFullDto>>(entities.Values);
+        var resultDto = entities.Values.Select(Mapper.MapEntityToFull).ToList();
 
         await OnUpdatedInternalAsync(authorizationResult, resultDto, entities, cancellationToken);
 
-        return ServiceResponse.FromResult(resultDto);
+        return ServiceResponse.FromResult<IReadOnlyCollection<TGetFullDto>>(resultDto);
     }
 
-    private void LogAuthoriztaionHandlerWarningOnlyOneTimeIfNoHandlersArePresent(IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>> authorizationHandlers)
+    private void LogAuthoriztaionHandlerWarningOnlyOneTimeIfNoHandlersArePresent(IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>> authorizationHandlers)
     {
         if (!_authorizationHandlerWarningWasLogged && !System.Linq.Enumerable.Any(authorizationHandlers))
         {
             _authorizationHandlerWarningWasLogged = true;
 
             _logger.LogWarning("No {TCrudAuthorizationHandler} is configured. No authorization will be performed for any methods of {TCrudServiceBase}.",
-                $"{nameof(ICrudAuthorizationHandler<,,,,>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}>",
-                $"{nameof(CrudServiceBase<,,,,,>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}>");
+                $"{nameof(ICrudAuthorizationHandler<,,,,,>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}>",
+                $"{nameof(CrudServiceBase<,,,,,,>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}>");
         }
     }
 }

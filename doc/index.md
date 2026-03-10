@@ -5,6 +5,7 @@ Welcome to the RESTworld documentation. These guides help you build and operate 
 - [Getting Started](getting-started.md) – scaffold your solution, wire RESTworld services, and spin up your first API and optional Angular frontend.
 - [Pipeline Overview](pipeline-overview.md) – understand the default request flow and learn when to customize it, with a link to the [Choosing a Pipeline guide](choosing_a_pipeline.md).
 - [Configuration](configuration.md) – configure RESTworld in `appsettings.json` for both APIs and clients.
+- [DTO Types and Roles](dto-types.md) – understand the six DTO types, the special role of `TQueryDto` in OData queries, and how navigation properties drive HAL-Forms foreign-key options.
 - [Mapping and Versioning](mapping-and-versioning.md) – set up AutoMapper profiles and manage media-type versioning strategies.
 - [Authorization](authorization.md) – implement granular authorization handlers using RESTworld abstractions.
 - [Health and Operations](health-and-operations.md) – expose health probes, integrate Aspire, and enable reliable local testing.

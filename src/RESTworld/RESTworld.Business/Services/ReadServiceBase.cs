@@ -1,8 +1,9 @@
-﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RESTworld.Business.Authorization;
 using RESTworld.Business.Authorization.Abstractions;
+using RESTworld.Business.Mapping;
+using RESTworld.Business.Mapping.Exceptions;
 using RESTworld.Business.Models;
 using RESTworld.Business.Models.Abstractions;
 using RESTworld.Business.Services.Abstractions;
@@ -19,10 +20,11 @@ using System.Threading.Tasks;
 namespace RESTworld.Business.Services;
 
 /// <inheritdoc/>
-public class ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>
-    : DbServiceBase<TContext>, IReadServiceBase<TEntity, TGetListDto, TGetFullDto>
+public class ReadServiceBase<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto>
+    : DbServiceBase<TContext>, IReadServiceBase<TEntity, TQueryDto, TGetListDto, TGetFullDto>
     where TContext : DbContextBase
     where TEntity : EntityBase
+    where TQueryDto : class
     where TGetListDto : DtoBase
     where TGetFullDto : DtoBase
 {
@@ -30,10 +32,10 @@ public class ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>
 
     /// <summary>
     /// Creates a new instance of the
-    /// <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto}"/> class.
+    /// <see cref="CrudServiceBase{TContext, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/> class.
     /// </summary>
     /// <param name="contextFactory">The factory used to create a <see cref="DbContext"/>.</param>
-    /// <param name="mapper">The AutoMapper instance which maps between DTOs and entities.</param>
+    /// <param name="mapper">A mapper to map between entities and DTOs.</param>
     /// <param name="authorizationHandlers">
     /// All AuthorizationHandlers which will be called during authorization.
     /// </param>
@@ -41,25 +43,28 @@ public class ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>
     /// <param name="logger">The logger.</param>
     public ReadServiceBase(
         IDbContextFactory<TContext> contextFactory,
-        IMapper mapper,
-        IEnumerable<IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>> authorizationHandlers,
+        IReadMapper<TEntity, TQueryDto, TGetListDto, TGetFullDto> mapper,
+        IEnumerable<IReadAuthorizationHandler<TEntity, TQueryDto, TGetListDto, TGetFullDto>> authorizationHandlers,
         IUserAccessor userAccessor,
-        ILogger<ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>> logger)
-        : base(contextFactory, mapper, userAccessor, logger)
+        ILogger<ReadServiceBase<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto>> logger)
+        : base(contextFactory, ExceptionTranslatorFactory.CreateExceptionTranslators(mapper, contextFactory), userAccessor, logger)
     {
+        Mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         ReadAuthorizationHandlers = authorizationHandlers ?? throw new ArgumentNullException(nameof(authorizationHandlers));
 
         LogAuthoriztaionHandlerWarningOnlyOneTimeIfNoHandlersArePresent(authorizationHandlers);
     }
 
+    protected virtual IReadMapper<TEntity, TQueryDto, TGetListDto, TGetFullDto> Mapper { get; }
+
     /// <summary>
     /// The authorization handlers which are used for read operations.
     /// </summary>
-    protected virtual IEnumerable<IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>> ReadAuthorizationHandlers { get; }
+    protected virtual IEnumerable<IReadAuthorizationHandler<TEntity, TQueryDto, TGetListDto, TGetFullDto>> ReadAuthorizationHandlers { get; }
 
     /// <inheritdoc/>
-    public Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListAsync(IGetListRequest<TGetListDto, TEntity> request, CancellationToken cancellationToken)
-        => TryExecuteWithAuthorizationAsync<TEntity, IGetListRequest<TGetListDto, TEntity>, IReadOnlyPagedCollection<TGetListDto>, IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>>(
+    public Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListAsync(IGetListRequest<TEntity, TQueryDto, TGetListDto> request, CancellationToken cancellationToken)
+        => TryExecuteWithAuthorizationAsync<TEntity, IGetListRequest<TEntity, TQueryDto, TGetListDto>, IReadOnlyPagedCollection<TGetListDto>, IReadAuthorizationHandler<TEntity, TQueryDto, TGetListDto, TGetFullDto>>(
             request,
             (result, token) => GetListInternalAsync(result, token),
             (result, handler, token) => handler.HandleGetListRequestAsync(result, token),
@@ -68,8 +73,8 @@ public class ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>
             cancellationToken);
 
     /// <inheritdoc/>
-    public Task<ServiceResponse<IReadOnlyPagedCollection<TGetFullDto>>> GetHistoryAsync(IGetHistoryRequest<TGetFullDto, TEntity> request, CancellationToken cancellationToken)
-        => TryExecuteWithAuthorizationAsync<TEntity, IGetHistoryRequest<TGetFullDto, TEntity>, IReadOnlyPagedCollection<TGetFullDto>, IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>>(
+    public Task<ServiceResponse<IReadOnlyPagedCollection<TGetFullDto>>> GetHistoryAsync(IGetHistoryRequest<TEntity, TQueryDto, TGetFullDto> request, CancellationToken cancellationToken)
+        => TryExecuteWithAuthorizationAsync<TEntity, IGetHistoryRequest<TEntity, TQueryDto, TGetFullDto>, IReadOnlyPagedCollection<TGetFullDto>, IReadAuthorizationHandler<TEntity, TQueryDto, TGetListDto, TGetFullDto>>(
             request,
             (result, token) => GetHistoryInternalAsync(result, token),
             (result, handler, token) => handler.HandleGetHistoryRequestAsync(result, token),
@@ -79,7 +84,7 @@ public class ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>
 
     /// <inheritdoc/>
     public Task<ServiceResponse<TGetFullDto>> GetSingleAsync(long id, CancellationToken cancellationToken)
-        => TryExecuteWithAuthorizationAsync<TEntity, long, TGetFullDto, IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>>(
+        => TryExecuteWithAuthorizationAsync<TEntity, long, TGetFullDto, IReadAuthorizationHandler<TEntity, TQueryDto, TGetListDto, TGetFullDto>>(
             id,
             (result, token) => GetSingleInternalAsync(result, token),
             (result, handler, token) => handler.HandleGetSingleRequestAsync(result, token),
@@ -120,7 +125,7 @@ public class ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>
     /// <exception cref="ArgumentException">
     /// If request.CalculateTotalCount is true, request.FilterForTotalCount must not be null.
     /// </exception>
-    protected virtual async Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListInternalAsync(AuthorizationResult<TEntity, IGetListRequest<TGetListDto, TEntity>> authorizationResult, CancellationToken cancellationToken)
+    protected virtual async Task<ServiceResponse<IReadOnlyPagedCollection<TGetListDto>>> GetListInternalAsync(AuthorizationResult<TEntity, IGetListRequest<TEntity, TQueryDto, TGetListDto>> authorizationResult, CancellationToken cancellationToken)
     {
         var request = authorizationResult.Value1;
 
@@ -169,7 +174,7 @@ public class ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>
     /// <exception cref="ArgumentException">
     /// If request.CalculateTotalCount is true, request.FilterForTotalCount must not be null.
     /// </exception>
-    protected virtual async Task<ServiceResponse<IReadOnlyPagedCollection<TGetFullDto>>> GetHistoryInternalAsync(AuthorizationResult<TEntity, IGetHistoryRequest<TGetFullDto, TEntity>> authorizationResult, CancellationToken cancellationToken)
+    protected virtual async Task<ServiceResponse<IReadOnlyPagedCollection<TGetFullDto>>> GetHistoryInternalAsync(AuthorizationResult<TEntity, IGetHistoryRequest<TEntity, TQueryDto, TGetFullDto>> authorizationResult, CancellationToken cancellationToken)
     {
         var request = authorizationResult.Value1;
 
@@ -226,7 +231,7 @@ public class ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>
         if (entity is null)
             return ServiceResponse.FromStatus<TGetFullDto>(HttpStatusCode.NotFound);
 
-        var dto = _mapper.Map<TGetFullDto>(entity);
+        var dto = Mapper.MapEntityToFull(entity);
 
         await OnGotSingleInternalAsync(authorizationResult, dto, entity, cancellationToken);
 
@@ -243,10 +248,8 @@ public class ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>
     /// <param name="pagedCollection">The DTOs which have been mapped from the entities.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
-    protected virtual Task OnGotListInternalAsync(AuthorizationResult<TEntity, IGetListRequest<TGetListDto, TEntity>> authorizationResult, IReadOnlyPagedCollection<TGetListDto> pagedCollection, CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
+    protected virtual Task OnGotListInternalAsync(AuthorizationResult<TEntity, IGetListRequest<TEntity, TQueryDto, TGetListDto>> authorizationResult, IReadOnlyPagedCollection<TGetListDto> pagedCollection, CancellationToken cancellationToken)
+        => Task.CompletedTask;
 
     /// <summary>
     /// This method is called after the entities have been read from the database and mapped
@@ -258,10 +261,8 @@ public class ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>
     /// <param name="pagedCollection">The DTOs which have been mapped from the entities.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
-    protected virtual Task OnGotHistoryInternalAsync(AuthorizationResult<TEntity, IGetHistoryRequest<TGetFullDto, TEntity>> authorizationResult, IReadOnlyPagedCollection<TGetFullDto> pagedCollection, CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
+    protected virtual Task OnGotHistoryInternalAsync(AuthorizationResult<TEntity, IGetHistoryRequest<TEntity, TQueryDto, TGetFullDto>> authorizationResult, IReadOnlyPagedCollection<TGetFullDto> pagedCollection, CancellationToken cancellationToken)
+        => Task.CompletedTask;
 
     /// <summary>
     /// This method is called after the entity has been read from the database and mapped into a DTO.
@@ -274,19 +275,17 @@ public class ReadServiceBase<TContext, TEntity, TGetListDto, TGetFullDto>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
     protected virtual Task OnGotSingleInternalAsync(AuthorizationResult<TEntity, long> authorizationResult, TGetFullDto dto, TEntity entity, CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
+        => Task.CompletedTask;
 
-    private void LogAuthoriztaionHandlerWarningOnlyOneTimeIfNoHandlersArePresent(IEnumerable<IReadAuthorizationHandler<TEntity, TGetListDto, TGetFullDto>> authorizationHandlers)
+    private void LogAuthoriztaionHandlerWarningOnlyOneTimeIfNoHandlersArePresent(IEnumerable<IReadAuthorizationHandler<TEntity, TQueryDto, TGetListDto, TGetFullDto>> authorizationHandlers)
     {
         if (!_authorizationHandlerWarningWasLogged && !System.Linq.Enumerable.Any(authorizationHandlers))
         {
             _authorizationHandlerWarningWasLogged = true;
 
             _logger.LogWarning("No {TReadAuthorizationHandler} is configured. No authorization will be performed for any methods of {TReadServiceBase}.",
-                $"{nameof(IReadAuthorizationHandler<,,>)}<{typeof(TEntity).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}>",
-                $"{nameof(ReadServiceBase<,,,>)}<{typeof(TEntity).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}>");
+                $"{nameof(IReadAuthorizationHandler<,,,>)}<{typeof(TEntity).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}>",
+                $"{nameof(ReadServiceBase<,,,,>)}<{typeof(TEntity).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}>");
         }
     }
 }

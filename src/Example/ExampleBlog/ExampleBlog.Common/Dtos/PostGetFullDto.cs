@@ -11,18 +11,25 @@ public class PostGetFullDto : ChangeTrackingDtoBase
 {
     [Display(Name = "Author")]
     public long AuthorId { get; set; }
+
     [Display(Name = "Blog")]
     public long BlogId { get; set; }
+
     [Required]
     public string Headline { get; set; } = default!;
+
     public PostState State { get; set; }
+
     [Required]
     [DataType(DataType.MultilineText)]
     public string Text { get; set; } = default!;
+
     [JsonIgnore]
     public virtual AuthorDto? Author { get; set; }
+
     [JsonIgnore]
-    public virtual BlogDto? Blog { get; set; }
+    public virtual BlogGetFullDto? Blog { get; set; }
+
     [RestWorldImage(
         AspectRatio = 120.0 / 40.0,
         ContainWithinAspectRatio = true,
@@ -32,6 +39,7 @@ public class PostGetFullDto : ChangeTrackingDtoBase
         ResizeToWidth = 120
         )]
     public HalFile? Image { get; set; }
+
     [DataType(DataType.Upload)]
     public HalFile? Attachement { get; set; }
 }

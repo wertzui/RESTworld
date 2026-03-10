@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using ExampleBlog.Common.Dtos;
+﻿using ExampleBlog.Common.Dtos;
 using ExampleBlog.Data;
 using ExampleBlog.Data.Models;
 using HAL.Common.Binary;
@@ -7,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RESTworld.Business.Authorization;
 using RESTworld.Business.Authorization.Abstractions;
+using RESTworld.Business.Mapping;
 using RESTworld.Business.Models;
 using RESTworld.Business.Models.Abstractions;
 using RESTworld.Business.Services;
@@ -19,15 +19,15 @@ using System.Threading.Tasks;
 
 namespace ExampleBlog.Business.Services;
 
-public class PostService : CrudServiceBase<BlogDatabase, Post, PostCreateDto, PostListDto, PostGetFullDto, PostUpdateDto>
+public class PostService : CrudServiceBase<BlogDatabase, Post, PostCreateDto, PostQueryDto, PostListDto, PostGetFullDto, PostUpdateDto>
 {
     public PostService(
         IDbContextFactory<BlogDatabase> contextFactory,
-        IMapper mapper,
-        IEnumerable<ICrudAuthorizationHandler<Post, PostCreateDto, PostListDto, PostGetFullDto, PostUpdateDto>> authorizationHandlers,
+        ICrudMapper<Post, PostCreateDto, PostQueryDto, PostListDto, PostGetFullDto, PostUpdateDto> mapper,
+        IEnumerable<ICrudAuthorizationHandler<Post, PostCreateDto, PostQueryDto, PostListDto, PostGetFullDto, PostUpdateDto>> authorizationHandlers,
         IValidationService<PostCreateDto, PostUpdateDto, Post> validationService,
         IUserAccessor userAccessor,
-        ILogger<CrudServiceBase<BlogDatabase, Post, PostCreateDto, PostListDto, PostGetFullDto, PostUpdateDto>> logger)
+        ILogger<CrudServiceBase<BlogDatabase, Post, PostCreateDto, PostQueryDto, PostListDto, PostGetFullDto, PostUpdateDto>> logger)
         : base(contextFactory, mapper, authorizationHandlers, validationService, userAccessor, logger)
     {
     }
@@ -134,7 +134,7 @@ public class PostService : CrudServiceBase<BlogDatabase, Post, PostCreateDto, Po
         return result;
     }
 
-    private void SaveImage(HalFile? image)
+    private static void SaveImage(HalFile? image)
     {
         if (image?.Content is not null)
         {
@@ -142,7 +142,7 @@ public class PostService : CrudServiceBase<BlogDatabase, Post, PostCreateDto, Po
         }
     }
 
-    private void SaveAttachement(HalFile? attachement)
+    private static void SaveAttachement(HalFile? attachement)
     {
         if (attachement?.Content is not null)
         {
@@ -150,7 +150,7 @@ public class PostService : CrudServiceBase<BlogDatabase, Post, PostCreateDto, Po
         }
     }
 
-    private async Task<HalFile> GetImageAsync(string headline, CancellationToken cancellationToken)
+    private static async Task<HalFile> GetImageAsync(string headline, CancellationToken cancellationToken)
     {
         var url = $"https://dummyimage.com/120x40/000/fff&text={headline.Replace(" ", "_")}";
         var client = new HttpClient();
@@ -160,7 +160,7 @@ public class PostService : CrudServiceBase<BlogDatabase, Post, PostCreateDto, Po
         return image;
     }
 
-    private HalFile GetAttachement(long id)
+    private static HalFile GetAttachement(long id)
     {
         using var stream = new MemoryStream();
 
