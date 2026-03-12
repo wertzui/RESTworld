@@ -10,7 +10,7 @@
         <Authors>wertzui</Authors>
         <PackageProjectUrl>https://github.com/wertzui/RESTworld</PackageProjectUrl>
         <RepositoryUrl>https://github.com/wertzui/RESTworld</RepositoryUrl>
-        <VersionPrefix>11.0.4</VersionPrefix>
+        <VersionPrefix>11.0.5</VersionPrefix>
         <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -25,7 +25,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="HAL.Common" Version="9.0.4" />
+        <PackageReference Include="HAL.Common" Version="9.0.5" />
     </ItemGroup>
 
 </Project>

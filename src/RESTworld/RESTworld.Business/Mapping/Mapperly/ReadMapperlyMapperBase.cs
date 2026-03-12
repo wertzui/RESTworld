@@ -43,7 +43,7 @@ public abstract partial class ReadMapperlyMapperBase<TEntity, TQueryDto, TGetLis
     public abstract TGetListDto MapQueryToList(TQueryDto queryDto);
 
     /// <inheritdoc/>
-    public abstract IQueryable<TQueryDto> MapEntityToQuery(IQueryable<TEntity> entities);
+    public abstract IQueryable<TQueryDto> MapEntityToQueryQueryable(IQueryable<TEntity> entities);
 
     /// <inheritdoc/>
     public abstract IQueryable<TGetListDto> MapQueryToListQueryable(IQueryable<TQueryDto> queryDtos);

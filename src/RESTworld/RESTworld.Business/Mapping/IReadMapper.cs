@@ -19,7 +19,7 @@ public interface IReadMapper<TEntity, TQueryDto, TGetListDto, TGetFullDto> : IMa
     /// </list>
     /// </summary>
     /// <param name="entities">The entity set to be mapped.</param>
-    public IQueryable<TQueryDto> MapEntityToQuery(IQueryable<TEntity> entities);
+    public IQueryable<TQueryDto> MapEntityToQueryQueryable(IQueryable<TEntity> entities);
 
     /// <summary>
     /// Queryable mapping is done in 2 stages to support OData.

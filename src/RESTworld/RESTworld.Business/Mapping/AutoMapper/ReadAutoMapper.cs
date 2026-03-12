@@ -64,7 +64,7 @@ public class ReadAutoMapper<TEntity, TQueryDto, TGetListDto, TGetFullDto> : IRea
     public IQueryable<TGetFullDto> MapQueryToFullQueryable(IQueryable<TQueryDto> entities) => Mapper.ProjectTo<TGetFullDto>(entities);
 
     /// <inheritdoc/>
-    public IQueryable<TQueryDto> MapEntityToQuery(IQueryable<TEntity> entities) => Mapper.ProjectTo<TQueryDto>(entities);
+    public IQueryable<TQueryDto> MapEntityToQueryQueryable(IQueryable<TEntity> entities) => Mapper.ProjectTo<TQueryDto>(entities);
 
     /// <inheritdoc/>
     public IReadOnlyDictionary<string, string> MemberMappingNames { get; }

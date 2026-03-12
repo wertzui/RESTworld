@@ -107,7 +107,7 @@ public class ListRequestFactory<TEntity, TQueryDto, TGetListDto, TGetFullDto> : 
 
     private IQueryable<TResult> ApplyODataQueryOptions<TResult>(IQueryable<TEntity> source, ODataQueryOptions<TQueryDto> oDataQueryOptions, Func<IQueryable<TQueryDto>, IQueryable<TResult>> mapFromQueryToResult)
     {
-        var mappedQuery = _mapper.MapEntityToQuery(source);
+        var mappedQuery = _mapper.MapEntityToQueryQueryable(source);
         var appliedQuery = oDataQueryOptions.ApplyTo(mappedQuery);
         if (appliedQuery is not IQueryable<TQueryDto> query)
             throw new InvalidOperationException($"The applied query must be of type {typeof(IQueryable<TQueryDto>).FullName}, but was {appliedQuery.GetType().FullName}.");
