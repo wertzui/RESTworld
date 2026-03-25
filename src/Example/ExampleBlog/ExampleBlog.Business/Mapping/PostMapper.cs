@@ -47,7 +47,7 @@ public partial class PostMapper : CrudMapperlyMapperBase<Post, PostCreateDto, Po
     [MapperIgnoreSource(nameof(Blog.Posts))]
     private partial BlogGetFullDto MapToBlogDto(Blog source);
 
-    public override partial IQueryable<PostQueryDto> MapEntityToQuery(IQueryable<Post> entities);
+    public override partial IQueryable<PostQueryDto> MapEntityToQueryQueryable(IQueryable<Post> entities);
 
     [MapperIgnoreSource(nameof(PostUpdateDto.Id))]
     [MapperIgnoreSource(nameof(PostUpdateDto.Timestamp))]

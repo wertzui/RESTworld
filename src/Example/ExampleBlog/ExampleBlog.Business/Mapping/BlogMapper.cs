@@ -33,7 +33,7 @@ public partial class BlogMapper : CrudMapperlyMapperBase<Blog, BlogCreateDto, Bl
 
     public override partial IQueryable<BlogGetListDto> MapQueryToListQueryable(IQueryable<BlogQueryDto> queryDtos);
 
-    public override partial IQueryable<BlogQueryDto> MapEntityToQuery(IQueryable<Blog> entities);
+    public override partial IQueryable<BlogQueryDto> MapEntityToQueryQueryable(IQueryable<Blog> entities);
 
     // When updating an entry, everything on ChangeTrackingEntityBase except the Id should be ignored.
     [MapperRequiredMapping(RequiredMappingStrategy.Source)]

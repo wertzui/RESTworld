@@ -1,25 +1,15 @@
-﻿using HAL.AspNetCore.Forms.Abstractions;
-using HAL.Common;
+﻿using HAL.Common;
 using HAL.Common.Forms;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
 using RESTworld.Common.Client;
 using Swashbuckle.AspNetCore.SwaggerGen;
-using System;
 using System.Collections.Generic;
-using System.Reflection;
 
 namespace RESTworld.AspNetCore.Swagger;
 
 public class SwaggerResourceSchemaFilter : ISchemaFilter
 {
-    private readonly IFormTemplateFactory _formTemplateFactory;
-
-    public SwaggerResourceSchemaFilter(IFormTemplateFactory formTemplateFactory)
-    {
-        _formTemplateFactory = formTemplateFactory ?? throw new ArgumentNullException(nameof(formTemplateFactory));
-    }
-
     public void Apply(IOpenApiSchema schema, SchemaFilterContext context)
     {
         if (schema is not OpenApiSchema concrete)
@@ -30,12 +20,9 @@ public class SwaggerResourceSchemaFilter : ISchemaFilter
         AddFormsResource(concrete, context);
     }
 
-    private void AddFormsResource(OpenApiSchema concrete, SchemaFilterContext context)
+    private static void AddFormsResource(OpenApiSchema concrete, SchemaFilterContext context)
     {
         if (!context.Type.IsGenericType || context.Type.GetGenericTypeDefinition() != typeof(Resource<>))
-            return;
-
-        if (!context.SchemaRepository.TryLookupByType(typeof(Resource), out var resourceSchemaRefereence))
             return;
 
         var stateType = context.Type.GetGenericArguments()[0];
@@ -46,46 +33,22 @@ public class SwaggerResourceSchemaFilter : ISchemaFilter
         if (context.SchemaRepository.Schemas.ContainsKey(schemaId))
             return;
 
-        var genericPropertyType = typeof(Property<>);
+        var templateType = typeof(FormTemplate);
+        var templateSchema = context.SchemaGenerator.GenerateSchema(templateType, context.SchemaRepository);
 
-        var template = _formTemplateFactory.CreateTemplateForAsync(stateType, "").GetAwaiter().GetResult();
+        // Get Single and Get List have different templates.
+        var isPage = stateType == typeof(Page);
 
-        var properties = new Dictionary<string, IOpenApiSchema>();
-
-        foreach (var property in template.Properties)
+        var templateProperties = new Dictionary<string, IOpenApiSchema>();
+        if (isPage)
         {
-            var statePropertyType = stateType.GetProperty(property.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-            if (statePropertyType == null)
-                continue;
+            templateProperties["Search"] = templateSchema;
+            templateProperties["Edit"] = templateSchema;
 
-            var propertyType = genericPropertyType.MakeGenericType(statePropertyType.PropertyType);
-            string propertySchemaId;
-            // if nullable, use "Nullable" + "TypeName" as schema id to avoid conflicts with the non-nullable version of the same type
-            if (statePropertyType.PropertyType.IsGenericType && statePropertyType.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
-            {
-                var underlyingType = Nullable.GetUnderlyingType(statePropertyType.PropertyType);
-                propertySchemaId = underlyingType!.Name + "NullableProperty";
-            }
-            else
-            {
-                propertySchemaId = statePropertyType.PropertyType.Name + "Property";
-            }
-
-            IOpenApiSchema propertySchema;
-            if (context.SchemaRepository.TryLookupByType(propertyType, out var propertySchemaReference))
-            //if (context.SchemaRepository.Schemas.TryGetValue(propertySchemaId, out var propertySchema))
-            {
-                propertySchema = propertySchemaReference;
-            }
-            else
-            {
-                propertySchema = context.SchemaGenerator.GenerateSchema(propertyType, context.SchemaRepository);
-                //context.SchemaRepository.RegisterType(propertyType, propertySchemaId);
-                //context.SchemaRepository.Schemas.Add(propertySchemaId, propertySchema);
-            }
-
-            properties[property.Name] = propertySchema;
-
+        }
+        else
+        {
+            templateProperties[Constants.DefaultFormTemplateName] = templateSchema;
         }
 
         var templatesSchema = new OpenApiSchema
@@ -93,88 +56,25 @@ public class SwaggerResourceSchemaFilter : ISchemaFilter
             Type = JsonSchemaType.Object,
             Properties = new Dictionary<string, IOpenApiSchema>
             {
-                {"_templates", new OpenApiSchema
+                {
+                    Constants.FormTemplatesPropertyName,
+                    new OpenApiSchema
                     {
                         Type = JsonSchemaType.Object,
                         AdditionalPropertiesAllowed = true,
-                        Properties = new Dictionary<string, IOpenApiSchema>()
-                        {
-                            { "default", new OpenApiSchema
-                                {
-                                    Type = JsonSchemaType.Object,
-                                    Properties = new Dictionary<string, IOpenApiSchema>
-                                    {
-                                        { "method", new OpenApiSchema { Type = JsonSchemaType.String } },
-                                        { "target", new OpenApiSchema { Type = JsonSchemaType.String } },
-                                        { "properties", new OpenApiSchema
-                                            {
-                                                Type = JsonSchemaType.Object,
-                                                AdditionalPropertiesAllowed = true,
-                                                Properties = properties
-                                            }
-                                        }
-                                    }
-                                }
-                             }
-                        }
+                        Properties = templateProperties
                     }
-                 }
+                }
             }
         };
 
         var formsResourceSchema = new OpenApiSchema
         {
             Type = JsonSchemaType.Object,
-            AllOf = [resourceSchemaRefereence, templatesSchema]
+            AllOf = [concrete, templatesSchema]
         };
 
         context.SchemaRepository.Schemas[schemaId] = formsResourceSchema;
-
-        //var properties = template.Properties
-        //    .Select(p =>
-        //    new OpenApiSchema
-        //    {
-        //        Type = JsonSchemaType.Object,
-        //        Properties = new Dictionary<string, IOpenApiSchema>
-        //        {
-        //            ["title"] = new OpenApiSchema
-        //            {
-        //                Type = JsonSchemaType.String,
-        //                Example = new Microsoft.OpenApi.Any.OpenApiString(p.Title)
-        //            },
-        //            ["type"] = new OpenApiSchema
-        //            {
-        //                Type = JsonSchemaType.String,
-        //                Example = new Microsoft.OpenApi.Any.OpenApiString(p.Type.ToString())
-        //            },
-        //            ["description"] = new OpenApiSchema
-        //            {
-        //                Type = JsonSchemaType.String,
-        //                Example = new Microsoft.OpenApi.Any.OpenApiString(p.Description ?? "")
-        //            },
-        //            ["required"] = new OpenApiSchema
-        //            {
-        //                Type = JsonSchemaType.Boolean,
-        //                Example = new Microsoft.OpenApi.Any.OpenApiBoolean(p.Required)
-        //            },
-        //        },
-
-        //        Type = p.Type switch
-        //        {
-        //            PropertyType.Month => JsonSchemaType.Integer,
-        //            PropertyType.Week => JsonSchemaType.Integer,
-        //            PropertyType.Number => JsonSchemaType.Number,
-        //            PropertyType.Range => JsonSchemaType.Array,
-        //            PropertyType.Bool => JsonSchemaType.Boolean,
-        //            PropertyType.Collection => JsonSchemaType.Array,
-        //            PropertyType.Object => JsonSchemaType.Object,
-        //            PropertyType.Percent => JsonSchemaType.Number,
-        //            PropertyType.Currency => JsonSchemaType.Number,
-        //            _ => JsonSchemaType.String,
-        //        },
-
-        //    })
-        //    .ToList();
     }
 
     private static void AllowAdditionalPropertiesOnResource(OpenApiSchema concrete, SchemaFilterContext context)
@@ -187,7 +87,10 @@ public class SwaggerResourceSchemaFilter : ISchemaFilter
 
     private static void AddStateInformation(OpenApiSchema concrete, SchemaFilterContext context)
     {
-        if (!context.Type.IsGenericType || context.Type.GetGenericTypeDefinition() != typeof(Resource<>))
+        if (!context.Type.IsGenericType)
+            return;
+        var genericType = context.Type.GetGenericTypeDefinition();
+        if (genericType != typeof(Resource<>) && genericType != typeof(FormsResource<>))
             return;
 
         if (concrete.Properties is null)
@@ -223,7 +126,7 @@ public class SwaggerResourceSchemaFilter : ISchemaFilter
             }
         };
 
-        var objectWithEmbeddedItemsSchema = new OpenApiSchema
+        var pageSchema = new OpenApiSchema
         {
             Type = JsonSchemaType.Object,
             Properties = new Dictionary<string, IOpenApiSchema>()
@@ -232,6 +135,29 @@ public class SwaggerResourceSchemaFilter : ISchemaFilter
             }
         };
 
-        concrete.AllOf.Add(objectWithEmbeddedItemsSchema);
+        if (context.SchemaRepository.TryLookupByType(typeof(Link), out var linkSchemaReference))
+        {
+            var linkCollectionSchema = new OpenApiSchema
+            {
+                Type = JsonSchemaType.Array,
+                Items = linkSchemaReference
+            };
+
+            var linksSchemas = new OpenApiSchema
+            {
+                Type = JsonSchemaType.Object,
+                Properties = new Dictionary<string, IOpenApiSchema>()
+                {
+                    ["first"] = linkCollectionSchema,
+                    ["previous"] = linkCollectionSchema,
+                    ["next"] = linkCollectionSchema,
+                    ["last"] = linkCollectionSchema
+                }
+            };
+
+            pageSchema.Properties["_links"] = linksSchemas;
+        }
+
+        concrete.AllOf.Add(pageSchema);
     }
 }
