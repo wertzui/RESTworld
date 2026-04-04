@@ -5,7 +5,6 @@
   [lazy]="lazy()"
   [lazyLoadOnInit]="false"
   (onLazyLoad)="load($event)"
-  responsiveLayout="scroll"
   [paginator]="paginator()"
   [rowsPerPageOptions]="rowsPerPageOptions()"
   [rows]="rowsPerPage()"
@@ -13,7 +12,7 @@
   [loading]="isLoading()"
   sortMode="multiple"
   [multiSortMeta]="multiSortMeta()"
-  [styleClass]="styleClass()"
+  [class]="styleClass()"
   [tableStyle]="tableStyle()"
   [scrollable]="scrollable()"
   [scrollHeight]="scrollHeight()"
@@ -22,30 +21,33 @@
   [(selection)]="selectedRows"
   [filters]="$any(filters())"
   [first]="rowsBeforeCurrentPage()"
+  (onSort)="onSort($event)"
   >
 
   <ng-template pTemplate="header" let-columns>
     <tr>
-        @for (col of columns; track col) {
+        @for (col of columns; track col.name) {
             <th [pSortableColumn]="col.name">
                 <div class="p-d-flex p-jc-between p-ai-center gap-1">
                     {{col.prompt}}
                     @if(!col.readOnly) {
                         <p-sortIcon [field]="col.name"></p-sortIcon>
-                        <p-columnFilter #f
-                            [type]="toColumnFilterType(col.type)"
-                            [maxFractionDigits]="toMaxFractionDigits(col)"
-                            matchMode="noFilter"
-                            [matchModeOptions]="toMatchModeOptions(col)"
-                            [showMatchModes]="true"
-                            [field]="col.name"
-                            display="menu"
-                            [maxConstraints]="100"
-                            [class.has-filter]="f.hasFilter">
-                        <ng-template #filter let-value let-filterConstraint="filterConstraint" let-field="field">
-                            <rw-table-column-filter-element [property]="col" [value]="value" [apiName]="apiName()" [filterConstraint]="filterConstraint"></rw-table-column-filter-element>
-                        </ng-template>
-                        </p-columnFilter>
+                        @if (lazy()) {
+                            <p-columnFilter #f
+                                [type]="toColumnFilterType(col.type)"
+                                [maxFractionDigits]="toMaxFractionDigits(col)"
+                                matchMode="noFilter"
+                                [matchModeOptions]="toMatchModeOptions(col)"
+                                [showMatchModes]="true"
+                                [field]="col.name"
+                                display="menu"
+                                [maxConstraints]="100"
+                                [class.has-filter]="f.hasFilter">
+                            <ng-template #filter let-value let-filterConstraint="filterConstraint" let-field="field">
+                                <rw-table-column-filter-element [property]="col" [value]="value" [apiName]="apiName()" [filterConstraint]="filterConstraint"></rw-table-column-filter-element>
+                            </ng-template>
+                            </p-columnFilter>
+                        }
                     }
                 </div>
             </th>
@@ -59,14 +61,17 @@
   </ng-template>
 
   <ng-template pTemplate="body" let-entity let-columns="columns" let-rowIndex="rowIndex">
-    <tr (contextmenu)="openContextMenu($event, entity)" [pSelectableRow]="entity" [pSelectableRowDisabled]="selectionMode() === null" [className]="rowStyleClasses()[rowIndex - (table.first ?? 0)]">
-        @for (col of columns; track col) {
-            <td [className]="cellStyleClasses()[rowIndex - (table.first ?? 0)][col.name]">
+    <tr (contextmenu)="openContextMenu($event, entity)" [pSelectableRow]="entity" [pSelectableRowDisabled]="selectionMode() === null" [className]="rowStyleClasses()[getAbsoluteIndex(rowIndex)]">
+        @for (col of columns; track col.name) {
+            <td [className]="cellStyleClasses()[getAbsoluteIndex(rowIndex)][col.name]">
                 @let fomrArray = formArray();
                 @if (showInputField(col) && fomrArray) {
-                    <ng-container [formGroup]="fomrArray.controls[rowIndex - (table.first ?? 0)]" >
-                        <rw-input [apiName]="apiName()" [property]="editProperties()[col.name]!"></rw-input>
-                    </ng-container>
+                    @let formControl = getFormGroupAtIndex(rowIndex);
+                    @if (formControl) {
+                        <ng-container [formGroup]="formControl" >
+                            <rw-input [apiName]="apiName()" [property]="editProperties()[col.name]!"></rw-input>
+                        </ng-container>
+                    }
                 }
                 @else {
                     <rw-display [property]="col" [value]="entity[col.name]" [apiName]="apiName()!"></rw-display>
@@ -76,7 +81,7 @@
         @if (showMenuColumn()) {
             <td>
                 @if (showRowMenuAsColumn()) {
-                    <rw-menu-button [items]="rowMenus()[rowIndex - (table.first ?? 0)]"></rw-menu-button>
+                    <rw-menu-button [items]="rowMenus()[getAbsoluteIndex(rowIndex)]"></rw-menu-button>
                 }
             </td>
         }

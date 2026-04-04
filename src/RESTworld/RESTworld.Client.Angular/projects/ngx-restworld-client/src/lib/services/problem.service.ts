@@ -131,9 +131,9 @@ export class ProblemService {
      * @param defaultDetail The default detail to display if the problem details do not contain a detail.
      * @param defaultTitle The default title to display if the problem details do not contain a title.
      */
-    public displayToast(problemDetails: ProblemDetails, defaultDetail: string = "Error", defaultTitle: string = "Error"): void {
-        const summary = problemDetails.title ?? defaultTitle;
-        const detail = problemDetails.detail ?? defaultDetail;
+    public displayToast(problemDetails?: ProblemDetails, defaultDetail: string = "Error", defaultTitle: string = "Error"): void {
+        const summary = problemDetails?.title ?? defaultTitle;
+        const detail = problemDetails?.detail ?? defaultDetail;
 
         this._messageService.add({ severity: "error", summary: summary, detail: detail, sticky: true });
     }

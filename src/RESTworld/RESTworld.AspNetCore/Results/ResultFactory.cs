@@ -228,6 +228,8 @@ public class ResultFactory : IResultFactory
 
             if (readOnly)
                 MakeFormReadOnly(formsResource);
+            else
+                _linkFactory.AddNewLink(formsResource);
 
             AddHistoryLinkIfResourceHasHistory(formsResource, dto);
 
@@ -242,6 +244,9 @@ public class ResultFactory : IResultFactory
 
             if (dto is DtoBase)
                 _linkFactory.AddSaveAndDeleteLinks(resource.CastState<DtoBase>());
+
+            if (!readOnly)
+                _linkFactory.AddNewLink(resource);
 
             return resource;
         }

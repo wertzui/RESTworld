@@ -3,7 +3,7 @@
         <p-select
             [propertyAttributes]="property()"
             [(ngModel)]="model"
-            [options]="optionsManager.items()"
+            [options]="optionsManager.items.value()"
             (onFilter)="onOptionsFiltered($event)"
             (onChange)="onOptionsChanged($event)"
             styleClass="w-full"
@@ -22,7 +22,7 @@
     @else {
         <p-select
             [formControlProperty]="property()"
-            [options]="optionsManager.items()"
+            [options]="optionsManager.items.value()"
             (onFilter)="onOptionsFiltered($event)"
             (onChange)="onOptionsChanged($event)"
             styleClass="w-full"
@@ -45,7 +45,7 @@
         <p-multiSelect
             [propertyAttributes]="property()"
             [(ngModel)]="model"
-            [options]="optionsManager.items()"
+            [options]="optionsManager.items.value()"
             (onFilter)="onOptionsFiltered($event)"
             (onChange)="onOptionsChanged($event)"
             styleClass="w-full"
@@ -72,7 +72,7 @@
     @else {
         <p-multiSelect
             [formControlProperty]="property()"
-            [options]="optionsManager.items()"
+            [options]="optionsManager.items.value()"
             (onFilter)="onOptionsFiltered($event)"
             (onChange)="onOptionsChanged($event)"
             styleClass="w-full"

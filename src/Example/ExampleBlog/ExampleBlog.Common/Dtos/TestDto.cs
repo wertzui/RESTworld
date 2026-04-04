@@ -62,7 +62,7 @@ public class ListTestDto
     public int MyListInt { get; set; }
     public long PostId { get; set; }
     [JsonIgnore]
-    public PostListDto Post { get; set; } = null!;
+    public PostListDto? Post { get; set; }
 }
 
 public class DictionaryTestDto

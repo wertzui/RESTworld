@@ -4,6 +4,9 @@
     </div>
     <div class="col-12 md:col-2 align-items-center justify-content-end flex">
         <rw-id-navigation [apiName]="apiName()" [rel]="rel()"></rw-id-navigation>
+        @if (newHref()) {
+            <button pButton pRipple type="button" icon="fas fa-plus" class="p-button-success mr-3" (click)="createNew()" pTooltip="Create new"></button>
+        }
     </div>
 </div>
 

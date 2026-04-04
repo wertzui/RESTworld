@@ -1,11 +1,11 @@
 import { Component, Optional, computed, effect, input, model, signal, viewChild } from '@angular/core';
 import { FormService, Property, PropertyType, SimpleValue, Template } from '@wertzui/ngx-hal-client';
-import { FilterMetadata, MenuItem, SelectItem, TranslationKeys } from 'primeng/api';
+import { FilterMetadata, MenuItem, SelectItem, TranslationKeys, FilterService, type SortMeta } from 'primeng/api';
 import { ODataParameters } from '../../models/o-data';
 import { ODataService } from '../../services/odata.service';
 import { ContextMenu, ContextMenuModule } from 'primeng/contextmenu';
 import { AbstractControl, ControlContainer, FormArray, FormArrayName, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { TableLazyLoadEvent, TableModule } from 'primeng/table';
+import { Table, TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { PrimeNG } from 'primeng/config';
 import { RestWorldMenuButtonComponent } from "../restworld-menu-button/restworld-menu-button.component";
 import { RestWorldInputComponent } from "../restworld-inputs/restworld-inputs";
@@ -60,6 +60,39 @@ import { Router, ActivatedRoute } from "@angular/router";
     imports: [TableModule, RestWorldMenuButtonComponent, RestWorldInputComponent, RestWorldDisplayComponent, ReactiveFormsModule, ContextMenuModule, RestWorldTableColumnFilterElementComponent, RestWorldTableColumnFilterElementComponent]
 })
 export class RestWorldTableComponent<TListItem extends Record<string, any>> {
+    onSort($event: { multisortmeta: SortMeta[] }) {
+        if (this.lazy())
+            return;
+
+        console.log("Sort event:", $event);
+
+        // sort the form array for the indexes to line up with the sorted rows
+        const formArray = this.formArray();
+        const editTemplate = this.editTemplate();
+        if (!formArray || !editTemplate)
+            return;
+
+        formArray.controls.sort((a, b) => {
+            for (const sortMeta of $event.multisortmeta) {
+                const field = sortMeta.field;
+                const valueA = a.get(field)?.value;
+                const valueB = b.get(field)?.value;
+                const order = sortMeta.order ?? 1;
+                if (valueA === valueB)
+                    continue;
+                if (valueA === undefined || valueA === null)
+                    return -1 * order;
+                if (valueB === undefined || valueB === null)
+                    return 1 * order;
+                if (valueA < valueB)
+                    return -1 * order;
+                if (valueA > valueB)
+                    return 1 * order;
+            }
+            return 0;
+        });
+
+    }
     public readonly PropertyType = PropertyType;
     /**
      * The name of the api.
@@ -78,6 +111,7 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
     public readonly cellStyleClasses = computed(() => this.rows().map((r, ri) => Object.fromEntries<string>(this.columns().map((c, ci) => [c.name, this.cellStyleClass()(r, c, ri, ci)]))));
     public readonly columns = computed(() => this.searchTemplate()?.properties.filter(p => p.type !== PropertyType.Hidden) ?? []);
     public readonly contextMenu = viewChild<ContextMenu>("contextMenu");
+    public readonly primeNgTable = viewChild.required<Table>("table");
     public readonly contextMenuItems = signal<MenuItem[]>([]);
     public readonly dateFormat = new Date(3333, 10, 22) // months start at 0 in JS
         .toLocaleDateString()
@@ -261,7 +295,8 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
         private readonly _formService: FormService,
         router: Router,
         activatedRoute: ActivatedRoute,
-        primeNGConfig: PrimeNG) {
+        primeNGConfig: PrimeNG,
+        filterService: FilterService) {
         this._filterMatchModeOptions = {
             text: [TranslationKeys.NO_FILTER, ...primeNGConfig.filterMatchModeOptions.text].map(o => ({ label: primeNGConfig.getTranslation(o), value: o })),
             numeric: [TranslationKeys.NO_FILTER, ...primeNGConfig.filterMatchModeOptions.numeric].map(o => ({ label: primeNGConfig.getTranslation(o), value: o })),
@@ -270,13 +305,16 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
             enum: [TranslationKeys.NO_FILTER, TranslationKeys.EQUALS, TranslationKeys.NOT_EQUALS].map(o => ({ label: primeNGConfig.getTranslation(o), value: o })),
         };
 
+        filterService.register(TranslationKeys.NO_FILTER, () => true);
+
         // Update the form array on changes
         effect(() => {
             const formArray = this.formArray();
             const editTemplate = this.editTemplate();
             const rows = this.rows();
+            const lazy = this.lazy();
 
-            if (!this.isEditable() || !formArray || !editTemplate)
+            if (!this.isEditable() || !formArray || !editTemplate || !lazy)
                 return;
 
             formArray.clear();
@@ -313,6 +351,26 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
             const parameters = this.prefixObjectProperties(oDataParameters, urlParameterPrefix);
             await router.navigate([], { queryParams: parameters, queryParamsHandling: 'merge' });
         });
+    }
+
+    public getFormGroupAtIndex(indexOnCurrentPage: number): FormGroup<{ [K in keyof TListItem]: AbstractControl<unknown, unknown, any> }> | undefined {
+        const formArray = this.formArray();
+        if (!formArray)
+            return undefined;
+
+        const finalIndex = this.getAbsoluteIndex(indexOnCurrentPage);
+
+        return formArray.at(finalIndex);
+    }
+
+    public getAbsoluteIndex(indexOnCurrentPage: number): number {
+        const lazy = this.lazy();
+        if (!lazy)
+            return indexOnCurrentPage;
+        const primeNgTable = this.primeNgTable();
+        if (!primeNgTable)
+            return indexOnCurrentPage;
+        return indexOnCurrentPage - (primeNgTable.first ?? 0);
     }
 
     public load(event: TableLazyLoadEvent) {

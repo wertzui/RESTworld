@@ -1,7 +1,6 @@
-import { computed, effect, Injectable, linkedSignal, signal, type Signal } from "@angular/core";
+import { computed, Injectable, resource, signal, type Signal } from "@angular/core";
 import { RestWorldClientCollection } from "./restworld-client-collection";
-import { ProblemDetails, type ExtractGenericOptionsItemType, type ExtractGenericOptionsSelectedValuesType, type Options, type Property, type ResourceOfDto, type SimpleValue } from "@wertzui/ngx-hal-client";
-import { MessageService } from "primeng/api";
+import { type ExtractGenericOptionsItemType, type ExtractGenericOptionsSelectedValuesType, type Options, type Property, type SimpleValue } from "@wertzui/ngx-hal-client";
 import { HttpHeaders } from "@angular/common/http";
 import { NgHttpCachingHeaders } from "ng-http-caching";
 import { ProblemService } from "./problem.service";
@@ -15,21 +14,78 @@ import { ProblemService } from "./problem.service";
 export class OptionsManager<TProperty extends Property<SimpleValue, string, string> & { options: Options<SimpleValue, string, string> }, TOptionsItem extends ExtractGenericOptionsItemType<TProperty> = ExtractGenericOptionsItemType<TProperty>> {
     public readonly getLabel = computed(() => this._getLabel() ?? ((itemOrValue: TOptionsItem | ExtractGenericOptionsSelectedValuesType<TProperty>) => this.getDefaultLabel(itemOrValue)));
     public readonly getTooltip = computed(() => this._getTooltip() ?? ((itemOrValue: TOptionsItem | ExtractGenericOptionsSelectedValuesType<TProperty>) => this.getDefaultTooltip(itemOrValue)));
-    public readonly items = linkedSignal(() => this.options()?.inline as TOptionsItem[] ?? []);
-    public readonly loading = signal(false);
+    // public readonly items = linkedSignal(() => this.options()?.inline as TOptionsItem[] ?? []);
+    public readonly loading = computed(() => this.items.isLoading());
     public readonly options = computed(() => this.property().options);
     public readonly promptField = computed(() => this.options()?.promptField ?? "prompt");
     public readonly valueField = computed(() => this.options()?.valueField ?? "value");
 
     private readonly _client = computed(() => this._clients.getClient(this.apiName()));
-    public readonly selectedItems = computed(() => this.selectedValues()?.map(value => this.getItemByValue(this.items(), value as ExtractGenericOptionsSelectedValuesType<TProperty>) ?? []));
+    public readonly selectedItems = computed(() => this.selectedValues()?.map(value => this.getItemByValue(this.items.value(), value as ExtractGenericOptionsSelectedValuesType<TProperty>) ?? []));
+
+    public readonly selectedValues = computed(() => {
+        const values = this._selectedValues();
+
+        if (values === null || values === undefined)
+            return [];
+
+        return (Array.isArray(values) ? values : [values]) as ExtractGenericOptionsSelectedValuesType<TProperty>[];
+    });
+
+    public readonly filter = signal<string | undefined>(undefined);
+    private _lastFilter: string | undefined = undefined;
+    public readonly items = resource({
+        params: () => ({ filter: this.filter(), options: this.options(), selectedValues: this.selectedValues() }),
+        loader: async ({ params }) => {
+            const options = params.options;
+            let filter = params.filter;
+            const selectedValues = params.selectedValues;
+
+            // We have inline options, so we don't need to load them from the server.
+            if (Array.isArray(options?.inline) && options.inline.length > 0)
+                return options.inline as TOptionsItem[];
+
+            // First load: there might be selected items, but the user has not typed in a filter yet.
+            // In this case, we want to load the selected items to be able to show them in the dropdown.
+            if (filter === undefined && selectedValues.length > 0)
+                filter = `${options.valueField} in (${selectedValues})`;
+
+            // Only make the call if the filter has changed.
+            // This prevents unnecessary calls when the selected values change but the filter is the same.
+            if (filter === this._lastFilter) {
+                const currentItems = this.items.value() as TOptionsItem[] | undefined;
+                if (currentItems === undefined)
+                    return [] as TOptionsItem[];
+
+                return currentItems;
+            }
+
+            this._lastFilter = filter;
+
+            const templatedUri = options.link?.href;
+            if (!templatedUri) {
+                this._problemService.displayToast(undefined, `The property ${this.property().name} does not have options with a link href.`);
+                return [] as TOptionsItem[];
+            }
+
+            const headersWithCaching = new HttpHeaders({[NgHttpCachingHeaders.ALLOW_CACHE]: "1", [NgHttpCachingHeaders.LIFETIME]: "3000"});
+            const response = await this._client().getListByUri<TOptionsItem>(templatedUri, { $filter: filter, $top: 10 }, headersWithCaching);
+            this._problemService.checkResponseDisplayErrorsAndThrow(response, undefined, `An error occurred while getting the selected items for the property ${this.property().name}.`);
+
+            const oldItems = this.items.value();
+            const newItems = response.body._embedded.items;
+            const combinedItems = this.combineCurrentItemsWithSelected(oldItems, selectedValues, newItems);
+
+            return combinedItems;
+        }
+    });
 
     constructor(
         private readonly _problemService: ProblemService,
         private readonly _clients: RestWorldClientCollection,
         public readonly apiName: Signal<string>,
         public readonly property: Signal<TProperty>,
-        public readonly selectedValues: Signal<ExtractGenericOptionsSelectedValuesType<TProperty> | ExtractGenericOptionsSelectedValuesType<TProperty>[] | undefined>,
+        private readonly _selectedValues: Signal<ExtractGenericOptionsSelectedValuesType<TProperty> | ExtractGenericOptionsSelectedValuesType<TProperty>[] | undefined>,
         private readonly _getLabel: Signal<((item: TOptionsItem | ExtractGenericOptionsSelectedValuesType<TProperty>) => string | undefined) | undefined>,
         private readonly _getTooltip: Signal<((item: TOptionsItem | ExtractGenericOptionsSelectedValuesType<TProperty>) => string | undefined) | undefined>) {
     }
@@ -44,8 +100,8 @@ export class OptionsManager<TProperty extends Property<SimpleValue, string, stri
         return shortened;
     }
 
-    private getItemByValue(items: TOptionsItem[], value: ExtractGenericOptionsSelectedValuesType<TProperty>): TOptionsItem | undefined {
-        const foundItem = items.find(item => this.getValue(item) === value);
+    private getItemByValue(items: TOptionsItem[] | undefined, value: ExtractGenericOptionsSelectedValuesType<TProperty>): TOptionsItem | undefined {
+        const foundItem = items?.find(item => this.getValue(item) === value);
         if (foundItem)
             return foundItem;
 
@@ -66,7 +122,7 @@ export class OptionsManager<TProperty extends Property<SimpleValue, string, stri
 
         if (itemOrValue === undefined || itemOrValue === null || !itemOrValue.hasOwnProperty(promptField)) {
             const value = itemOrValue as unknown as ExtractGenericOptionsSelectedValuesType<TProperty>;
-            item = this.getItemByValue(this.items(), value);
+            item = this.getItemByValue(this.items.value(), value);
         }
 
         if (item === undefined || item === null || !item.hasOwnProperty(promptField))
@@ -92,61 +148,23 @@ export class OptionsManager<TProperty extends Property<SimpleValue, string, stri
     }
 
     /**
-     * Initializes the options manager.
-     * This will load the initial options for the property.
-     * Call it once in the ngOnInit method of your component.
-     */
-    public async initialize(): Promise<void> {
-        const options = this.options();
-        if (!options.link?.href)
-            return;
-
-        const selectedValues = this.selectedValues() ?? options.selectedValues;
-
-        const filter = selectedValues === null || selectedValues === undefined ?
-            undefined :
-            `${options.valueField} in (${selectedValues})`;
-
-        await this.updateItemsFromFilter(filter);
-    }
-
-    /**
      * Updates the items based on the given filter.
      * @param filter The filter to use when getting the items.
      */
     public async updateItemsFromFilter(filter: string | undefined): Promise<void> {
-        this.loading.set(true);
-        try {
-            const options = this.options();
-            const templatedUri = options.link?.href;
-            if (!templatedUri)
-                this._problemService.displayToastAndThrow(undefined, `The property ${this.property().name} does not have options with a link href.`);
-
-            const headersWithCaching = new HttpHeaders({[NgHttpCachingHeaders.ALLOW_CACHE]: "1", [NgHttpCachingHeaders.LIFETIME]: "3000"});
-            const response = await this._client().getListByUri<TOptionsItem>(templatedUri, { $filter: filter, $top: 10 }, headersWithCaching);
-            this._problemService.checkResponseDisplayErrorsAndThrow(response, undefined, `An error occurred while getting the selected items for the property ${this.property().name}.`);
-
-            const items = response.body._embedded.items;
-            const newItems = this.combineCurrentItemsWithSelected(items);
-            this.items.set(newItems);
-        }
-        finally {
-            this.loading.set(false);
-        }
+        this.filter.set(filter);
     }
 
-    private combineCurrentItemsWithSelected(items: TOptionsItem[]): TOptionsItem[] {
-        const oldInline = this.items();
-        if (!oldInline)
-            return items;
+    private combineCurrentItemsWithSelected(oldItems: TOptionsItem[] | undefined, selectedValues: ExtractGenericOptionsSelectedValuesType<TProperty>[], newItems: TOptionsItem[]): TOptionsItem[] {
+        if (!oldItems)
+            return newItems;
 
-        const selectedValues = this.selectedValues();
-        const selectedValuesAsArray = (Array.isArray(selectedValues) ? selectedValues : [selectedValues]) as ExtractGenericOptionsSelectedValuesType<TProperty>[];
-        const itemsToKeep = oldInline.filter(i => selectedValuesAsArray.includes(this.getValue(i)));
-        const newValues = items.map(i => this.getValue(i));
-        const newItems = items.concat(itemsToKeep.filter(i => !newValues.includes(this.getValue(i))));
+        // const selectedValuesAsArray = (Array.isArray(selectedValues) ? selectedValues : [selectedValues]) as ExtractGenericOptionsSelectedValuesType<TProperty>[];
+        const itemsToKeep = oldItems.filter(i => selectedValues.includes(this.getValue(i)));
+        const newValues = newItems.map(i => this.getValue(i));
+        const combinedItems = newItems.concat(itemsToKeep.filter(i => !newValues.includes(this.getValue(i))));
 
-        return newItems;
+        return combinedItems;
     }
 
     private getDefaultLabel(itemOrValue: TOptionsItem | ExtractGenericOptionsSelectedValuesType<TProperty>): string {

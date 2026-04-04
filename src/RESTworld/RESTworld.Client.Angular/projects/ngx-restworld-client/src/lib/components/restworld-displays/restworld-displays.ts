@@ -137,7 +137,7 @@ export class RestWorldDisplayComponent<TProperty extends Property<SimpleValue, s
     standalone: true,
     imports: [Tooltip]
 })
-export class RestWorldDisplayDropdownComponent<TProperty extends Property<SimpleValue, string, string> & { options: Options<SimpleValue, string, string> }, TOptionsItem extends ExtractGenericOptionsItemType<TProperty> = ExtractGenericOptionsItemType<TProperty>> implements OnInit {
+export class RestWorldDisplayDropdownComponent<TProperty extends Property<SimpleValue, string, string> & { options: Options<SimpleValue, string, string> }, TOptionsItem extends ExtractGenericOptionsItemType<TProperty> = ExtractGenericOptionsItemType<TProperty>> {
     /**
      * The name of the API to use for the property.
      * @required
@@ -174,10 +174,6 @@ export class RestWorldDisplayDropdownComponent<TProperty extends Property<Simple
         optionsService: OptionsService
     ) {
         this.optionsManager = optionsService.getManager(this.apiName, this.property, this.selectedValues, this.getLabel, this.getTooltip);
-    }
-
-    public async ngOnInit(): Promise<void> {
-        await this.optionsManager.initialize();
     }
 }
 

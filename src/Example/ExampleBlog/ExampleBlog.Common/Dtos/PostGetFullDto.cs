@@ -28,7 +28,7 @@ public class PostGetFullDto : ChangeTrackingDtoBase
     public virtual AuthorDto? Author { get; set; }
 
     [JsonIgnore]
-    public virtual BlogGetFullDto? Blog { get; set; }
+    public virtual BlogGetListDto? Blog { get; set; }
 
     [RestWorldImage(
         AspectRatio = 120.0 / 40.0,

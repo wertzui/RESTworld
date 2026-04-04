@@ -12,6 +12,9 @@ import { RestWorldIdNavigationComponent } from "../../components/restworld-id-na
 import { AfterSubmitOkEvent, AfterSubmitRedirectEvent } from "../../models/events";
 import { RestWorldClientCollection } from "../../services/restworld-client-collection";
 import { NgTemplateOutlet } from "@angular/common";
+import { ProblemService } from "../../services/problem.service";
+import { ButtonDirective } from "primeng/button";
+import { Tooltip } from "primeng/tooltip";
 
 /**
 * Component for editing a resource in the RESTworld application.
@@ -35,7 +38,7 @@ import { NgTemplateOutlet } from "@angular/common";
     templateUrl: "./restworld-edit-view.component.html",
     styleUrls: ["./restworld-edit-view.component.css"],
     standalone: true,
-    imports: [RestWorldIdNavigationComponent, SkeletonModule, TabsModule, RestWorldFormComponent, ConfirmDialogModule, NgTemplateOutlet]
+    imports: [RestWorldIdNavigationComponent, SkeletonModule, TabsModule, RestWorldFormComponent, ConfirmDialogModule, NgTemplateOutlet, ButtonDirective, Tooltip]
 })
 export class RESTworldEditViewComponent {
     @ContentChild("extraTabs", { static: false })
@@ -52,6 +55,7 @@ export class RESTworldEditViewComponent {
     constructor(
         private readonly _clients: RestWorldClientCollection,
         private readonly _messageService: MessageService,
+        private readonly _problemService: ProblemService,
         private readonly _router: Router,
         valdemortConfig: ValdemortConfig) {
         valdemortConfig.errorClasses = "p-error text-sm";
@@ -74,10 +78,23 @@ export class RESTworldEditViewComponent {
     * The name of the API to load the resource from.
     */
     public apiName = input.required<string>();
+    public readonly newHref = computed(() => this.resource.value()?.findLink('new')?.href);
     public templates = resource({
-        params: () => ({ apiName: this.apiName(), uri: this.uri() }),
-        loader: ({ params }) => this.loadInternal(params.apiName, params.uri)
+        params: () => ({ apiName: this.apiName(), resource: this.resource.value() }),
+        loader: ({ params }) => this.loadTemplatesInternal(params.apiName, params.resource)
     });
+
+    public resource = resource({
+        params: () => ({ apiName: this.apiName(), uri: this.uri() }),
+        loader: async ({ params }) => {
+            const client = this._clients.getClient(params.apiName);
+            const resourceResponse = await client.getSingleByUri(params.uri);
+            this._problemService.checkResponseDisplayErrorsAndThrow(resourceResponse);
+
+            return resourceResponse.body;
+        }
+    });
+
     public displayTab = model("Loading");
 
     async afterSubmit($event: AfterSubmitOkEvent | AfterSubmitRedirectEvent) {
@@ -87,15 +104,19 @@ export class RESTworldEditViewComponent {
     }
 
     async afterDelete(): Promise<void> {
-        await this._router.navigate(["list", this.apiName, this.rel()])
+        await this._router.navigate(["list", this.apiName(), this.rel()])
     }
 
-    private async loadInternal(apiName: string, uri: string): Promise<Template[]> {
-        if (!apiName || !uri)
+    public createNew(): Promise<boolean> {
+        return this._router.navigate(["edit", this.apiName(), this.rel(), this.newHref()]);
+    }
+
+    private async loadTemplatesInternal(apiName: string, resource: Resource | undefined): Promise<Template[]> {
+        if (!apiName || !resource)
             return [];
         try {
             const client = this._clients.getClient(apiName);
-            const templatesOrProblemDetails = await client.getAllTemplatesByUri(uri);
+            const templatesOrProblemDetails = await client.getAllTemplates(resource);
 
             // Check if we got ProblemDetails instead of Templates
             if (ProblemDetails.isProblemDetails(templatesOrProblemDetails)) {

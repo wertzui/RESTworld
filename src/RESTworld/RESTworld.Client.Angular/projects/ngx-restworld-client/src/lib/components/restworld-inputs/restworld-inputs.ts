@@ -1,32 +1,30 @@
-import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
-import { ChangeDetectorRef, Component, ContentChild, Directive, ElementRef, OnInit, TemplateRef, computed, contentChild, effect, forwardRef, input, linkedSignal, model, output, signal, untracked, viewChild } from '@angular/core';
-import { AbstractControl, ControlContainer, FormArray, FormControl, FormGroup, FormGroupDirective, FormsModule, NG_VALUE_ACCESSOR, ReactiveFormsModule, type ControlValueAccessor } from '@angular/forms';
-import { FormService, NumberTemplate, Options, OptionsItemDto, ProblemDetails, Property, PropertyType, ResourceOfDto, SimpleValue, Template, TemplateDto } from '@wertzui/ngx-hal-client';
-import { MessageService } from 'primeng/api';
+import { DragDropModule } from '@angular/cdk/drag-drop';
+import { Component, ContentChild, Directive, ElementRef, TemplateRef, computed, contentChild, forwardRef, input, model, output, viewChild } from '@angular/core';
+import { AbstractControl, ControlContainer, FormArray, FormGroup, FormGroupDirective, FormsModule, NG_VALUE_ACCESSOR, ReactiveFormsModule, type ControlValueAccessor } from '@angular/forms';
+import { FormService, NumberTemplate, Options, OptionsItemDto, Property, PropertyType, SimpleValue, Template, TemplateDto } from '@wertzui/ngx-hal-client';
+import { type MenuItem } from 'primeng/api';
 import { DropdownChangeEvent } from '../../models/events';
 import { PropertyTemplateContext } from '../../models/templating';
-import { RestWorldClientCollection } from '../../services/restworld-client-collection';
 import { PropertyWithOptions, PropertyWithImage } from '../../models/special-properties'
 import { debounce } from '../../util/debounce';
 import { MultiSelect } from 'primeng/multiselect';
 import { RestWorldLabelComponent } from "../restworld-label/restworld-label.component";
-import { ButtonDirective } from "primeng/button";
 import { RestWorldValidationErrorsComponent } from "../restworld-validation-errors/restworld-validation-errors.component";
 import { Select } from "primeng/select";
 import { Tooltip } from "primeng/tooltip";
 import { Chip } from 'primeng/chip';
 import { DatePicker } from "primeng/datepicker";
 import { InputNumber } from "primeng/inputnumber";
-import { Checkbox } from "primeng/checkbox";
 import { RestWorldImageComponent } from "../restworld-image/restworld-image.component";
 import { RestWorldFileComponent } from "../restworld-file/restworld-file.component";
 import { InputText } from "primeng/inputtext";
-import { JsonPipe, NgTemplateOutlet } from "@angular/common";
+import { NgTemplateOutlet } from "@angular/common";
 import { HalFormsModule } from "../../directives/property.directives";
 import { OptionsManager, OptionsService } from "../../services/options.service";
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { map, merge, mergeMap } from "rxjs";
+import { debounceTime, distinctUntilChanged, EMPTY, map, merge, mergeMap, startWith, switchMap } from "rxjs";
 import { TriStateCheckbox } from '../restworld-tri-state-checkbox/restworld-tri-state-checkbox.component';
+import { RestWorldTableComponent } from "../restworld-table/restworld-table.component";
 
 /**
  * This helper type converts a Property<X, Y, Z> to an OptionsItemDto<X, Y, Z> and preserves the generic parameters.
@@ -97,15 +95,55 @@ export class RestWorldFormElementComponent<TProperty extends Property<SimpleValu
     templateUrl: './restworld-input-collection/restworld-input-collection.component.html',
     styleUrls: ['./restworld-input-collection/restworld-input-collection.component.css'],
     viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }],
-    imports: [forwardRef(() => RestWorldInputTemplateComponent), DragDropModule, ButtonDirective, ReactiveFormsModule]
+    imports: [forwardRef(() => RestWorldInputTemplateComponent), DragDropModule, ReactiveFormsModule, RestWorldTableComponent]
 })
 export class RestWorldInputCollectionComponent<TProperty extends Property<SimpleValue, string, string> & { _templates: { default: Template } } = Property<SimpleValue, string, string> & { _templates: { default: Template } }> extends RestWorldInputLazyLoadBaseComponent<TProperty> {
     public readonly defaultTemplate = computed(() => this.property()._templates.default);
     public readonly innerFormArray = computed(() => (this._controlContainer.control as FormGroup<any>)?.controls[this.property().name] as FormArray<FormGroup<any>>);
     public readonly templates = computed(() => this.getCollectionEntryTemplates(this.property()));
 
+    public readonly rows = toSignal(
+        merge(
+            // Get the initial value when 'control' changes
+            toObservable(this.innerFormArray).pipe(map((ctl) => ctl.value)),
+            // Get the new value when 'control.value' changes
+            toObservable(this.innerFormArray).pipe(mergeMap((ctl) => ctl.valueChanges))
+        ),
+        { initialValue: [] }
+    );
+
     @ContentChild('inputCollection', { static: false })
     public inputCollectionRef?: TemplateRef<unknown>;
+    public readonly headerMenu = computed(() => {
+        const isReadOnly = this.property().readOnly;
+        if (isReadOnly)
+            return [];
+
+        return [
+            {
+                icon: "fas fa-plus",
+                styleClass: "p-button-outlined p-button-info",
+                command: () => this.addNewItemToCollection()
+            } as MenuItem
+        ];
+    });
+    public readonly rowMenu = computed(() => (row: any, openedByRightClick: boolean) => {
+        const isReadOnly = this.property().readOnly;
+        if (isReadOnly)
+            return [];
+
+        return [
+            {
+                icon: "fas fa-trash-alt",
+                label: openedByRightClick ? "Delete" : undefined,
+                tooltip: !openedByRightClick ? "Delete" : undefined,
+                tooltipPosition: "left",
+                styleClass: "p-button-outlined p-button-danger",
+                command: () => this.deleteItemFromCollection(row)
+            } as MenuItem
+        ];
+    });
+
 
     constructor(
         private readonly _formService: FormService,
@@ -136,32 +174,13 @@ export class RestWorldInputCollectionComponent<TProperty extends Property<Simple
         copiedTemplateDto.title = nextIndex.toString();
         const copiedTemplate = new Template(copiedTemplateDto);
 
-        this.property.update((property) => { property._templates[nextIndex] = copiedTemplate; return { ...property }; });
         this.innerFormArray().push(this._formService.createFormGroupFromTemplate(this.defaultTemplate()));
+        this.property.update((property) => { property._templates[nextIndex] = copiedTemplate; return { ...property }; });
     }
 
-    public collectionItemDropped($event: CdkDragDrop<{}>) {
-        const previousIndex = $event.previousIndex;
-        const currentIndex = $event.currentIndex;
-        const movementDirection = currentIndex > previousIndex ? 1 : -1;
-
-        // Move in FormArray
-        // We do not need to move the item in the _templates object
-        const innerFormArray = this.innerFormArray();
-        const movedControl = innerFormArray.at(previousIndex);
-        for (let i = previousIndex; i * movementDirection < currentIndex * movementDirection; i = i + movementDirection) {
-            innerFormArray.setControl(i, innerFormArray.at(i + movementDirection));
-        }
-        innerFormArray.setControl(currentIndex, movedControl);
-    }
-
-    public deleteItemFromCollection(template: NumberTemplate): void {
-        const title = template.title;
-        if (title === undefined)
-            throw new Error("Cannot delete a template without a title.");
-
-        this.property.update((property) => { delete property._templates[title]; return { ...property }; });
-        this.innerFormArray().removeAt(title);
+    public deleteItemFromCollection(row: any): void {
+        const index = this.rows().indexOf(row);
+        this.innerFormArray().removeAt(index);
     }
 }
 
@@ -209,7 +228,7 @@ export class RestWorldInputComponent<TProperty extends Property<SimpleValue, str
     viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }],
     imports: [Select, ReactiveFormsModule, MultiSelect, Tooltip, Chip, NgTemplateOutlet, HalFormsModule, FormsModule]
 })
-export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleValue, string, string> & { options: Options<SimpleValue, string, string> }, TOptionsItem extends ExtractGenericOptionsItemType<TProperty> = ExtractGenericOptionsItemType<TProperty>> extends RestWorldInputLazyLoadBaseComponent<TProperty> implements OnInit {
+export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleValue, string, string> & { options: Options<SimpleValue, string, string> }, TOptionsItem extends ExtractGenericOptionsItemType<TProperty> = ExtractGenericOptionsItemType<TProperty>> extends RestWorldInputLazyLoadBaseComponent<TProperty> {
     /**
      * A flag that indicates if the search should be case sensitive.
      * The default is false.
@@ -247,12 +266,17 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
         return formGroup.controls[this.property().name] as AbstractControl<ExtractGenericOptionsSelectedValuesType<TProperty> | ExtractGenericOptionsSelectedValuesType<TProperty>[]>;
     });
 
-    private readonly _valueChangesSignal = toSignal(
-        merge(
-            // Get the initial value when 'control' changes
-            toObservable(this._formControl).pipe(map((ctl) => ctl.value)),
-            // Get the new value when 'control.value' changes
-            toObservable(this._formControl).pipe(mergeMap((ctl) => ctl.valueChanges))
+    private readonly _value = toSignal(
+        toObservable(this._formControl).pipe(
+            distinctUntilChanged(),
+            switchMap(formControl =>
+                formControl
+                    ? formControl.valueChanges.pipe(
+                        debounceTime(0),
+                        distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b))
+                    ).pipe(startWith(formControl.value))
+                    : EMPTY
+            )
         )
     );
 
@@ -261,12 +285,7 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
         optionsService: OptionsService,
     ) {
         super();
-        //const valueChangesSignal = toSignal(this._formControl.valueChanges);
-        this.optionsManager = optionsService.getManager(this.apiName, this.property, this._valueChangesSignal, this.getLabel, this.getTooltip);
-    }
-
-    public async ngOnInit(): Promise<void> {
-        await this.optionsManager.initialize();
+        this.optionsManager = optionsService.getManager(this.apiName, this.property, this._value, this.getLabel, this.getTooltip);
     }
 
     public onOptionsChanged(event: DropdownChangeEvent<TOptionsItem>) {
@@ -275,7 +294,7 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
 
     public async onOptionsFilteredInternal(event: { originalEvent: Event; filter: string | null }) {
         const options = this.optionsManager.options();
-        const currentItems = this.optionsManager.items();
+        const currentItems = this.optionsManager.items.value();
 
         if (!(event.filter) || event.filter === '')
             return;
