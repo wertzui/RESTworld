@@ -1,0 +1,20 @@
+@if (property()) {
+    @if (property().options) {
+        <rw-input-dropdown [apiName]="apiName()" [property]="$any(property())" [useTemplateDrivenForms]="useTemplateDrivenForms()"></rw-input-dropdown>
+    }
+    @else {
+        @switch (property().type) {
+            @case (PropertyType.Object) {
+                <rw-input-object [apiName]="apiName()" [property]="$any(property())" [useTemplateDrivenForms]="useTemplateDrivenForms()"></rw-input-object>
+            }
+            @case (PropertyType.Collection) {
+                <rw-input-collection [apiName]="apiName()" [property]="$any(property())" [useTemplateDrivenForms]="useTemplateDrivenForms()"></rw-input-collection>
+            }
+            @default {
+                <rw-input-simple [property]="property()" [useTemplateDrivenForms]="useTemplateDrivenForms()"></rw-input-simple>
+            }
+        }
+    }
+
+    <rw-validation-errors [property]="property()"></rw-validation-errors>
+}

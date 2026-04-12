@@ -10,7 +10,7 @@
       "prefix": "lib",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "builder": "@angular/build:ng-packagr",
           "options": {
             "project": "projects/ngx-restworld-client/ng-package.json"
           },
@@ -25,11 +25,9 @@
           "defaultConfiguration": "production"
         },
         "test": {
-          "builder": "@angular-devkit/build-angular:karma",
+          "builder": "@angular/build:unit-test",
           "options": {
-            "main": "projects/ngx-restworld-client/src/test.ts",
-            "tsConfig": "projects/ngx-restworld-client/tsconfig.spec.json",
-            "karmaConfig": "projects/ngx-restworld-client/karma.conf.js"
+            "browsers": ["edge"]
           }
         }
       }

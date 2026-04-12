@@ -10,7 +10,7 @@ import { debounce } from '../../util/debounce';
 import { MultiSelect } from 'primeng/multiselect';
 import { RestWorldLabelComponent } from "../restworld-label/restworld-label.component";
 import { RestWorldValidationErrorsComponent } from "../restworld-validation-errors/restworld-validation-errors.component";
-import { Select } from "primeng/select";
+import { Select, type SelectChangeEvent } from "primeng/select";
 import { Tooltip } from "primeng/tooltip";
 import { Chip } from 'primeng/chip';
 import { DatePicker } from "primeng/datepicker";
@@ -95,7 +95,7 @@ export class RestWorldFormElementComponent<TProperty extends Property<SimpleValu
     templateUrl: './restworld-input-collection/restworld-input-collection.component.html',
     styleUrls: ['./restworld-input-collection/restworld-input-collection.component.css'],
     viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }],
-    imports: [forwardRef(() => RestWorldInputTemplateComponent), DragDropModule, ReactiveFormsModule, RestWorldTableComponent]
+    imports: [DragDropModule, ReactiveFormsModule, forwardRef(() => RestWorldTableComponent)]
 })
 export class RestWorldInputCollectionComponent<TProperty extends Property<SimpleValue, string, string> & { _templates: { default: Template } } = Property<SimpleValue, string, string> & { _templates: { default: Template } }> extends RestWorldInputLazyLoadBaseComponent<TProperty> {
     public readonly defaultTemplate = computed(() => this.property()._templates.default);
@@ -288,8 +288,8 @@ export class RestWorldInputDropdownComponent<TProperty extends Property<SimpleVa
         this.optionsManager = optionsService.getManager(this.apiName, this.property, this._value, this.getLabel, this.getTooltip);
     }
 
-    public onOptionsChanged(event: DropdownChangeEvent<TOptionsItem>) {
-        this.onChange.emit(event);
+    public onOptionsChanged(event: SelectChangeEvent) {
+        this.onChange.emit({ originalEvent: event.originalEvent!, value: event.value });
     }
 
     public async onOptionsFilteredInternal(event: { originalEvent: Event; filter: string | null }) {

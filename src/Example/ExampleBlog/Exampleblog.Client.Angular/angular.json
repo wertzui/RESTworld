@@ -1,0 +1,100 @@
+{
+    "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+    "version": 1,
+    "newProjectRoot": "projects",
+    "projects": {
+        "exampleblog.client.angular": {
+            "root": "",
+            "sourceRoot": "src",
+            "projectType": "application",
+            "prefix": "app",
+            "schematics": {},
+            "architect": {
+                "build": {
+                    "builder": "@angular/build:application",
+                    "options": {
+                        "preserveSymlinks": true,
+                        "progress": false,
+                        "outputPath": {
+                            "base": "dist"
+                        },
+                        "index": "src/index.html",
+                        "tsConfig": "tsconfig.app.json",
+                        "assets": [
+                            "src/assets"
+                        ],
+                        "styles": [
+                            "./node_modules/@fortawesome/fontawesome-free/css/all.css",
+                            "./node_modules/primeflex/primeflex.css",
+                            "./node_modules/primeicons/primeicons.css",
+                            "src/styles.css"
+                        ],
+                        "scripts": [],
+                        "browser": "src/main.ts"
+                    },
+                    "configurations": {
+                        "production": {
+                            "outputHashing": "all",
+                            "sourceMap": true
+                        },
+                        "development": {
+                            "optimization": false,
+                            "extractLicenses": false,
+                            "sourceMap": true
+                        },
+                        "unit-tests": {
+                            "optimization": false,
+                            "extractLicenses": false,
+                            "sourceMap": true,
+                            "polyfills":  ["@angular/compiler"]
+                        }
+                    }
+                },
+                "serve": {
+                    "builder": "@angular-devkit/build-angular:dev-server",
+                    "options": {
+                        "buildTarget": "exampleblog.client.angular:build",
+                        "proxyConfig": "src/proxy.conf.js"
+                    },
+                    "configurations": {
+                        "production": {
+                            "buildTarget": "exampleblog.client.angular:build:production"
+                        },
+                        "development": {
+                            "buildTarget": "exampleblog.client.angular:build:development"
+                        }
+                    },
+                    "defaultConfiguration": "development"
+                },
+                "extract-i18n": {
+                    "builder": "@angular-devkit/build-angular:extract-i18n",
+                    "options": {
+                        "buildTarget": "exampleblog.client.angular:build"
+                    }
+                },
+                "test": {
+                    "builder": "@angular/build:unit-test",
+                    "options": {
+                        "buildTarget": "exampleblog.client.angular:build:unit-tests",
+                        "runnerConfig": "vitest.config.ts"
+                    }
+                },
+                "lint": {
+                    "builder": "@angular-devkit/build-angular:tslint",
+                    "options": {
+                        "tsConfig": [
+                            "tsconfig.app.json",
+                            "tsconfig.spec.json"
+                        ],
+                        "exclude": [
+                            "**/node_modules/**"
+                        ]
+                    }
+                }
+            }
+        }
+    },
+    "cli": {
+        "analytics": false
+    }
+}

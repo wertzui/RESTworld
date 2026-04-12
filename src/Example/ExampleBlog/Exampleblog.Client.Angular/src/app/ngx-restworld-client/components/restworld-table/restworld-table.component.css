@@ -1,0 +1,31 @@
+.p-tooltip {
+  max-width: fit-content;
+}
+
+a.p-button {
+    text-decoration: none;
+}
+
+::ng-deep rw-table rw-label.md\:col-2 {
+  width: 100%;
+  font-weight: 600;
+}
+
+::ng-deep rw-table .p-d-flex {
+  display: flex;
+}
+
+::ng-deep rw-table .p-ai-center {
+  align-items: center;
+}
+
+::ng-deep rw-table .has-filter filtericon {
+  color: var(--p-datatable-header-cell-selected-color);
+}
+
+::ng-deep rw-table p-columnfilter .p-datatable-column-filter-button {
+    width: unset;
+    height: 23px !important;
+    padding-block-end: 0;
+    padding-block-start: 0;
+}

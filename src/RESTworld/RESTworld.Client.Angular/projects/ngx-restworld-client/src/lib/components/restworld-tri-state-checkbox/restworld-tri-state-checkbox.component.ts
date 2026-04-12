@@ -262,7 +262,7 @@ export class TriStateCheckbox
 
     _componentStyle = inject(CheckboxStyle);
 
-    ngAfterContentInit() {
+    override ngAfterContentInit() {
         this.templates().forEach((item) => {
             switch (item.getType()) {
                 case 'icon':

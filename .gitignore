@@ -355,3 +355,6 @@ dist/
 
 #Angular cache
 .angular/
+
+# C# Dev Kit for Visual Studio Code cache
+*.lscache

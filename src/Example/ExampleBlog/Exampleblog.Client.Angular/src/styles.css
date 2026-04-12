@@ -1,0 +1,23 @@
+/* You can add global styles to this file, and also import other style files */
+
+body {
+    margin: 0;
+    overflow: hidden;
+}
+
+app-root {
+  height: 100vh;
+  width: 100vw;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 1fr;
+}
+
+main {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.p-toast-message-text {
+  width: 17rem;
+}

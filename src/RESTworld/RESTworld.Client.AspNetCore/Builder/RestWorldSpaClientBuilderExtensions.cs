@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Routing;
-using Microsoft.AspNetCore.SpaServices.AngularCli;
+﻿using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RESTworld.AspNetCore.Controller;
@@ -30,12 +28,6 @@ public static class RestWorldSpaClientBuilderExtensions
 
         var services = builder.Services;
 
-        // In production, the Angular files will be served from this directory
-        services.AddSpaStaticFiles(configuration =>
-        {
-            configuration.RootPath = contentRoot;
-        });
-
         builder.AddRestWorld();
 
         // The default Home Controller interferes with our SPA so we have to remove it.
@@ -64,24 +56,8 @@ public static class RestWorldSpaClientBuilderExtensions
 
         app.UseRestWorld();
 
+        app.UseDefaultFiles();
         app.UseStaticFiles();
-        if (!app.Services.GetRequiredService<IWebHostEnvironment>().IsDevelopment())
-        {
-            app.UseSpaStaticFiles();
-        }
-
-        app.UseSpa(spa =>
-        {
-            // To learn more about options for serving an Angular SPA from ASP.NET Core,
-            // see https://go.microsoft.com/fwlink/?linkid=864501
-
-            spa.Options.SourcePath = sourcePath;
-
-            if (app.Services.GetRequiredService<IWebHostEnvironment>().IsDevelopment())
-            {
-                spa.UseAngularCliServer(npmScript: "start");
-            }
-        });
 
         return app;
     }

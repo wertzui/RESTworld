@@ -2,11 +2,9 @@
 {
     "compileOnSave": false,
     "compilerOptions": {
-        "baseUrl": "./",
         "paths": {
             "ngx-restworld-client": [
-                "dist/ngx-restworld-client/ngx-restworld-client",
-                "dist/ngx-restworld-client"
+                "./dist/ngx-restworld-client"
             ]
         },
         "declaration": false,
@@ -20,7 +18,6 @@
         "noImplicitOverride": true,
         "noImplicitReturns": true,
         "noPropertyAccessFromIndexSignature": false,
-        "outDir": "./dist/out-tsc",
         "skipLibCheck": true,
         "strict": true,
         "sourceMap": true,

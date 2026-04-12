@@ -1,0 +1,15 @@
+@let search = searchTemplate.value();
+@let api = apiName();
+@if (search && api) {
+    <rw-table
+        [apiName]="api"
+        [searchTemplate]="search"
+        [rows]="items()"
+        [headerMenu]="headerMenu()"
+        [rowMenu]="rowMenu()"
+        [totalRecords]="totalRecords()"
+        [isLoading]="isLoading()"
+    >
+    </rw-table>
+}
+<p-confirmDialog></p-confirmDialog>

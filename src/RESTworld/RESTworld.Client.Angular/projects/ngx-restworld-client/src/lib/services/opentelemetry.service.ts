@@ -1,9 +1,8 @@
 import { Injectable } from "@angular/core";
 import { NavigationEnd, Router } from "@angular/router";
 import { HTTP_INTERCEPTORS } from "@angular/common/http";
-import { AlwaysOffSampler, AlwaysOnSampler, BatchSpanProcessor, ConsoleSpanExporter, ParentBasedSampler, SimpleSpanProcessor, SpanProcessor, TraceIdRatioBasedSampler, WebTracerProvider } from '@opentelemetry/sdk-trace-web';
+import { AlwaysOffSampler, AlwaysOnSampler, BatchSpanProcessor, ConsoleSpanExporter, ParentBasedSampler, SimpleSpanProcessor, SpanProcessor, StackContextManager, TraceIdRatioBasedSampler, WebTracerProvider } from '@opentelemetry/sdk-trace-web';
 import { SettingsService } from "./settings.service";
-import { ZoneContextManager } from "@opentelemetry/context-zone-peer-dep";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-proto";
 import { CompressionAlgorithm } from '@opentelemetry/otlp-exporter-base';
 import { ClientSettings } from "../models/client-settings";
@@ -143,8 +142,8 @@ export class OpenTelemetryService {
         });
 
         provider.register({
-            // Changing default contextManager to use ZoneContextManager - supports asynchronous operations - optional
-            contextManager: new ZoneContextManager(),
+            // Changing default contextManager to use StackContextManager - this ensures that http calls made in Angular's HttpClient will be properly associated with the current navigation span
+            contextManager: new StackContextManager(),
         });
 
         // Get a tracer from the provider

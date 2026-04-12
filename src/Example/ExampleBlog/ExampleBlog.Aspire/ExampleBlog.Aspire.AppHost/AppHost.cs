@@ -12,6 +12,7 @@ var database = builder.AddConnectionString("BlogDatabase");
 
 
 // Add the backend API as a service
+#pragma warning disable ASPIREMCP001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 var apiService = builder.AddProject<ExampleBlog>(nameof(ExampleBlog))
     // Add a reference to the database
     // because the database has the name "BlogDatabase", this will inject an environment variable ConnectionStrings__BlogDatabase=Server=localhost;Database=BlogDatabase;Integrated Security=True
@@ -34,10 +35,12 @@ var apiService = builder.AddProject<ExampleBlog>(nameof(ExampleBlog))
             context.Urls.Add(new ResourceUrlAnnotation { Url = $"{uri}/swagger", DisplayText = $"Swagger ({endpoint.Name})" });
         }
 
-    });
+    })
+    .WithMcpServer();
+#pragma warning restore ASPIREMCP001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 
 // Add the Frontend which hosts the Angular client
-var frontendService = builder.AddProject<ExampleBlog_Client_Angular>("ExampleBlog-Client-Angular")
+var frontendService = builder.AddProject<ExampleBlog_Client>("ExampleBlog-Client")
     // Add a reference to the backend API
     // This will inject an environment variable services__ExampleBlog__https__0=https://localhost:5432
     // The SettingsController from RestWorld.Client.AspNetCore will read this environment variable and replace the API URLs with the value,
@@ -47,6 +50,21 @@ var frontendService = builder.AddProject<ExampleBlog_Client_Angular>("ExampleBlo
     // For frontend projects this just means that the application is running
     .WithKubernetesHealthProbes()
     .WithIconName("TabDesktop");
+
+// Add The Angular part of the Frontend
+builder.AddJavaScriptApp("ExampleBlog-Client-Angular", Directory.GetParent(new Exampleblog_Client_Angular().ProjectPath)!.FullName)
+    // This will run "npm start" in the directory of the Angular project, which starts the Angular development server.
+    // Have a look at the package.json of the Angular project to see what the "start" script does.
+    .WithRunScript("start")
+    // Add a reference to the frontend service, so that the Angular development server can call the backend API.
+    // This will inject an environment variable services__ExampleBlog-Client__https__0 which is then used in the proxy.conf.json of the Angular project to proxy API calls to the backend API.
+    .WithReference(frontendService)
+    // Have the Angular part of the frontend appear as child of the dotnet part of the frontend.
+    .WithParentRelationship(frontendService)
+    // This is the Port on which the Angular development server runs. It is referenced in the package.json of the Angular project.
+    .WithHttpsEndpoint(env: "PORT")
+    // The Angular development server does not have a health check endpoint, so we just use the root URL as a readiness probe.
+    .WithHttpHealthCheck();
 
 // Add the MCP Inspector which can be used to inspect the mcp service provided by the API
 var mcpInspector = builder.AddMcpInspector("McpInspector", new McpInspectorOptions { InspectorVersion = "0.21.1" })

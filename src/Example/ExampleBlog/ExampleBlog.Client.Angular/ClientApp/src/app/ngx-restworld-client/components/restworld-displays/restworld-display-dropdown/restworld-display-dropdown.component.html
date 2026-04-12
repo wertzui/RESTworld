@@ -1,3 +1,0 @@
-@for (item of optionsManager.selectedItems(); track item; let last = $last) {
-    <span [pTooltip]="optionsManager.getTooltip()($any(item))">{{optionsManager.getLabel()($any(item))}}</span>{{last ? "" : ", "}}
-}

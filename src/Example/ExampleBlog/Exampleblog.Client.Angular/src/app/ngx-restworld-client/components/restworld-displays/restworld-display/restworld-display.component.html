@@ -1,0 +1,18 @@
+@if (property().type !== PropertyType.Hidden) {
+    @if (property().options) {
+        <rw-display-dropdown [property]="$any(property())" [selectedValues]="$any(computedValue())" [apiName]="apiName()"></rw-display-dropdown>
+    }
+    @else {
+        @switch (property().type) {
+            @case (PropertyType.Object) {
+                <rw-display-object [property]="$any(property())" [value]="$any(computedValue())" [apiName]="apiName()"></rw-display-object>
+            }
+            @case (PropertyType.Collection) {
+                <rw-display-collection [property]="$any(property())" [values]="$any(computedValue())" [apiName]="apiName()"></rw-display-collection>
+            }
+            @default {
+                <rw-display-simple [property]="property()" [value]="$any(computedValue())" [apiName]="apiName()"></rw-display-simple>
+            }
+        }
+    }
+}

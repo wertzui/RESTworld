@@ -11,7 +11,7 @@
         <Authors>wertzui</Authors>
         <PackageProjectUrl>https://github.com/wertzui/RESTworld</PackageProjectUrl>
         <RepositoryUrl>https://github.com/wertzui/RESTworld</RepositoryUrl>
-        <VersionPrefix>36.3.0</VersionPrefix>
+        <VersionPrefix>36.3.1</VersionPrefix>
         <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -40,8 +40,8 @@
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.5" />
         <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.4.0" />
         <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" Version="10.4.0" />
-        <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.1" />
-        <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.1" />
+        <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.2" />
+        <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.2" />
         <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.1" />
         <PackageReference Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.15.0-beta.1" />
         <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.0" />
