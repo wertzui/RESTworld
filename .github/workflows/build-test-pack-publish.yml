@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       slnx_file:
-        description: "Path to the .slnx file (defaults to src/Aspire.HealthChecks.Kubernetes/Aspire.HealthChecks.Kubernetes.slnx)"
+        description: "Path to the .slnx file (defaults to src/RESTworld/RESTworld.slnx)"
         required: false
 
 permissions:
@@ -43,7 +43,7 @@ jobs:
       contents: write
     uses: wertzui/Actions/.github/workflows/nuget-build.yml@main
     with:
-      solution_file: ${{ inputs.slnx_file || 'src/Aspire.HealthChecks.Kubernetes/Aspire.HealthChecks.Kubernetes.slnx' }}
+      solution_file: ${{ inputs.slnx_file || 'src/RESTworld/RESTworld.slnx' }}
       encrypted_api_key: ${{ needs.login.outputs.encrypted_api_key }}
     secrets:
       encryption_key: ${{ secrets.ENCRYPTION_KEY }}
