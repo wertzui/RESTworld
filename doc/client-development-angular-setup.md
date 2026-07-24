@@ -6,7 +6,7 @@ Use these guidelines to scaffold and configure an Angular SPA that talks to a RE
 
 Starting with Angular 22, the dotnet and Angular parts of the client are split into two separate projects:
 
-- **`ExampleBlog.Client`** — the ASP.NET Core host project (previously called `ExampleBlog.Client.Angular`). It serves the Angular output as static files from its `wwwroot/` folder after publishing and references the `.esproj`. It also provides the `/configuration` endpoint from where the Angular SPA gets the API endpoints.
+- **`ExampleBlog.Client`** — the ASP.NET Core host project (previously called `ExampleBlog.Client.Angular`). It serves the Angular output as static files from its `wwwroot/` folder after publishing and references the `.esproj`. It also provides the `/settings` endpoint from where the Angular SPA gets the API endpoints.
 - **`ExampleBlog.Client.Angular`** — the standalone Angular project (previously the `ClientApp/` subfolder inside the dotnet project). It now lives as its own sibling folder with its own `angular.json`, `package.json`, and `.esproj`.
 
 Use the [`Migrate-AngularSpa.ps1`](../src/Example/ExampleBlog/Migrate-AngularSpa.ps1) script to apply this split to an existing project. The script moves the old `ClientApp/` contents to a new sibling folder, generates the `.esproj`, wires up the `proxyConfig`, and updates the `.csproj` accordingly.

@@ -79,7 +79,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
     public Task<ServiceResponse<TGetFullDto>> CreateAsync(TCreateDto dto, CancellationToken cancellationToken)
         => TryExecuteWithAuthorizationAsync<TEntity, TCreateDto, TGetFullDto, ICreateAuthorizationHandler<TEntity, TCreateDto, TGetFullDto>>(
             dto,
-            (result, token) => CreateInternalAsync(result, token),
+            CreateInternalAsync,
             (result, handler, token) => handler.HandleCreateRequestAsync(result, token),
             (response, handler, token) => handler.HandleCreateResponseAsync(response, token),
             CrudAuthorizationHandlers,
@@ -89,7 +89,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
     public Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> CreateAsync(IReadOnlyCollection<TCreateDto> dtos, CancellationToken cancellationToken)
         => TryExecuteWithAuthorizationAsync<TEntity, IReadOnlyCollection<TCreateDto>, IReadOnlyCollection<TGetFullDto>, ICreateAuthorizationHandler<TEntity, TCreateDto, TGetFullDto>>(
             dtos,
-            (result, token) => CreateInternalAsync(result, token),
+            CreateInternalAsync,
             (result, handler, token) => handler.HandleCreateRequestAsync(result, token),
             (response, handler, token) => handler.HandleCreateResponseAsync(response, token),
             CrudAuthorizationHandlers,
@@ -100,7 +100,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
         => TryExecuteWithAuthorizationAsync<TEntity, long, byte[], object, IDeleteAuthorizationHandler<TEntity>>(
             id,
             timestamp,
-            (result, token) => DeleteInternalAsync(result, token),
+            DeleteInternalAsync,
             (result, handler, token) => handler.HandleDeleteRequestAsync(result, token),
             (response, handler, token) => handler.HandleDeleteResponseAsync(response, token),
             CrudAuthorizationHandlers,
@@ -110,7 +110,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
     public Task<ServiceResponse<TGetFullDto>> UpdateAsync(TUpdateDto dto, CancellationToken cancellationToken)
         => TryExecuteWithAuthorizationAsync<TEntity, TUpdateDto, TGetFullDto, IUpdateAuthorizationHandler<TEntity, TUpdateDto, TGetFullDto>>(
             dto,
-            (result, token) => UpdateInternalAsync(result, token),
+            UpdateInternalAsync,
             (result, handler, token) => handler.HandleUpdateRequestAsync(result, token),
             (response, handler, token) => handler.HandleUpdateResponseAsync(response, token),
             CrudAuthorizationHandlers,
@@ -120,7 +120,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
     public Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> UpdateAsync(IUpdateMultipleRequest<TUpdateDto, TEntity> request, CancellationToken cancellationToken)
         => TryExecuteWithAuthorizationAsync<TEntity, IUpdateMultipleRequest<TUpdateDto, TEntity>, IReadOnlyCollection<TGetFullDto>, IUpdateAuthorizationHandler<TEntity, TUpdateDto, TGetFullDto>>(
             request,
-            (result, token) => UpdateInternalAsync(result, token),
+            UpdateInternalAsync,
             (result, handler, token) => handler.HandleUpdateRequestAsync(result, token),
             (response, handler, token) => handler.HandleUpdateResponseAsync(response, token),
             CrudAuthorizationHandlers,
@@ -171,7 +171,10 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
 
         await context.SaveChangesAsync(GetCurrentUsersName(), cancellationToken);
 
-        var resultDto = Mapper.MapEntityToFull(entity);
+        var resultDto = await GetSingleDtoAsync(authorizationResult.ChangeParameter(entity.Id), cancellationToken);
+
+        if (resultDto is null)
+            return ServiceResponse.FromProblem<TGetFullDto>(HttpStatusCode.NotFound, "Entity not found after creation.");
 
         await OnCreatedInternalAsync(authorizationResult, resultDto, entity, cancellationToken);
 
@@ -209,11 +212,11 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
 
         await context.SaveChangesAsync(GetCurrentUsersName(), cancellationToken);
 
-        var resultDto = entities.Select(Mapper.MapEntityToFull).ToList();
+        var resultDtos = await GetMultipleDtosAsync(authorizationResult.ChangeParameter<IReadOnlyCollection<long>>(entities.Select(e => e.Id).ToHashSet()), cancellationToken);
 
-        await OnCreatedInternalAsync(authorizationResult, resultDto, entities, cancellationToken);
+        await OnCreatedInternalAsync(authorizationResult, resultDtos, entities, cancellationToken);
 
-        return ServiceResponse.FromResult<IReadOnlyCollection<TGetFullDto>>(resultDto);
+        return ServiceResponse.FromResult(resultDtos);
     }
 
     /// <summary>
@@ -290,9 +293,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
     protected virtual Task OnCreatedInternalAsync(AuthorizationResult<TEntity, TCreateDto> authorizationResult, TGetFullDto resultDto, TEntity entity, CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
+        => Task.CompletedTask;
 
     /// <summary>
     /// This method is called after SaveChangesAsync() so the entities are already persisted in
@@ -308,9 +309,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
     protected virtual Task OnCreatedInternalAsync(AuthorizationResult<TEntity, IReadOnlyCollection<TCreateDto>> authorizationResult, IReadOnlyCollection<TGetFullDto> resultDto, IReadOnlyCollection<TEntity> entities, CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
+        => Task.CompletedTask;
 
     /// <summary>
     /// This method is called after the entity has been created from the DTO but before
@@ -324,9 +323,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
     protected virtual Task OnCreatingInternalAsync(AuthorizationResult<TEntity, TCreateDto> authorizationResult, TContext context, TEntity entity, CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
+        => Task.CompletedTask;
 
     /// <summary>
     /// This method is called after the entities have been created from the DTOs but before
@@ -340,9 +337,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
     protected virtual Task OnCreatingInternalAsync(AuthorizationResult<TEntity, IReadOnlyCollection<TCreateDto>> authorizationResult, TContext context, IReadOnlyCollection<TEntity> entities, CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
+        => Task.CompletedTask;
 
     /// <summary>
     /// This method is called after SaveChangesAsync() has been called.
@@ -354,9 +349,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
     protected virtual Task OnDeletedAsync(AuthorizationResult<TEntity, long, byte[]> authorizationResult, TEntity entity, CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
+        => Task.CompletedTask;
 
     /// <summary>
     /// This method is called after the entity has been removed from the context, but before
@@ -370,9 +363,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
     protected virtual Task OnDeletingAsync(AuthorizationResult<TEntity, long, byte[]> authorizationResult, TEntity entity, TContext context, CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
+        => Task.CompletedTask;
 
     /// <summary>
     /// This method is called after SaveChangesAsync() so the entity is already persisted in the
@@ -386,9 +377,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
     protected virtual Task OnUpdatedInternalAsync(AuthorizationResult<TEntity, TUpdateDto> authorizationResult, TGetFullDto resultDto, TEntity entity, CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
+        => Task.CompletedTask;
 
     /// <summary>
     /// This method is called after SaveChangesAsync() so the entities are already persisted in
@@ -404,9 +393,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
     protected virtual Task OnUpdatedInternalAsync(AuthorizationResult<TEntity, IUpdateMultipleRequest<TUpdateDto, TEntity>> authorizationResult, IReadOnlyCollection<TGetFullDto> resultDto, Dictionary<long, TEntity> entities, CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
+        => Task.CompletedTask;
 
     /// <summary>
     /// This method is called after the update from the DTO has been applied to the entity but
@@ -420,9 +407,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
     protected virtual Task OnUpdatingInternalAsync(AuthorizationResult<TEntity, TUpdateDto> authorizationResult, TContext context, TEntity entity, CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
+        => Task.CompletedTask;
 
     /// <summary>
     /// This method is called after the update from the DTO has been applied to the entity but
@@ -436,9 +421,7 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns></returns>
     protected virtual Task OnUpdatingInternalAsync(AuthorizationResult<TEntity, IUpdateMultipleRequest<TUpdateDto, TEntity>> authorizationResult, TContext context, IDictionary<long, TEntity> entities, CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
+        => Task.CompletedTask;
 
     /// <summary>
     /// The method contains the business logic for the UPDATE-Single operation. It will update
@@ -476,7 +459,10 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
 
         await context.SaveChangesAsync(GetCurrentUsersName(), cancellationToken);
 
-        var resultDto = Mapper.MapEntityToFull(entity);
+        var resultDto = await GetSingleDtoAsync(authorizationResult.ChangeParameter(entity.Id), cancellationToken);
+
+        if (resultDto is null)
+            return ServiceResponse.FromProblem<TGetFullDto>(HttpStatusCode.NotFound, "Entity not found after update.");
 
         await OnUpdatedInternalAsync(authorizationResult, resultDto, entity, cancellationToken);
 
@@ -497,10 +483,13 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
         var request = authorizationResult.Value1;
         var dtos = request.Dtos;
 
-        var ids = System.Linq.Enumerable.ToHashSet(System.Linq.Enumerable.Select(dtos, d => d.Id));
+        var ids = dtos
+            .Select(d => d.Id)
+            .ToHashSet();
         await using var context = _contextFactory.CreateDbContext();
 
-        var entities = await request.Filter(System.Linq.Queryable.Where(GetDbSetForUpdatingWithAuthorization(context, authorizationResult), e => ids.Contains(e.Id)))
+        var entities = await request.Filter(GetDbSetForUpdatingWithAuthorization(context, authorizationResult)
+            .Where(e => ids.Contains(e.Id)))
             .ToDictionaryAsync(e => e.Id, cancellationToken);
 
         if (entities.Count != dtos.Count)
@@ -525,11 +514,11 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
 
         await context.SaveChangesAsync(GetCurrentUsersName(), cancellationToken);
 
-        var resultDto = entities.Values.Select(Mapper.MapEntityToFull).ToList();
+        var resultDtos = await GetMultipleDtosAsync(authorizationResult.ChangeParameter<IReadOnlyCollection<long>>(entities.Keys), cancellationToken);
 
-        await OnUpdatedInternalAsync(authorizationResult, resultDto, entities, cancellationToken);
+        await OnUpdatedInternalAsync(authorizationResult, resultDtos, entities, cancellationToken);
 
-        return ServiceResponse.FromResult<IReadOnlyCollection<TGetFullDto>>(resultDto);
+        return ServiceResponse.FromResult(resultDtos);
     }
 
     private void LogAuthoriztaionHandlerWarningOnlyOneTimeIfNoHandlersArePresent(IEnumerable<ICrudAuthorizationHandler<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>> authorizationHandlers)
@@ -542,5 +531,21 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
                 $"{nameof(ICrudAuthorizationHandler<,,,,,>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}>",
                 $"{nameof(CrudServiceBase<,,,,,,>)}<{typeof(TEntity).Name}, {typeof(TCreateDto).Name}, {typeof(TGetListDto).Name}, {typeof(TGetFullDto).Name}, {typeof(TUpdateDto).Name}>");
         }
+    }
+
+    /// <summary>
+    /// This method is called after a create or update operation when multiple items are created or updated. It will get
+    /// the created or updated items from the database and map them to the full DTOs.
+    /// </summary>
+    protected virtual async Task<IReadOnlyCollection<TGetFullDto>> GetMultipleDtosAsync(AuthorizationResult<TEntity, IReadOnlyCollection<long>> authorizationResult, CancellationToken cancellationToken)
+    {
+        var ids = authorizationResult.Value1;
+
+        var setForEntities = await GetDbSetForReadingWithAuthorizationAsync(authorizationResult);
+        var dtos = await Mapper.MapEntityToFullQueryable(setForEntities)
+            .Where(e => ids.Contains(e.Id))
+            .ToListAsync(cancellationToken);
+
+        return dtos;
     }
 }

@@ -11,7 +11,8 @@
         <Authors>wertzui</Authors>
         <PackageProjectUrl>https://github.com/wertzui/RESTworld</PackageProjectUrl>
         <RepositoryUrl>https://github.com/wertzui/RESTworld</RepositoryUrl>
-        <VersionPrefix>36.3.1</VersionPrefix>
+        <VersionPrefix>37.0.0</VersionPrefix>
+        <VersionSuffix>pre-2</VersionSuffix>
         <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -30,24 +31,24 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Asp.Versioning.OData.ApiExplorer" Version="8.2.1" />
-        <PackageReference Include="AutoFixture" Version="4.18.1" />
-        <PackageReference Include="AutoMapper.AspNetCore.OData.EFCore" Version="7.0.4" />
-        <PackageReference Include="CsvHelper" Version="33.1.0" />
-        <PackageReference Include="HAL.AspNetCore.OData" Version="20.0.5" />
-        <PackageReference Include="HealthChecks.Kubernetes.Aspire" Version="2.0.2" />
-        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.5" />
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.5" />
-        <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.4.0" />
-        <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" Version="10.4.0" />
-        <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.2" />
-        <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.2" />
-        <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.1" />
-        <PackageReference Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.15.0-beta.1" />
-        <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.0" />
-        <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.0" />
-        <PackageReference Include="OpenTelemetry.Instrumentation.SqlClient" Version="1.15.1" />
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.7" />
+        <PackageReference Include="Asp.Versioning.OData.ApiExplorer" />
+        <PackageReference Include="AutoFixture" />
+        <PackageReference Include="AutoMapper.AspNetCore.OData.EFCore" />
+        <PackageReference Include="CsvHelper" />
+        <PackageReference Include="HAL.AspNetCore.OData" />
+        <PackageReference Include="HealthChecks.Kubernetes.Aspire" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+        <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+        <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" />
+        <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+        <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+        <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+        <PackageReference Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" />
+        <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+        <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
+        <PackageReference Include="OpenTelemetry.Instrumentation.SqlClient" />
+        <PackageReference Include="Swashbuckle.AspNetCore" />
     </ItemGroup>
 
     <ItemGroup>

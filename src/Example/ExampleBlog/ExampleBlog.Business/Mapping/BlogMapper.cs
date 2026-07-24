@@ -17,7 +17,7 @@ public partial class BlogMapper : CrudMapperlyMapperBase<Blog, BlogCreateDto, Bl
 
     // Foreign Keys should be ignored
     [MapperRequiredMapping(RequiredMappingStrategy.Target)]
-    public override partial BlogGetFullDto MapEntityToFull(Blog entity);
+    protected override partial BlogGetFullDto MapEntityToFull(Blog entity);
 
     public override partial Expression<Func<Blog, BlogGetFullDto>> MapEntityToFullExpression();
 
@@ -38,4 +38,5 @@ public partial class BlogMapper : CrudMapperlyMapperBase<Blog, BlogCreateDto, Bl
     // When updating an entry, everything on ChangeTrackingEntityBase except the Id should be ignored.
     [MapperRequiredMapping(RequiredMappingStrategy.Source)]
     public override partial void MapUpdateToEntity(BlogUpdateDto updateDto, Blog entity);
+    public override partial IQueryable<BlogGetFullDto> MapEntityToFullQueryable(IQueryable<Blog> entities);
 }

@@ -1,12 +1,13 @@
 ﻿using ExampleBlog.Common.Enums;
 using HAL.Common.Binary;
+using RESTworld.Common.Dtos;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace ExampleBlog.Common.Dtos;
 
 // We do not inherit from PostGetFullDto here as that DTO has the Author property defined as AuthorDto and we need AuthorDtoV1
-public class PostWithAuthorDtoV1
+public class PostWithAuthorDtoV1 : ChangeTrackingDtoBase
 {
     [Display(Name = "Author")]
     public long AuthorId { get; set; }

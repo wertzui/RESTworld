@@ -60,7 +60,7 @@ public class ResultFactory : IResultFactory
         where TDto : DtoBase
     {
         var httpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("No HTTP context present.");
-        version ??= httpContext.GetRequestedApiVersion();
+        version ??= httpContext.RequestedApiVersion;
 
         var options = new ODataRawQueryOptions();
         var filter = CreateODataFilterForIds(items.Select(i => i.Id));
@@ -161,7 +161,7 @@ public class ResultFactory : IResultFactory
         where TDto : DtoBase
     {
         var httpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("No HTTP context present.");
-        version ??= httpContext.GetRequestedApiVersion();
+        version ??= httpContext.RequestedApiVersion;
         Resource result;
 
         if (httpContext.GetAcceptHeaders().AcceptsHalFormsOverHal())

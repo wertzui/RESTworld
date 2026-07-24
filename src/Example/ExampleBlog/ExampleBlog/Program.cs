@@ -53,14 +53,14 @@ rwBuilder.AddReadAutoMapper<Author, AuthorStatisticsListDto, AuthorStatisticsLis
 // because ASP.Net Core automatically adds all Controllers
 services.AddScoped<MyCustomService>();
 rwBuilder.AddReadAutoMapper<Post, PostWithAuthorDto, PostWithAuthorDto, PostWithAuthorDto>();
-rwBuilder.Services.AddSingleton<AuthorPostMapper>();
+rwBuilder.AddReadAutoMapper<Author, AuthorDto, AuthorDto, AuthorDto>();
 services.AddScoped<MyCustomAuthorizationHandler>();
 rwBuilder.AddFormsResourceGenerationCustomization<AuthorForPostCustomization>();
 
 // The same goes for the deprecated V1
 services.AddScoped<MyCustomServiceV1>();
 rwBuilder.AddReadAutoMapper<Post, PostWithAuthorDtoV1, PostWithAuthorDtoV1, PostWithAuthorDtoV1>();
-rwBuilder.Services.AddSingleton<AuthorPostMapperV1>();
+rwBuilder.AddReadAutoMapper<Author, AuthorDtoV1, AuthorDtoV1, AuthorDtoV1>();
 services.AddScoped<MyCustomAuthorizationHandlerV1>();
 rwBuilder.AddFormsResourceGenerationCustomization<AuthorForPostCustomizationV1>();
 

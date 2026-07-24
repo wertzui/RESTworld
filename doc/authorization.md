@@ -7,7 +7,7 @@ RESTworld ships with extensibility points for resource-based authorization. Impl
 Create a handler per pipeline or reuse a generic handler when possible.
 
 ```csharp
-public class MyAuthorizationHandler : ICrudAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>
+public class MyAuthorizationHandler : ICrudAuthorizationHandler<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>
 {
     // Inject dependencies such as IUserAccessor, services, etc.
 
@@ -27,22 +27,22 @@ Choose the registration pattern that matches your pipeline:
 
 ```csharp
 // Concrete handler for a pipeline
-services.AddAuthorizationHandler<MyAuthorizationHandler, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
+services.AddAuthorizationHandler<MyAuthorizationHandler, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>();
 
 // Generic handler shared across pipelines
-services.AddAuthorizationHandler<MyGenericAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>,
-    TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>();
+services.AddAuthorizationHandler<MyGenericAuthorizationHandler<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>,
+    TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>();
 
 // Pipeline + handler shortcuts
-services.AddRestPipelineWithAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto, MyAuthorizationHandler>();
-services.AddRestPipelineWithAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto,
-    MyGenericAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>>();
+services.AddRestPipelineWithAuthorization<TContext, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto, MyAuthorizationHandler>();
+services.AddRestPipelineWithAuthorization<TContext, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto,
+    MyGenericAuthorizationHandler<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>>();
 
 // Pipelines with custom services
-services.AddRestPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto,
+services.AddRestPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto,
     TService, MyAuthorizationHandler>();
-services.AddRestPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto,
-    TService, MyGenericAuthorizationHandler<TEntity, TCreateDto, TGetListDto, TGetFullDto, TUpdateDto>>();
+services.AddRestPipelineWithCustomServiceAndAuthorization<TContext, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto,
+    TService, MyGenericAuthorizationHandler<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>>();
 ```
 
 Pair this guide with [Pipeline Overview](pipeline-overview.md) to decide where the handler runs, and review [Configuration](configuration.md) if you need to disable authorization temporarily in development.

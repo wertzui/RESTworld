@@ -1,11 +1,15 @@
 ﻿using AutoMapper;
 using ExampleBlog.Common.Dtos;
 using ExampleBlog.Data.Models;
+using System;
 
 namespace ExampleBlog.Business.Mapping;
 
+[Obsolete("This class is only used for the old AutoMapper configuration. Please use the new Mapperly based mappers instead. See BlogMapper and PostMapper for examples.")]
 public static class AutoMapperConfiguration
 {
+    private static readonly char[] _separator = [' '];
+
     public static void ConfigureAutomapper(IMapperConfigurationExpression config)
     {
         config
@@ -17,8 +21,8 @@ public static class AutoMapperConfiguration
             .CreateMap<Author, AuthorDtoV1>()
             .ForMember(dst => dst.Name, opt => opt.MapFrom(src => src.FirstName + " " + src.LastName))
             .ReverseMap()
-            .ForMember(dst => dst.FirstName, opt => opt.MapFrom(src => src.Name == null ? null : src.Name.Split(new[] { ' ' }, 2)[0]))
-            .ForMember(dst => dst.LastName, opt => opt.MapFrom(src => src.Name == null ? null : src.Name.Split(new[] { ' ' }, 2)[1]));
+            .ForMember(dst => dst.FirstName, opt => opt.MapFrom(src => src.Name == null ? null : src.Name.Split(_separator, 2)[0]))
+            .ForMember(dst => dst.LastName, opt => opt.MapFrom(src => src.Name == null ? null : src.Name.Split(_separator, 2)[1]));
 
         config
             .CreateMap<PostCreateDto, Post>();

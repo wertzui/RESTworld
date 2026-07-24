@@ -15,7 +15,7 @@ public class SwaggerOperationApiDescriptionGroupCollectionProvider : IApiDescrip
     /// <param name="operationFilterContext">The operation filter context.</param>
     public SwaggerOperationApiDescriptionGroupCollectionProvider(OperationFilterContext operationFilterContext)
     {
-        ApiDescriptionGroups = new ApiDescriptionGroupCollection([new ApiDescriptionGroup(operationFilterContext.ApiDescription.GroupName, [operationFilterContext.ApiDescription])], (operationFilterContext.ApiDescription?.GetApiVersion()?.MajorVersion).GetValueOrDefault());
+        ApiDescriptionGroups = new ApiDescriptionGroupCollection([new ApiDescriptionGroup(operationFilterContext.ApiDescription.GroupName, [operationFilterContext.ApiDescription])], (operationFilterContext.ApiDescription?.ApiVersion?.MajorVersion).GetValueOrDefault());
     }
 
     /// <inheritdoc/>

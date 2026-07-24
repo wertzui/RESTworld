@@ -33,7 +33,7 @@ public partial class PostMapper : CrudMapperlyMapperBase<Post, PostCreateDto, Po
     [MapperIgnoreTarget(nameof(PostGetFullDto.Image))]
     [MapperIgnoreTarget(nameof(PostGetFullDto.Author))]
     [MapperIgnoreTarget(nameof(PostGetFullDto.Blog))]
-    public override partial PostGetFullDto MapEntityToFull(Post entity);
+    protected override partial PostGetFullDto MapEntityToFull(Post entity);
 
     [MapperIgnoreSource(nameof(Post.State))]
     [MapperIgnoreSource(nameof(Post.Text))]
@@ -70,4 +70,5 @@ public partial class PostMapper : CrudMapperlyMapperBase<Post, PostCreateDto, Po
     public override partial PostGetFullDto MapQueryToFull(PostQueryDto entity);
 
     public override partial IQueryable<PostGetFullDto> MapQueryToFullQueryable(IQueryable<PostQueryDto> entities);
+    public override partial IQueryable<PostGetFullDto> MapEntityToFullQueryable(IQueryable<Post> entities);
 }

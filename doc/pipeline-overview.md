@@ -27,6 +27,6 @@ RESTworld offers multiple pipeline templates (read-only, CRUD, custom services, 
 
 - **Validators:** Run bespoke validation before or after saving changes. See examples in [Getting Started](getting-started.md).
 - **Custom services:** Override the default read or CRUD services when you need bespoke data access. Review the decision points in [Choosing a Pipeline](choosing_a_pipeline.md).
-- **Custom controllers:** When your endpoint does not map cleanly to the built-in pipeline, inherit from `RestControllerBase`, `ReadControllerBase`, or `CrudControllerBase` to retain HAL support while owning the logic.
+- **Custom controllers:** When your endpoint does not map cleanly to the built-in pipeline, inherit from `RestControllerBase`, `ReadController`, or `CrudController` to retain HAL support while owning the logic.
 
 Next, configure runtime behavior in [Configuration](configuration.md) and register authorization handlers in [Authorization](authorization.md).

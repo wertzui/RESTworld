@@ -1,0 +1,50 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="Asp.Versioning.OData.ApiExplorer" Version="10.0.0-rc.1" />
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.4.6" />
+    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.4.6" />
+    <PackageVersion Include="AutoFixture" Version="4.18.1" />
+    <PackageVersion Include="AutoMapper" Version="14.0.0" />
+    <PackageVersion Include="AutoMapper.AspNetCore.OData.EFCore" Version="7.0.4" />
+    <PackageVersion Include="AutoMcp.OData" Version="1.0.0-beta-3" />
+    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.McpInspector" Version="13.4.0" />
+    <PackageVersion Include="coverlet.collector" Version="10.0.1" />
+    <PackageVersion Include="CsvHelper" Version="33.1.0" />
+    <PackageVersion Include="EntityFrameworkCore.Parallel" Version="6.0.5" />
+    <PackageVersion Include="HAL.AspNetCore.OData" Version="21.1.0" />
+    <PackageVersion Include="HAL.Client.Net" Version="11.0.10" />
+    <PackageVersion Include="HAL.Common" Version="9.0.7" />
+    <PackageVersion Include="HealthChecks.Kubernetes.Aspire" Version="2.0.4" />
+    <PackageVersion Include="HealthChecks.Kubernetes.Aspire.Hosting" Version="2.2.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Proxies" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.8.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.8.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageVersion Include="MockQueryable.EntityFrameworkCore" Version="10.0.8" />
+    <PackageVersion Include="MSTest.TestAdapter" Version="4.3.2" />
+    <PackageVersion Include="MSTest.TestFramework" Version="4.3.2" />
+    <PackageVersion Include="NSubstitute" Version="6.0.0" />
+    <PackageVersion Include="NSubstitute.Analyzers.CSharp" Version="1.0.17" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.17.0-beta.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.SqlClient" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetryCollector.Aspire.Hosting" Version="1.0.0" />
+    <PackageVersion Include="Riok.Mapperly" Version="5.0.0-next.10" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.2.3" />
+  </ItemGroup>
+</Project>

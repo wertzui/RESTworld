@@ -4,7 +4,7 @@ Understand the REST-first conventions that the `@wertzui/ngx-restworld-client` p
 
 ## Start with HAL discovery
 
-Always call the home endpoint (`/`) before requesting specific resources. Cache discovered routes per session or per day, but avoid hardcoding URLs. Refer to the HAL specification at <https://stateless.group/hal_specification.html> for link semantics.
+Always call the home endpoint (`/`) before requesting specific resources. Cache discovered routes per session, but avoid hardcoding URLs. Refer to the HAL specification at <https://stateless.group/hal_specification.html> for link semantics.
 
 ## Link templating
 

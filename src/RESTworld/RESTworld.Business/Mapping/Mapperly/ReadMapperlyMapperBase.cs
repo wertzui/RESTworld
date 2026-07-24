@@ -23,8 +23,14 @@ public abstract partial class ReadMapperlyMapperBase<TEntity, TQueryDto, TGetLis
     /// <inheritdoc/>
     public IReadOnlyDictionary<string, string> MemberMappingNames { get; }
 
+    /// <summary>
+    /// Maps an entity to a full DTO. Configure your mappings here and they will be automatically used in
+    /// <see cref="MapEntityToFullQueryable(IQueryable{TEntity})"/>
+    /// </summary>
+    protected abstract TGetFullDto MapEntityToFull(TEntity entity);
+
     /// <inheritdoc/>
-    public abstract TGetFullDto MapEntityToFull(TEntity entity);
+    public abstract IQueryable<TGetFullDto> MapEntityToFullQueryable(IQueryable<TEntity> entities);
 
     /// <summary>
     /// Creates an expression that maps an entity of type TEntity to its corresponding full data transfer object (DTO) of type TGetFullDto.

@@ -4,7 +4,6 @@ using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 
 namespace RESTworld.Business.Mapping.AutoMapper;
 
@@ -22,7 +21,6 @@ namespace RESTworld.Business.Mapping.AutoMapper;
 /// <typeparam name="TGetFullDto">The result type when getting a single entry.</typeparam>
 public class ReadAutoMapper<TEntity, TQueryDto, TGetListDto, TGetFullDto> : IReadMapper<TEntity, TQueryDto, TGetListDto, TGetFullDto>
 {
-    private static readonly Expression<Func<TGetListDto, TGetListDto>> _listResultExpression = SelectExpressionBuilder.ExcludingSerializationIgnored<TGetListDto>();
     protected IMapper Mapper { get; }
 
     /// <summary>
@@ -65,6 +63,9 @@ public class ReadAutoMapper<TEntity, TQueryDto, TGetListDto, TGetFullDto> : IRea
 
     /// <inheritdoc/>
     public IQueryable<TQueryDto> MapEntityToQueryQueryable(IQueryable<TEntity> entities) => Mapper.ProjectTo<TQueryDto>(entities);
+
+    /// <inheritdoc/>
+    public IQueryable<TGetFullDto> MapEntityToFullQueryable(IQueryable<TEntity> entities) => Mapper.ProjectTo<TGetFullDto>(entities);
 
     /// <inheritdoc/>
     public IReadOnlyDictionary<string, string> MemberMappingNames { get; }

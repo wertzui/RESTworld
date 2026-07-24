@@ -12,7 +12,8 @@
         <Authors>wertzui</Authors>
         <PackageProjectUrl>https://github.com/wertzui/RESTworld</PackageProjectUrl>
         <RepositoryUrl>https://github.com/wertzui/RESTworld</RepositoryUrl>
-        <VersionPrefix>11.3.0</VersionPrefix>
+        <VersionPrefix>11.4.0</VersionPrefix>
+        <VersionSuffix>pre-2</VersionSuffix>
         <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -27,9 +28,9 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="HAL.Client.Net" Version="11.0.5" />
-        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.5" />
-        <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" Version="10.4.0" />
+        <PackageReference Include="HAL.Client.Net" />
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+        <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,5 +1,4 @@
 ﻿using ExampleBlog.Business.Authorization;
-using ExampleBlog.Business.Mapping;
 using ExampleBlog.Common.Dtos;
 using ExampleBlog.Data;
 using ExampleBlog.Data.Models;
@@ -23,13 +22,13 @@ namespace ExampleBlog.Business.Services;
 public class MyCustomServiceV1 : DbServiceBase<BlogDatabase>
 {
     private readonly IReadMapper<Post, PostWithAuthorDtoV1, PostWithAuthorDtoV1, PostWithAuthorDtoV1> _postMapper;
-    private readonly AuthorPostMapperV1 _authorMapper;
+    private readonly IReadMapper<Author, AuthorDtoV1, AuthorDtoV1, AuthorDtoV1> _authorMapper;
     private readonly IEnumerable<MyCustomAuthorizationHandlerV1> _authorizationHandlers;
 
     public MyCustomServiceV1(
         IDbContextFactory<BlogDatabase> contextFactory,
         IReadMapper<Post, PostWithAuthorDtoV1, PostWithAuthorDtoV1, PostWithAuthorDtoV1> postMapper,
-        AuthorPostMapperV1 authorMapper,
+        IReadMapper<Author, AuthorDtoV1, AuthorDtoV1, AuthorDtoV1> authorMapper,
         IUserAccessor userAccessor,
         ILogger<MyCustomService> logger,
         IEnumerable<MyCustomAuthorizationHandlerV1> authorizationHandlers)
@@ -54,13 +53,13 @@ public class MyCustomServiceV1 : DbServiceBase<BlogDatabase>
         var postId = result.Value1;
 
         // Get the values from the database.
-        var postTask = _contextFactory.Parallel().Set<Post>()
-            .WithAuthorizationFilter(result)
+        var postSet = _contextFactory.Parallel().Set<Post>()
+            .WithAuthorizationFilter(result);
+        var postTask = _postMapper.MapEntityToFullQueryable(postSet)
             .SingleOrDefaultAsync(p => p.Id == postId, cancellationToken);
-        var authorTask = _contextFactory.Parallel().Set<Post>()
-            .WithAuthorizationFilter(result)
+        var authorTask = _authorMapper.MapEntityToFullQueryable(postSet
             .Where(p => p.Id == postId)
-            .Select(p => p.Author)
+            .Select(p => p.Author))
             .SingleOrDefaultAsync(cancellationToken);
 
         await Task.WhenAll(postTask, authorTask);
@@ -68,11 +67,10 @@ public class MyCustomServiceV1 : DbServiceBase<BlogDatabase>
         if (postTask.Result is null)
             return ServiceResponse.FromStatus<PostWithAuthorDtoV1>(HttpStatusCode.NotFound);
 
-        // Map to DTO.
-        var dto = _postMapper.MapEntityToFull(postTask.Result);
+        var dto = postTask.Result;
 
         if (authorTask.Result is not null)
-            _authorMapper.AddToGetFull(authorTask.Result, dto);
+            dto.Author = authorTask.Result;
 
         return ServiceResponse.FromResult(dto);
     }

@@ -35,8 +35,8 @@ public interface IReadMapper<TEntity, TQueryDto, TGetListDto, TGetFullDto> : IMa
     /// Maps one entity to a full DTO.
     /// This is used for the GetFull endpoint and should include all properties that should be returned when getting a single entity.
     /// </summary>
-    /// <param name="entity">The entity to be mapped.</param>
-    TGetFullDto MapEntityToFull(TEntity entity);
+    /// <param name="entities">The entities to be mapped.</param>
+    public IQueryable<TGetFullDto> MapEntityToFullQueryable(IQueryable<TEntity> entities);
 
     /// <summary>
     /// Queryable mapping is done in 2 stages to support OData.

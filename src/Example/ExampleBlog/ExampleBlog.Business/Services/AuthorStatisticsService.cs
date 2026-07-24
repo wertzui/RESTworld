@@ -27,9 +27,9 @@ public class AuthorStatisticsService : ReadServiceBase<BlogDatabase, Author, Aut
     {
     }
 
-    protected override async Task OnGotSingleInternalAsync(AuthorizationResult<Author, long> authorizationResult, AuthorStatisticsFullDto dto, Author entity, CancellationToken cancellationToken)
+    protected override async Task OnGotSingleInternalAsync(AuthorizationResult<Author, long> authorizationResult, AuthorStatisticsFullDto dto, CancellationToken cancellationToken)
     {
-        var authorId = entity.Id;
+        var authorId = dto.Id;
         var postDates = await _contextFactory.Parallel().Set<Post>()
             .Where(p => p.AuthorId == authorId && p.CreatedAt.HasValue)
             .Select(p => p.CreatedAt!.Value)

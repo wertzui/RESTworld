@@ -165,6 +165,14 @@ public class AuthorizationResult<TEntity, T1> : AuthorizationResult<TEntity>
     /// The value of the first parameter.
     /// </summary>
     public T1 Value1 { get; }
+
+    /// <summary>
+    /// Changes the parameter to <paramref name="value1"/> while keeping the original Status and Filter.
+    /// </summary>
+    /// <typeparam name="T1New">The type of the new parameter.</typeparam>
+    /// <param name="value1">The new parameter.</param>
+    public AuthorizationResult<TEntity, T1New> ChangeParameter<T1New>(T1New value1)
+        => new(Status, value1, Filter);
 }
 
 /// <summary>
@@ -191,4 +199,15 @@ public class AuthorizationResult<TEntity, T1, T2> : AuthorizationResult<TEntity,
     /// The value of the second parameter.
     /// </summary>
     public T2 Value2 { get; }
+
+    /// <summary>
+    /// Changes the parameters to <paramref name="value1"/> and <paramref name="value2"/> while keeping the original
+    /// Status and Filter.
+    /// </summary>
+    /// <typeparam name="T1New">The type of the new first parameter.</typeparam>
+    /// <typeparam name="T2New">The type of the new second parameter.</typeparam>
+    /// <param name="value1">The new first parameter.</param>
+    /// <param name="value2">The new second parameter.</param>
+    public AuthorizationResult<TEntity, T1New, T2New> ChangeParameters<T1New, T2New>(T1New value1, T2New value2)
+        => new(Status, value1, value2, Filter);
 }

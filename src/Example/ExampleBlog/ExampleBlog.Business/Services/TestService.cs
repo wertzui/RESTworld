@@ -128,7 +128,7 @@ public class TestService : CrudServiceBase<BlogDatabase, TestEntity, TestDto, Te
         return Task.FromResult(ServiceResponse.FromResult(dto));
     }
 
-    protected override Task OnGotSingleInternalAsync(AuthorizationResult<TestEntity, long> authorizationResult, TestDto dto, TestEntity entity, CancellationToken cancellationToken)
+    protected override Task OnGotSingleInternalAsync(AuthorizationResult<TestEntity, long> authorizationResult, TestDto dto, CancellationToken cancellationToken)
     {
         dto.BlogIds = [2, 3];
         dto.MyDictionary = _fixture.Create<Dictionary<string, DictionaryTestDto>>();
@@ -136,7 +136,7 @@ public class TestService : CrudServiceBase<BlogDatabase, TestEntity, TestDto, Te
         dto.MyNestedObject = _fixture.Create<NestedTestDto>();
         dto.MyRequiredString = null;
 
-        return base.OnGotSingleInternalAsync(authorizationResult, dto, entity, cancellationToken);
+        return base.OnGotSingleInternalAsync(authorizationResult, dto, cancellationToken);
     }
 
     protected override Task OnGotListInternalAsync(AuthorizationResult<TestEntity, IGetListRequest<TestEntity, TestDto, TestDto>> authorizationResult, IReadOnlyPagedCollection<TestDto> pagedCollection, CancellationToken cancellationToken)

@@ -24,7 +24,7 @@ RESTworld settings live under the `RESTworld` section in `appsettings.json`. Con
 - `Curie` – prefix used for link relations in HAL responses.
 - `CalculateTotalCountForListEndpoint` – compute total counts eagerly so clients can parallelize pagination.
 - `DisableAuthorization` – toggle for development scenarios (see [Authorization](authorization.md)).
-- `Versioning` – controls how RESTworld infers versions from media types or query parameters. `DefaultVersion` accepts either a concrete version (e.g., `"1.0"`) or `"latest"`.
+- `Versioning` – controls how RESTworld infers versions from media types or query parameters. `DefaultVersion` accepts either a concrete version (e.g., `"1.0"`) or `*`.
 
 For more context on handling DTO versions, read [Mapping and Versioning](mapping-and-versioning.md).
 

@@ -223,19 +223,28 @@ public class ReadServiceBase<TContext, TEntity, TQueryDto, TGetListDto, TGetFull
     /// <returns>The item with the specified ID, or 404 (Not Found).</returns>
     protected virtual async Task<ServiceResponse<TGetFullDto>> GetSingleInternalAsync(AuthorizationResult<TEntity, long> authorizationResult, CancellationToken cancellationToken)
     {
+        var dto = await GetSingleDtoAsync(authorizationResult, cancellationToken);
+
+        if (dto is null)
+            return ServiceResponse.FromStatus<TGetFullDto>(HttpStatusCode.NotFound);
+
+        await OnGotSingleInternalAsync(authorizationResult, dto, cancellationToken);
+
+        return ServiceResponse.FromResult(dto);
+    }
+
+    /// <summary>
+    /// This method is called by <see cref="GetSingleInternalAsync"/> to get the DTO of the entity that should be
+    /// returned.
+    /// </summary>
+    protected virtual async Task<TGetFullDto?> GetSingleDtoAsync(AuthorizationResult<TEntity, long> authorizationResult, CancellationToken cancellationToken)
+    {
         var id = authorizationResult.Value1;
 
         var setForEntities = await GetDbSetForReadingWithAuthorizationAsync(authorizationResult);
-        var entity = await setForEntities.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
-
-        if (entity is null)
-            return ServiceResponse.FromStatus<TGetFullDto>(HttpStatusCode.NotFound);
-
-        var dto = Mapper.MapEntityToFull(entity);
-
-        await OnGotSingleInternalAsync(authorizationResult, dto, entity, cancellationToken);
-
-        return ServiceResponse.FromResult(dto);
+        var dto = await Mapper.MapEntityToFullQueryable(setForEntities)
+            .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+        return dto;
     }
 
     /// <summary>
@@ -247,7 +256,6 @@ public class ReadServiceBase<TContext, TEntity, TQueryDto, TGetListDto, TGetFull
     /// </param>
     /// <param name="pagedCollection">The DTOs which have been mapped from the entities.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
-    /// <returns></returns>
     protected virtual Task OnGotListInternalAsync(AuthorizationResult<TEntity, IGetListRequest<TEntity, TQueryDto, TGetListDto>> authorizationResult, IReadOnlyPagedCollection<TGetListDto> pagedCollection, CancellationToken cancellationToken)
         => Task.CompletedTask;
 
@@ -260,7 +268,6 @@ public class ReadServiceBase<TContext, TEntity, TQueryDto, TGetListDto, TGetFull
     /// </param>
     /// <param name="pagedCollection">The DTOs which have been mapped from the entities.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
-    /// <returns></returns>
     protected virtual Task OnGotHistoryInternalAsync(AuthorizationResult<TEntity, IGetHistoryRequest<TEntity, TQueryDto, TGetFullDto>> authorizationResult, IReadOnlyPagedCollection<TGetFullDto> pagedCollection, CancellationToken cancellationToken)
         => Task.CompletedTask;
 
@@ -271,10 +278,8 @@ public class ReadServiceBase<TContext, TEntity, TQueryDto, TGetListDto, TGetFull
     /// The result of the authorization which contains the ID to get.
     /// </param>
     /// <param name="dto">The DTO which was mapped from the entity.</param>
-    /// <param name="entity">The entity as it has been read from the database.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
-    /// <returns></returns>
-    protected virtual Task OnGotSingleInternalAsync(AuthorizationResult<TEntity, long> authorizationResult, TGetFullDto dto, TEntity entity, CancellationToken cancellationToken)
+    protected virtual Task OnGotSingleInternalAsync(AuthorizationResult<TEntity, long> authorizationResult, TGetFullDto dto, CancellationToken cancellationToken)
         => Task.CompletedTask;
 
     private void LogAuthoriztaionHandlerWarningOnlyOneTimeIfNoHandlersArePresent(IEnumerable<IReadAuthorizationHandler<TEntity, TQueryDto, TGetListDto, TGetFullDto>> authorizationHandlers)
