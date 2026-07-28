@@ -14,7 +14,7 @@
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <PackageVersion Include="CsvHelper" Version="33.1.0" />
     <PackageVersion Include="EntityFrameworkCore.Parallel" Version="6.0.5" />
-    <PackageVersion Include="HAL.AspNetCore.OData" Version="21.1.0" />
+    <PackageVersion Include="HAL.AspNetCore.OData" Version="21.1.1" />
     <PackageVersion Include="HAL.Client.Net" Version="11.0.10" />
     <PackageVersion Include="HAL.Common" Version="9.0.7" />
     <PackageVersion Include="HealthChecks.Kubernetes.Aspire" Version="2.0.4" />

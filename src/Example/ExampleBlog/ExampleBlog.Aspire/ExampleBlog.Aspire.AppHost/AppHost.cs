@@ -53,6 +53,9 @@ var frontendService = builder.AddProject<ExampleBlog_Client>("ExampleBlog-Client
 
 // Add The Angular part of the Frontend
 builder.AddJavaScriptApp("ExampleBlog-Client-Angular", Directory.GetParent(new Exampleblog_Client_Angular().ProjectPath)!.FullName)
+    // Per default, the dependencies of the Angular project are installed using "npm install".
+    // This can be changed to "npm ci" which is faster and more reliable, because it uses the package-lock.json file to install the exact versions of the dependencies that were used when the project was built.
+    .WithNpm(installCommand: "ci")
     // This will run "npm start" in the directory of the Angular project, which starts the Angular development server.
     // Have a look at the package.json of the Angular project to see what the "start" script does.
     .WithRunScript("start")
@@ -64,7 +67,8 @@ builder.AddJavaScriptApp("ExampleBlog-Client-Angular", Directory.GetParent(new E
     // This is the Port on which the Angular development server runs. It is referenced in the package.json of the Angular project.
     .WithHttpsEndpoint(env: "PORT")
     // The Angular development server does not have a health check endpoint, so we just use the root URL as a readiness probe.
-    .WithHttpHealthCheck();
+    .WithHttpHealthCheck()
+    .WithUrlForEndpoint("https", r => r.DisplayText = "Angular Frontend");
 
 // Add the MCP Inspector which can be used to inspect the mcp service provided by the API
 var mcpInspector = builder.AddMcpInspector("McpInspector", new McpInspectorOptions { InspectorVersion = "0.21.1" })
