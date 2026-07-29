@@ -58,5 +58,15 @@
     "primeng": "^21",
     "rxjs": "^7.8.2",
     "uri-templates-es": "^2.0.2"
+  },
+  "overrides": {
+    "primeng": {
+      "@angular/cdk": "$@angular/cdk",
+      "@angular/common": "$@angular/common",
+      "@angular/core": "$@angular/core",
+      "@angular/forms": "$@angular/forms",
+      "@angular/platform-browser": "$@angular/platform-browser",
+      "@angular/router": "$@angular/router"
+    }
   }
 }
