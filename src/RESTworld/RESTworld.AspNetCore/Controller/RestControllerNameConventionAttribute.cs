@@ -18,25 +18,25 @@ public sealed partial class RestControllerNameConventionAttribute : Attribute, I
     /// The index of the TGetFullDto generic type argument of
     /// <see cref="CrudController{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
     /// </summary>
-    public const int CrudControllerIndexOfFullDtoType = 3;
+    public const int CrudControllerIndexOfFullDtoType = 4;
 
     /// <summary>
     /// The index of the TGetListDto generic type argument of
     /// <see cref="CrudController{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/>
     /// </summary>
-    public const int CrudControllerIndexOfListDtoType = 2;
+    public const int CrudControllerIndexOfListDtoType = 3;
 
     /// <summary>
     /// The index of the TGetFullDto generic type argument of
     /// <see cref="ReadController{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/>
     /// </summary>
-    public const int ReadControllerIndexOfFullDtoType = 2;
+    public const int ReadControllerIndexOfFullDtoType = 3;
 
     /// <summary>
     /// The index of the TGetListDto generic type argument of
     /// <see cref="ReadController{TEntity, TQueryDto, TGetListDto, TGetFullDto}"/>
     /// </summary>
-    public const int ReadControllerIndexOfListDtoType = 1;
+    public const int ReadControllerIndexOfListDtoType = 2;
 
     private readonly int _indexOfReadDtoType;
 
