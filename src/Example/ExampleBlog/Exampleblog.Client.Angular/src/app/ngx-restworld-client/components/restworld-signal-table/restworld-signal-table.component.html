@@ -1,0 +1,93 @@
+<p-table
+  #table
+  [value]="rows()"
+  [columns]="columns()"
+  [rowTrackBy]="rowTrackBy()"
+  [lazy]="lazy()"
+  [lazyLoadOnInit]="false"
+  (onLazyLoad)="load($event)"
+  [paginator]="paginator()"
+  [rowsPerPageOptions]="rowsPerPageOptions()"
+  [rows]="rowsPerPage()"
+  [totalRecords]="totalRecords()"
+  [loading]="isLoading()"
+  sortMode="multiple"
+  [multiSortMeta]="multiSortMeta()"
+  [class]="styleClass()"
+  [tableStyle]="tableStyle()"
+  [scrollable]="scrollable()"
+  [scrollHeight]="scrollHeight()"
+  [selectionMode]="selectionMode()"
+  [rowHover]="rowHover()"
+  [(selection)]="selectedRows"
+  [filters]="$any(filters())"
+  [first]="rowsBeforeCurrentPage()"
+  (onSort)="onSort($event)"
+  >
+
+  <ng-template pTemplate="header" let-columns>
+    <tr>
+        @for (col of columns; track col.name) {
+            <th [pSortableColumn]="col.name">
+                <div class="p-d-flex p-jc-between p-ai-center gap-1">
+                    {{col.prompt}}
+                    @if(!col.readOnly) {
+                        <p-sortIcon [field]="col.name"></p-sortIcon>
+                        @if (lazy()) {
+                            <p-columnFilter #f
+                                [type]="toColumnFilterType(col.type)"
+                                [maxFractionDigits]="toMaxFractionDigits(col)"
+                                matchMode="noFilter"
+                                [matchModeOptions]="toMatchModeOptions(col)"
+                                [showMatchModes]="true"
+                                [field]="col.name"
+                                display="menu"
+                                [maxConstraints]="100"
+                                [class.has-filter]="f.hasFilter"
+                                (onShow)="focusColumnFilterValue(f)">
+                            <ng-template #filter let-value let-filterConstraint="filterConstraint" let-field="field">
+                                <div class="rw-column-filter-value" (keydown.enter)="applyColumnFilterOnEnter($any($event), f)">
+                                    <rw-signal-table-column-filter-element [property]="col" [value]="value" [apiName]="apiName()" [filterConstraint]="filterConstraint"></rw-signal-table-column-filter-element>
+                                </div>
+                            </ng-template>
+                            </p-columnFilter>
+                        }
+                    }
+                </div>
+            </th>
+        }
+        @if (showMenuColumn()) {
+            <th>
+                <rw-menu-button [items]="headerMenu()"></rw-menu-button>
+            </th>
+        }
+    </tr>
+  </ng-template>
+
+  <ng-template pTemplate="body" let-entity let-columns="columns" let-rowIndex="rowIndex">
+    <tr (contextmenu)="openContextMenu($event, entity)" [pSelectableRow]="entity" [pSelectableRowDisabled]="selectionMode() === null" [className]="rowStyleClasses()[getAbsoluteIndex(rowIndex)]">
+        @for (col of columns; track col.name) {
+            <td [className]="cellStyleClasses()[getAbsoluteIndex(rowIndex)][col.name]">
+                @if (showInputField(col) && isEditable()) {
+                    @let field = getFieldAtIndex(rowIndex, col.name);
+                    @if (field) {
+                        <rw-signal-input [apiName]="apiName()" [property]="editProperties()[col.name]!" [field]="$any(field)"></rw-signal-input>
+                    }
+                }
+                @else {
+                    <rw-display [property]="col" [value]="entity[col.name]" [apiName]="apiName()!"></rw-display>
+                }
+            </td>
+        }
+        @if (showMenuColumn()) {
+            <td>
+                @if (showRowMenuAsColumn()) {
+                    <rw-menu-button [items]="rowMenus()[getAbsoluteIndex(rowIndex)]"></rw-menu-button>
+                }
+            </td>
+        }
+    </tr>
+  </ng-template>
+</p-table>
+
+<p-contextMenu #contextMenu appendTo="body" [model]="contextMenuItems()"></p-contextMenu>

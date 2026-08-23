@@ -29,3 +29,7 @@ a.p-button {
     padding-block-end: 0;
     padding-block-start: 0;
 }
+
+::ng-deep rw-table .rw-column-filter-value {
+    width: 100%;
+}

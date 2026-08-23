@@ -1,0 +1,32 @@
+@if (showErrors()) {
+    <div class="rw-signal-validation-errors">
+        @for (error of errors(); track error.kind) {
+            @switch (error.kind) {
+                @case ('required') {
+                    <p-message severity="error" variant="simple" size="small">The field '{{prompt()}}' is required.</p-message>
+                }
+                @case ('email') {
+                    <p-message severity="error" variant="simple" size="small">'{{prompt()}}' must be a valid email address.</p-message>
+                }
+                @case ('min') {
+                    <p-message severity="error" variant="simple" size="small">'{{prompt()}}' must be equal or greater than or equal to {{ $any(error).min }}.</p-message>
+                }
+                @case ('max') {
+                    <p-message severity="error" variant="simple" size="small">'{{prompt()}}' must be smaller than or equal to {{ $any(error).max }}.</p-message>
+                }
+                @case ('minLength') {
+                    <p-message severity="error" variant="simple" size="small">The length of '{{prompt()}}' must be equal or greater than or equal to {{ $any(error).minLength }}.</p-message>
+                }
+                @case ('maxLength') {
+                    <p-message severity="error" variant="simple" size="small">The length of '{{prompt()}}' must be shorter than or equal to {{ $any(error).maxLength }}.</p-message>
+                }
+                @case ('pattern') {
+                    <p-message severity="error" variant="simple" size="small">The value for '{{prompt()}}' does not match the pattern {{ $any(error).pattern }}.</p-message>
+                }
+                @default {
+                    <p-message severity="error" variant="simple" size="small">{{ error.message ?? error.kind }}</p-message>
+                }
+            }
+        }
+    </div>
+}

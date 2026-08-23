@@ -1,0 +1,144 @@
+import { Component, computed, input, model, resource, signal } from '@angular/core';
+import { RestWorldClientCollection } from '../ngx-restworld-client/services/restworld-client-collection';
+import { MessageService } from 'primeng/api';
+import { AvatarGenerator } from '../ngx-restworld-client/services/avatar-generator';
+import { ODataParameters } from '../ngx-restworld-client/models/o-data';
+import { PostListDto } from './models';
+import { PagedListResource, ProblemDetails, Property, ResourceOfDto, Template, type SimpleValue } from '@wertzui/ngx-hal-client';
+import { RestWorldSignalTableComponent } from "../ngx-restworld-client/components/restworld-signal-table/restworld-signal-table.component";
+import { JsonPipe } from "@angular/common";
+import { ProblemService } from "../ngx-restworld-client/services/problem.service";
+
+/**
+ * This is the Signal Forms equivalent of {@link PostsForBlogComponent}.
+ * It uses `<rw-signal-table>` in its default (unbound) editable mode instead of `<rw-table>` bound to a
+ * Reactive Forms `FormArray`. There is no Signal Forms equivalent of `ControlContainer`, so instead of
+ * wrapping the table in a `<form [formGroup]>` and reading `formArray.value`, the edited (possibly unsaved)
+ * row values are read directly off the `<rw-signal-table>` element via a template reference variable
+ * (`#table`, which - for a component element - refers to the component instance) and its own
+ * `editedRows()` computed signal, in the template (see `posts-for-blog-signal.component.html`).
+ */
+@Component({
+    selector: 'app-posts-for-blog-signal',
+    templateUrl: './posts-for-blog-signal.component.html',
+    styleUrls: ['./posts-for-blog-signal.component.css'],
+    standalone: true,
+    imports: [RestWorldSignalTableComponent, JsonPipe]
+})
+export class PostsForBlogSignalComponent {
+    public readonly apiName = input<string>();
+    public readonly isLoading = computed(() => this.listResource.isLoading() || this.templates.isLoading());
+    public readonly rel = input<string>();
+    public readonly items = computed(() => this.listResource.value()?._embedded.items || []);
+    public readonly selection = model<ResourceOfDto<PostListDto>[]>([]);
+
+    public readonly totalRecords = computed(() => {
+        const top = this.oDataParameters().$top;
+        const listResource = this.listResource.value();
+        const rowsPerPage = top ?? listResource?._embedded.items.length ?? 0;
+        const totalPages = listResource?.totalPages ?? 1;
+        const totalRecords = totalPages * rowsPerPage;
+        return totalRecords;
+    });
+    public readonly oDataParameters = signal<ODataParameters>({ $top: 10 });
+
+    private readonly listResource = resource({
+        params: () => ({ oDataParameters: this.oDataParameters(), rel: this.rel() }),
+        loader: async ({ params }) => {
+            const client = this._client();
+            if (params.rel === undefined || client === undefined)
+                return PostsForBlogSignalComponent._emptylistResource;
+
+            const response = await client.getList<PostListDto>(params.rel, params.oDataParameters);
+            if (this._problemService.checkResponseAndDisplayErrors(response, undefined, "Error while loading the resources from the API.", "Error")) {
+                return response.body;
+            }
+
+            return PostsForBlogSignalComponent._emptylistResource;
+        },
+    });
+
+    public readonly searchTemplate = computed(() => this.templates.value()?.search ?? PostsForBlogSignalComponent._emptyTemplate);
+    public readonly editTemplate = computed(() => this.templates.value()?.edit ?? PostsForBlogSignalComponent._emptyTemplate);
+    private readonly templates = resource({
+        params: () => ({ resource: this.listResource.value() }),
+        loader: async ({ params }) => {
+            const client = this._client();
+            if (params.resource === undefined || client === undefined)
+                return { search: PostsForBlogSignalComponent._emptyTemplate, edit: PostsForBlogSignalComponent._emptyTemplate };
+
+            try {
+                const templates = await client.getAllTemplates(params.resource);
+                if (ProblemDetails.isProblemDetails(templates)) {
+                    this._messageService.add({ severity: 'error', summary: 'Error', detail: `No templates found in the API response.`, data: templates });
+                    return { search: PostsForBlogSignalComponent._emptyTemplate, edit: PostsForBlogSignalComponent._emptyTemplate };
+                }
+
+                const searchTemplate = templates["Search"];
+                if (searchTemplate === undefined) {
+                    this._messageService.add({ severity: 'error', summary: 'Error', detail: `No "Search" template found in the API response.`, data: templates });
+                    return { search: PostsForBlogSignalComponent._emptyTemplate, edit: PostsForBlogSignalComponent._emptyTemplate };
+                }
+
+                const editTemplate = templates["Edit"];
+                if (editTemplate === undefined) {
+                    this._messageService.add({ severity: 'error', summary: 'Error', detail: `No "Edit" template found in the API response.`, data: templates });
+                    return { search: PostsForBlogSignalComponent._emptyTemplate, edit: PostsForBlogSignalComponent._emptyTemplate };
+                }
+
+                return { search: searchTemplate, edit: editTemplate };
+            }
+            catch (e: unknown) {
+                this._messageService.add({ severity: 'error', summary: 'Error', detail: 'Error while loading the resources from the API. ' + e, data: e });
+                return { search: PostsForBlogSignalComponent._emptyTemplate, edit: PostsForBlogSignalComponent._emptyTemplate };
+            }
+        },
+    });
+
+    private readonly _client = computed(() => {
+        const apiName = this.apiName();
+        if (apiName === undefined)
+            return undefined;
+
+        return this._clients.getClient(apiName);
+    });
+
+    private static readonly _emptylistResource = new PagedListResource({ _embedded: { items: [] }, _links: { self: [] } });
+
+    private static readonly _emptyTemplate = new Template({ properties: [] });
+
+    constructor(
+        private readonly _clients: RestWorldClientCollection,
+        private readonly _messageService: MessageService,
+        public readonly avatarGenerator: AvatarGenerator,
+        private readonly _problemService: ProblemService) {
+        this.listResource.set(PostsForBlogSignalComponent._emptylistResource);
+        this.templates.set({ search: PostsForBlogSignalComponent._emptyTemplate, edit: PostsForBlogSignalComponent._emptyTemplate });
+    }
+
+    public generateCellClasses(row: ResourceOfDto<PostListDto>, property: Property<SimpleValue, string, string>, rowIndex: number, columnIndex: number) {
+        if (row[property.name as keyof PostListDto] === "Post number 1")
+            return 'special';
+        return columnIndex % 2 === 0 ? 'cell-even' : 'cell-odd';
+    }
+
+    public generateRowClasses(row: ResourceOfDto<PostListDto>, rowIndex: number) {
+        return rowIndex % 2 === 0 ? 'row-even' : 'row-odd';
+    }
+
+    public onRowSelect(row: ResourceOfDto<PostListDto>) {
+        this._messageService.add({
+            severity: 'info',
+            summary: 'Row selected',
+            detail: row.headline
+        });
+    }
+
+    public onRowUnselect(row: ResourceOfDto<PostListDto>) {
+        this._messageService.add({
+            severity: 'info',
+            summary: 'Row unselected',
+            detail: row.headline
+        });
+    }
+}

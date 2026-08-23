@@ -1,0 +1,22 @@
+@let _apiName = apiName();
+@if (_apiName) {
+    <rw-signal-table
+      #table
+      [apiName]="_apiName"
+      [searchTemplate]="searchTemplate()"
+      [editTemplate]="editTemplate()"
+      [rows]="items()"
+      [totalRecords]="totalRecords()"
+      [isLoading]="isLoading()"
+      [rowStyleClass]="generateRowClasses"
+      [cellStyleClass]="generateCellClasses"
+      [(oDataParameters)]="oDataParameters"
+      selectionMode="multiple"
+      [(selectedRows)]="selection"
+      [rowHover]="true">
+    </rw-signal-table>
+    Selection:
+    <pre>{{selection() | json}}</pre>
+    Form value:
+    <pre>{{table.editedRows() | json}}</pre>
+}

@@ -1,0 +1,5 @@
+@for (property of template().properties; track property.name) {
+    @if (fieldFor(property.name); as field) {
+        <rw-signal-form-element [property]="property" [apiName]="apiName()" [field]="$any(field)"></rw-signal-form-element>
+    }
+}

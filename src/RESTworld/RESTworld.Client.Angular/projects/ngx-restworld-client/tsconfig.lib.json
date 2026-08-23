@@ -11,7 +11,7 @@
     "types": [],
     "lib": [
       "dom",
-      "ES2023"
+      "ES2022"
     ]
   },
   "exclude": [

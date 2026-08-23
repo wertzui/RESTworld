@@ -42,9 +42,12 @@
                                 [field]="col.name"
                                 display="menu"
                                 [maxConstraints]="100"
-                                [class.has-filter]="f.hasFilter">
+                                [class.has-filter]="f.hasFilter"
+                                (onShow)="focusColumnFilterValue(f)">
                             <ng-template #filter let-value let-filterConstraint="filterConstraint" let-field="field">
-                                <rw-table-column-filter-element [property]="col" [value]="value" [apiName]="apiName()" [filterConstraint]="filterConstraint"></rw-table-column-filter-element>
+                                <div class="rw-column-filter-value" (keydown.enter)="applyColumnFilterOnEnter($any($event), f)">
+                                    <rw-table-column-filter-element [property]="col" [value]="value" [apiName]="apiName()" [filterConstraint]="filterConstraint"></rw-table-column-filter-element>
+                                </div>
                             </ng-template>
                             </p-columnFilter>
                         }

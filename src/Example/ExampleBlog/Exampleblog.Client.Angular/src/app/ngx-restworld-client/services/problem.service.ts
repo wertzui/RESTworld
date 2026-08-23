@@ -1,8 +1,10 @@
 import type { HttpResponse } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { UntypedFormArray, UntypedFormGroup, type AbstractControl, type FormGroup } from "@angular/forms";
+import type { FieldTree, ValidationError } from "@angular/forms/signals";
 import { ProblemDetails } from "@wertzui/ngx-hal-client";
 import { MessageService } from "primeng/api";
+import { getFieldTreeAtPath } from "../util/field-tree";
 
 /**
  * This service is responsible for displaying problems to the user.
@@ -16,12 +18,16 @@ export class ProblemService {
 
     /**
      * Scrolls to the first validation error.
-     * @param nativeElement Any parent element of the <rw-validation-errors>. If not provided, the document will be used.
+     * @param nativeElement Any parent element of the <rw-validation-errors> or <rw-signal-validation-errors>. If not provided, the document will be used.
+     * @remarks Matches both the Reactive Forms `<rw-validation-errors>` (which renders ngx-valdemort's
+     * `<val-errors><div>...`) and the Signal Forms `<rw-signal-validation-errors>` (which renders its own
+     * `<div class="rw-signal-validation-errors"><p-message>...`) DOM structures, so this works for forms built
+     * with either `<rw-form>`/`<rw-validation-errors>` or `<rw-signal-form>`/`<rw-signal-validation-errors>`.
      */
     public static scrollToFirstValidationError(nativeElement?: HTMLElement): void {
         const enclosingElement = nativeElement ?? document;
         setTimeout(() => {
-            const validationErrorElements = enclosingElement.querySelectorAll('rw-validation-errors>val-errors>div');
+            const validationErrorElements = enclosingElement.querySelectorAll('rw-validation-errors>val-errors>div, rw-signal-validation-errors>div.rw-signal-validation-errors>p-message');
             if (validationErrorElements.length === 0)
                 return;
 
@@ -185,5 +191,37 @@ export class ProblemService {
         }
 
         ProblemService.scrollToFirstValidationError(nativeElement);
+    }
+
+    /**
+     * Converts the validation errors contained in a `ProblemDetails` response into the `TreeValidationResult`
+     * shape expected by Signal Forms' `submit()` action callback.
+     * @remarks
+     * This is the Signal Forms equivalent of {@link displayValidationErrors}. Rather than mutating
+     * `AbstractControl`s directly, it returns an array of `ValidationError.WithOptionalFieldTree` which
+     * `submit()` will automatically distribute to the correct fields (via Signal Forms' internal
+     * `setSubmissionErrors`), attaching them to the resolved field when the path can be resolved, and
+     * falling back to the root field (making them available as whole-form errors) otherwise.
+     * @param problemDetails The problem details containing the validation errors.
+     * @param rootField The root `FieldTree` of the form to resolve field-specific error paths against.
+     * @returns An array of `ValidationError.WithOptionalFieldTree`, one for the overall problem detail (if any)
+     * plus one for each field-specific error. Returns an empty array if there are no errors.
+     */
+    public problemDetailsToSignalFormValidationErrors(problemDetails: ProblemDetails, rootField: FieldTree<Record<string, unknown>>): ValidationError.WithOptionalFieldTree[] {
+        const errors: ValidationError.WithOptionalFieldTree[] = [];
+
+        if (problemDetails.detail)
+            errors.push({ kind: 'remote', message: problemDetails.detail });
+
+        if (problemDetails["errors"] as {}) {
+            for (const [key, errorsForKey] of Object.entries(problemDetails["errors"] as {})) {
+                const message = Array.isArray(errorsForKey) ? errorsForKey.join(' ') : String(errorsForKey);
+                const fieldTree = getFieldTreeAtPath(rootField, key);
+
+                errors.push({ kind: 'remote', message, fieldTree: fieldTree as FieldTree<unknown> });
+            }
+        }
+
+        return errors;
     }
 }

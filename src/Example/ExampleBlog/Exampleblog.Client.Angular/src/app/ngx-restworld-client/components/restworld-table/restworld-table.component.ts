@@ -5,7 +5,8 @@ import { ODataParameters } from '../../models/o-data';
 import { ODataService } from '../../services/odata.service';
 import { ContextMenu, ContextMenuModule } from 'primeng/contextmenu';
 import { AbstractControl, ControlContainer, FormArray, FormArrayName, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { Table, TableLazyLoadEvent, TableModule } from 'primeng/table';
+import { ColumnFilter, Table, TableLazyLoadEvent, TableModule } from 'primeng/table';
+import { DomHandler } from 'primeng/dom';
 import { PrimeNG } from 'primeng/config';
 import { RestWorldMenuButtonComponent } from "../restworld-menu-button/restworld-menu-button.component";
 import { RestWorldInputComponent } from "../restworld-inputs/restworld-inputs";
@@ -396,6 +397,33 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
         contextMenu.show(event);
 
         event.stopPropagation();
+    }
+
+    /**
+     * Focuses the filter value input inside the column filter's overlay instead of the first focusable
+     * element (which is normally the match-mode/operator dropdown), so the user can directly type a value.
+     * @remarks Runs in a `setTimeout` macrotask so it executes after `ColumnFilter.focusOnFirstElement()`,
+     * which PrimeNG calls synchronously right before emitting the `onShow` event this is bound to.
+     * @param columnFilter The `#f` template reference of the `<p-columnFilter>` that was just opened.
+     */
+    public focusColumnFilterValue(columnFilter: ColumnFilter): void {
+        setTimeout(() => {
+            const overlay = columnFilter.overlay;
+            const valueContainer = overlay?.querySelector<HTMLElement>('.rw-column-filter-value');
+            const target = valueContainer ? DomHandler.getFirstFocusableElement(valueContainer) : null;
+            target?.focus();
+        });
+    }
+
+    /**
+     * Applies the column filter (same as clicking the "Apply" button) when the user presses Enter while
+     * typing in the filter value input.
+     * @param event The keydown event.
+     * @param columnFilter The `#f` template reference of the `<p-columnFilter>` the value belongs to.
+     */
+    public applyColumnFilterOnEnter(event: KeyboardEvent, columnFilter: ColumnFilter): void {
+        event.preventDefault();
+        columnFilter.applyFilter();
     }
 
     public showInputField(column: Property): boolean {

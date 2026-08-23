@@ -1,0 +1,4 @@
+.rw-signal-input-unsupported {
+    color: var(--p-text-muted-color, #6c757d);
+    font-style: italic;
+}

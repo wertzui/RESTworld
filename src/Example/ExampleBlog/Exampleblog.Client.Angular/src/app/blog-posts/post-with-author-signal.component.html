@@ -1,0 +1,8 @@
+@let uri = modifiedUri();
+@if (uri) {
+    <rw-signal-edit [uri]="uri" [apiName]="apiName()" [rel]="rel()">
+    <ng-template #visualTabAdditional let-resource>
+        <a [routerLink]="['/edit/signal', apiName(), resource?.findLink('Author')?.href]">{{resource?.findLink('Author')?.name}}</a>
+    </ng-template>
+    </rw-signal-edit>
+}

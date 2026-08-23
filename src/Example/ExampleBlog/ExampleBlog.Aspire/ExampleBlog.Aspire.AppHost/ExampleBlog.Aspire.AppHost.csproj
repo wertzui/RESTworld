@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <Sdk Name="Aspire.AppHost.Sdk" Version="13.2.2" />
+    <Sdk Name="Aspire.AppHost.Sdk" Version="13.5.2" />
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -13,6 +13,7 @@
 
     <ItemGroup>
         <PackageReference Include="Aspire.Hosting.AppHost" />
+        <PackageReference Include="Aspire.Hosting.JavaScript" />
         <PackageReference Include="Aspire.Hosting.SqlServer" />
         <PackageReference Include="CommunityToolkit.Aspire.Hosting.McpInspector" />
         <PackageReference Include="HealthChecks.Kubernetes.Aspire.Hosting" />

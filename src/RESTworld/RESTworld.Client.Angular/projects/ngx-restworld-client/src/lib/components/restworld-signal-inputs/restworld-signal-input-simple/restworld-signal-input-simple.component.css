@@ -1,0 +1,13 @@
+/*
+ * NOTE: Signal Forms does not add `ng-touched`/`ng-invalid` classes automatically like Reactive Forms does.
+ * `provideRestWorld()` provides `provideSignalFormsConfig({ classes: NG_STATUS_CLASSES })` by default (see
+ * `provide-restworld.ts`), which restores this behavior so the selectors below work out of the box. If an
+ * application opts out of that default (or overrides it with different class names), these selectors will
+ * no longer match. See @angular/forms/signals/compat and the "Automatic status classes" section of
+ * https://angular.dev/guide/forms/signals/migration.
+ */
+::ng-deep .p-inputtext.ng-touched.ng-invalid,
+::ng-deep .p-inputnumber.ng-touched.ng-invalid,
+::ng-deep .p-inputnumber.ng-touched.ng-invalid>input {
+    border-color: #e24c4c;
+}

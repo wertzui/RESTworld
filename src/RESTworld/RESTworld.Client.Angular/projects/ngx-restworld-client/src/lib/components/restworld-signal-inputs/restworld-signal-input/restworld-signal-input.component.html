@@ -1,0 +1,20 @@
+@if (property()) {
+    @if (property().options) {
+        <rw-signal-input-dropdown [apiName]="apiName()" [property]="$any(property())" [field]="$any(field())"></rw-signal-input-dropdown>
+    }
+    @else {
+        @switch (property().type) {
+            @case (PropertyType.Object) {
+                <rw-signal-input-object [apiName]="apiName()" [property]="$any(property())" [field]="$any(field())"></rw-signal-input-object>
+            }
+            @case (PropertyType.Collection) {
+                <rw-signal-input-collection [apiName]="apiName()" [property]="$any(property())" [field]="$any(field())"></rw-signal-input-collection>
+            }
+            @default {
+                <rw-signal-input-simple [property]="property()" [field]="field()"></rw-signal-input-simple>
+            }
+        }
+    }
+
+    <rw-signal-validation-errors [property]="property()" [field]="$any(field())"></rw-signal-validation-errors>
+}

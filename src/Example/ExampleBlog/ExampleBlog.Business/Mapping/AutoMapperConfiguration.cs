@@ -40,7 +40,9 @@ public static class AutoMapperConfiguration
 
 
         config
-            .CreateMap<Post, PostWithAuthorDto>();
+            .CreateMap<Post, PostWithAuthorDto>()
+            .ForMember(dst => dst.Author, opt => opt.Ignore())
+            .ForMember(dst => dst.Blog, opt => opt.Ignore());
         config.CreateMap<Author, PostWithAuthorDto>()
             .ForMember(dst => dst.Author, opt => opt.MapFrom(src => src))
             .ForMember(dst => dst.CreatedAt, opt => opt.Ignore())
@@ -49,7 +51,9 @@ public static class AutoMapperConfiguration
             .ForMember(dst => dst.Timestamp, opt => opt.Ignore());
 
         config
-            .CreateMap<Post, PostWithAuthorDtoV1>();
+            .CreateMap<Post, PostWithAuthorDtoV1>()
+            .ForMember(dst => dst.Author, opt => opt.Ignore())
+            .ForMember(dst => dst.Blog, opt => opt.Ignore());
         config.CreateMap<Author, PostWithAuthorDtoV1>()
             .ForMember(dst => dst.Author, opt => opt.MapFrom(src => src));
 

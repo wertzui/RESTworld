@@ -1,6 +1,6 @@
 {
   "name": "@wertzui/ngx-restworld-client",
-  "version": "20.0.0",
+  "version": "21.0.0",
   "author": "wertzui",
   "description": "An Angular client to consume a RESTworld service that serves application/hal+json or hal-forms+json.",
   "publishConfig": {
@@ -34,8 +34,6 @@
     "@angular/core": "^22",
     "@angular/forms": "^22",
     "@angular/platform-browser": "^22",
-    "@angular/platform-browser-dynamic": "^22",
-    "@angular/platform-server": "^22",
     "@angular/router": "^22",
     "@fortawesome/fontawesome-free": "^7",
     "@odata/parser": "^0.2.14",
@@ -46,7 +44,7 @@
     "@opentelemetry/resources": "^2.10.0",
     "@opentelemetry/sdk-trace-web": "^2.10.0",
     "@opentelemetry/semantic-conventions": "^1.43.0",
-    "@wertzui/ngx-hal-client": "^16",
+    "@wertzui/ngx-hal-client": "^17.1.3",
     "cldr-dates-modern": "^45.0.0",
     "cldr-numbers-modern": "^45.0.0",
     "clr-format": "^0.5.2",

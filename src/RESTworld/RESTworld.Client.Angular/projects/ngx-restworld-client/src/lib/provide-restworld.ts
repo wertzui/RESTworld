@@ -1,4 +1,6 @@
 import { EnvironmentProviders, inject, provideAppInitializer, type Provider, type Type } from "@angular/core";
+import { provideSignalFormsConfig, type SignalFormsConfig } from "@angular/forms/signals";
+import { NG_STATUS_CLASSES } from "@angular/forms/signals/compat";
 import { OpenTelemetryService } from "./services/opentelemetry.service";
 import { SettingsService } from "./services/settings.service";
 import { AvatarGenerator } from "./services/avatar-generator";
@@ -19,8 +21,15 @@ import { OPENTELEMETRY_HTTP_INTERCEPTOR_PROVIDER } from "./services/openTelemetr
  *     store: withNgHttpCachingLocalStorage(),
  * }
  * ```
+ * @param signalFormsConfig An optional configuration for Signal Forms (used by the `rw-signal-*` components,
+ * e.g. `<rw-signal-form>`). Defaults to `{ classes: NG_STATUS_CLASSES }`, which makes Signal Forms apply the
+ * same `.ng-touched`/`.ng-invalid`/`.ng-dirty`/`.ng-valid` classes to fields that Reactive Forms applies
+ * automatically, so existing CSS written against those class names (see e.g.
+ * `restworld-signal-input-simple.component.css`) keeps working without any changes. Pass an empty object
+ * (`{}`) to opt out, or your own `classes` map to fully customize the applied classes.
+ * @see https://angular.dev/guide/forms/signals/migration#automatic-status-classes
  */
-export function provideRestWorld(ngHttpCachingConfig?: NgHttpCachingConfig): (EnvironmentProviders | Provider)[] {
+export function provideRestWorld(ngHttpCachingConfig?: NgHttpCachingConfig, signalFormsConfig?: SignalFormsConfig): (EnvironmentProviders | Provider)[] {
     const defaultCachingConfig = {
             allowedMethod: ["ALL"],
             checkResponseHeaders: true,
@@ -29,6 +38,7 @@ export function provideRestWorld(ngHttpCachingConfig?: NgHttpCachingConfig): (En
         }
 
     const mergedCachingConfig = { ...defaultCachingConfig, ...ngHttpCachingConfig };
+    const mergedSignalFormsConfig = signalFormsConfig ?? { classes: NG_STATUS_CLASSES };
 
     const restWorldInitializer = provideAppInitializer(async () => {
         const settingsService = inject(SettingsService);
@@ -42,7 +52,8 @@ export function provideRestWorld(ngHttpCachingConfig?: NgHttpCachingConfig): (En
     const allProviders = [
         restWorldInitializer,
         cachingProviders,
-        OPENTELEMETRY_HTTP_INTERCEPTOR_PROVIDER
+        OPENTELEMETRY_HTTP_INTERCEPTOR_PROVIDER,
+        provideSignalFormsConfig(mergedSignalFormsConfig)
     ];
 
     return allProviders;

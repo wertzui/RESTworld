@@ -1,0 +1,38 @@
+@switch (property().type) {
+    @case (PropertyType.Textarea) {
+        <textarea [propertyAttributes]="property()" [formField]="$any(field())" pInputTextarea class="w-full p-inputtextarea p-inputtext p-inputtext-fluid"></textarea>
+    }
+    @case (PropertyType.Date) {
+        <p-datepicker [propertyAttributes]="property()" [formField]="$any(field())" [dateFormat]="dateFormat" [showWeek]="true" [showIcon]="true" styleClass="w-full"></p-datepicker>
+    }
+    @case (PropertyType.Month) {
+        <p-datepicker [propertyAttributes]="property()" [formField]="$any(field())" [dateFormat]="dateFormat" [showWeek]="false" view="month" [showIcon]="true" styleClass="w-full"></p-datepicker>
+    }
+    @case (PropertyType.Time) {
+        <p-datepicker [propertyAttributes]="property()" [formField]="$any(field())" [dateFormat]="timeFormat" [showTime]="true" [timeOnly]="true" [showWeek]="false" [showIcon]="true" styleClass="w-full"></p-datepicker>
+    }
+    @case (PropertyType.DatetimeLocal) {
+        <p-datepicker [propertyAttributes]="property()" [formField]="$any(field())" [dateFormat]="dateFormat" [showTime]="true" [showWeek]="false" [showIcon]="true" styleClass="w-full"></p-datepicker>
+    }
+    @case (PropertyType.Number) {
+        <p-inputNumber [propertyAttributes]="property()" [formField]="$any(field())" inputMode="decimal" class="w-full" styleClass="w-full"></p-inputNumber>
+    }
+    @case (PropertyType.Bool) {
+        <rw-tri-state-checkbox [propertyAttributes]="property()" [formField]="$any(field())" [required]="property().required ?? false"></rw-tri-state-checkbox>
+    }
+    @case (PropertyType.DatetimeOffset) {
+        <p-datepicker [propertyAttributes]="property()" [formField]="$any(field())" [dateFormat]="dateFormat" [showTime]="true" [showWeek]="false" [showIcon]="true" styleClass="w-full"></p-datepicker>
+    }
+    @case (PropertyType.Duration) {
+        <p-datepicker [propertyAttributes]="property()" [formField]="$any(field())" [dateFormat]="timeFormat" [showTime]="true" [timeOnly]="true" [showWeek]="false" [showIcon]="true" styleClass="w-full"></p-datepicker>
+    }
+    @case (PropertyType.Image) {
+        <rw-image [formField]="$any(field())" [property]="$any(property())"></rw-image>
+    }
+    @case (PropertyType.File) {
+        <rw-file [formField]="$any(field())" [fileName]="property().name" [accept]="$any(property().placeholder)"></rw-file>
+    }
+    @default {
+        <input [propertyAttributes]="property()" [formField]="$any(field())" pInputText class="w-full" />
+    }
+}

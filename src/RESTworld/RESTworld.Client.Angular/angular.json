@@ -25,15 +25,12 @@
           "defaultConfiguration": "production"
         },
         "test": {
-          "builder": "@angular/build:unit-test",
-          "options": {
-            "browsers": ["edge"]
-          }
+          "builder": "@angular/build:unit-test"
         }
       }
     }
   },
   "cli": {
-    "analytics": "35532d56-05f0-4d61-bedd-532327b40cf6"
+    "analytics": false
   }
 }

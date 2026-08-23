@@ -1,0 +1,12 @@
+<ng-template #defaultInputObject let-property="property" let-innerField="innerField" let-apiName="apiName">
+    <div class="flex align-items-center">
+        <div class="brace">
+        </div>
+        <div class="w-full">
+            <rw-signal-input-template [template]="property()._templates.default" [apiName]="apiName()" [field]="innerField"></rw-signal-input-template>
+        </div>
+    </div>
+</ng-template>
+
+<ng-container
+    *ngTemplateOutlet="inputObjectRef() ?? defaultInputObject; context: { property: property, innerField: innerField, apiName: apiName }"></ng-container>

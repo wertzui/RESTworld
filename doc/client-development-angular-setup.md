@@ -58,7 +58,7 @@ bootstrapApplication(AppComponent, {
 });
 ```
 
-- `provideRestWorld()` registers the RESTworld Angular client, including HTTP interceptors and HAL helpers.
+- `provideRestWorld()` registers the RESTworld Angular client, including HTTP interceptors and HAL helpers. It also calls [`provideSignalFormsConfig`](https://angular.dev/api/forms/signals/provideSignalFormsConfig) with the `NG_STATUS_CLASSES` preset by default, so `.ng-touched`/`.ng-invalid`/`.ng-dirty`/`.ng-valid` CSS classes work with `<rw-signal-form>` (see [Angular Client Components](client-development-angular-components.md#rw-signal-form-signal-forms)) the same way they already do with `<rw-form>`. Pass a custom `SignalFormsConfig` as the second argument to override this.
 - `provideCustomAvatarGenerator` overrides avatar rendering inside RESTworld UI templates.
 - `provideHttpClient(withInterceptorsFromDi())` ensures RESTworld interceptors hook into the Angular `HttpClient` pipeline.
 - `providePrimeNG` configures the PrimeNG theme (Aura by default) and enables ripple effects.
@@ -90,7 +90,7 @@ export const AppMenu: MenuItem[] = [
 ];
 ```
 
-- `RESTworldListViewComponent` and `RESTworldEditViewComponent` render HAL-driven CRUD pages based on relation values (e.g., `MyEx:Blog`).
+- `RESTworldListViewComponent` and `RESTworldEditViewComponent` render HAL-driven CRUD pages based on relation values (e.g., `MyEx:Blog`). `RESTworldSignalListViewComponent` (`<rw-signal-list>`) and `RESTworldSignalEditViewComponent` (`<rw-signal-edit>`) are the [Signal Forms](https://angular.dev/guide/forms/signals/overview) equivalents – same inputs/outputs and routing shape, but nesting `<rw-signal-table>`/`<rw-signal-form>` instead of `<rw-table>`/`<rw-form>`. Use them as drop-in replacements when your routes should use Signal Forms throughout.
 - Custom routes such as `postWithAuthor` demonstrate how to mix RESTworld views with bespoke components when you need additional layout or aggregation logic.
 - `runGuardsAndResolvers: 'always'` ensures RESTworld refreshes data when the same route is revisited with different query parameters.
 - Use the `AppMenu` model alongside PrimeNG menus to surface frequently used relations.

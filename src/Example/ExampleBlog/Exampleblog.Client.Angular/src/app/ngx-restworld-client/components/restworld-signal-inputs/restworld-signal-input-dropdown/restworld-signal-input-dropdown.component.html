@@ -1,0 +1,56 @@
+<ng-template #defaultInputOptionsSingle>
+    <p-select
+        [propertyAttributes]="property()"
+        [formField]="$any(field())"
+        [options]="optionsManager.items.value()"
+        (onFilter)="onOptionsFiltered($event)"
+        (onChange)="onOptionsChanged($event)"
+        styleClass="w-full"
+        [panelStyleClass]="optionsManager.loading() ? 'loading' : ''"
+        [emptyFilterMessage]="optionsManager.loading() ? 'Loading...' : ''"
+        [loading]="optionsManager.loading()"
+    >
+        <ng-template #selectedItem let-selectedItem>
+            <span [pTooltip]="optionsManager.getTooltip()(selectedItem)">{{optionsManager.getLabel()(selectedItem)}}</span>
+        </ng-template>
+        <ng-template #item let-item>
+            <span [pTooltip]="optionsManager.getTooltip()(item)">{{optionsManager.getLabel()(item)}}</span>
+        </ng-template>
+    </p-select>
+</ng-template>
+
+<ng-template #defaultInputOptionsMultiple>
+    <p-multiSelect
+        [propertyAttributes]="property()"
+        [formField]="$any(field())"
+        [options]="optionsManager.items.value()"
+        (onFilter)="onOptionsFiltered($event)"
+        (onChange)="onOptionsChanged($event)"
+        styleClass="w-full"
+        [panelStyleClass]="optionsManager.loading() ? 'loading' : ''"
+        [emptyFilterMessage]="optionsManager.loading() ? 'Loading...' : ''"
+        [loading]="optionsManager.loading()"
+    >
+        <ng-template #selecteditems let-items let-removeChip="removeChip">
+            @for (item of items; track item; let i = $index) {
+                <p-chip
+                    [pTooltip]="optionsManager.getTooltip()(item)"
+                    [label]="optionsManager.getLabel()(item)"
+                    [removable]="true"
+                    (onRemove)="removeChip(optionsManager.getValue(item), $event)"
+                >
+                </p-chip>
+            }
+        </ng-template>
+        <ng-template #item let-item>
+            <span [pTooltip]="optionsManager.getTooltip()(item)">{{optionsManager.getLabel()(item)}}</span>
+        </ng-template>
+    </p-multiSelect>
+</ng-template>
+
+@if (!optionsManager.options().maxItems || optionsManager.options().maxItems == 1) {
+    <ng-container *ngTemplateOutlet="inputOptionsSingleRef() ?? defaultInputOptionsSingle; context: { property: property, apiName: apiName, field: field, items: optionsManager.items }"></ng-container>
+}
+@else {
+    <ng-container *ngTemplateOutlet="inputOptionsMultipleRef() ?? defaultInputOptionsMultiple; context: { property: property, apiName: apiName, field: field, items: optionsManager.items }"></ng-container>
+}
