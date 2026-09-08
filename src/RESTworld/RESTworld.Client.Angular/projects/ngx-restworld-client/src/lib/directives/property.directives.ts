@@ -93,6 +93,7 @@ export class PropertySelectAttributes<TProperty extends Property<SimpleValue, st
     public readonly propertyAttributes = input<TProperty>();
 
     constructor(
+        private readonly elementRef: ElementRef<HTMLElement>,
         @Self() @Optional() select?: Select,
         @Self() @Optional() multiSelect?: MultiSelect,
     ) {
@@ -123,8 +124,18 @@ export class PropertySelectAttributes<TProperty extends Property<SimpleValue, st
             element.filterBy = promptField + "," + valueField;
             element.filter = true;
             element.showClear = !property.required || (options.minItems ?? 0) <= 0;
-            // element.appendTo = "body";
-            setValueOfInputSignal(element.appendTo, "body");
+
+            // Normally we append the overlay panel to the body so it is not clipped by scrollable/overflow-hidden
+            // ancestors (e.g. a table cell). However, when this select/multiSelect is rendered inside a
+            // <p-columnFilter> overlay (e.g. via <rw-table-column-filter-element>), appending to body detaches the
+            // panel from the filter overlay's DOM subtree. PrimeNG's column filter then treats clicks inside the
+            // detached panel as "outside clicks" and closes the filter menu before the selection is applied.
+            // So in that case we leave appendTo at its default ("self"), keeping the panel nested inside the filter
+            // overlay so it is recognized as an "inside" click.
+            const isInsideColumnFilterOverlay = !!this.elementRef.nativeElement.closest('[data-pc-section="filteroverlay"]');
+            if (!isInsideColumnFilterOverlay) {
+                setValueOfInputSignal(element.appendTo, "body");
+            }
 
             if (element instanceof Select) {
                 // element.required = property.required || (options.minItems ?? 0) > 0;

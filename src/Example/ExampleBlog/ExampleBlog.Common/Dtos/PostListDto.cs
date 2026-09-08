@@ -1,4 +1,5 @@
-﻿using RESTworld.Common.Dtos;
+﻿using ExampleBlog.Common.Enums;
+using RESTworld.Common.Dtos;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
@@ -13,6 +14,8 @@ public class PostListDto : ChangeTrackingDtoBase
 
     [Display(Name = "Blog")]
     public long BlogId { get; set; }
+
+    public PostState State { get; set; }
 
     [JsonIgnore]
     public virtual AuthorDto? Author { get; set; }

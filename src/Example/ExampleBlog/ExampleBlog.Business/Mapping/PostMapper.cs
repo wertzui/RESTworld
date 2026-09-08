@@ -35,7 +35,6 @@ public partial class PostMapper : CrudMapperlyMapperBase<Post, PostCreateDto, Po
     [MapperIgnoreTarget(nameof(PostGetFullDto.Blog))]
     protected override partial PostGetFullDto MapEntityToFull(Post entity);
 
-    [MapperIgnoreSource(nameof(Post.State))]
     [MapperIgnoreSource(nameof(Post.Text))]
     public override partial PostListDto MapQueryToList(PostQueryDto entity);
 
