@@ -34,7 +34,7 @@
         "@opentelemetry/sdk-trace-web": "2.10.0",
         "@opentelemetry/semantic-conventions": "1.43.0",
         "@primeuix/themes": "2.0.3",
-        "@wertzui/ngx-hal-client": "17.1.4",
+        "@wertzui/ngx-hal-client": "17.1.6",
         "cldr-dates-modern": "45.0.0",
         "cldr-numbers-modern": "45.0.0",
         "clr-format": "0.5.2",

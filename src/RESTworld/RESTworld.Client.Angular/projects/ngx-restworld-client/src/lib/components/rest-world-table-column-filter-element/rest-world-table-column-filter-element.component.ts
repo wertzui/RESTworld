@@ -1,4 +1,4 @@
-import { Component, computed, effect, input, untracked, type OnDestroy } from '@angular/core';
+import { Component, computed, effect, forwardRef, input, untracked, type OnDestroy } from '@angular/core';
 import { Template, FormService, type Property, type SimpleValue, type ExtractValueType, type PropertyDto } from "@wertzui/ngx-hal-client";
 import type { FilterMetadata } from "primeng/api";
 import type { Subscription } from "rxjs";
@@ -11,7 +11,7 @@ import { FormGroup, ReactiveFormsModule } from "@angular/forms";
  */
 @Component({
     selector: 'rw-table-column-filter-element',
-    imports: [RestWorldInputComponent, ReactiveFormsModule],
+    imports: [forwardRef(() => RestWorldInputComponent), ReactiveFormsModule],
     templateUrl: './rest-world-table-column-filter-element.component.html',
     styleUrl: './rest-world-table-column-filter-element.component.css'
 })
