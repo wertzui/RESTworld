@@ -4,20 +4,20 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Asp.Versioning.OData.ApiExplorer" Version="10.2.1" />
-    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.5.2" />
-    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="13.5.2" />
-    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.5.2" />
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.5.3" />
+    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="13.5.3" />
+    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.5.3" />
     <PackageVersion Include="AutoFixture" Version="4.18.1" />
     <PackageVersion Include="AutoMapper" Version="14.0.0" />
     <PackageVersion Include="AutoMapper.AspNetCore.OData.EFCore" Version="7.0.4" />
     <PackageVersion Include="AutoMcp.OData" Version="1.0.0-beta-3" />
-    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.McpInspector" Version="13.4.0" />
+    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.McpInspector" Version="13.5.0" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <PackageVersion Include="CsvHelper" Version="33.1.0" />
     <PackageVersion Include="EntityFrameworkCore.Parallel" Version="6.0.6" />
-    <PackageVersion Include="HAL.AspNetCore.OData" Version="21.2.0" />
-    <PackageVersion Include="HAL.Client.Net" Version="11.0.11" />
-    <PackageVersion Include="HAL.Common" Version="9.0.7" />
+    <PackageVersion Include="HAL.AspNetCore.OData" Version="21.2.1" />
+    <PackageVersion Include="HAL.Client.Net" Version="11.0.12" />
+    <PackageVersion Include="HAL.Common" Version="9.0.8" />
     <PackageVersion Include="HealthChecks.Kubernetes.Aspire" Version="2.0.4" />
     <PackageVersion Include="HealthChecks.Kubernetes.Aspire.Hosting" Version="2.2.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
@@ -33,8 +33,8 @@
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.9.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
     <PackageVersion Include="MockQueryable.EntityFrameworkCore" Version="10.0.8" />
-    <PackageVersion Include="MSTest.TestAdapter" Version="4.3.3" />
-    <PackageVersion Include="MSTest.TestFramework" Version="4.3.3" />
+    <PackageVersion Include="MSTest.TestAdapter" Version="4.4.0" />
+    <PackageVersion Include="MSTest.TestFramework" Version="4.4.0" />
     <PackageVersion Include="NSubstitute" Version="6.2.0" />
     <PackageVersion Include="NSubstitute.Analyzers.CSharp" Version="1.0.17" />
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.18.0" />

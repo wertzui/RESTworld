@@ -315,3 +315,7 @@ csharp_style_prefer_primary_constructors = false:suggestion
 dotnet_diagnostic.NU1901.severity = silent
 dotnet_diagnostic.NU1902.severity = silent
 dotnet_diagnostic.NU1903.severity = silent
+
+# Do not apply code styles to generated migration files
+[**/Migrations/*.cs]
+generated_code = true
