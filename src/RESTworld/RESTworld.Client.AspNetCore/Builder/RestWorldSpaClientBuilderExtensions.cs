@@ -58,6 +58,7 @@ public static class RestWorldSpaClientBuilderExtensions
 
         app.UseDefaultFiles();
         app.UseStaticFiles();
+        app.MapFallbackToFile("index.html");
 
         return app;
     }
