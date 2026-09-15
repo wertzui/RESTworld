@@ -463,12 +463,14 @@ public static class RestWorldBuilderExtensions
         app.UseAuthentication();
         app.UseAuthorization();
 
+        // Health checks must come before endpoints.
+        // Otherwise a registered fallback, like in SPA scenarios which is registered as endpoint would catch the request and return a 404 instead of the health check response.
+        app.UseKubernetesHealthChecks(o => o.ResponseWriter = HealthCheckHALResponseWriter.WriteResponseAsync);
+
         // Although UseEndpoints is already called before by builder.Build(), we need to call it here again,
         // because otherwise the SPA Proxy will try to deliver the /Settings route instead of it being routed to the SettingsController.
         app.UseEndpoints(_ => { });
         app.MapControllers();
-
-        app.UseKubernetesHealthChecks(o => o.ResponseWriter = HealthCheckHALResponseWriter.WriteResponseAsync);
 
         app.UseResponseCompression();
 

@@ -16,7 +16,7 @@ public static class RestWorldSpaClientBuilderExtensions
 {
     /// <summary>
     /// Adds everything needed to use RESTworld with an Angular frontend.
-    /// Don't forget to call <see cref="UseRestWorldWithSpaFrontend{TApplication}(TApplication, string)"/> afterwards.
+    /// Don't forget to call <see cref="UseRestWorldWithSpaFrontend{TApplication}(TApplication)"/> afterwards.
     /// </summary>
     /// <param name="builder">The builder.</param>
     /// <param name="contentRoot">The path from where the compiled Angular application is served in the published application in a production environment.</param>
