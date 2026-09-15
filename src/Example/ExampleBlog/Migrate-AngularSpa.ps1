@@ -154,6 +154,7 @@ function Add-AspireJavaScriptAppRegistration {
     $snippet = @(
         '// Add The Angular part of the Frontend'
         ('builder.AddJavaScriptApp("' + $AppName + '", Directory.GetParent(new ' + $ProjectTypeName + '().ProjectPath)!.FullName)')
+        '    .WithNpm(installCommand: "ci")'
         '    // This will run "npm start" in the directory of the Angular project, which starts the Angular development server.'
         '    // Have a look at the package.json of the Angular project to see what the "start" script does.'
         '    .WithRunScript("start")'
@@ -165,7 +166,8 @@ function Add-AspireJavaScriptAppRegistration {
         '    // This is the Port on which the Angular development server runs. It is referenced in the package.json of the Angular project.'
         '    .WithHttpsEndpoint(env: "PORT")'
         '    // The Angular development server does not have a health check endpoint, so we just use the root URL as a readiness probe.'
-        '    .WithHttpHealthCheck();'
+        '    .WithHttpHealthCheck()'
+        '    .WithUrlForEndpoint("https", r => r.DisplayText = "Angular Frontend");'
         ''
     ) -join $newline
 

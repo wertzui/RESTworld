@@ -47,18 +47,16 @@ public static class RestWorldSpaClientBuilderExtensions
     /// Don't forget to call <see cref="AddRestWorldWithSpaFrontend{TBuilder}(TBuilder, string)"/> before this.
     /// </summary>
     /// <param name="app">The web application.</param>
-    /// <param name="sourcePath">The path of the directory that contains the SPA source files during development. The directory may not exist in published applications.</param>
-    public static TApplication UseRestWorldWithSpaFrontend<TApplication>(this TApplication app, string sourcePath = "ClientApp")
+    public static TApplication UseRestWorldWithSpaFrontend<TApplication>(this TApplication app)
         where TApplication : IHost, IApplicationBuilder, IEndpointRouteBuilder
     {
         ArgumentNullException.ThrowIfNull(app);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sourcePath);
 
         app.UseRestWorld();
 
         app.UseDefaultFiles();
         app.UseStaticFiles();
-        app.MapFallbackToFile("index.html");
+        app.MapFallbackToFile("{*path}", "index.html");
 
         return app;
     }
