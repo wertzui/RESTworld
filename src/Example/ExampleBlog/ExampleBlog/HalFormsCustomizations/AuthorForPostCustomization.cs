@@ -22,16 +22,16 @@ public class AuthorForPostCustomization : IFormsResourceGenerationCustomization
 
     public int Order => 1;
 
-    public bool AppliesTo<TDto>(FormsResource formsResource, TDto value, HttpMethod method, string title, string contentType, string action, string? controller, object? routeValues)
+    public bool AppliesTo<TValue, TTemplate>(FormsResource formsResource, TValue value, HttpMethod method, string title, string contentType, string action, string? controller, object? routeValues)
         => value is PostWithAuthorDto;
 
-    public async ValueTask ApplyAsync<TDto>(FormsResource formsResource, TDto value, HttpMethod method, string title, string contentType, string action, string? controller, object? routeValues, IFormFactory formFactory)
+    public async ValueTask ApplyAsync<TValue, TTemplate>(FormsResource formsResource, TValue value, HttpMethod method, string title, string contentType, string action, string? controller, object? routeValues, IFormFactory formFactory)
     {
         if (value is PostWithAuthorDto dto)
         {
             // When getting a form, instead of a link to the author, we just add another form with the author already filled in
             var authorLink = _linkFactory.Create(ActionHelper.StripAsyncSuffix(nameof(ReadController<,,,>.GetAsync)), RestControllerNameConventionAttribute.CreateNameFromType<AuthorDto>(), new { id = dto.AuthorId }).Href ?? "";
-            var authorForm = await formFactory.CreateFormAsync(dto.Author, authorLink, HttpMethod.Get, "Author");
+            var authorForm = await formFactory.CreateFormAsync<AuthorDto?, TTemplate>(dto.Author, authorLink, HttpMethod.Get, "Author");
             formsResource.Templates["The author"] = authorForm;
         }
     }

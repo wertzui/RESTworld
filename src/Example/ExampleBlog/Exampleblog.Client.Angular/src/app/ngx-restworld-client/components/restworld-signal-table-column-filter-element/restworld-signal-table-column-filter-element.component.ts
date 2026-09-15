@@ -37,7 +37,7 @@ export class RestWorldSignalTableColumnFilterElementComponent<TProperty extends 
     /**
      * The initial value of the filter.
      */
-    public readonly value = input.required<ExtractValueType<TProperty> | null>();
+    public readonly value = input.required<ExtractValueType<TProperty> | null | undefined>();
 
     /**
      * The signal form (model signal + field tree) created from a single-property template built from
@@ -81,7 +81,7 @@ export class RestWorldSignalTableColumnFilterElementComponent<TProperty extends 
             // elements bound to Signal Forms treat a `null` model value as "number-like" (see
             // `getNativeControlValue` in `@angular/forms/signals`), which would otherwise cause every
             // keystroke in a text filter to be rejected as a parse error and the value would never update.
-            const signalForm = untracked(() => runInInjectionContext(this._injector, () => value !== null
+            const signalForm = untracked(() => runInInjectionContext(this._injector, () => value !== null && value !== undefined
                 ? this._signalFormService.createSignalFormFromTemplate(template, { [property.name]: value })
                 : this._signalFormService.createSignalFormFromTemplate(template)));
             this._signalForm.set(signalForm as SignalForm<Record<string, unknown>>);

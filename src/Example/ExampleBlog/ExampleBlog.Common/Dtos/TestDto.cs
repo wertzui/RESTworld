@@ -27,6 +27,10 @@ public class TestDto : ConcurrentDtoBase
     public TestEnum MyEnum { get; set; }
     [Editable(false)]
     public TestEnum MyReadonlyEnum { get; set; }
+    [ReadOnly(true)]
+    public required string MyReadOnlyRequiredString { get; set; }
+    [ReadOnly(true)]
+    public bool MyReadOnlyRequiredBool { get; set; }
     public TestFlagsEnum MyFlagsEnum { get; set; }
     public string? MyNullableString { get; set; }
     public int? MyNullableInt { get; set; }

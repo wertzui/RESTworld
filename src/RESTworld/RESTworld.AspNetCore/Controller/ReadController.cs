@@ -140,7 +140,7 @@ public class ReadController<TEntity, TQueryDto, TGetListDto, TGetFullDto> : Rest
     {
         var response = await Cache.CacheGetWithCurrentUserAsync(id, _ => _readService.GetSingleAsync(id, cancellationToken));
 
-        var result = await ResultFactory.CreateOkResultBasedOnOutcomeAsync(response, ReturnsReadOnlyFormsResponses);
+        var result = await ResultFactory.CreateOkResultBasedOnOutcomeAsync<TGetFullDto, TGetFullDto>(response, ReturnsReadOnlyFormsResponses);
 
         return result;
     }

@@ -32,18 +32,18 @@ import {
     booleanAttribute,
     ChangeDetectionStrategy,
     Component,
+    computed,
+    contentChild,
+    contentChildren,
     forwardRef,
     inject,
     input,
+    model,
     numberAttribute,
     output,
     TemplateRef,
     viewChild,
-    ViewEncapsulation,
-    contentChild,
-    model,
-    contentChildren,
-    computed
+    ViewEncapsulation
 } from '@angular/core';
 import {
     ControlValueAccessor,
@@ -80,7 +80,7 @@ export const TRI_STATE_CHECKBOX_VALUE_ACCESSOR: any = {
                 [attr.tabindex]="tabindex()"
                 [disabled]="disabled()"
                 [readonly]="readonly()"
-                [attr.aria-required]="required()"
+                [required]="requiredAndNotReadonly()"
                 [attr.aria-labelledby]="ariaLabelledBy()"
                 [attr.aria-label]="ariaLabel()"
                 [style]="inputStyle()"
@@ -199,6 +199,7 @@ export class TriStateCheckbox
      * @group Props
      */
     readonly required = input<boolean, unknown>(undefined, { transform: booleanAttribute });
+
     /**
      * When present, it specifies that the component should automatically get focus on load.
      * @group Props
@@ -231,6 +232,8 @@ export class TriStateCheckbox
     onBlur = output<Event>();
 
     inputViewChild = viewChild.required<HTMLInputElement>('input');
+
+    readonly requiredAndNotReadonly = computed(() => this.required() && !this.readonly());
 
     readonly containerClass = computed(() => ({
         'p-checkbox p-component': true,

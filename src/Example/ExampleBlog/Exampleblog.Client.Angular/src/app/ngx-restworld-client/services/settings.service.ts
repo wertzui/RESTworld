@@ -2,7 +2,10 @@ import { Injectable } from "@angular/core";
 import { ClientSettings } from "../models/client-settings";
 import { RestWorldOptions } from "../models/restworld-options";
 import { RestWorldClientCollection } from "./restworld-client-collection";
-import { provideRestWorld } from "../provide-restworld";
+// `provideRestWorld` is only referenced in the `{@link}` doc comments below (never as a runtime value), so it
+// is imported as a type-only import. This keeps the doc reference resolvable while avoiding a real circular
+// dependency, since `provideRestWorld` (in `provide-restworld.ts`) itself depends on this service.
+import type { provideRestWorld } from "../provide-restworld";
 
 /**
  * This service is responsible for loading the settings from the client-backend and setting up the RestWorldClientCollection.

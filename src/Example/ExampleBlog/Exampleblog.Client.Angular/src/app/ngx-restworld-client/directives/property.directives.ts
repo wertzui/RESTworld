@@ -1,10 +1,10 @@
-import { Directive, Host, Inject, input, Optional, Self, SkipSelf, ElementRef, type OnChanges, Renderer2, type SimpleChanges, effect, forwardRef, NgModule, type InputSignal, type InputSignalWithTransform } from "@angular/core";
-import { FormControlName, NG_ASYNC_VALIDATORS, NG_VALIDATORS, NG_VALUE_ACCESSOR, type AsyncValidator, type AsyncValidatorFn, ControlContainer, type ControlValueAccessor, type Validator, type ValidatorFn, DefaultValueAccessor, CheckboxControlValueAccessor, SelectControlValueAccessor, RangeValueAccessor, NumberValueAccessor, NgControl, NgControlStatus, ReactiveFormsModule } from "@angular/forms";
+import { Directive, effect, ElementRef, forwardRef, Host, Inject, input, NgModule, Optional, Renderer2, Self, SkipSelf, type InputSignal, type InputSignalWithTransform, type OnChanges, type SimpleChanges } from "@angular/core";
+import { SIGNAL, signalSetFn } from '@angular/core/primitives/signals';
+import { CheckboxControlValueAccessor, ControlContainer, DefaultValueAccessor, FormControlName, NG_ASYNC_VALIDATORS, NG_VALIDATORS, NG_VALUE_ACCESSOR, NgControl, NgControlStatus, NumberValueAccessor, RangeValueAccessor, ReactiveFormsModule, SelectControlValueAccessor, type AsyncValidator, type AsyncValidatorFn, type ControlValueAccessor, type Validator, type ValidatorFn } from "@angular/forms";
 import type { Property, SimpleValue } from "@wertzui/ngx-hal-client";
 import { InputNumber } from "primeng/inputnumber";
 import { MultiSelect } from "primeng/multiselect";
 import { Select } from "primeng/select";
-import { SIGNAL, signalSetFn  } from '@angular/core/primitives/signals';
 
 export function setValueOfInputSignal<T, TransformT>(signal: InputSignal<T> | InputSignalWithTransform<T, TransformT>, value: T) {
   const node = signal[SIGNAL];
@@ -188,18 +188,18 @@ export class PropertyAttributes<TProperty extends Property<SimpleValue, string, 
 
             this.renderer.setAttribute(nativeElement, "id", property.name);
             this.renderer.setAttribute(nativeElement, "name", property.name);
+
             if (property.placeholder)
                 this.renderer.setAttribute(nativeElement, "placeholder", property.placeholder as string);
             if (property.type)
                 this.renderer.setAttribute(nativeElement, "type", property.type);
-            if (property.max)
-                this.renderer.setAttribute(nativeElement, "max", property.max.toString());
-            if (property.min)
-                this.renderer.setAttribute(nativeElement, "min", property.min.toString());
             if (property.step)
                 this.renderer.setAttribute(nativeElement, "step", property.step.toString());
-            if (property.required)
-                this.renderer.setAttribute(nativeElement, "required", "true");
+            if (property.cols)
+                this.renderer.setAttribute(nativeElement, "cols", property.cols.toString());
+            if (property.rows)
+                this.renderer.setAttribute(nativeElement, "rows", property.rows.toString());
+
             if (property.readOnly) {
                 // If the element is a textarea, we set the disabled property, otherwise we add the p-disabled class.
                 // This is because the p-disabled class prevents scrolling and resizing of the textarea, which is not desired.
@@ -208,14 +208,19 @@ export class PropertyAttributes<TProperty extends Property<SimpleValue, string, 
                 else
                     this.renderer.addClass(nativeElement, "p-disabled");
             }
-            if (property.cols)
-                this.renderer.setAttribute(nativeElement, "cols", property.cols.toString());
-            if (property.rows)
-                this.renderer.setAttribute(nativeElement, "rows", property.rows.toString());
-            if (property.maxLength)
-                this.renderer.setAttribute(nativeElement, "maxlength", property.maxLength.toString());
-            if (property.minLength)
-                this.renderer.setAttribute(nativeElement, "minlength", property.minLength.toString());
+            else {
+                // Set validation attributes only when the property is not read-only, so the user can still interact with the element.
+                if (property.required)
+                    this.renderer.setAttribute(nativeElement, "required", "true");
+                if (property.max)
+                    this.renderer.setAttribute(nativeElement, "max", property.max.toString());
+                if (property.min)
+                    this.renderer.setAttribute(nativeElement, "min", property.min.toString());
+                if (property.maxLength)
+                    this.renderer.setAttribute(nativeElement, "maxlength", property.maxLength.toString());
+                if (property.minLength)
+                    this.renderer.setAttribute(nativeElement, "minlength", property.minLength.toString());
+            }
         });
     }
 }

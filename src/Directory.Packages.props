@@ -4,9 +4,9 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Asp.Versioning.OData.ApiExplorer" Version="10.2.1" />
-    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.5.3" />
-    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="13.5.3" />
-    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.5.3" />
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.5.4" />
     <PackageVersion Include="AutoFixture" Version="4.18.1" />
     <PackageVersion Include="AutoMapper" Version="14.0.0" />
     <PackageVersion Include="AutoMapper.AspNetCore.OData.EFCore" Version="7.0.4" />
@@ -15,7 +15,7 @@
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <PackageVersion Include="CsvHelper" Version="33.1.0" />
     <PackageVersion Include="EntityFrameworkCore.Parallel" Version="6.0.7" />
-    <PackageVersion Include="HAL.AspNetCore.OData" Version="21.2.2" />
+    <PackageVersion Include="HAL.AspNetCore.OData" Version="22.0.0" />
     <PackageVersion Include="HAL.Client.Net" Version="11.0.13" />
     <PackageVersion Include="HAL.Common" Version="9.0.9" />
     <PackageVersion Include="HealthChecks.Kubernetes.Aspire" Version="2.0.5" />
@@ -32,7 +32,7 @@
     <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.10.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />
-    <PackageVersion Include="MockQueryable.EntityFrameworkCore" Version="10.0.8" />
+    <PackageVersion Include="MockQueryable.EntityFrameworkCore" Version="10.0.12" />
     <PackageVersion Include="MSTest.TestAdapter" Version="4.4.0" />
     <PackageVersion Include="MSTest.TestFramework" Version="4.4.0" />
     <PackageVersion Include="NSubstitute" Version="6.2.0" />

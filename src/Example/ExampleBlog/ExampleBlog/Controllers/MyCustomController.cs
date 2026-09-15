@@ -46,7 +46,7 @@ public class MyCustomController : RestControllerBase
     {
         var response = await Cache.GetOrCreateWithCurrentUserAsync(nameof(GetPostWithAuthorAsync) + "_" + id, nameof(CachingOptions.Get), _ => _service.GetPostWithAuthorAsync(id, cancellationToken));
 
-        var result = await _resultFactory.CreateOkResultBasedOnOutcomeAsync(response, action: ActionHelper.StripAsyncSuffix(nameof(GetPostWithAuthorAsync)));
+        var result = await _resultFactory.CreateOkResultBasedOnOutcomeAsync<PostWithAuthorDto, PostWithAuthorDto>(response, action: ActionHelper.StripAsyncSuffix(nameof(GetPostWithAuthorAsync)));
 
         return result;
     }

@@ -20,11 +20,11 @@ namespace ExampleBlog.Controllers;
 [ApiVersion("1", Deprecated = true)]
 public class MyCustomController1 : RestControllerBase
 {
-    private readonly MyCustomService _service;
+    private readonly MyCustomServiceV1 _service;
     private readonly IResultFactory _resultFactory;
 
     public MyCustomController1(
-        MyCustomService service,
+        MyCustomServiceV1 service,
         IODataResourceFactory resourceFactory,
         IResultFactory resultFactory,
         ICacheHelper cache)
@@ -38,13 +38,13 @@ public class MyCustomController1 : RestControllerBase
     [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
     [ProducesResponseType(200)]
     [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Resource<PostWithAuthorDto>>> GetPostWithAuthorAsync(
+    public async Task<ActionResult<Resource<PostWithAuthorDtoV1>>> GetPostWithAuthorAsync(
         long id,
         CancellationToken cancellationToken)
     {
         var response = await Cache.GetOrCreateWithCurrentUserAsync(nameof(GetPostWithAuthorAsync) + "_" + id, nameof(CachingOptions.Get), _ => _service.GetPostWithAuthorAsync(id, cancellationToken));
 
-        var result = await _resultFactory.CreateOkResultBasedOnOutcomeAsync(response, action: ActionHelper.StripAsyncSuffix(nameof(GetPostWithAuthorAsync)));
+        var result = await _resultFactory.CreateOkResultBasedOnOutcomeAsync<PostWithAuthorDtoV1, PostWithAuthorDtoV1>(response, action: ActionHelper.StripAsyncSuffix(nameof(GetPostWithAuthorAsync)));
 
         return result;
     }

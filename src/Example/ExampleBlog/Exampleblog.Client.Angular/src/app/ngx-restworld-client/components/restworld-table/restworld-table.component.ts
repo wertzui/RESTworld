@@ -58,7 +58,7 @@ import { Router, ActivatedRoute } from "@angular/router";
         deps: [[Optional, FormArrayName]],
         useFactory: (arrayName: FormArrayName) => arrayName,
     }],
-    imports: [TableModule, RestWorldMenuButtonComponent, forwardRef(() => RestWorldInputComponent), RestWorldDisplayComponent, ReactiveFormsModule, ContextMenuModule, RestWorldTableColumnFilterElementComponent, RestWorldTableColumnFilterElementComponent]
+    imports: [TableModule, RestWorldMenuButtonComponent, forwardRef(() => RestWorldInputComponent), RestWorldDisplayComponent, ReactiveFormsModule, ContextMenuModule, forwardRef(() => RestWorldTableColumnFilterElementComponent)]
 })
 export class RestWorldTableComponent<TListItem extends Record<string, any>> {
     onSort($event: { multisortmeta: SortMeta[] }) {

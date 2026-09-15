@@ -79,7 +79,8 @@ public interface IResultFactory
     /// <see cref="CreatedAtActionResult"/> containing a HAL resource, or a HAL-Forms resource based
     /// on the accept header.
     /// </summary>
-    /// <typeparam name="TDto">The type of the DTO.</typeparam>
+    /// <typeparam name="TValue">The type of the value.</typeparam>
+    /// <typeparam name="TTemplate">The type of the template.</typeparam>
     /// <param name="serviceResponse">The response from the service call.</param>
     /// <param name="readOnly">
     /// When this method returns HAL-Forms, this parameter determines if the form is read only or not.
@@ -94,7 +95,7 @@ public interface IResultFactory
     /// <see cref="ServiceResponse{T}.ResponseObject"/> is used.
     /// </param>
     /// <returns>Either a successful or an error result.</returns>
-    ValueTask<ObjectResult> CreateCreatedResultBasedOnOutcomeAsync<TDto>(ServiceResponse<TDto> serviceResponse, bool readOnly = false, string action = "Get", string? controller = null, object? routeValues = null);
+    ValueTask<ObjectResult> CreateCreatedResultBasedOnOutcomeAsync<TValue, TTemplate>(ServiceResponse<TValue> serviceResponse, bool readOnly = false, string action = "Get", string? controller = null, object? routeValues = null);
 
     /// <summary>
     /// Creates an empty result based on the outcome of a service response. It is either empty, or
@@ -152,7 +153,8 @@ public interface IResultFactory
     /// <see cref="OkObjectResult"/> containing a HAL resource, or a HAL-Forms resource based on the
     /// accept header.
     /// </summary>
-    /// <typeparam name="TDto">The type of the DTO.</typeparam>
+    /// <typeparam name="TValue">The type of the value.</typeparam>
+    /// <typeparam name="TTemplate">The type of the template.</typeparam>
     /// <param name="serviceResponse">The response from the service call.</param>
     /// <param name="readOnly">
     /// When this method returns HAL-Forms, this parameter determines if the form is read only or not.
@@ -167,7 +169,7 @@ public interface IResultFactory
     /// <see cref="ServiceResponse{T}.ResponseObject"/> is used.
     /// </param>
     /// <returns>Either a successful or an error result.</returns>
-    ValueTask<ObjectResult> CreateOkResultBasedOnOutcomeAsync<TDto>(ServiceResponse<TDto> serviceResponse, bool readOnly = true, string action = "Get", string? controller = null, object? routeValues = null);
+    ValueTask<ObjectResult> CreateOkResultBasedOnOutcomeAsync<TValue, TTemplate>(ServiceResponse<TValue> serviceResponse, bool readOnly = true, string action = "Get", string? controller = null, object? routeValues = null);
 
     /// <summary>
     /// Creates a paged collection result which is either a HAL resource, or a HAL-Forms resource
@@ -274,7 +276,8 @@ public interface IResultFactory
     /// <summary>
     /// Creates a result which is either a HAL resource, or a HAL-Forms resource based on the accept header.
     /// </summary>
-    /// <typeparam name="TDto">The type of the DTO.</typeparam>
+    /// <typeparam name="TValue">The type of the DTO.</typeparam>
+    /// <typeparam name="TTemplate">The type used to create the HAL-Forms template.</typeparam>
     /// <param name="dto">The DTO to return.</param>
     /// <param name="method">The method to use when submitting the form.</param>
     /// <param name="readOnly">
@@ -287,7 +290,7 @@ public interface IResultFactory
     /// <param name="controller">The controller.</param>
     /// <param name="routeValues">The route values.</param>
     /// <returns>Either a HAL resource, or a HAL-Forms resource containing the given <paramref name="dto"/></returns>
-    ValueTask<Resource> CreateResourceAsync<TDto>(TDto dto, HttpMethod method, bool readOnly = true, string action = "Get", string? controller = null, object? routeValues = null);
+    ValueTask<Resource> CreateResourceAsync<TValue, TTemplate>(TValue dto, HttpMethod method, bool readOnly = true, string action = "Get", string? controller = null, object? routeValues = null);
 
     /// <summary>
     /// Turns a HAL-Form read-only.

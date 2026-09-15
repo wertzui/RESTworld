@@ -39,7 +39,7 @@ public class MyCustomServiceV1 : DbServiceBase<BlogDatabase>
         _authorizationHandlers = authorizationHandlers ?? throw new ArgumentNullException(nameof(authorizationHandlers));
     }
 
-    public Task<ServiceResponse<PostWithAuthorDtoV1>> GetPostWithAuthor(long postId, CancellationToken cancellationToken)
+    public Task<ServiceResponse<PostWithAuthorDtoV1>> GetPostWithAuthorAsync(long postId, CancellationToken cancellationToken)
         => TryExecuteWithAuthorizationAsync<Post, long, PostWithAuthorDtoV1, MyCustomAuthorizationHandlerV1>(
             postId,
             (result, token) => GetPostWithAuthorInternalAsync(result, token),

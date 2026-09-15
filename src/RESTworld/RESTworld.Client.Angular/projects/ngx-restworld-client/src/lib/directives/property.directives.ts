@@ -188,6 +188,7 @@ export class PropertyAttributes<TProperty extends Property<SimpleValue, string, 
 
             this.renderer.setAttribute(nativeElement, "id", property.name);
             this.renderer.setAttribute(nativeElement, "name", property.name);
+
             if (property.placeholder)
                 this.renderer.setAttribute(nativeElement, "placeholder", property.placeholder as string);
             if (property.type)
@@ -198,6 +199,7 @@ export class PropertyAttributes<TProperty extends Property<SimpleValue, string, 
                 this.renderer.setAttribute(nativeElement, "cols", property.cols.toString());
             if (property.rows)
                 this.renderer.setAttribute(nativeElement, "rows", property.rows.toString());
+
             if (property.readOnly) {
                 // If the element is a textarea, we set the disabled property, otherwise we add the p-disabled class.
                 // This is because the p-disabled class prevents scrolling and resizing of the textarea, which is not desired.

@@ -104,6 +104,29 @@ public class CrudController<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFul
         ReturnsReadOnlyFormsResponses = false;
     }
 
+
+    /// <summary>
+    /// Gets a full representation of the resource with the given ID.
+    /// </summary>
+    /// <param name="id">The ID of the resource.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
+    /// <returns>The full representation for the requested resource.</returns>
+    [HttpGet("{id:long}")]
+    [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Get))]
+    [ProducesResponseType(typeof(FormsResource), 200, "application/prs.hal-forms+json", "application/hal-forms+json")]
+    [ProducesResponseType(typeof(void), 200, "application/hal+json")]
+    [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
+    [ProducesWithContentNegotiation("application/hal+json", "application/prs.hal-forms+json", "application/hal-forms+json")]
+    [Description("Gets a full representation of the resource with the given ID.")]
+    public override async Task<ActionResult<Resource<TGetFullDto>>> GetAsync(long id, CancellationToken cancellationToken)
+    {
+        var response = await Cache.CacheGetWithCurrentUserAsync(id, _ => _crudService.GetSingleAsync(id, cancellationToken));
+
+        var result = await ResultFactory.CreateOkResultBasedOnOutcomeAsync<TGetFullDto, TUpdateDto>(response, ReturnsReadOnlyFormsResponses);
+
+        return result;
+    }
+
     /// <summary>
     /// Deletes the resource with the given ID and timestamp.
     /// </summary>
@@ -190,7 +213,7 @@ public class CrudController<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFul
     {
         var dto = CreateEmpty();
 
-        var resource = await ResultFactory.CreateResourceAsync(dto, HttpMethod.Post, ReturnsReadOnlyFormsResponses, ActionHelper.StripAsyncSuffix(nameof(PostAsync)), routeValues: new { });
+        var resource = await ResultFactory.CreateResourceAsync<TCreateDto?, TCreateDto>(dto, HttpMethod.Post, ReturnsReadOnlyFormsResponses, ActionHelper.StripAsyncSuffix(nameof(PostAsync)), routeValues: new { });
 
         var result = new JsonResult(resource, _createNewResourceJsonSettings);
 
@@ -328,7 +351,7 @@ public class CrudController<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFul
         if (serviceResponse.Succeeded)
             Cache.RemoveGetListForAllUsers<ServiceResponse<TGetFullDto>>();
 
-        var result = await ResultFactory.CreateCreatedResultBasedOnOutcomeAsync(serviceResponse, ReturnsReadOnlyFormsResponses);
+        var result = await ResultFactory.CreateCreatedResultBasedOnOutcomeAsync<TGetFullDto, TUpdateDto>(serviceResponse, ReturnsReadOnlyFormsResponses);
 
         return result;
     }
@@ -376,7 +399,7 @@ public class CrudController<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFul
             Cache.RemoveGetListForAllUsers<ServiceResponse<TGetFullDto>>();
         }
 
-        var result = await ResultFactory.CreateOkResultBasedOnOutcomeAsync(serviceResponse, ReturnsReadOnlyFormsResponses);
+        var result = await ResultFactory.CreateOkResultBasedOnOutcomeAsync<TGetFullDto, TUpdateDto>(serviceResponse, ReturnsReadOnlyFormsResponses);
 
         return result;
     }

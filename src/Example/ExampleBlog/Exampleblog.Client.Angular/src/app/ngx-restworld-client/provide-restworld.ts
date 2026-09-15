@@ -24,7 +24,10 @@ import { OPENTELEMETRY_HTTP_INTERCEPTOR_PROVIDER } from "./services/openTelemetr
  * @param signalFormsConfig An optional configuration for Signal Forms (used by the `rw-signal-*` components,
  * e.g. `<rw-signal-form>`). Defaults to `{ classes: NG_STATUS_CLASSES }`, which makes Signal Forms apply the
  * same `.ng-touched`/`.ng-invalid`/`.ng-dirty`/`.ng-valid` classes to fields that Reactive Forms applies
- * automatically. Pass an empty object (`{}`) to opt out, or your own `classes` map to fully customize.
+ * automatically, so existing CSS written against those class names (see e.g.
+ * `restworld-signal-input-simple.component.css`) keeps working without any changes. Pass an empty object
+ * (`{}`) to opt out, or your own `classes` map to fully customize the applied classes.
+ * @see https://angular.dev/guide/forms/signals/migration#automatic-status-classes
  */
 export function provideRestWorld(ngHttpCachingConfig?: NgHttpCachingConfig, signalFormsConfig?: SignalFormsConfig): (EnvironmentProviders | Provider)[] {
     const defaultCachingConfig = {
@@ -35,6 +38,7 @@ export function provideRestWorld(ngHttpCachingConfig?: NgHttpCachingConfig, sign
         }
 
     const mergedCachingConfig = { ...defaultCachingConfig, ...ngHttpCachingConfig };
+    const mergedSignalFormsConfig = signalFormsConfig ?? { classes: NG_STATUS_CLASSES };
 
     const restWorldInitializer = provideAppInitializer(async () => {
         const settingsService = inject(SettingsService);
@@ -45,13 +49,11 @@ export function provideRestWorld(ngHttpCachingConfig?: NgHttpCachingConfig, sign
 
     const cachingProviders = provideNgHttpCaching(mergedCachingConfig);
 
-    const signalFormsProviders = provideSignalFormsConfig(signalFormsConfig ?? { classes: NG_STATUS_CLASSES });
-
     const allProviders = [
         restWorldInitializer,
         cachingProviders,
-        signalFormsProviders,
-        OPENTELEMETRY_HTTP_INTERCEPTOR_PROVIDER
+        OPENTELEMETRY_HTTP_INTERCEPTOR_PROVIDER,
+        provideSignalFormsConfig(mergedSignalFormsConfig)
     ];
 
     return allProviders;

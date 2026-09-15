@@ -109,12 +109,12 @@ public class ResultFactory : IResultFactory
     }
 
     /// <inheritdoc/>
-    public async ValueTask<ObjectResult> CreateCreatedResultBasedOnOutcomeAsync<TDto>(ServiceResponse<TDto> serviceResponse, bool readOnly = false, string getAction = "Get", string? controller = null, object? routeValues = null)
+    public async ValueTask<ObjectResult> CreateCreatedResultBasedOnOutcomeAsync<TValue, TTemplate>(ServiceResponse<TValue> serviceResponse, bool readOnly = false, string getAction = "Get", string? controller = null, object? routeValues = null)
     {
         if (!serviceResponse.Succeeded)
             return _errorResultFactory.CreateError(serviceResponse, "Post");
 
-        var resource = await CreateResourceAsync(serviceResponse.ResponseObject, DetermineHttpMethodFromId(serviceResponse.ResponseObject), readOnly, getAction, controller, routeValues);
+        var resource = await CreateResourceAsync<TValue, TTemplate>(serviceResponse.ResponseObject, DetermineHttpMethodFromId(serviceResponse.ResponseObject), readOnly, getAction, controller, routeValues);
 
         return new CreatedResult(resource.GetSelfLink().Href, serviceResponse.ResponseObject);
     }
@@ -129,12 +129,12 @@ public class ResultFactory : IResultFactory
     }
 
     /// <inheritdoc/>
-    public async ValueTask<ObjectResult> CreateOkResultBasedOnOutcomeAsync<TDto>(ServiceResponse<TDto> serviceResponse, bool readOnly = true, string action = "Get", string? controller = null, object? routeValues = null)
+    public async ValueTask<ObjectResult> CreateOkResultBasedOnOutcomeAsync<TValue, TTemplate>(ServiceResponse<TValue> serviceResponse, bool readOnly = true, string action = "Get", string? controller = null, object? routeValues = null)
     {
         if (!serviceResponse.Succeeded)
             return _errorResultFactory.CreateError(serviceResponse, action);
 
-        var resource = await CreateResourceAsync(serviceResponse.ResponseObject, DetermineHttpMethodFromId(serviceResponse.ResponseObject), readOnly, action, controller, routeValues);
+        var resource = await CreateResourceAsync<TValue, TTemplate>(serviceResponse.ResponseObject, DetermineHttpMethodFromId(serviceResponse.ResponseObject), readOnly, action, controller, routeValues);
 
         return new OkObjectResult(resource);
     }
@@ -217,14 +217,14 @@ public class ResultFactory : IResultFactory
     }
 
     /// <inheritdoc/>
-    public async ValueTask<Resource> CreateResourceAsync<TDto>(TDto dto, HttpMethod method, bool readOnly = true, string action = "Get", string? controller = null, object? routeValues = null)
+    public async ValueTask<Resource> CreateResourceAsync<TValue, TTemplate>(TValue dto, HttpMethod method, bool readOnly = true, string action = "Get", string? controller = null, object? routeValues = null)
     {
         var httpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("No HTTP context present.");
         routeValues = UseIdAsRouteValuesIfPresent(dto, routeValues);
 
         if (httpContext.GetAcceptHeaders().AcceptsHalFormsOverHal())
         {
-            var formsResource = await _formFactory.CreateResourceForEndpointAsync(dto, method, "View", action: action, controller: controller, routeValues: routeValues);
+            var formsResource = await _formFactory.CreateResourceForEndpointAsync<TValue, TTemplate>(dto, method, "View", action: action, controller: controller, routeValues: routeValues);
 
             if (readOnly)
                 MakeFormReadOnly(formsResource);

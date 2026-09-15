@@ -9,7 +9,7 @@
                     <p-message severity="error" variant="simple" size="small">'{{prompt()}}' must be a valid email address.</p-message>
                 }
                 @case ('min') {
-                    <p-message severity="error" variant="simple" size="small">'{{prompt()}}' must be equal or greater than or equal to {{ $any(error).min }}.</p-message>
+                    <p-message severity="error" variant="simple" size="small">'{{prompt()}}' must be greater than or equal to {{ $any(error).min }}.</p-message>
                 }
                 @case ('max') {
                     <p-message severity="error" variant="simple" size="small">'{{prompt()}}' must be smaller than or equal to {{ $any(error).max }}.</p-message>

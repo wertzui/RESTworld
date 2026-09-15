@@ -1,4 +1,5 @@
 ﻿using HAL.AspNetCore.Forms.Abstractions;
+using HAL.AspNetCore.Forms.Customization;
 using HAL.Common;
 using HAL.Common.Forms;
 using System;
@@ -17,13 +18,13 @@ namespace ExampleBlog.HalFormsCustomizations;
 /// This customization fixes that.
 /// This customization is only applied to the Search form of Get-List endpoints.
 /// </summary>
-public class ODataEnumFix : HAL.AspNetCore.Forms.Customization.IFormsResourceGenerationCustomization
+public class ODataEnumFix : IFormsResourceGenerationCustomization
 {
     public bool Exclusive => false;
 
     public int Order => int.MaxValue;
 
-    public bool AppliesTo<TDto>(FormsResource formsResource, TDto value, HttpMethod method, string title, string contentType, string action, string? controller, object? routeValues)
+    public bool AppliesTo<TValue, TTemplate>(FormsResource formsResource, TValue value, HttpMethod method, string title, string contentType, string action, string? controller, object? routeValues)
     {
         return title == "Search" && contentType == "application/x-www-form-urlencoded" && formsResource.Embedded is not null;
     }
@@ -49,7 +50,7 @@ public class ODataEnumFix : HAL.AspNetCore.Forms.Customization.IFormsResourceGen
         return true;
     }
 
-    public ValueTask ApplyAsync<TDto>(FormsResource formsResource, TDto value, HttpMethod method, string title, string contentType, string action, string? controller, object? routeValues, IFormFactory formFactory)
+    public ValueTask ApplyAsync<TValue, TTemplate>(FormsResource formsResource, TValue value, HttpMethod method, string title, string contentType, string action, string? controller, object? routeValues, IFormFactory formFactory)
     {
         if (!TryGetItemType(formsResource, out var dtoType))
             return ValueTask.CompletedTask;

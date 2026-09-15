@@ -213,8 +213,9 @@ export class ProblemService {
         if (problemDetails.detail)
             errors.push({ kind: 'remote', message: problemDetails.detail });
 
-        if (problemDetails["errors"] as {}) {
-            for (const [key, errorsForKey] of Object.entries(problemDetails["errors"] as {})) {
+        const errorsObj = problemDetails.errors ?? problemDetails['errors'];
+        if (errorsObj && typeof errorsObj === 'object') {
+            for (const [key, errorsForKey] of Object.entries(errorsObj)) {
                 const message = Array.isArray(errorsForKey) ? errorsForKey.join(' ') : String(errorsForKey);
                 const fieldTree = getFieldTreeAtPath(rootField, key);
 
