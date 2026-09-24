@@ -1,13 +1,13 @@
 import { Component, computed, input, linkedSignal, model, resource } from '@angular/core';
+import { Router } from '@angular/router';
 import { PagedListResource, ProblemDetails, Resource, ResourceDto, ResourceOfDto, Template, type PropertyDto, type SimpleValue } from '@wertzui/ngx-hal-client';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
-import { RestWorldClientCollection } from '../../services/restworld-client-collection';
-import { AvatarGenerator } from '../../services/avatar-generator';
-import { Router } from '@angular/router';
-import { ODataParameters } from '../../models/o-data';
-import { RestWorldSignalTableComponent } from "../../components/restworld-signal-table/restworld-signal-table.component";
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { RestWorldSignalTableComponent } from "../../components/restworld-signal-table/restworld-signal-table.component";
+import { ODataParameters } from '../../models/o-data';
+import { AvatarGenerator } from '../../services/avatar-generator';
 import { ProblemService } from "../../services/problem.service";
+import { RestWorldClientCollection } from '../../services/restworld-client-collection';
 
 /**
  * A component that displays a list of resources from a RESTworld API, using Signal Forms.
@@ -40,14 +40,14 @@ export class RESTworldSignalListViewComponent<TListDto extends ResourceDto & Rec
     public readonly filter = model<string | undefined>(undefined, { alias: "$filter" });
     public readonly orderby = model<string | undefined>(undefined, { alias: "$orderby" });
     public readonly skip = model<number | undefined>(undefined, { alias: "$skip" });
-    public readonly top = model<number | undefined>(undefined, { alias: "$top" });
+    public readonly top = model<number>(10, { alias: "$top" });
 
     public readonly oDataParameters = linkedSignal(() => {
         const parameters: ODataParameters = {
             $filter: this.filter(),
             $orderby: this.orderby(),
             $skip: this.skip(),
-            $top: this.top()
+            $top: this.top() ?? 10
         };
         return parameters;
     });
