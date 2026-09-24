@@ -1,19 +1,19 @@
 import { Component, Injector, computed, effect, forwardRef, inject, input, model, runInInjectionContext, signal, untracked, viewChild } from '@angular/core';
 import type { FieldTree } from '@angular/forms/signals';
+import { ActivatedRoute, Router } from "@angular/router";
 import { Property, PropertyType, SignalFormService, SimpleValue, Template, type SignalForm } from '@wertzui/ngx-hal-client';
-import { FilterMetadata, MenuItem, SelectItem, TranslationKeys, FilterService, type SortMeta } from 'primeng/api';
+import { FilterMetadata, FilterService, MenuItem, SelectItem, TranslationKeys, type SortMeta } from 'primeng/api';
+import { PrimeNG } from 'primeng/config';
+import { ContextMenu, ContextMenuModule } from 'primeng/contextmenu';
+import { DomHandler } from 'primeng/dom';
+import { ColumnFilter, Table, TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ODataParameters } from '../../models/o-data';
 import { ODataService } from '../../services/odata.service';
-import { ContextMenu, ContextMenuModule } from 'primeng/contextmenu';
-import { ColumnFilter, Table, TableLazyLoadEvent, TableModule } from 'primeng/table';
-import { DomHandler } from 'primeng/dom';
-import { PrimeNG } from 'primeng/config';
+import { getChildFieldTree, getFieldTreeItemAt } from '../../util/field-tree';
+import { RestWorldDisplayComponent } from "../restworld-displays/restworld-displays";
 import { RestWorldMenuButtonComponent } from "../restworld-menu-button/restworld-menu-button.component";
 import { RestWorldSignalInputComponent } from "../restworld-signal-inputs/restworld-signal-input/restworld-signal-input.component";
-import { RestWorldDisplayComponent } from "../restworld-displays/restworld-displays";
 import { RestWorldSignalTableColumnFilterElementComponent } from "../restworld-signal-table-column-filter-element/restworld-signal-table-column-filter-element.component";
-import { Router, ActivatedRoute } from "@angular/router";
-import { getChildFieldTree, getFieldTreeItemAt } from '../../util/field-tree';
 
 /**
  * Displays a table based on a search-, an edit-template and a list of items, using Signal Forms.
@@ -429,7 +429,8 @@ export class RestWorldSignalTableComponent<TListItem extends Record<string, any>
             if (!this._initialQueryParamsSet) {
                 this._initialQueryParamsSet = true;
                 const oDataParametersFromUrl = ODataService.createParametersFromRoute(activatedRoute, urlParameterPrefix);
-                const mergedParameters = { ...oDataParameters, ...oDataParametersFromUrl };
+                const oDataParametersFromPagination = { $take: this.rowsPerPage() };
+                const mergedParameters = { ...oDataParametersFromPagination, ...oDataParameters, ...oDataParametersFromUrl };
                 this.oDataParameters.set(mergedParameters);
                 return;
             }

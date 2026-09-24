@@ -1,18 +1,18 @@
 import { Component, Optional, computed, effect, forwardRef, input, model, signal, viewChild } from '@angular/core';
+import { AbstractControl, ControlContainer, FormArray, FormArrayName, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from "@angular/router";
 import { FormService, Property, PropertyType, SimpleValue, Template } from '@wertzui/ngx-hal-client';
-import { FilterMetadata, MenuItem, SelectItem, TranslationKeys, FilterService, type SortMeta } from 'primeng/api';
+import { FilterMetadata, FilterService, MenuItem, SelectItem, TranslationKeys, type SortMeta } from 'primeng/api';
+import { PrimeNG } from 'primeng/config';
+import { ContextMenu, ContextMenuModule } from 'primeng/contextmenu';
+import { DomHandler } from 'primeng/dom';
+import { ColumnFilter, Table, TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ODataParameters } from '../../models/o-data';
 import { ODataService } from '../../services/odata.service';
-import { ContextMenu, ContextMenuModule } from 'primeng/contextmenu';
-import { AbstractControl, ControlContainer, FormArray, FormArrayName, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { ColumnFilter, Table, TableLazyLoadEvent, TableModule } from 'primeng/table';
-import { DomHandler } from 'primeng/dom';
-import { PrimeNG } from 'primeng/config';
-import { RestWorldMenuButtonComponent } from "../restworld-menu-button/restworld-menu-button.component";
-import { RestWorldInputComponent } from "../restworld-inputs/restworld-inputs";
-import { RestWorldDisplayComponent } from "../restworld-displays/restworld-displays";
 import { RestWorldTableColumnFilterElementComponent } from "../rest-world-table-column-filter-element/rest-world-table-column-filter-element.component";
-import { Router, ActivatedRoute } from "@angular/router";
+import { RestWorldDisplayComponent } from "../restworld-displays/restworld-displays";
+import { RestWorldInputComponent } from "../restworld-inputs/restworld-inputs";
+import { RestWorldMenuButtonComponent } from "../restworld-menu-button/restworld-menu-button.component";
 
 /**
  * Displays a table based on a search-, an edit-template and a list of items.
@@ -343,7 +343,8 @@ export class RestWorldTableComponent<TListItem extends Record<string, any>> {
             if (!this._initialQueryParamsSet) {
                 this._initialQueryParamsSet = true;
                 const oDataParametersFromUrl = ODataService.createParametersFromRoute(activatedRoute, urlParameterPrefix);
-                const mergedParameters = { ...oDataParameters, ...oDataParametersFromUrl };
+                const oDataParametersFromPagination = { $top: this.rowsPerPage() };
+                const mergedParameters = { ...oDataParametersFromPagination, ...oDataParameters, ...oDataParametersFromUrl };
                 this.oDataParameters.set(mergedParameters);
                 return;
             }
