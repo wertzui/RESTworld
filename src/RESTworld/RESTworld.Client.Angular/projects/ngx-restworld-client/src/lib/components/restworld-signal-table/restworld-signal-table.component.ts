@@ -429,7 +429,7 @@ export class RestWorldSignalTableComponent<TListItem extends Record<string, any>
             if (!this._initialQueryParamsSet) {
                 this._initialQueryParamsSet = true;
                 const oDataParametersFromUrl = ODataService.createParametersFromRoute(activatedRoute, urlParameterPrefix);
-                const oDataParametersFromPagination = { $take: this.rowsPerPage() };
+                const oDataParametersFromPagination = { $top: this.rowsPerPage() };
                 const mergedParameters = { ...oDataParametersFromPagination, ...oDataParameters, ...oDataParametersFromUrl };
                 this.oDataParameters.set(mergedParameters);
                 return;
