@@ -54,7 +54,7 @@ export class RestWorldSignalInputCollectionComponent<TProperty extends Property<
      * to bridge a `FormArray`'s `valueChanges` into a signal), this is trivial with Signal Forms: `FieldState.value`
      * is already a plain `Signal`, so no RxJS bridge is needed.
      */
-    public readonly rows = computed(() => this.innerField().value());
+    public readonly rows = computed(() => [...this.innerField().value()]);
 
     /**
      * A menu, displayed at the top right of the nested {@link RestWorldSignalTableComponent} `<rw-signal-table>`,

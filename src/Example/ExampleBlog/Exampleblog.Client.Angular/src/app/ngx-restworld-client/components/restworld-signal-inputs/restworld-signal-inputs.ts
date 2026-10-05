@@ -16,7 +16,7 @@ export abstract class RestWorldSignalInputBaseComponent<TProperty extends Proper
      * The property to display.
      * @required
      */
-    public readonly property = model.required<TProperty>();
+    public readonly property = input.required<TProperty>();
 
     /**
      * The `FieldTree` node for the property to bind to.

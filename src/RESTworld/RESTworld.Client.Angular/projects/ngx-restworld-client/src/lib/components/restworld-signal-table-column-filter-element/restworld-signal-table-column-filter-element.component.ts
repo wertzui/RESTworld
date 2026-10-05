@@ -52,6 +52,8 @@ export class RestWorldSignalTableColumnFilterElementComponent<TProperty extends 
 
     /**
      * The `FieldTree` for the property, to bind to `[formField]` via `<rw-signal-input>`.
+     * @remarks Typed as `FieldTree<SimpleValue>`, because the concrete value type depends on the runtime type of
+     * the property, which is what `<rw-signal-input>` expects.
      */
     public readonly field = computed(() => {
         const signalForm = this._signalForm();
@@ -59,8 +61,16 @@ export class RestWorldSignalTableColumnFilterElementComponent<TProperty extends 
         if (!signalForm)
             return undefined;
 
-        return (signalForm.form as unknown as Record<string, FieldTree<ExtractValueType<TProperty>>>)[property.name];
+        return (signalForm.form as unknown as Record<string, FieldTree<SimpleValue> | undefined>)[property.name];
     });
+
+    /**
+     * The property, widened to the non-generic base type.
+     * @remarks `<rw-signal-input>` is generic over its property, and its `field` input depends on that type through a
+     * conditional type. That conditional type cannot be resolved for this component's own generic `TProperty`, so the
+     * property is passed in as the plain `Property`, for which it resolves to `SimpleValue`.
+     */
+    protected readonly baseProperty = computed<Property<SimpleValue, string, string>>(() => this.property());
 
     private readonly _injector = inject(Injector);
 

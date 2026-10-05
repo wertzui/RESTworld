@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
-import { FormField } from '@angular/forms/signals';
-import { PropertyType } from '@wertzui/ngx-hal-client';
+import { Component, computed } from '@angular/core';
+import { FormField, type FieldTree } from '@angular/forms/signals';
+import { Property, PropertyType } from '@wertzui/ngx-hal-client';
 import { InputText } from 'primeng/inputtext';
 import { InputNumber } from 'primeng/inputnumber';
 import { DatePicker } from 'primeng/datepicker';
@@ -8,6 +8,7 @@ import { TriStateCheckbox } from '../../restworld-tri-state-checkbox/restworld-t
 import { RestWorldImageComponent } from '../../restworld-image/restworld-image.component';
 import { RestWorldFileComponent } from '../../restworld-file/restworld-file.component';
 import { PropertyWithImage } from '../../../models/special-properties';
+import type { RestWorldImage } from '../../../models/restworld-image';
 import { PropertyAttributes, PropertyInputNumberAttributes } from '../../../directives/property.directives';
 import { RestWorldSignalInputBaseComponent } from '../restworld-signal-inputs';
 
@@ -37,6 +38,24 @@ export class RestWorldSignalInputSimpleComponent extends RestWorldSignalInputBas
         .replace("22", "hh")
         .replace("33", "mm")
         .replace("44", "ss");
+
+    // The base class types `field` as `FieldTree<SimpleValue>`, because the actual value type depends on the
+    // runtime `property().type`. Signal Forms' `[formField]` binding is type-checked against the value type that
+    // the bound control accepts, so for every kind of control the field is narrowed to the matching value type
+    // here, once, instead of silencing the template type-check with `$any()`. The only exceptions are the PrimeNG
+    // `p-datepicker` and `p-inputNumber`, see the comment at the top of the template.
+    /** The field as bound to text controls (`<input>`, `<textarea>`, `rw-file`, `rw-image`). */
+    protected readonly stringField = computed(() => this.field() as unknown as FieldTree<string>);
+    /** The field as bound to tri-state checkboxes. */
+    protected readonly booleanField = computed(() => this.field() as unknown as FieldTree<boolean | null>);
+    /** The property as required by `rw-image`. */
+    protected readonly imageProperty = computed(() => this.property() as unknown as Property & { restWorldImage: RestWorldImage });
+    /** The accepted file types for `rw-file`, taken from the placeholder of the property. */
+    protected readonly accept = computed(() => {
+        const placeholder = this.property().placeholder;
+
+        return typeof placeholder === 'string' ? placeholder : '';
+    });
 
     public get PropertyType() {
         return PropertyType;

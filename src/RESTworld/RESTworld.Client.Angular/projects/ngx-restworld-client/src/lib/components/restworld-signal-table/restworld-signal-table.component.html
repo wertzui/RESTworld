@@ -20,7 +20,7 @@
   [selectionMode]="selectionMode()"
   [rowHover]="rowHover()"
   [(selection)]="selectedRows"
-  [filters]="$any(filters())"
+  [filters]="filters()"
   [first]="rowsBeforeCurrentPage()"
   (onSort)="onSort($event)"
   >
@@ -46,7 +46,7 @@
                                 [class.has-filter]="f.hasFilter"
                                 (onShow)="focusColumnFilterValue(f)">
                             <ng-template #filter let-value let-filterConstraint="filterConstraint" let-field="field">
-                                <div class="rw-column-filter-value" (keydown.enter)="applyColumnFilterOnEnter($any($event), f)">
+                                <div class="rw-column-filter-value" (keydown.enter)="applyColumnFilterOnEnter($event, f)">
                                     <rw-signal-table-column-filter-element [property]="col" [value]="value" [apiName]="apiName()" [filterConstraint]="filterConstraint"></rw-signal-table-column-filter-element>
                                 </div>
                             </ng-template>
@@ -71,7 +71,7 @@
                 @if (showInputField(col) && isEditable()) {
                     @let field = getFieldAtIndex(rowIndex, col.name);
                     @if (field) {
-                        <rw-signal-input [apiName]="apiName()" [property]="editProperties()[col.name]!" [field]="$any(field)"></rw-signal-input>
+                        <rw-signal-input [apiName]="apiName()" [property]="editProperties()[col.name]!" [field]="field"></rw-signal-input>
                     }
                 }
                 @else {

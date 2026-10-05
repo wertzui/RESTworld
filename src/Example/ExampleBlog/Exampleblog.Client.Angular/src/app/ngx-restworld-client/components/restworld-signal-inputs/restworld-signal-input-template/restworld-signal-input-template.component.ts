@@ -1,6 +1,6 @@
 import { Component, forwardRef, input } from '@angular/core';
 import type { FieldTree } from '@angular/forms/signals';
-import { NumberTemplate, Template } from '@wertzui/ngx-hal-client';
+import { NumberTemplate, SimpleValue, Template } from '@wertzui/ngx-hal-client';
 import { getChildFieldTree } from '../../../util/field-tree';
 import { RestWorldSignalFormElementComponent } from '../restworld-signal-form-element/restworld-signal-form-element.component';
 
@@ -14,6 +14,9 @@ import { RestWorldSignalFormElementComponent } from '../restworld-signal-form-el
  * @remarks `RestWorldSignalFormElementComponent` is wrapped in `forwardRef()` because it closes an import cycle:
  * rw-signal-input-template -> rw-signal-form-element -> rw-signal-input -> rw-signal-input-object ->
  * rw-signal-input-template.
+ * @remarks This component is intentionally not generic. `FieldTree<TModel>` is a conditional type, and the
+ * compiler-generated component declaration would otherwise instantiate it with `any`, which resolves to the
+ * `CompatFieldState` branch (requiring a `control` property) and rejects every regular `FieldTree`.
  */
 @Component({
     selector: 'rw-signal-input-template',
@@ -21,7 +24,7 @@ import { RestWorldSignalFormElementComponent } from '../restworld-signal-form-el
     styleUrls: ['./restworld-signal-input-template.component.css'],
     imports: [forwardRef(() => RestWorldSignalFormElementComponent)]
 })
-export class RestWorldSignalInputTemplateComponent<TModel extends Record<string, unknown> = Record<string, unknown>> {
+export class RestWorldSignalInputTemplateComponent {
     /**
      * The name of the API to use for the property.
      * @required
@@ -38,9 +41,9 @@ export class RestWorldSignalInputTemplateComponent<TModel extends Record<string,
      * The `FieldTree` for the model that the template describes.
      * @required
      */
-    public readonly field = input.required<FieldTree<TModel>>();
+    public readonly field = input.required<FieldTree<Record<string, unknown>>>();
 
     protected fieldFor(propertyName: string) {
-        return getChildFieldTree(this.field() as unknown as FieldTree<Record<string, unknown>>, propertyName);
+        return getChildFieldTree<SimpleValue>(this.field(), propertyName);
     }
 }

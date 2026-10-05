@@ -4,7 +4,7 @@ import { Select, type SelectChangeEvent } from 'primeng/select';
 import { MultiSelect } from 'primeng/multiselect';
 import { Tooltip } from 'primeng/tooltip';
 import { Chip } from 'primeng/chip';
-import { FormField } from '@angular/forms/signals';
+import { FormField, type FieldTree } from '@angular/forms/signals';
 import { NgTemplateOutlet } from '@angular/common';
 import { DropdownChangeEvent } from '../../../models/events';
 import { PropertyTemplateContext } from '../../../models/templating';
@@ -55,6 +55,13 @@ export class RestWorldSignalInputDropdownComponent<TProperty extends Property<Si
     public readonly inputOptionsMultipleRef = contentChild<TemplateRef<PropertyTemplateContext>>("inputOptionsMultiple");
     public readonly inputOptionsSingleRef = contentChild<TemplateRef<PropertyTemplateContext>>("inputOptionsSingle");
     public readonly multiSelect = viewChild<MultiSelect>(MultiSelect);
+    /**
+     * The field as it is bound to the PrimeNG select controls.
+     * @remarks The base class types `field` as `FieldTree<ExtractValueType<TProperty>>`, a conditional type which
+     * cannot be resolved while `TProperty` is generic. The selected value(s) of a dropdown can be of any type
+     * (the values of the options), so the field is bound as `FieldTree<unknown>`.
+     */
+    protected readonly selectField = computed(() => this.field() as unknown as FieldTree<unknown>);
     /**
      * An event that is emitted when the selected value changes.
      */
