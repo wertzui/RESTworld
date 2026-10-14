@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "restworld",
-      "source": "./plugins/restworld",
+      "source": "./",
       "description": "Skills for building REST APIs and clients with the RESTworld library (ASP.NET Core, EF Core, HAL, OData, Angular).",
       "version": "1.0.0",
       "author": { "name": "wertzui", "url": "https://github.com/wertzui" },

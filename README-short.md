@@ -17,4 +17,4 @@ Build production-ready REST APIs faster. RESTworld layers curated, battle-tested
 - Read the [Getting Started guide](doc/getting-started.md) for your first API.
 - Explore the [ExampleBlog sample](src/Example/ExampleBlog) to see RESTworld end-to-end.
 - Dive into the [full documentation](doc/index.md) when you are ready to customize.
-- Working with an AI coding agent? Install the RESTworld plugin with `copilot plugin marketplace add wertzui/RESTworld` and `copilot plugin install restworld@restworld`, see [Using RESTworld with AI agents](doc/ai-agents.md).
+- Working with an AI coding agent? Install the RESTworld plugin with `copilot plugin marketplace add wertzui/RESTworld-AI-plugin` and `copilot plugin install restworld@restworld`, see [Using RESTworld with AI agents](doc/ai-agents.md).

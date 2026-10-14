@@ -64,10 +64,10 @@ The documentation targets developers who build APIs and client applications on t
 
 RESTworld ships a plugin with 17 skills for AI coding agents such as GitHub Copilot. The skills teach an agent how to build applications **with** RESTworld: adding an entity endpoint, DTOs, mappers, services, authorization, validation, API versions, tests, the .NET client and Angular pages. They are meant for developers who use the library, not for developers of the library itself.
 
-Install it in Copilot CLI:
+Install it in Copilot CLI (the plugin has its own small repository, [RESTworld-AI-plugin](https://github.com/wertzui/RESTworld-AI-plugin), so you do not have to clone the whole source tree):
 
 ```shell
-copilot plugin marketplace add wertzui/RESTworld
+copilot plugin marketplace add wertzui/RESTworld-AI-plugin
 copilot plugin install restworld@restworld
 ```
 
@@ -75,7 +75,7 @@ Then ask your agent for a task, for example "add a `Product` endpoint". If the a
 
 - The skills live in [`plugins/restworld/skills`](plugins/restworld/skills). You can also copy them into your own repository (for example `.github/skills/`) if your agent has no plugin support.
 - Copy [`AGENTS.md`](src/Example/ExampleBlog/AGENTS.md) to the root of your solution so the agent knows the project layout and rules.
-- See [Using RESTworld with AI agents](doc/ai-agents.md) for installation in VS Code, for a team-wide setup and for tips, and the [How-To Cookbook](doc/how-to.md) for the full list of skills.
+- See [Using RESTworld with AI agents](doc/ai-agents.md) for installation in VS Code (add `wertzui/RESTworld-AI-plugin` to the `chat.plugins.marketplaces` setting), for a team-wide setup and for tips, and the [How-To Cookbook](doc/how-to.md) for the full list of skills.
 
 ## Contributing and feedback
 

@@ -23,7 +23,7 @@ These instructions are for AI agents helping a developer who builds an applicati
 
 ## Skills
 
-Install them as the `restworld` Copilot plugin (`copilot plugin marketplace add wertzui/RESTworld`, then `copilot plugin install restworld@restworld`) or copy the folders from `plugins/restworld/skills` of the RESTworld repository into your agent's skills folder.
+Install them as the `restworld` Copilot plugin (`copilot plugin marketplace add wertzui/RESTworld-AI-plugin`, then `copilot plugin install restworld@restworld`) or copy the folders from `plugins/restworld/skills` of the RESTworld repository into your agent's skills folder.
 
 Start with `restworld-add-entity-endpoint` for any new endpoint. It calls the others in order.
 

@@ -4,34 +4,45 @@ RESTworld ships agent skills for developers who build applications **with** REST
 
 ## Install as a Copilot plugin (recommended)
 
-The repository is a plugin marketplace. In Copilot CLI:
+The plugin is published in its own small repository, [wertzui/RESTworld-AI-plugin](https://github.com/wertzui/RESTworld-AI-plugin). It is generated from [`plugins/restworld`](../plugins/restworld) in this repository on every change. Use that repository and not the RESTworld source repository: the source repository contains very long file paths, and agents clone the entire repository when you add it, which can fail on Windows.
+
+### Copilot CLI
 
 ```shell
-copilot plugin marketplace add wertzui/RESTworld
+copilot plugin marketplace add wertzui/RESTworld-AI-plugin
 copilot plugin install restworld@restworld
 ```
 
-You can also install the plugin directly, without registering the marketplace:
+Update it later with `copilot plugin update restworld`.
 
-```shell
-copilot plugin install wertzui/RESTworld:plugins/restworld
+### VS Code
+
+Make sure agent plugins are enabled (`chat.plugins.enabled`), then add the marketplace to your user or workspace `settings.json`:
+
+```json
+"chat.plugins.marketplaces": [
+    "wertzui/RESTworld-AI-plugin"
+]
 ```
 
-Update it later with `copilot plugin update restworld`.
+Open the Plugins view (Extensions view, `@agentPlugins`), find `restworld` and install it. VS Code asks you to trust the marketplace the first time. You can also run **Chat: Install Plugin From Source** and enter `https://github.com/wertzui/RESTworld-AI-plugin`.
+
+VS Code also lists plugins that you installed with the Copilot CLI.
+
+### Team-wide setup
 
 To enable the plugin for everyone who works in your repository, including Copilot cloud agent, add it to `.github/copilot/settings.json`:
 
 ```json
 {
-  "extraKnownMarketplaces": { "restworld": { "source": { "source": "github", "repo": "wertzui/RESTworld" } } },
+  "extraKnownMarketplaces": {
+    "restworld": { "source": { "source": "github", "repo": "wertzui/RESTworld-AI-plugin" } }
+  },
   "enabledPlugins": { "restworld@restworld": true }
 }
 ```
 
-Check the exact shape of these two settings in the [Copilot plugin documentation](https://docs.github.com/en/copilot/concepts/agents/about-plugins) for your Copilot version.
-
-In VS Code, enable agent plugins with the `chat.plugins.enabled` setting and add the marketplace from the plugins view. The plugin uses the portable [Agent Plugins 1.0](https://agent-plugins.org/) format, so other compatible clients can load it too.
-
+The plugin uses the portable [Agent Plugins 1.0](https://agent-plugins.org/) format, so other compatible clients can load it too.
 ## Install the skills manually
 
 If your agent has no plugin support, copy the folders from [`plugins/restworld/skills`](../plugins/restworld/skills) to the place your agent scans for skills, for example:
