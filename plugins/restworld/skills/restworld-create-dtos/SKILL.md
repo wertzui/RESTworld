@@ -243,5 +243,5 @@ After running the scripts:
 
 ## Reference: dto-types documentation
 
-The full DTO role documentation is in [`doc/dto-types.md`](../../../../doc/dto-types.md).
-The complete mapper method reference is in [`doc/mapping-and-versioning.md`](../../../../doc/mapping-and-versioning.md).
+The full DTO role documentation is in [`doc/dto-types.md`](https://github.com/wertzui/RESTworld/blob/main/doc/dto-types.md).
+The complete mapper method reference is in [`doc/mapping-and-versioning.md`](https://github.com/wertzui/RESTworld/blob/main/doc/mapping-and-versioning.md).

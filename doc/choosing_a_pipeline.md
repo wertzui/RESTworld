@@ -20,8 +20,13 @@ flowchart TD
     G -->|Yes| O{Do you need more than the read endpoints?}
     H -->|No| P[Use a CrudPipeline.]
     H -->|Yes| Q{Do you need more than the CRUD endpoints?}
-    O -->|No| R[Use a ReadPipelineWithCustomService. Derive your service from ReadServiceBase and override the On... methods.]
-    O -->|Yes| S[Create a custom controller. Derive from ReadControllerBase. Derive your service from ReadServiceBase, override the On... methods, and add methods for your extra endpoint.]
-    Q -->|No| T[Use a CrudPipelineWithCustomService. Derive your service from CrudServiceBase and override the On... methods.]
-    Q -->|Yes| U[Create a custom controller. Derive from CrudControllerBase. Derive your service from CrudServiceBase, override the On... methods, and add methods for your extra endpoint.]
+    O -->|No| R[Use a ReadPipelineWithCustomService. Derive your service from ReadServiceBase and override the *InternalAsync methods.]
+    O -->|Yes| S[Create a custom controller. Derive from ReadController or RestControllerBase. Derive your service from ReadServiceBase, override the *InternalAsync methods, and add methods for your extra endpoint.]
+    Q -->|No| T[Use a CrudPipelineWithCustomService. Derive your service from CrudServiceBase and override the *InternalAsync methods.]
+    Q -->|Yes| U[Create a custom controller. Derive from CrudController or RestControllerBase. Derive your service from CrudServiceBase, override the *InternalAsync methods, and add methods for your extra endpoint.]
 ```
+
+Notes:
+
+- Controllers are discovered automatically by ASP.NET Core. Register only the service, mapper and authorization handler. See [Custom Controllers](custom-controllers.md) and [Services](services.md).
+- The `...WithCustomService` registration methods have no `ApiVersion` parameter. A versioned endpoint that needs a custom service uses a custom controller with `[ApiVersion]`.

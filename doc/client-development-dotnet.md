@@ -36,8 +36,12 @@ Configure clients via `appsettings.json` as described in [Configuration](configu
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RESTworld.Client.Net;
+using RESTworld.Common.Client;
 
 var builder = Host.CreateApplicationBuilder(args);
+
+// Needed in plain hosts. An ASP.NET Core app that already called AddRestWorld() has this bound.
+builder.Services.Configure<RestWorldClientOptions>(builder.Configuration.GetSection("RESTworld"));
 
 builder.AddRestWorldClients(new Dictionary<string, Action<IServiceProvider, HttpClient>?>
 {
@@ -57,7 +61,7 @@ await host.StartAsync();
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
-using RESTworld.Common.Client;
+using RESTworld.Client.Net;
 
 var clients = host.Services.GetRequiredService<IRestWorldClientCollection>();
 var exampleBlog = clients.GetClient("ExampleBlog");
@@ -84,39 +88,35 @@ if (response.Resource.Embedded.TryGetValue(Constants.ListItems, out var posts) &
     foreach (var post in posts)
     {
         var dto = post.State as PostGetFullDto;
-        Console.WriteLine($"{dto?.Title} ({dto?.Id})");
+        Console.WriteLine($"{dto?.Headline} ({dto?.Id})");
     }
 }
 ```
 
-Submit a new resource by following the `create` form and posting the payload:
+Create a new resource by following the `new` link to get a template with defaults and then following the `post` link:
 
 ```csharp
-var href = client.GetLinkFromHome("Blog", "Post", "MyEx");
-var uri = new Uri(href);
-var createForm = await client.GetFormAsync<BlogCreateDto>(uri);
+using HAL.Common;
+using Constants = RESTworld.Common.Constants; // HAL.Common also has a Constants class
 
-var template = createForm.Templates["_default"];
-var target = template.target;
-var newBlog = createForm.State;
-newBlog.Title = "A very good title";
+var newLink = exampleBlog.GetLinkFromHome("Blog", Constants.NewLinkName)!;
+var template = await newLink.FollowGetAsync<BlogCreateDto>(exampleBlog, version: "2");
 
-var response = await exampleBlog.SendFormAsync<BlogCreateDto, BlogGetFullDto>(
-    template.Method,
-    new Uri(template.Target),
-    newBlog
-    );
+var postLink = exampleBlog.GetLinkFromHome("Blog", Constants.PostLinkName)!;
+var response = await postLink.FollowPostAsync<BlogCreateDto, BlogGetFullDto>(
+    exampleBlog,
+    new BlogCreateDto { Name = "A very good name" },
+    version: "2");
 
 if (response.Succeeded)
 {
-    var createdBlog = result.Resource.State;
+    var createdBlog = response.Resource!.State!;
     Console.WriteLine($"Created blog with id {createdBlog.Id}");
 }
 ```
-
 ## Working with link metadata
 
-- `GetLinkFromHome` returns a single link for a relation. Use the optional `curie` argument when the relation is not namespaced.
+- `GetLinkFromHome` returns a single `Link` (not a string) for a relation. Use the optional `curie` argument when the relation is not namespaced.
 - `GetLinksFromHome` returns all links matching a relation.
 - `GetAllPagesFormListAsync` aggregates paginated form responses, allowing bulk updates.
 

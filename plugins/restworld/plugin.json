@@ -1,0 +1,14 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "restworld",
+  "version": "1.0.0",
+  "description": "Skills for building REST APIs and clients with the RESTworld library (ASP.NET Core, EF Core, HAL, OData, Angular).",
+  "author": {
+    "name": "wertzui",
+    "url": "https://github.com/wertzui"
+  },
+  "homepage": "https://github.com/wertzui/RESTworld/blob/main/doc/how-to.md",
+  "repository": "https://github.com/wertzui/RESTworld",
+  "license": "Unlicense",
+  "keywords": ["restworld", "dotnet", "aspnetcore", "entity-framework-core", "hal", "odata", "angular", "rest"]
+}

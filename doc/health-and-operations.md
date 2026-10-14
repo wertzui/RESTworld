@@ -30,10 +30,17 @@ var database = builder.AddConnectionString("MyDatabase");
 var apiService = builder.AddProject<MyApi>("MyApi")
     .WithReference(database);
 
-// Angular frontend hosted via ASP.NET Core
-// Note: OTLP for Angular currently requires gRPC support (see https://github.com/dotnet/aspire/pull/4197)
-var frontendService = builder.AddProject<MyApi_Client_Angular>("MyApi-Client-Angular")
+// ASP.NET Core host for the Angular SPA
+var frontendService = builder.AddProject<MyApi_Client>("MyApi-Client")
     .WithReference(apiService);
+
+// The Angular dev server, started with "npm start"
+builder.AddJavaScriptApp("MyApi-Client-Angular", Directory.GetParent(new MyApi_Client_Angular().ProjectPath)!.FullName)
+    .WithNpm(installCommand: "ci")
+    .WithRunScript("start")
+    .WithReference(frontendService)
+    .WithParentRelationship(frontendService)
+    .WithHttpsEndpoint(env: "PORT");
 
 var app = builder.Build();
 

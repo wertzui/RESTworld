@@ -75,25 +75,27 @@ React to the `load` event (PrimeNG `TableLazyLoadEvent`) to translate user filte
 
 ### Custom content
 
-Override the default layout by providing templates for the `content` or `buttons` slots:
+Override the default layout by providing templates for the `content`, `buttons`, `beforeButtons` or `afterButtons` slots. The template context provides `form`, `template` and `apiName`. `form` and `template` are signals, so call them (`form()`, `template()`):
 
 ```html
 <rw-form
   [apiName]="'ExampleBlog'"
   rel="MyEx:Post"
   [(template)]="editTemplate">
-  <ng-template #content let-form="form" let-template="template">
+  <ng-template #content let-form="form" let-template="template" let-apiName="apiName">
     <rw-form-element
-      [property]="template.propertiesRecord.title"
-      [formGroup]="form">
+      [apiName]="apiName"
+      [property]="template().propertiesRecord['title']!"
+      [formGroup]="form()">
     </rw-form-element>
   </ng-template>
-  <ng-template #buttons let-form="form">
-    <button pButton type="button" label="Save" (click)="form.submit()"></button>
+  <ng-template #afterButtons let-form="form">
+    <button pButton type="button" label="Preview" (click)="preview(form().value)"></button>
   </ng-template>
 </rw-form>
 ```
 
+For `<rw-signal-form>` use `<rw-signal-form-element>` with a `[field]` input instead of `[formGroup]`. See the `restworld-angular-custom-components` skill for a complete example.
 If you simply want RESTworld to render all fields according to the template, omit the `content` slot and the component will output labeled inputs using the built-in `<rw-form-element>` components.
 
 ## `<rw-signal-form>` (Signal Forms)

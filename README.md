@@ -34,8 +34,9 @@ RESTworld is a developer-focused framework that turns ASP.NET Core and Entity Fr
 
 - Opinionated pipelines for read and CRUD scenarios, with extensibility hooks when you need to customize.
 - Out-of-the-box support for HAL, HAL-FORMS, and OData (query, paging, templated links).
-- AutoMapper, resource-based authorization, and API versioning baked into the request flow.
+- Mapperly-based mapping, resource-based authorization, and API versioning baked into the request flow.
 - Telemetry via OpenTelemetry, health endpoints for readiness/liveness/startup, and Aspire integration for local orchestration.
+- An [AI agent plugin](#ai-agent-plugin) with skills that help your coding agent build on RESTworld.
 
 ## Getting started
 
@@ -45,15 +46,36 @@ RESTworld is a developer-focused framework that turns ASP.NET Core and Entity Fr
 
 Need a reference implementation? Explore [`src/Example/ExampleBlog`](src/Example/ExampleBlog).
 
+Using an AI coding agent? Install the [RESTworld plugin](#ai-agent-plugin) first, so it follows the framework conventions from the start.
+
 ## Documentation map
 
 - [RESTworld documentation index](doc/index.md)
+- [Using RESTworld with AI agents](doc/ai-agents.md)
+- [How-To Cookbook](doc/how-to.md)
 - [Choosing a Pipeline](doc/choosing_a_pipeline.md)
 - [Health and Operations](doc/health-and-operations.md)
 - [Angular Client Development](doc/client-development-angular.md)
 - [.NET Client Development](doc/client-development-dotnet.md)
 
 The documentation targets developers who build APIs and client applications on top of the RESTworld libraries. If you're looking for a higher-level pitch, read the refreshed [README-short](README-short.md).
+
+## AI agent plugin
+
+RESTworld ships a plugin with 17 skills for AI coding agents such as GitHub Copilot. The skills teach an agent how to build applications **with** RESTworld: adding an entity endpoint, DTOs, mappers, services, authorization, validation, API versions, tests, the .NET client and Angular pages. They are meant for developers who use the library, not for developers of the library itself.
+
+Install it in Copilot CLI:
+
+```shell
+copilot plugin marketplace add wertzui/RESTworld
+copilot plugin install restworld@restworld
+```
+
+Then ask your agent for a task, for example "add a `Product` endpoint". If the agent does not pick a skill, name it: "use the `restworld-add-entity-endpoint` skill".
+
+- The skills live in [`plugins/restworld/skills`](plugins/restworld/skills). You can also copy them into your own repository (for example `.github/skills/`) if your agent has no plugin support.
+- Copy [`AGENTS.md`](src/Example/ExampleBlog/AGENTS.md) to the root of your solution so the agent knows the project layout and rules.
+- See [Using RESTworld with AI agents](doc/ai-agents.md) for installation in VS Code, for a team-wide setup and for tips, and the [How-To Cookbook](doc/how-to.md) for the full list of skills.
 
 ## Contributing and feedback
 

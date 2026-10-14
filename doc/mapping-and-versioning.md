@@ -1,6 +1,6 @@
 # Mapping and Versioning
 
-RESTworld uses a mapper abstraction to convert between entities and DTOs. You can use **Mapperly** (recommended), **AutoMapper** (deprecated), or any custom implementation. Each pipeline must have a matching mapper registered in the dependency injection container.
+RESTworld uses a mapper abstraction to convert between entities and DTOs. You can use **Mapperly** (recommended) or any custom implementation. **AutoMapper** is still supported, but only as a legacy option for existing code. Each pipeline must have a matching mapper registered in the dependency injection container.
 
 > Before diving into mappers, familiarise yourself with the different DTO types and their roles in the pipeline — see [DTO Types and Roles](dto-types.md).
 
@@ -27,7 +27,7 @@ public partial class BlogMapper : CrudMapperlyMapperBase<Blog, BlogCreateDto, Bl
 
     // Foreign Keys should be ignored
     [MapperRequiredMapping(RequiredMappingStrategy.Target)]
-    public override partial BlogGetFullDto MapEntityToFull(Blog entity);
+    protected override partial BlogGetFullDto MapEntityToFull(Blog entity);
 
     public override partial Expression<Func<Blog, BlogGetFullDto>> MapEntityToFullExpression();
 
@@ -43,7 +43,9 @@ public partial class BlogMapper : CrudMapperlyMapperBase<Blog, BlogCreateDto, Bl
 
     public override partial IQueryable<BlogGetListDto> MapQueryToListQueryable(IQueryable<BlogQueryDto> queryDtos);
 
-    public override partial IQueryable<BlogQueryDto> MapEntityToQuery(IQueryable<Blog> entities);
+    public override partial IQueryable<BlogQueryDto> MapEntityToQueryQueryable(IQueryable<Blog> entities);
+
+    public override partial IQueryable<BlogGetFullDto> MapEntityToFullQueryable(IQueryable<Blog> entities);
 
     // When updating an entry, everything on ChangeTrackingEntityBase except the Id should be ignored.
     [MapperRequiredMapping(RequiredMappingStrategy.Source)]
@@ -57,11 +59,11 @@ Register the mapper with the matching `AddCrudMapper` or `AddReadMapper` extensi
 builder.AddCrudMapper<Blog, BlogCreateDto, BlogQueryDto, BlogGetListDto, BlogGetFullDto, BlogUpdateDto, BlogMapper>();
 ```
 
-### Using AutoMapper (deprecated)
+### Legacy: AutoMapper
 
-> **Deprecated.** AutoMapper support is kept for backwards compatibility. New projects should use Mapperly instead.
+> **Legacy.** AutoMapper support is kept only so existing applications keep working. Do not use it in new code. ExampleBlog still registers some pipelines with AutoMapper on purpose, so you can see an application that is in the middle of migrating to Mapperly.
 
-If your entity-to-DTO mapping is a straightforward bidirectional mapping that AutoMapper can handle, you can use the built-in convenience methods. They create an AutoMapper-backed mapper for you automatically — you only need to configure AutoMapper profiles.
+If you maintain an application that already uses AutoMapper, the built-in convenience methods create an AutoMapper-backed mapper for you automatically — you only need to configure AutoMapper profiles.
 
 ```csharp
 // In Program.cs
@@ -110,6 +112,16 @@ public static class AutoMapperConfiguration
 }
 ```
 
+### Migrating from AutoMapper to Mapperly
+
+You can migrate one pipeline at a time, because AutoMapper-backed and Mapperly mappers are both registered per pipeline:
+
+1. Create a Mapperly mapper for the pipeline (see above).
+2. Replace `AddCrudAutoMapper<...>()` / `AddReadAutoMapper<...>()` for that pipeline with `AddCrudMapper<..., TMapper>()` / `AddReadMapper<..., TMapper>()`.
+3. Move custom `ForMember` rules (for example the V1 `Name` split in the sample above) into the Mapperly mapper, using `[MapProperty]` or small private helper methods. Keep the queryable methods translatable by EF Core.
+4. Remove the matching `CreateMap` entries from `AutoMapperConfiguration`. When no pipeline uses AutoMapper any more, remove the configuration class and the `AddAutoMapper` call.
+5. Run your mapper tests (see [Testing](testing.md)) and compare the API output before and after.
+
 ### Custom mappers
 
 You can implement the mapper interfaces directly for full control:
@@ -130,16 +142,16 @@ services.AddReadMapper<TEntity, TQueryDto, TGetListDto, TGetFullDto, MyCustomRea
 
 ## Mapper method reference
 
-The table below describes every method in `IReadMapper` (and therefore `ICrudMapper`). For background on the two-stage query design and why `TQueryDto` exists, see [DTO Types and Roles — TQueryDto](dto-types.md#tquerydto--the-odata-intermediary).
+The table below describes every method a Mapperly mapper has to provide (the `IReadMapper` / `ICrudMapper` queryable methods plus the single-object methods from `ReadMapperlyMapperBase` / `CrudMapperlyMapperBase`). For background on the two-stage query design and why `TQueryDto` exists, see [DTO Types and Roles — TQueryDto](dto-types.md#tquerydto--the-odata-intermediary).
 
 | Method | Stage | Purpose |
 |---|---|---|
-| `MapEntityToQuery(IQueryable<TEntity>)` | 1 — before OData | Project entities to `TQueryDto`. Include navigation properties so OData can generate the correct SQL joins for `$filter` and `$orderby` across related data. |
+| `MapEntityToQueryQueryable(IQueryable<TEntity>)` | 1 — before OData | Project entities to `TQueryDto`. Include navigation properties so OData can generate the correct SQL joins for `$filter` and `$orderby` across related data. |
 | `MapQueryToList(TQueryDto)` | 2a — after OData | Map one `TQueryDto` to `TGetListDto`. Drop navigation properties and any fields not needed in list views. |
-| `MapQueryToListQueryable(IQueryable<TQueryDto>)` | 2a — after OData | Queryable projection of `MapQueryToList`. Auto-generated by Mapperly; manually implement or delegate if using AutoMapper. |
+| `MapQueryToListQueryable(IQueryable<TQueryDto>)` | 2a — after OData | Queryable projection of `MapQueryToList`. Auto-generated by Mapperly; implement manually in legacy AutoMapper setups. |
 | `MapQueryToFull(TQueryDto)` | 2b — after OData | Map one `TQueryDto` to `TGetFullDto`. Navigation properties that are `[JsonIgnore]` on `TGetFullDto` should be excluded. |
 | `MapQueryToFullQueryable(IQueryable<TQueryDto>)` | 2b — after OData | Queryable projection of `MapQueryToFull`. Auto-generated by Mapperly. |
-| `MapEntityToFull(TEntity)` | Direct (no OData) | Map a single entity to `TGetFullDto`. Used by the non-queryable `Get` endpoint that fetches a record by ID. Navigation properties and infrastructure fields should be excluded. |
+| `MapEntityToFull(TEntity)` (`protected`) | Direct (no OData) | Map a single entity to `TGetFullDto`. Used by the non-queryable `Get` endpoint that fetches a record by ID. Navigation properties and infrastructure fields should be excluded. |
 | `MapEntityToFullExpression()` | Metadata | Returns an `Expression<Func<TEntity, TGetFullDto>>` used to build `MemberMappingNames`, which translates database column names in exceptions to DTO property names. Auto-generated by Mapperly. |
 | `MapCreateToEntity(TCreateDto)` | Write | Map a create DTO to a new entity. Ignore all infrastructure properties (`Id`, `CreatedAt`, `CreatedBy`, `LastChangedAt`, `LastChangedBy`, `Timestamp`) on the entity side. |
 | `MapUpdateToEntity(TUpdateDto, TEntity)` | Write | Apply an update DTO onto an existing entity. Ignore all infrastructure properties except `Id` on the entity side. The `Timestamp` is consumed by the concurrency check before this method runs. |

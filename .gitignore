@@ -358,3 +358,5 @@ dist/
 
 # C# Dev Kit for Visual Studio Code cache
 *.lscache
+# Playwright CLI output (may contain credentials)
+.playwright-cli/

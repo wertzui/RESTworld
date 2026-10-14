@@ -1,6 +1,6 @@
 ---
 name: RESTworld Doc-Code Alignment Auditor
-description: "Use when you need to compare RESTworld documentation in /doc with implementation in /src, validate whether docs are still accurate, and suggest concrete improvements with file and line evidence."
+description: "Maintainer agent for the RESTworld repository itself (not for applications that use RESTworld). Use when you need to compare RESTworld documentation in /doc with implementation in /src, validate whether docs are still accurate, and suggest concrete improvements with file and line evidence."
 tools: [read, search]
 argument-hint: "Area to audit (for example: authorization, mapping/versioning, Angular client, health/operations, or full pass)"
 user-invocable: true

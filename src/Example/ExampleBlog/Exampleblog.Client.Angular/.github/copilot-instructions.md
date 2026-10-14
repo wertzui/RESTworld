@@ -53,3 +53,18 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Design services around a single responsibility
 - Use the `providedIn: 'root'` option for singleton services
 - Use constructor injection instead of the `inject()` function
+
+
+## RESTworld client rules
+
+This app is a client for a RESTworld (HAL / HAL-FORMS / OData) backend and uses the `@wertzui/ngx-restworld-client` library. Follow these rules in addition to the generic rules above.
+
+- Use the library's `rw-*` components for RESTworld resources instead of hand-written tables, forms or `HttpClient` calls: `rw-list`/`rw-edit` (`RESTworldListViewComponent`/`RESTworldEditViewComponent`) for full pages, `rw-table` and `rw-form` inside custom pages. The Signal Forms variants are `rw-signal-list`/`rw-signal-edit` (`RESTworldSignalListViewComponent`/`RESTworldSignalEditViewComponent`), `rw-signal-table` and `rw-signal-form`.
+- Pick one variant per view tree: classic components use Reactive Forms, `rw-signal-*` components use Signal Forms. Both can exist in one app, but never nest one variant inside the other. Classic list/edit links use `/edit` by default, the signal list uses `/edit/signal`.
+- Bootstrap with `provideRestWorld()` in `main.ts` (it loads `/settings` and the HAL home resources of all configured APIs). Also keep `provideHttpClient(withInterceptorsFromDi())`, `provideRouter(..., withComponentInputBinding())`, PrimeNG (`providePrimeNG`), `MessageService`, `ConfirmationService` and `ClrFormatPipe`.
+- Route parameters `:apiName`, `:rel` and `:uri` are bound to component `input()`s; keep the names identical. List routes need `runGuardsAndResolvers: 'always'`. Register specific custom routes before the generic `list/:apiName/:rel` and `edit/:apiName/:rel/:uri` routes.
+- Never hardcode API URLs. Address resources by API name (`apiName`, as configured in `appsettings.json` `ApiUrls`) and relation (`rel`, e.g. `MyEx:Post`). Resolve links from the HAL home resource via `RestWorldClientCollection.getClient(apiName)` (`getLinkFromHome`, `getList`, `getAllTemplates`, ...) and expand URI templates with `link.fillTemplate({...})`.
+- Show API errors with `ProblemService.checkResponseAndDisplayErrors(...)`; keep a `<p-toast>` in the shell.
+- Customize via the library's extension points (`provideCustomAvatarGenerator`, `#content`/`#buttons`/`#beforeButtons`/`#afterButtons` templates on `rw-form`/`rw-signal-form`, `#extraTabs` on `rw-edit`/`rw-signal-edit`, `providePrimeNG` theme). There is no registry for replacing the input/display component of a property type.
+- In `src/app/ngx-restworld-client` this repo has a junction to the library source, so imports there are relative (`./ngx-restworld-client/...`). In applications that consume the npm package, import from `@wertzui/ngx-restworld-client`.
+- Skills to consult: `restworld-angular-add-page` (routes, menu, list/edit pages, custom pages, bootstrapping, dev run) and `restworld-angular-custom-components` (avatar, form slots, image/file, table styling, theming).

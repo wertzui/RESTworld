@@ -10,7 +10,7 @@ argument-hint: 'Describe what the endpoint needs to do. Optionally provide: C# e
 - You are implementing a new API endpoint in a RESTworld project
 - You need to decide between `ReadPipeline`, `CrudPipeline`, custom services, or custom controllers
 - You need the correct `AddXxx` registration call for `Program.cs`
-- You are unsure whether to derive from `ReadServiceBase`, `CrudServiceBase`, `DbServiceBase`, `ServiceBase`, `ReadControllerBase`, or `CrudControllerBase`
+- You are unsure whether to derive from `ReadServiceBase`, `CrudServiceBase`, `DbServiceBase`, `ServiceBase`, `ReadController<...>`, or `CrudController<...>`
 - You have been given Entity Framework Core entity class names and need to determine whether their relationships require a custom service
 - You need to add a new API version and want to align its implementation with an existing lower version
 
@@ -121,8 +121,8 @@ Then continue to [Step 3 — Does the controller need database access?](#step-3-
 
 | Answer | Implementation | Registration |
 |--------|----------------|--------------|
-| **NO**  | **`ReadPipelineWithCustomService`** — derive service from **`ReadServiceBase`**, override `On...` methods | `builder.AddReadPipelineWithCustomService<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto, TService>();` + `builder.AddReadMapper<...>();` |
-| **YES** | **Custom controller** — derive controller from **`ReadControllerBase`**, derive service from **`ReadServiceBase`**, override `On...` methods, add methods for extra endpoints | No pipeline registration; wire up manually |
+| **NO**  | **`ReadPipelineWithCustomService`** — derive service from **`ReadServiceBase`**, override the `*InternalAsync` methods | `builder.AddReadPipelineWithCustomService<TContext, TEntity, TQueryDto, TGetListDto, TGetFullDto, TService>();` + `builder.AddReadMapper<...>();` |
+| **YES** | **Custom controller** — derive controller from **`ReadController<...>`** (or `RestControllerBase`), derive service from **`ReadServiceBase`**, override the `*InternalAsync` methods, add methods for extra endpoints | Controllers are discovered automatically; register service, mapper and authorization handler only (see `restworld-custom-controller`) |
 
 ---
 
@@ -139,8 +139,8 @@ Then continue to [Step 3 — Does the controller need database access?](#step-3-
 
 | Answer | Implementation | Registration |
 |--------|----------------|--------------|
-| **NO**  | **`CrudPipelineWithCustomService`** — derive service from **`CrudServiceBase`**, override `On...` methods | `builder.AddCrudPipelineWithCustomService<TContext, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto, TService>();` + `builder.AddCrudMapper<...>();` |
-| **YES** | **Custom controller** — derive controller from **`CrudControllerBase`**, derive service from **`CrudServiceBase`**, override `On...` methods, add methods for extra endpoints | No pipeline registration; wire up manually |
+| **NO**  | **`CrudPipelineWithCustomService`** — derive service from **`CrudServiceBase`**, override the `*InternalAsync` methods | `builder.AddCrudPipelineWithCustomService<TContext, TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto, TService>();` + `builder.AddCrudMapper<...>();` |
+| **YES** | **Custom controller** — derive controller from **`CrudController<...>`** (or `RestControllerBase`), derive service from **`CrudServiceBase`**, override the `*InternalAsync` methods, add methods for extra endpoints | Controllers are discovered automatically; register service, mapper and authorization handler only (see `restworld-custom-controller`) |
 
 ---
 
@@ -150,13 +150,13 @@ Then continue to [Step 3 — Does the controller need database access?](#step-3-
 |----------|----------------|---------------------|
 | Read-only, no custom logic | `ReadPipeline` | `AddReadPipeline` |
 | Read-only + custom service logic, no extra routes | `ReadPipelineWithCustomService` | `AddReadPipelineWithCustomService` |
-| Read-only + extra routes | Custom controller (`ReadControllerBase`) + custom service (`ReadServiceBase`) | Manual |
+| Read-only + extra routes | Custom controller (`ReadController<...>`) + custom service (`ReadServiceBase`) | Auto-discovered controller; register service/mapper only |
 | Full CRUD, no custom logic | `CrudPipeline` | `AddCrudPipeline` |
 | Full CRUD + custom service logic, no extra routes | `CrudPipelineWithCustomService` | `AddCrudPipelineWithCustomService` |
-| Full CRUD + extra routes | Custom controller (`CrudControllerBase`) + custom service (`CrudServiceBase`) | Manual |
-| Non-DB resource endpoint | Custom controller (`RestControllerBase`) + service (`ServiceBase` or `DbServiceBase`) | Manual |
-| HAL response, no resource | Custom controller (`HalControllerBase`) | Manual |
-| Plain HTTP, no HAL | Custom controller (`Controller`) | Manual |
+| Full CRUD + extra routes | Custom controller (`CrudController<...>`) + custom service (`CrudServiceBase`) | Auto-discovered controller; register service/mapper only |
+| Non-DB resource endpoint | Custom controller (`RestControllerBase`) + service (`ServiceBase` or `DbServiceBase`) | Auto-discovered controller; register service/mapper only |
+| HAL response, no resource | Custom controller (`HalControllerBase`) | Auto-discovered controller; register service/mapper only |
+| Plain HTTP, no HAL | Custom controller (`Controller`) | Auto-discovered controller; register service/mapper only |
 
 ---
 
@@ -173,7 +173,11 @@ After walking through the decision procedure, produce:
 
 ## Reference
 
-- [Choosing a Pipeline](../../../doc/choosing_a_pipeline.md) — source flowchart
-- [Pipeline Overview](../../../doc/pipeline-overview.md) — request flow explanation
-- [Getting Started](../../../doc/getting-started.md) — registration code examples
-- [Mapping and Versioning](../../../doc/mapping-and-versioning.md) — mapper interfaces
+- [Choosing a Pipeline](https://github.com/wertzui/RESTworld/blob/main/doc/choosing_a_pipeline.md) — source flowchart
+- [Pipeline Overview](https://github.com/wertzui/RESTworld/blob/main/doc/pipeline-overview.md) — request flow explanation
+- [Getting Started](https://github.com/wertzui/RESTworld/blob/main/doc/getting-started.md) — registration code examples
+- [Mapping and Versioning](https://github.com/wertzui/RESTworld/blob/main/doc/mapping-and-versioning.md) — mapper interfaces
+
+## Caveat
+
+The `AddXxxPipelineWithCustomService` and `...WithCustomServiceAndAuthorization` methods have no `ApiVersion` parameter. For a versioned endpoint with a custom service, use a custom controller with `[ApiVersion]` (see `restworld-add-api-version`).

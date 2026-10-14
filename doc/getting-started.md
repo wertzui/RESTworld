@@ -22,12 +22,13 @@ When creating a new API named `MyApi`, structure your solution into focused proj
 - **MyApi.Common**
   - References `RESTworld.Common`
   - Holds DTOs and enums shared across layers
+- **MyApi.Client** *(optional)*
+  - ASP.NET Core host for the SPA, references `RESTworld.Client.AspNetCore`
 - **MyApi.Client.Angular** *(optional)*
-  - References `RESTworld.Client.AspNetCore`
-  - Angular app depends on the `@wertzui/ngx-restworld-client` package
+  - The Angular app (`.esproj`), depends on the `@wertzui/ngx-restworld-client` package
 - **MyApi.Aspire.AppHost** *(optional)*
   - Created via the Aspire project template (remove `MyApi.Aspire.ServiceDefaults`)
-  - References `MyApi` and `MyApi.Client.Angular`
+  - References `MyApi`, `MyApi.Client` and the Angular project
   - Configures service references for integrated local testing
 
 ## Bootstrapping the API
@@ -39,7 +40,7 @@ using Microsoft.AspNetCore.Builder;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.AddRestWorld();
+var rwBuilder = builder.AddRestWorld();
 var services = builder.Services;
 
 // Database
@@ -82,16 +83,16 @@ Refer to the [Pipeline Overview](pipeline-overview.md) for details on each pipel
 
 ## Adding the Angular frontend (optional)
 
-If you host the Angular SPA via ASP.NET Core, update the frontends `Program.cs` from the **MyApi.Client.Angular** project:
+If you host the Angular SPA via ASP.NET Core, update the `Program.cs` of the **MyApi.Client** host project:
 
 ```csharp
 using Microsoft.AspNetCore.Builder;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.AddRestWorldWithSpaFrontend();
+var rwBuilder = builder.AddRestWorldWithSpaFrontend();
 
-var app = builder.Build();
+var app = rwBuilder.Build();
 
 app.UseRestWorldWithSpaFrontend();
 

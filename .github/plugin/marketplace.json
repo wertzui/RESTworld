@@ -1,0 +1,24 @@
+{
+  "name": "restworld",
+  "owner": {
+    "name": "wertzui"
+  },
+  "metadata": {
+    "description": "Agent plugins for developers who build applications with RESTworld",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "restworld",
+      "source": "./plugins/restworld",
+      "description": "Skills for building REST APIs and clients with the RESTworld library (ASP.NET Core, EF Core, HAL, OData, Angular).",
+      "version": "1.0.0",
+      "author": { "name": "wertzui", "url": "https://github.com/wertzui" },
+      "homepage": "https://github.com/wertzui/RESTworld/blob/main/doc/how-to.md",
+      "repository": "https://github.com/wertzui/RESTworld",
+      "license": "Unlicense",
+      "keywords": ["restworld", "dotnet", "aspnetcore", "hal", "odata", "angular"],
+      "category": "development"
+    }
+  ]
+}
