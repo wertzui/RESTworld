@@ -52,10 +52,12 @@ public static class RestWorldSpaClientBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        app.UseRestWorld();
-
+        // These must come before UseRestWorld() because otherwise the MapFallbackToFile(), which is registered as endpoint will run before static files are served and the SPA will not work.
         app.UseDefaultFiles();
         app.UseStaticFiles();
+
+        app.UseRestWorld();
+
         app.MapFallbackToFile("{*path}", "index.html");
 
         return app;

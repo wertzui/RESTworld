@@ -1,19 +1,19 @@
 import { Component, Injector, computed, effect, forwardRef, inject, input, model, runInInjectionContext, signal, untracked, viewChild } from '@angular/core';
 import type { FieldTree } from '@angular/forms/signals';
+import { ActivatedRoute, Router } from "@angular/router";
 import { Property, PropertyType, SignalFormService, SimpleValue, Template, type SignalForm } from '@wertzui/ngx-hal-client';
-import { FilterMetadata, MenuItem, SelectItem, TranslationKeys, FilterService, type SortMeta } from 'primeng/api';
+import { FilterMetadata, FilterService, MenuItem, SelectItem, TranslationKeys, type SortMeta } from 'primeng/api';
+import { PrimeNG } from 'primeng/config';
+import { ContextMenu, ContextMenuModule } from 'primeng/contextmenu';
+import { DomHandler } from 'primeng/dom';
+import { ColumnFilter, Table, TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ODataParameters } from '../../models/o-data';
 import { ODataService } from '../../services/odata.service';
-import { ContextMenu, ContextMenuModule } from 'primeng/contextmenu';
-import { ColumnFilter, Table, TableLazyLoadEvent, TableModule } from 'primeng/table';
-import { DomHandler } from 'primeng/dom';
-import { PrimeNG } from 'primeng/config';
+import { getChildFieldTree, getFieldTreeItemAt } from '../../util/field-tree';
+import { RestWorldDisplayComponent } from "../restworld-displays/restworld-displays";
 import { RestWorldMenuButtonComponent } from "../restworld-menu-button/restworld-menu-button.component";
 import { RestWorldSignalInputComponent } from "../restworld-signal-inputs/restworld-signal-input/restworld-signal-input.component";
-import { RestWorldDisplayComponent } from "../restworld-displays/restworld-displays";
 import { RestWorldSignalTableColumnFilterElementComponent } from "../restworld-signal-table-column-filter-element/restworld-signal-table-column-filter-element.component";
-import { Router, ActivatedRoute } from "@angular/router";
-import { getChildFieldTree, getFieldTreeItemAt } from '../../util/field-tree';
 
 /**
  * Displays a table based on a search-, an edit-template and a list of items, using Signal Forms.
@@ -198,13 +198,16 @@ export class RestWorldSignalTableComponent<TListItem extends Record<string, any>
 
         return this._signalForms().map(f => f.model() as TListItem);
     });
-    public readonly filters = computed(() => {
+    public readonly filters = computed<Record<string, FilterMetadata[]>>(() => {
         const filter = this.oDataParameters().$filter;
         const properties = this.searchTemplate()?.propertiesRecord;
         if (filter === null || filter === undefined || typeof filter !== "string" || properties === undefined)
             return {};
 
-        return ODataService.createFilterMetadataFromODataFilter(filter, properties);
+        const metadata = ODataService.createFilterMetadataFromODataFilter(filter, properties);
+
+        // `p-table` does not accept the `undefined` values that a `Partial<Record<...>>` allows.
+        return Object.fromEntries(Object.entries(metadata).filter((entry): entry is [string, FilterMetadata[]] => entry[1] !== undefined));
     });
     /**
      * An optional menu that is displayed at the top right of the table.
@@ -429,7 +432,8 @@ export class RestWorldSignalTableComponent<TListItem extends Record<string, any>
             if (!this._initialQueryParamsSet) {
                 this._initialQueryParamsSet = true;
                 const oDataParametersFromUrl = ODataService.createParametersFromRoute(activatedRoute, urlParameterPrefix);
-                const mergedParameters = { ...oDataParameters, ...oDataParametersFromUrl };
+                const oDataParametersFromPagination = { $top: this.rowsPerPage() };
+                const mergedParameters = { ...oDataParametersFromPagination, ...oDataParameters, ...oDataParametersFromUrl };
                 this.oDataParameters.set(mergedParameters);
                 return;
             }
@@ -447,7 +451,7 @@ export class RestWorldSignalTableComponent<TListItem extends Record<string, any>
      * @param indexOnCurrentPage The index of the row on the currently displayed page.
      * @param columnName The name of the column (property) to get the field for.
      */
-    public getFieldAtIndex(indexOnCurrentPage: number, columnName: string): FieldTree<unknown> | undefined {
+    public getFieldAtIndex(indexOnCurrentPage: number, columnName: string): FieldTree<SimpleValue> | undefined {
         const finalIndex = this.getAbsoluteIndex(indexOnCurrentPage);
 
         const boundField = this.field();
@@ -456,14 +460,14 @@ export class RestWorldSignalTableComponent<TListItem extends Record<string, any>
             if (!itemField)
                 return undefined;
 
-            return getChildFieldTree(itemField, columnName);
+            return getChildFieldTree<SimpleValue>(itemField, columnName);
         }
 
         const signalForm = this._signalForms()[finalIndex];
         if (!signalForm)
             return undefined;
 
-        return getChildFieldTree(signalForm.form as unknown as FieldTree<Record<string, unknown>>, columnName);
+        return getChildFieldTree<SimpleValue>(signalForm.form as unknown as FieldTree<Record<string, unknown>>, columnName);
     }
 
     public getAbsoluteIndex(indexOnCurrentPage: number): number {
@@ -522,7 +526,7 @@ export class RestWorldSignalTableComponent<TListItem extends Record<string, any>
      * @param event The keydown event.
      * @param columnFilter The `#f` template reference of the `<p-columnFilter>` the value belongs to.
      */
-    public applyColumnFilterOnEnter(event: KeyboardEvent, columnFilter: ColumnFilter): void {
+    public applyColumnFilterOnEnter(event: Event, columnFilter: ColumnFilter): void {
         event.preventDefault();
         columnFilter.applyFilter();
     }

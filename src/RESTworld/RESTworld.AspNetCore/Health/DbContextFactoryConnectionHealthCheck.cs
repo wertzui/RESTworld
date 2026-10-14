@@ -42,7 +42,16 @@ public partial class DbContextFactoryConnectionHealthCheck<TContext> : IHealthCh
     {
         await using var dbContext = _factory.CreateDbContext();
 
-        var canConnect = await dbContext.Database.CanConnectAsync(cancellationToken);
+        var canConnect = false;
+        try
+        {
+            canConnect = await dbContext.Database.CanConnectAsync(cancellationToken);
+        }
+        catch (Exception e)
+        {
+            LogExceptionMessage(_contextName, e);
+            return new HealthCheckResult(context.Registration.FailureStatus, string.Format(CultureInfo.InvariantCulture, _exceptionMessageCompositeFormat, _contextName));
+        }
 
         if (!canConnect)
         {

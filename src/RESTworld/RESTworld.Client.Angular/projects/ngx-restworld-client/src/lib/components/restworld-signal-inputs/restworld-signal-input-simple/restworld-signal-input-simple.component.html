@@ -1,6 +1,7 @@
+<!-- The [formField] bindings on p-datepicker and p-inputNumber use $any() on purpose. The typings of PrimeNG 21 (BaseInput: `pattern` as string, `min`/`max` as number) clash with the metadata typings of Signal Forms in Angular 22 (`pattern` as RegExp[], `min`/`max` as Date). PrimeNG 22 fixes this, remove the $any() when upgrading. -->
 @switch (property().type) {
     @case (PropertyType.Textarea) {
-        <textarea [propertyAttributes]="property()" [formField]="$any(field())" pInputTextarea class="w-full p-inputtextarea p-inputtext p-inputtext-fluid"></textarea>
+        <textarea [propertyAttributes]="property()" [formField]="stringField()" pInputTextarea class="w-full p-inputtextarea p-inputtext p-inputtext-fluid"></textarea>
     }
     @case (PropertyType.Date) {
         <p-datepicker [propertyAttributes]="property()" [formField]="$any(field())" [dateFormat]="dateFormat" [showWeek]="true" [showIcon]="true" styleClass="w-full"></p-datepicker>
@@ -18,7 +19,7 @@
         <p-inputNumber [propertyAttributes]="property()" [formField]="$any(field())" inputMode="decimal" class="w-full" styleClass="w-full"></p-inputNumber>
     }
     @case (PropertyType.Bool) {
-        <rw-tri-state-checkbox [propertyAttributes]="property()" [formField]="$any(field())" [required]="property().required ?? false"></rw-tri-state-checkbox>
+        <rw-tri-state-checkbox [propertyAttributes]="property()" [formField]="booleanField()" [required]="property().required ?? false"></rw-tri-state-checkbox>
     }
     @case (PropertyType.DatetimeOffset) {
         <p-datepicker [propertyAttributes]="property()" [formField]="$any(field())" [dateFormat]="dateFormat" [showTime]="true" [showWeek]="false" [showIcon]="true" styleClass="w-full"></p-datepicker>
@@ -27,12 +28,12 @@
         <p-datepicker [propertyAttributes]="property()" [formField]="$any(field())" [dateFormat]="timeFormat" [showTime]="true" [timeOnly]="true" [showWeek]="false" [showIcon]="true" styleClass="w-full"></p-datepicker>
     }
     @case (PropertyType.Image) {
-        <rw-image [formField]="$any(field())" [property]="$any(property())"></rw-image>
+        <rw-image [formField]="stringField()" [property]="imageProperty()"></rw-image>
     }
     @case (PropertyType.File) {
-        <rw-file [formField]="$any(field())" [fileName]="property().name" [accept]="$any(property().placeholder)"></rw-file>
+        <rw-file [formField]="stringField()" [fileName]="property().name" [accept]="accept()"></rw-file>
     }
     @default {
-        <input [propertyAttributes]="property()" [formField]="$any(field())" pInputText class="w-full" />
+        <input [propertyAttributes]="property()" [formField]="stringField()" pInputText class="w-full" />
     }
 }

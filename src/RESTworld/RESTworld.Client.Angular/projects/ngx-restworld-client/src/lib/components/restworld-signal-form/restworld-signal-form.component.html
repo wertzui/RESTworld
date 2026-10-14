@@ -2,9 +2,9 @@
     <form (submit)="submit(); $event.preventDefault()">
         <div class="blockable-container">
             <div class="blockable-element">
-                <rw-signal-validation-errors [field]="$any(form())"></rw-signal-validation-errors>
+                <rw-signal-validation-errors [field]="form()"></rw-signal-validation-errors>
                 <ng-template #defaultContent>
-                    <rw-signal-input-template [template]="template()" [apiName]="apiName()" [field]="$any(form())"></rw-signal-input-template>
+                    <rw-signal-input-template [template]="template()" [apiName]="apiName()" [field]="form()"></rw-signal-input-template>
                 </ng-template>
                 <ng-container
                     *ngTemplateOutlet="contentRef() ?? defaultContent; context: { form: form, template: template, apiName: apiName() }"></ng-container>

@@ -1,7 +1,8 @@
+<!-- The [formField] binding on p-select uses $any() on purpose. The typings of PrimeNG 21 (BaseInput: `pattern` as string, `min`/`max` as number) clash with the metadata typings of Signal Forms in Angular 22 (`pattern` as RegExp[]). PrimeNG 22 fixes this, remove the $any() when upgrading. -->
 <ng-template #defaultInputOptionsSingle>
     <p-select
         [propertyAttributes]="property()"
-        [formField]="$any(field())"
+        [formField]="$any(selectField())"
         [options]="optionsManager.items.value()"
         (onFilter)="onOptionsFiltered($event)"
         (onChange)="onOptionsChanged($event)"
@@ -22,7 +23,7 @@
 <ng-template #defaultInputOptionsMultiple>
     <p-multiSelect
         [propertyAttributes]="property()"
-        [formField]="$any(field())"
+        [formField]="selectField()"
         [options]="optionsManager.items.value()"
         (onFilter)="onOptionsFiltered($event)"
         (onChange)="onOptionsChanged($event)"

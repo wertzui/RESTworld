@@ -34,6 +34,12 @@ export class OptionsManager<TProperty extends Property<SimpleValue, string, stri
 
     public readonly filter = signal<string | undefined>(undefined);
     private _lastFilter: string | undefined = undefined;
+    /**
+     * The items the loader returned last.
+     * @remarks `items.value()` cannot be used for this inside the loader, because a resource resets its value to
+     * `undefined` while it is loading, which is always the case when the loader runs after a params change.
+     */
+    private _lastItems: TOptionsItem[] = [];
     public readonly items = resource({
         params: () => ({ filter: this.filter(), options: this.options(), selectedValues: this.selectedValues() }),
         loader: async ({ params }) => {
@@ -42,8 +48,11 @@ export class OptionsManager<TProperty extends Property<SimpleValue, string, stri
             const selectedValues = params.selectedValues;
 
             // We have inline options, so we don't need to load them from the server.
-            if (Array.isArray(options?.inline) && options.inline.length > 0)
-                return options.inline as TOptionsItem[];
+            if (Array.isArray(options?.inline) && options.inline.length > 0) {
+                this._lastItems = options.inline as TOptionsItem[];
+
+                return this._lastItems;
+            }
 
             // First load: there might be selected items, but the user has not typed in a filter yet.
             // In this case, we want to load the selected items to be able to show them in the dropdown.
@@ -52,13 +61,8 @@ export class OptionsManager<TProperty extends Property<SimpleValue, string, stri
 
             // Only make the call if the filter has changed.
             // This prevents unnecessary calls when the selected values change but the filter is the same.
-            if (filter === this._lastFilter) {
-                const currentItems = this.items.value() as TOptionsItem[] | undefined;
-                if (currentItems === undefined)
-                    return [] as TOptionsItem[];
-
-                return currentItems;
-            }
+            if (filter === this._lastFilter)
+                return this._lastItems;
 
             this._lastFilter = filter;
 
@@ -72,9 +76,9 @@ export class OptionsManager<TProperty extends Property<SimpleValue, string, stri
             const response = await this._client().getListByUri<TOptionsItem>(templatedUri, { $filter: filter, $top: 10 }, headersWithCaching);
             this._problemService.checkResponseDisplayErrorsAndThrow(response, undefined, `An error occurred while getting the selected items for the property ${this.property().name}.`);
 
-            const oldItems = this.items.value();
             const newItems = response.body._embedded.items;
-            const combinedItems = this.combineCurrentItemsWithSelected(oldItems, selectedValues, newItems);
+            const combinedItems = this.combineCurrentItemsWithSelected(this._lastItems, selectedValues, newItems);
+            this._lastItems = combinedItems;
 
             return combinedItems;
         }
