@@ -160,6 +160,9 @@ public static class RestWorldBuilderExtensions
             options.OperationFilter<SwaggerIgnoreOperationFilter>();
             options.MapType(typeof(ODataQueryOptions<>), () => new OpenApiSchema());
 
+            // A JSON Patch document is an array of operations (RFC 6902), not an object with the properties of the C# class.
+            options.SchemaFilter<SwaggerJsonPatchSchemaFilter>();
+
             // Add correct schema for Resource<TState> and corresponding FormsResource
             options.SchemaFilter<SwaggerResourceSchemaFilter>();
 

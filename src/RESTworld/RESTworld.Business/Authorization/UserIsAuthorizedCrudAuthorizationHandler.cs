@@ -23,6 +23,7 @@ namespace RESTworld.Business.Authorization;
 /// <typeparam name="TUpdateDto">The type of the update dto.</typeparam>
 /// <seealso cref="CrudAuthorizationHandlerBase{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}" />
 public class UserIsAuthorizedCrudAuthorizationHandler<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto> : CrudAuthorizationHandlerBase<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>
+    where TUpdateDto : class
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="UserIsAuthorizedCrudAuthorizationHandler{TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto}"/> class.

@@ -290,6 +290,57 @@ public class CrudController<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFul
     }
 
     /// <summary>
+    /// Creates and/or partially updates resources by applying a JSON Patch (RFC 6902) document.
+    /// </summary>
+    /// <remarks>
+    /// The patch targets the whole collection:
+    /// <list type="bullet">
+    ///     <item><c>{ "op": "add", "path": "/-", "value": { ... } }</c> creates a new resource. The value is a create DTO.</item>
+    ///     <item>All other operations use the path <c>/{id}/{property}</c> and update the resource with that ID, for example <c>{ "op": "replace", "path": "/5/title", "value": "New title" }</c>.</item>
+    /// </list>
+    /// Creating requires the permission to create, updating requires the permission to update. A patch that does both requires both.
+    /// Unlike PUT, no timestamp is required: the operations are applied to the current state of the resource, so concurrent modifications are not detected by default.
+    /// To guard against them, follow RFC 6902 and include a <c>test</c> operation on <c>/{id}/timestamp</c> with the last known timestamp:
+    /// the whole patch is rejected if the resource has been modified in the meantime.
+    /// All operations are applied together or not at all.
+    /// </remarks>
+    /// <param name="patch">The JSON Patch document.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
+    /// <returns>The updated resources followed by the created resources as stored in the database.</returns>
+    [HttpPatch]
+    [Consumes("application/json-patch+json")]
+    [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Put))]
+    [ProducesResponseType(typeof(FormsResource), StatusCodes.Status200OK, "application/prs.hal-forms+json", "application/hal-forms+json")]
+    [ProducesResponseType(typeof(Resource), StatusCodes.Status200OK, "application/hal+json")]
+    [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(Resource<ProblemDetails>), StatusCodes.Status409Conflict)]
+    [ProducesWithContentNegotiation("application/hal+json", "application/prs.hal-forms+json", "application/hal-forms+json")]
+    [Description("Creates and/or partially updates resources by applying a JSON Patch document.")]
+    public virtual async Task<ActionResult<Resource>> PatchAsync(
+        [FromBody] JsonPatchDocument<TCreateDto, TUpdateDto> patch,
+        CancellationToken cancellationToken)
+    {
+        if (patch is null || patch.Operations.Count == 0)
+            return ErrorResultFactory.CreateError(StatusCodes.Status400BadRequest, "The request body must be a JSON Patch document with at least one operation.", ActionHelper.StripAsyncSuffix(nameof(PatchAsync)));
+
+        var serviceResponse = await _crudService.PatchAsync(patch, cancellationToken);
+
+        if (serviceResponse.Succeeded)
+        {
+            foreach (var dto in serviceResponse.ResponseObject)
+            {
+                Cache.RemoveGetForAllUsers<ServiceResponse<TGetFullDto>>(dto.Id);
+            }
+            Cache.RemoveGetListForAllUsers<ServiceResponse<TGetFullDto>>();
+        }
+
+        var result = await ResultFactory.CreateOkCollectionResultBasedOnOutcomeAsync(serviceResponse, ReturnsReadOnlyFormsResponses, ActionHelper.StripAsyncSuffix(nameof(PatchAsync)), maxTop: Options.MaxNumberForListEndpoint);
+
+        return result;
+    }
+
+    /// <summary>
     /// This method is called by the <see cref="NewAsync"/> operation to create a template
     /// resource to return. The default implementation just calls the empty constructor and sets
     /// all strings to an empty string if they are not set initially.

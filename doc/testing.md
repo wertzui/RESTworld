@@ -2,7 +2,7 @@
 
 The `RESTworld.Testing` package helps you test the business layer of a RESTworld application — services, mappers, authorization handlers and validators — without starting a web host. A `TestBuilder` assembles a small dependency-injection container from reusable configurations and hands you the class under test (the *SUT*).
 
-The package references EF Core InMemory, NSubstitute and AutoFixture and is independent of the test framework. The examples use MSTest.
+The package references EF Core InMemory and SQLite, NSubstitute and AutoFixture and is independent of the test framework. The examples use MSTest.
 
 ```bash
 dotnet add package RESTworld.Testing
@@ -35,7 +35,8 @@ var service = environment.GetSut();
 | Extension | Adds |
 |---|---|
 | `WithInMemoryDatabase<TContext>(string? databaseName = null)` and overloads with seed data | `IDbContextFactory<TContext>` using EF Core InMemory; a unique database per call unless you pass a name |
-| `.WithSeed(params object?[])` / `.WithSeed(IEnumerable<object?>)` (on the in-memory builder) | entities saved after the container is built |
+| `WithSqliteDatabase<TContext>(string? databaseName = null)` and overloads with seed data | `IDbContextFactory<TContext>` using in-memory SQLite; creates the schema automatically and enforces foreign keys |
+| `.WithSeed(params object?[])` / `.WithSeed(IEnumerable<object?>)` (on either database builder) | entities saved after the container is built |
 | `WithUser(name, authenticationType)`, `WithUser(claims, authenticationType)`, `WithUser(ClaimsIdentity)`, `WithUser(ClaimsPrincipal)` | an `IUserAccessor` returning that user (default name `"TestName"`) |
 | `WithoutUser()` | an `IUserAccessor` with an unauthenticated principal |
 | `WithCrudMapper<…, TMapper>(TMapper? instance = null)`, `WithReadMapper<…, TMapper>(…)` | your mapper as `ICrudMapper`/`IReadMapper` |
@@ -48,6 +49,25 @@ var service = environment.GetSut();
 | `WithSubstitute<T>(Action<T>? configure = null)`, `.Configure(Action<T>)` | an NSubstitute substitute |
 | `WithOptions<T>(T options)` / `WithOptions<T>(Action<T>)` | `IOptions<T>` |
 | `WithAction(Action<IServiceCollection>)`, `WithAction(Action<IServiceProvider>)`, `WithAction(configure, after)` | arbitrary setup; type the lambda parameter to pick the overload |
+
+## Using SQLite
+
+Use SQLite when tests need relational queries, foreign-key checks or transactions without a database server:
+
+```csharp
+using var environment = new TestBuilder()
+    .WithSqliteDatabase<BlogDatabase>()
+    .WithSeed(new Blog { Id = 1, Name = "First" })
+    .Build();
+
+var factory = environment.GetRequiredService<IDbContextFactory<BlogDatabase>>();
+using var context = factory.CreateDbContext();
+var blog = await context.Set<Blog>().SingleAsync();
+```
+
+`SqliteDatabaseTestConfiguration<TContext>` and `SqliteDatabaseTestBuilderExtensions` mirror the InMemory configuration's constructors, database-name/seed overloads and `WithSeed` methods. Null seed entries are ignored. The schema is created with `EnsureCreated`, not migrations, even without seed data.
+
+By default, each configuration uses a unique in-memory database. An explicit name shares data between environments while at least one remains alive; empty/whitespace names and the reserved `:memory:` name are rejected. A provider-owned connection keeps the database alive, and each context uses its own connection. Dispose contexts before the environment; the database disappears after the last connection closes. Pooling is disabled so disposed connections cannot retain test data. Setup failures propagate and dispose the environment's services.
 
 ## Testing a service
 
@@ -145,7 +165,7 @@ To test validation through the whole service use `WithValidation(validator)` tog
 
 ## Limits
 
-- EF Core InMemory is not SQL Server: there are no `Timestamp` row versions and no referential integrity checks. Test concurrency conflicts and foreign-key behavior against a real database.
+- EF Core InMemory is not SQL Server: there are no `Timestamp` row versions and no referential integrity checks. SQLite enforces foreign keys and supports transactions, but differs from SQL Server in SQL translation, supported types and concurrency; it does not generate SQL Server `Timestamp` row versions. Test provider-specific behavior against your production database.
 - Controllers, HAL/HAL-Forms output and routing are not part of this package; test those with an ASP.NET Core integration test if needed.
 
 Related: [Pipeline Overview](pipeline-overview.md), [Mapping and Versioning](mapping-and-versioning.md), [Authorization](authorization.md).

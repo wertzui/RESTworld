@@ -34,4 +34,7 @@ public class CrudAutoMapper<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFul
 
     /// <inheritdoc/>
     public void MapUpdateToEntity(TUpdateDto updateDto, TEntity entity) => Mapper.Map(updateDto, entity);
+
+    /// <inheritdoc/>
+    public TUpdateDto MapEntityToUpdate(TEntity entity) => Mapper.Map<TUpdateDto>(entity);
 }

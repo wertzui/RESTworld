@@ -62,6 +62,16 @@ public partial class PostMapper : CrudMapperlyMapperBase<Post, PostCreateDto, Po
     [MapperIgnoreTarget(nameof(Post.Timestamp))]
     public override partial void MapUpdateToEntity(PostUpdateDto updateDto, Post entity);
 
+    [MapperIgnoreSource(nameof(Post.Author))]
+    [MapperIgnoreSource(nameof(Post.Blog))]
+    [MapperIgnoreSource(nameof(Post.CreatedAt))]
+    [MapperIgnoreSource(nameof(Post.CreatedBy))]
+    [MapperIgnoreSource(nameof(Post.LastChangedAt))]
+    [MapperIgnoreSource(nameof(Post.LastChangedBy))]
+    [MapperIgnoreTarget(nameof(PostUpdateDto.Attachement))]
+    [MapperIgnoreTarget(nameof(PostUpdateDto.Image))]
+    public override partial PostUpdateDto MapEntityToUpdate(Post entity);
+
     public override partial IQueryable<PostListDto> MapQueryToListQueryable(IQueryable<PostQueryDto> queryDtos);
 
     [MapperIgnoreTarget(nameof(PostUpdateDto.Attachement))]

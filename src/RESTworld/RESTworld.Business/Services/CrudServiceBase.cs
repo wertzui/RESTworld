@@ -15,6 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -126,6 +127,20 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
             CrudAuthorizationHandlers,
             cancellationToken);
 
+    /// <inheritdoc/>
+    public Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> PatchAsync(JsonPatchDocument<TCreateDto, TUpdateDto> patch, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(patch);
+
+        return TryExecuteWithAuthorizationAsync<TEntity, JsonPatchDocument<TCreateDto, TUpdateDto>, IReadOnlyCollection<TGetFullDto>, IPatchAuthorizationHandler<TEntity, TCreateDto, TUpdateDto, TGetFullDto>>(
+            patch,
+            PatchInternalAsync,
+            (result, handler, token) => handler.HandlePatchRequestAsync(result, token),
+            (response, handler, token) => handler.HandlePatchResponseAsync(response, token),
+            CrudAuthorizationHandlers,
+            cancellationToken);
+    }
+
     /// <summary>
     /// Sets the OriginalValue of the timestamp if the timestamp exists on the entity. If it is
     /// marked with a [NotMapped] Attribute, this method will do nothing.
@@ -217,6 +232,170 @@ public class CrudServiceBase<TContext, TEntity, TCreateDto, TQueryDto, TGetListD
         await OnCreatedInternalAsync(authorizationResult, resultDtos, entities, cancellationToken);
 
         return ServiceResponse.FromResult(resultDtos);
+    }
+
+    /// <summary>
+    /// The method contains the business logic for the PATCH operation. The whole patch is atomic:
+    /// all changes are saved with a single SaveChangesAsync call, so either everything is stored, or nothing is.
+    /// Authorization has already been checked through <see cref="IPatchAuthorizationHandler{TEntity, TCreateDto, TUpdateDto, TGetFullDto}.HandlePatchRequestAsync"/>
+    /// when this method is called; only the authorization filter of the given <paramref name="authorizationResult"/> is applied to all database reads.
+    /// <list type="number">
+    ///     <item>The patch is split into operations that create entities (<c>add</c> on <c>/-</c>) and operations that update a single entity (<c>/{id}/property</c>).</item>
+    ///     <item>The create operations are applied to an empty list of <typeparamref name="TCreateDto"/>.</item>
+    ///     <item>Every entity to update is read (scoped by the authorization filter), mapped to a <typeparamref name="TUpdateDto"/>
+    ///     with <see cref="IUpdateMapper{TEntity, TUpdateDto}.MapEntityToUpdate"/> and the update operations are applied to that DTO.</item>
+    ///     <item>If anything in the patch is invalid or an entity to update does not exist, nothing is executed and all problems are reported together.</item>
+    ///     <item>Updates and creates are validated like <see cref="UpdateAsync(IUpdateMultipleRequest{TUpdateDto, TEntity}, CancellationToken)"/>
+    ///     and <see cref="CreateAsync(IReadOnlyCollection{TCreateDto}, CancellationToken)"/>, each only if the patch contains operations of that kind.
+    ///     The updates are applied to the already tracked entities, the creates are added to the same context.</item>
+    ///     <item>A single SaveChangesAsync call stores everything at once.</item>
+    /// </list>
+    /// </summary>
+    /// <param name="authorizationResult">The result of the authorization which contains the JSON Patch document.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
+    /// <returns>The updated entities followed by the created entities as they are stored in the database.</returns>
+    protected virtual async Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> PatchInternalAsync(AuthorizationResult<TEntity, JsonPatchDocument<TCreateDto, TUpdateDto>> authorizationResult, CancellationToken cancellationToken)
+    {
+        var patch = authorizationResult.Value1;
+        var split = patch.Split();
+        var errors = new ValidationResults();
+
+        foreach (var operation in split.Invalid)
+            errors.AddValidationFailure(operation.path ?? "", $"The path must be '{JsonPatchDocument<TCreateDto, TUpdateDto>.CreatePath}' for an add operation that creates a new resource, or '/{{id}}/{{property}}' for everything else. Only the same resource can be referenced in 'from'.");
+
+        var createDtos = new List<TCreateDto>();
+        if (split.Creates.Operations.Count > 0)
+        {
+            try
+            {
+                split.Creates.ApplyTo(createDtos, error => errors.AddValidationFailure(error.Operation?.path ?? "", error.ErrorMessage));
+            }
+            catch (JsonException e)
+            {
+                errors.AddValidationFailure(JsonPatchDocument<TCreateDto, TUpdateDto>.CreatePath, e.Message);
+            }
+        }
+
+        if (!errors.ValidationSucceeded)
+            return ServiceResponse.FromFailedValidation<IReadOnlyCollection<TGetFullDto>>(errors);
+
+        if (createDtos.Count == 0 && split.Updates.Count == 0)
+            return ServiceResponse.FromProblem<IReadOnlyCollection<TGetFullDto>>(HttpStatusCode.BadRequest, "The patch does not contain any operations.");
+
+        await using var context = _contextFactory.CreateDbContext();
+
+        // Read the current state of every entity to update with a single query, map each to an update DTO and apply the patch to it.
+        // The reads are scoped by the authorization filter, so entities the caller must not see are treated as missing.
+        // Problems are collected across all entities so the client gets everything that is wrong at once.
+        var idsToUpdate = split.Updates.Keys.ToHashSet();
+        var updatedEntities = idsToUpdate.Count == 0
+            ? new Dictionary<long, TEntity>()
+            : await GetDbSetForUpdatingWithAuthorization(context, authorizationResult)
+                .Where(e => idsToUpdate.Contains(e.Id))
+                .ToDictionaryAsync(e => e.Id, cancellationToken);
+
+        var updateDtos = new List<TUpdateDto>(split.Updates.Count);
+        var anyEntityIsMissing = false;
+        foreach (var (id, idPatch) in split.Updates)
+        {
+            if (!updatedEntities.TryGetValue(id, out var entity))
+            {
+                errors.AddValidationFailure($"/{id}", "The resource does not exist or must not be read.");
+                anyEntityIsMissing = true;
+                continue;
+            }
+
+            var updateDto = Mapper.MapEntityToUpdate(entity);
+
+            try
+            {
+                idPatch.ApplyTo(updateDto, error => errors.AddValidationFailure($"/{id}{error.Operation?.path}", error.ErrorMessage));
+            }
+            catch (JsonException e)
+            {
+                errors.AddValidationFailure($"/{id}", e.Message);
+                continue;
+            }
+
+            if (updateDto.Id != id)
+                errors.AddValidationFailure($"/{id}/id", "The ID of a resource cannot be changed.");
+
+            updateDtos.Add(updateDto);
+        }
+
+        if (!errors.ValidationSucceeded)
+            return anyEntityIsMissing
+                ? ServiceResponse.FromFailedValidation<IReadOnlyCollection<TGetFullDto>>(HttpStatusCode.NotFound, errors)
+                : ServiceResponse.FromFailedValidation<IReadOnlyCollection<TGetFullDto>>(errors);
+
+        // The updates are validated and applied to the tracked entities like in UpdateAsync, but without saving yet.
+        AuthorizationResult<TEntity, IUpdateMultipleRequest<TUpdateDto, TEntity>>? updateAuthorization = null;
+        if (updateDtos.Count > 0)
+        {
+            updateAuthorization = authorizationResult.ChangeParameter<IUpdateMultipleRequest<TUpdateDto, TEntity>>(new UpdateMultipleRequest<TUpdateDto, TEntity>(updateDtos, x => x));
+
+            var validationResultsBeforeUpdate = ValidationService is null ? SuccessfullValidationResults.Instance : await ValidationService.ValidateAllCollectionsBeforeUpdateAsync(updateDtos.Select(d => (d, updatedEntities[d.Id])), cancellationToken);
+            if (!validationResultsBeforeUpdate.ValidationSucceeded)
+                return ServiceResponse.FromFailedValidation<IReadOnlyCollection<TGetFullDto>>(validationResultsBeforeUpdate);
+
+            foreach (var dto in updateDtos)
+            {
+                var entity = updatedEntities[dto.Id];
+                SetTimestampOriginalValue(dto, context, entity);
+                Mapper.MapUpdateToEntity(dto, entity);
+            }
+
+            var validationResultsAfterUpdate = ValidationService is null ? SuccessfullValidationResults.Instance : await ValidationService.ValidateAllCollectionsAfterUpdateAsync(updateDtos.Select(d => (d, updatedEntities[d.Id])), cancellationToken);
+            if (!validationResultsAfterUpdate.ValidationSucceeded)
+                return ServiceResponse.FromFailedValidation<IReadOnlyCollection<TGetFullDto>>(validationResultsAfterUpdate);
+
+            await OnUpdatingInternalAsync(updateAuthorization, context, updatedEntities, cancellationToken);
+        }
+
+        // The creates are validated and added to the same context like in CreateAsync, but without saving yet.
+        AuthorizationResult<TEntity, IReadOnlyCollection<TCreateDto>>? createAuthorization = null;
+        var createdEntities = new List<TEntity>();
+        if (createDtos.Count > 0)
+        {
+            createAuthorization = authorizationResult.ChangeParameter<IReadOnlyCollection<TCreateDto>>(createDtos);
+
+            var dtos = createAuthorization.Value1;
+
+            var validationResultsBeforeCreate = ValidationService is null ? SuccessfullValidationResults.Instance : await ValidationService.ValidateAllCollectionsBeforeCreateAsync(dtos, cancellationToken);
+            if (!validationResultsBeforeCreate.ValidationSucceeded)
+                return ServiceResponse.FromFailedValidation<IReadOnlyCollection<TGetFullDto>>(validationResultsBeforeCreate);
+
+            createdEntities = dtos.Select(Mapper.MapCreateToEntity).ToList();
+
+            context.AddRange(createdEntities);
+
+            var validationResultsAfterCreate = ValidationService is null ? SuccessfullValidationResults.Instance : await ValidationService.ValidateAllCollectionsAfterCreateAsync(dtos.Zip(createdEntities), cancellationToken);
+            if (!validationResultsAfterCreate.ValidationSucceeded)
+                return ServiceResponse.FromFailedValidation<IReadOnlyCollection<TGetFullDto>>(validationResultsAfterCreate);
+
+            await OnCreatingInternalAsync(createAuthorization, context, createdEntities, cancellationToken);
+        }
+
+        // A single save makes the whole patch atomic: either everything is stored, or nothing is.
+        await context.SaveChangesAsync(GetCurrentUsersName(), cancellationToken);
+
+        var resultDtos = new List<TGetFullDto>();
+
+        if (updateAuthorization is not null)
+        {
+            var updatedDtos = await GetMultipleDtosAsync(updateAuthorization.ChangeParameter<IReadOnlyCollection<long>>(updatedEntities.Keys), cancellationToken);
+            await OnUpdatedInternalAsync(updateAuthorization, updatedDtos, updatedEntities, cancellationToken);
+            resultDtos.AddRange(updatedDtos);
+        }
+
+        if (createAuthorization is not null)
+        {
+            var createdDtos = await GetMultipleDtosAsync(createAuthorization.ChangeParameter<IReadOnlyCollection<long>>(createdEntities.Select(e => e.Id).ToHashSet()), cancellationToken);
+            await OnCreatedInternalAsync(createAuthorization, createdDtos, createdEntities, cancellationToken);
+            resultDtos.AddRange(createdDtos);
+        }
+
+        return ServiceResponse.FromResult<IReadOnlyCollection<TGetFullDto>>(resultDtos);
     }
 
     /// <summary>

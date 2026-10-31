@@ -1,6 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-    <Sdk Name="Aspire.AppHost.Sdk" Version="13.5.3" />
+<Project Sdk="Aspire.AppHost.Sdk/13.6.0">
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -9,10 +7,10 @@
         <Nullable>enable</Nullable>
         <IsAspireHost>true</IsAspireHost>
         <UserSecretsId>ee17b5a8-658e-494e-9d0c-926d7dcc924b</UserSecretsId>
+        <AspireUseCliBundle>true</AspireUseCliBundle>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Aspire.Hosting.AppHost" />
         <PackageReference Include="Aspire.Hosting.JavaScript" />
         <PackageReference Include="Aspire.Hosting.SqlServer" />
         <PackageReference Include="CommunityToolkit.Aspire.Hosting.McpInspector" />

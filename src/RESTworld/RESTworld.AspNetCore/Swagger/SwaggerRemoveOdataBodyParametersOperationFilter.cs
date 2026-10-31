@@ -19,7 +19,9 @@ internal class SwaggerRemoveOdataBodyParametersOperationFilter : IOperationFilte
         if (bodyContent is null)
             return;
 
-        var nonJsonTypes = bodyContent.Keys.Where(k => k != "application/json" && !k.StartsWith("application/json; v=")).ToList();
+        var nonJsonTypes = bodyContent.Keys
+            .Where(k => k != "application/json" && !k.StartsWith("application/json; v=") && k != "application/json-patch+json" && !k.StartsWith("application/json-patch+json; v="))
+            .ToList();
 
         foreach (var nonJsonType in nonJsonTypes)
         {

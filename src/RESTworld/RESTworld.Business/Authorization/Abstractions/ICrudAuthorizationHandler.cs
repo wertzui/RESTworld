@@ -19,6 +19,8 @@ public interface ICrudAuthorizationHandler<TEntity, TCreateDto, TQueryDto, TGetL
     ICreateAuthorizationHandler<TEntity, TCreateDto, TGetFullDto>,
     IReadAuthorizationHandler<TEntity, TQueryDto, TGetListDto, TGetFullDto>,
     IUpdateAuthorizationHandler<TEntity, TUpdateDto, TGetFullDto>,
+    IPatchAuthorizationHandler<TEntity, TCreateDto, TUpdateDto, TGetFullDto>,
     IDeleteAuthorizationHandler<TEntity>
+    where TUpdateDto : class
 {
 }

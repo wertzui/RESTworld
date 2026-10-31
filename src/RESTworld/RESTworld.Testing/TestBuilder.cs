@@ -57,12 +57,20 @@ public class TestBuilder : ITestBuilder
         services.AddLogging(c => c.AddConsole());
 
         var provider = services.BuildServiceProvider();
-        foreach (var configuration in _configurations)
+        try
         {
-            configuration.AfterConfigureServices(provider);
-        }
+            foreach (var configuration in _configurations)
+            {
+                configuration.AfterConfigureServices(provider);
+            }
 
-        return provider;
+            return provider;
+        }
+        catch
+        {
+            provider.Dispose();
+            throw;
+        }
     }
 }
 

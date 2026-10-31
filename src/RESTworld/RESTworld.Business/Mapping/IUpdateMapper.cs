@@ -12,4 +12,12 @@ public interface IUpdateMapper<TEntity, TUpdateDto>
     /// </summary>
     /// <param name="updateDto">The DTO to update the entity with.</param>
     public void MapUpdateToEntity(TUpdateDto updateDto, TEntity entity);
+
+    /// <summary>
+    /// Maps an entity to an update DTO. This is used in the Patch pipeline to get the current state
+    /// of the entity as an update DTO before the patch operations are applied to it.
+    /// </summary>
+    /// <param name="entity">The entity to map.</param>
+    /// <returns>The update DTO with the current values of the entity.</returns>
+    public TUpdateDto MapEntityToUpdate(TEntity entity);
 }

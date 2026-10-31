@@ -1,12 +1,12 @@
 ---
 name: restworld-testing
-description: 'Write unit and integration-style tests for a RESTworld application with the RESTworld.Testing package. Use when asked to test a RESTworld service, mapper, authorization handler, validator or custom service; to set up TestBuilder, ITestEnvironment, ITestConfiguration; to use WithInMemoryDatabase, WithSeed, WithUser, WithoutUser, WithCrudService, WithReadService, WithCrudMapper, WithReadMapper, WithCrudAutoMapper, WithAutomapper, WithValidation, WithService, WithSubstitute, WithOptions, WithAction or BuildWithServiceAsSut; or to create a test project for a RESTworld API. Also handles: seeding an in-memory database, faking the current user, substituting dependencies with NSubstitute, and testing authorization/validation outcomes through the real service.'
+description: 'Write unit and integration-style tests for a RESTworld application with the RESTworld.Testing package. Use when asked to test a RESTworld service, mapper, authorization handler, validator or custom service; to set up TestBuilder, ITestEnvironment, ITestConfiguration; to use WithInMemoryDatabase, WithSqliteDatabase, WithSeed, WithUser, WithoutUser, WithCrudService, WithReadService, WithCrudMapper, WithReadMapper, WithCrudAutoMapper, WithAutomapper, WithValidation, WithService, WithSubstitute, WithOptions, WithAction or BuildWithServiceAsSut; or to create a test project for a RESTworld API. Also handles: seeding an in-memory database, testing SQLite relational behavior, faking the current user, substituting dependencies with NSubstitute, and testing authorization/validation outcomes through the real service.'
 argument-hint: 'Name the class under test (service, mapper, authorization handler, validator) and the test framework in use (default MSTest). Optionally paste the class.'
 ---
 
 # RESTworld: Testing with RESTworld.Testing
 
-`RESTworld.Testing` (NuGet package, namespace `RESTworld.Testing`) builds a small DI container per test, wires the usual RESTworld dependencies for you and returns the class under test (the *SUT*). It references EF Core InMemory, NSubstitute, AutoFixture and console logging. It is test-framework agnostic; the examples use MSTest.
+`RESTworld.Testing` (NuGet package, namespace `RESTworld.Testing`) builds a small DI container per test, wires the usual RESTworld dependencies for you and returns the class under test (the *SUT*). It references EF Core InMemory and SQLite, NSubstitute, AutoFixture and console logging. It is test-framework agnostic; the examples use MSTest.
 
 ## When to Use
 - Testing a service derived from `CrudServiceBase` / `ReadServiceBase` / `DbServiceBase`, a mapper, an authorization handler or a validator
@@ -18,18 +18,19 @@ argument-hint: 'Name the class under test (service, mapper, authorization handle
 1. **Compose with `new TestBuilder()`**, chain `With…` extension methods, finish with `Build()`, `Build<TSut>()` or `BuildWithServiceAsSut()`. Dispose the environment (`using var`), `ITestEnvironment` is `IDisposable`.
 2. **`Build<TSut>()`** registers `TSut` as singleton if nothing registered it, then `GetSut()` resolves it. All constructor dependencies of the SUT must have been added by `With…` calls. `ILogger<T>` is always available (logging is added automatically).
 3. **`BuildWithServiceAsSut()`** exists only directly after `WithCrudService(…)`, `WithReadService(…)` or `WithService<TService, TImplementation>()` (it returns `ITestEnvironment<TService>`). Do not insert other `With…` calls between.
-4. **Order of registration does not matter for resolution**, but `WithSeed` must follow `WithInMemoryDatabase<TContext>()` (it extends that builder). Seeding runs after the container is built.
-5. **Each `WithInMemoryDatabase` gets a unique database name** (GUID) unless you pass one, so tests are isolated.
+4. **Order of registration does not matter for resolution**, but `WithSeed` must follow `WithInMemoryDatabase<TContext>()` or `WithSqliteDatabase<TContext>()` (it extends those builders). Seeding runs after the container is built.
+5. **Each database configuration gets a unique database name** (GUID) unless you pass one, so tests are isolated. SQLite automatically creates the schema and keeps its in-memory database alive until all contexts and environments using that name are disposed. Empty/whitespace names and `:memory:` are rejected; use null for an automatic name.
 6. **Everything is registered as singleton.**
 7. **Use `Parallel()`** (from `EntityFrameworkCore.Parallel`, `using Microsoft.EntityFrameworkCore;`) on `IDbContextFactory<T>` in assertions: `await factory.Parallel().Set<Post>().CountAsync()`.
-8. The InMemory provider is not SQL Server: it does not generate `Timestamp` row versions or enforce relational constraints. Test those against a real database separately.
+8. The InMemory provider is not SQL Server: it does not generate `Timestamp` row versions or enforce relational constraints. SQLite enforces foreign keys and supports transactions, but does not generate SQL Server row versions either. Test production-provider-specific behavior against that database separately.
 
 ## Builder cheat sheet
 
 | Extension | Registers |
 |---|---|
 | `WithInMemoryDatabase<TContext>(string? databaseName = null)` (+ overloads taking seed data) | `IDbContextFactory<TContext>` on EF InMemory |
-| `.WithSeed(params object?[])` / `.WithSeed(IEnumerable<object?>)` | Entities added after build |
+| `WithSqliteDatabase<TContext>(string? databaseName = null)` (+ overloads taking seed data) | `IDbContextFactory<TContext>` on in-memory SQLite with automatic schema creation |
+| `.WithSeed(params object?[])` / `.WithSeed(IEnumerable<object?>)` | Entities added after build on either database builder |
 | `WithUser(string? name = null, string? authenticationType = null)`, `WithUser(IEnumerable<Claim>?, string?)`, `WithUser(ClaimsIdentity)`, `WithUser(ClaimsPrincipal)` | `IUserAccessor` with that principal (default name `"TestName"`) |
 | `WithoutUser()` | `IUserAccessor` with an unauthenticated principal |
 | `WithCrudMapper<TEntity, TCreate, TQuery, TList, TFull, TUpdate, TMapper>(TMapper? instance = null)` | `ICrudMapper`, `IReadMapper` and `TMapper` |
@@ -155,7 +156,7 @@ using var environment = new TestBuilder()
 - [ ] `BuildWithServiceAsSut()` directly follows the `WithCrudService` / `WithReadService` / `WithService` call
 - [ ] All SUT constructor dependencies are registered (mapper, `IUserAccessor` via `WithUser`/`WithoutUser`, validation, authorization handler where relevant)
 - [ ] Database state is asserted with `factory.Parallel()`
-- [ ] No assertions rely on SQL Server-only behavior (rowversion, FK enforcement)
+- [ ] No assertions rely on SQL Server-only behavior (rowversion); use SQLite or the production database for foreign-key enforcement
 
 ## Related
 - [Testing guide](https://github.com/wertzui/RESTworld/blob/main/doc/testing.md)

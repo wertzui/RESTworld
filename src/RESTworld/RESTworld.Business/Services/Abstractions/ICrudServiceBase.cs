@@ -66,4 +66,22 @@ public interface ICrudServiceBase<TEntity, TCreateDto, TQueryDto, TGetListDto, T
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns>The DTOs as they are stored in the database.</returns>
     Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> UpdateAsync(IUpdateMultipleRequest<TUpdateDto, TEntity> request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Partially updates and/or creates entities by applying a JSON Patch (RFC 6902) document.
+    /// <list type="bullet">
+    ///     <item><c>add</c> with the path <c>/-</c> creates a new entity. The value must be a <typeparamref name="TCreateDto"/>. This is the same as <see cref="CreateAsync(IReadOnlyCollection{TCreateDto}, CancellationToken)"/>.</item>
+    ///     <item>Every other operation must use a path of the form <c>/{id}/property</c> and updates the entity with that ID. This is the same as <see cref="UpdateAsync(IUpdateMultipleRequest{TUpdateDto, TEntity}, CancellationToken)"/>.</item>
+    /// </list>
+    /// Creating and updating are authorized and validated like the regular create and update calls, and only if the patch contains operations of that kind.
+    /// The whole patch is atomic: all changes are saved together, so either everything is stored, or nothing is.
+    /// Unlike <see cref="UpdateAsync(TUpdateDto, CancellationToken)"/>, the operations are applied to the current state of the entity,
+    /// so concurrent modifications are not detected by default.
+    /// To guard against them, follow RFC 6902 and include a <c>test</c> operation on <c>/{id}/timestamp</c> with the last known timestamp:
+    /// the whole patch is then rejected if the entity has been modified in the meantime.
+    /// </summary>
+    /// <param name="patch">The JSON Patch document.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
+    /// <returns>The updated entities followed by the created entities as they are stored in the database.</returns>
+    Task<ServiceResponse<IReadOnlyCollection<TGetFullDto>>> PatchAsync(JsonPatchDocument<TCreateDto, TUpdateDto> patch, CancellationToken cancellationToken);
 }

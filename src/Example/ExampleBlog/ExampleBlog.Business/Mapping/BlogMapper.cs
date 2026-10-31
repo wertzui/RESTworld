@@ -38,5 +38,10 @@ public partial class BlogMapper : CrudMapperlyMapperBase<Blog, BlogCreateDto, Bl
     // When updating an entry, everything on ChangeTrackingEntityBase except the Id should be ignored.
     [MapperRequiredMapping(RequiredMappingStrategy.Source)]
     public override partial void MapUpdateToEntity(BlogUpdateDto updateDto, Blog entity);
+
+    // Change tracking values are not part of the update DTO.
+    [MapperRequiredMapping(RequiredMappingStrategy.Target)]
+    public override partial BlogUpdateDto MapEntityToUpdate(Blog entity);
+
     public override partial IQueryable<BlogGetFullDto> MapEntityToFullQueryable(IQueryable<Blog> entities);
 }

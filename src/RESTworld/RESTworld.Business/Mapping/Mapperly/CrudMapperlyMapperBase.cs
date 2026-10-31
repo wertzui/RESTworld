@@ -23,4 +23,7 @@ public abstract partial class CrudMapperlyMapperBase<TEntity, TCreateDto, TQuery
 
     /// <inheritdoc/>
     public abstract void MapUpdateToEntity(TUpdateDto updateDto, TEntity entity);
+
+    /// <inheritdoc/>
+    public abstract TUpdateDto MapEntityToUpdate(TEntity entity);
 }

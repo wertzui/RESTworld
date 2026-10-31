@@ -48,6 +48,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
     private readonly LinkGenerator _linkGenerator;
     private readonly IODataQueryFactory _oDataQueryFactory;
     private readonly JsonSerializerOptions _serializerOptions;
+    private readonly JsonNamingPolicy? _propertyNamingPolicy;
 
     static SwaggerExampleOperationFilter()
     {
@@ -85,6 +86,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
     /// <param name="apiExplorer">The API explorer.</param>
     /// <param name="oDataQueryFactory">The o data query factory.</param>
     /// <param name="options">The options.</param>
+    /// <param name="jsonOptions">The MVC JSON options. The configured property naming policy is used when generating JSON Patch example paths.</param>
     /// <exception cref="System.ArgumentNullException">
     /// options
     /// or
@@ -95,11 +97,15 @@ public class SwaggerExampleOperationFilter : IOperationFilter
     /// apiExplorer
     /// or
     /// oDataQueryFactory
+    /// or
+    /// jsonOptions
     /// </exception>
-    public SwaggerExampleOperationFilter(IHttpContextAccessor httpContextAccessor, LinkGenerator linkGenerator, IApiDescriptionGroupCollectionProvider apiExplorer, IODataQueryFactory oDataQueryFactory, IOptions<RestWorldOptions> options)
+    public SwaggerExampleOperationFilter(IHttpContextAccessor httpContextAccessor, LinkGenerator linkGenerator, IApiDescriptionGroupCollectionProvider apiExplorer, IODataQueryFactory oDataQueryFactory, IOptions<RestWorldOptions> options, IOptions<JsonOptions> jsonOptions)
     {
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(jsonOptions);
         _curieName = options.Value.GetCurieOrDefault();
+        _propertyNamingPolicy = jsonOptions.Value.JsonSerializerOptions.PropertyNamingPolicy;
 
         _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
         _linkGenerator = linkGenerator ?? throw new ArgumentNullException(nameof(linkGenerator));
@@ -226,7 +232,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
             var resource = resourceFactory.CreateForODataListEndpointUsingSkipTopPaging(embedded, _ => Common.Constants.ListItems, e => ((DtoBase)e).Id, _oDataRawQueryOptions, 50, 10, controllerName);
             type.Example = CreateExample(resource);
         }
-        else if (actionName is "Get" or "Post" or "Put" or "New")
+        else if (actionName is "Get" or "Post" or "Put" or "Patch" or "New")
         {
             var tFullDto = controllerType.GenericTypeArguments[indexOfFullDtoType];
 
@@ -275,6 +281,14 @@ public class SwaggerExampleOperationFilter : IOperationFilter
                 type.Examples.Add("Single Object", new OpenApiExample { Value = CreateExample((Resource)resourceFactory.CreateForEndpoint(states[0], controller: controllerName, routeValues: new { id = states[0].Id })) });
                 type.Examples.Add("Collection", new OpenApiExample { Value = CreateExample(resourceFactory.CreateForListEndpoint(states, _ => Common.Constants.ListItems, d => d.Id, controllerName)) });
             }
+            else if (actionName is "Patch")
+            {
+                // Patch always returns a collection, even if only one object was patched
+                var states = Enumerable.Repeat<object?>(null, 3).Select(_ => Fixture.Create(tFullDto, _specimenContext)).Cast<ConcurrentDtoBase>().ToList();
+
+                type.Examples ??= new Dictionary<string, IOpenApiExample>();
+                type.Examples.Add("Collection", new OpenApiExample { Value = CreateExample(resourceFactory.CreateForListEndpoint(states, _ => Common.Constants.ListItems, d => d.Id, controllerName)) });
+            }
         }
     }
 
@@ -289,6 +303,12 @@ public class SwaggerExampleOperationFilter : IOperationFilter
                     var bodyParameterType = GetBodyParameterType(context.MethodInfo);
                     if (bodyParameterType is null)
                         continue;
+
+                    if (bodyParameterType.IsGenericType && bodyParameterType.GetGenericTypeDefinition() == typeof(RESTworld.Business.Models.JsonPatchDocument<,>))
+                    {
+                        type.Example = CreateJsonPatchExample(bodyParameterType);
+                        continue;
+                    }
 
                     if (bodyParameterType.IsGenericType && bodyParameterType.GetGenericTypeDefinition() == typeof(SingleObjectOrCollection<>))
                     {
@@ -433,6 +453,43 @@ public class SwaggerExampleOperationFilter : IOperationFilter
             }
         }
     }
+
+    private JsonNode CreateJsonPatchExample(Type patchType)
+    {
+        var createType = patchType.GenericTypeArguments[0];
+        var updateType = patchType.GenericTypeArguments[1];
+
+        var create = Fixture.Create(createType, _specimenContext);
+        if (create is ConcurrentDtoBase concurrentDto)
+        {
+            // No Id and Timestamp when creating new resources, and change tracking values are set by the server.
+            concurrentDto.Id = default;
+            concurrentDto.Timestamp = default;
+            if (concurrentDto is ChangeTrackingDtoBase changeTrackingDto)
+            {
+                changeTrackingDto.CreatedAt = default;
+                changeTrackingDto.CreatedBy = default;
+                changeTrackingDto.LastChangedAt = default;
+                changeTrackingDto.LastChangedBy = default;
+            }
+        }
+
+        var operations = new JsonArray
+        {
+            new JsonObject { ["op"] = "test", ["path"] = $"/5/{ConvertPropertyName(nameof(ConcurrentDtoBase.Timestamp))}", ["value"] = "AAAAAAAAB9E=" }
+        };
+
+        var stringProperty = updateType.GetProperties().FirstOrDefault(p => p.CanWrite && p.PropertyType == typeof(string));
+        if (stringProperty is not null)
+            operations.Add(new JsonObject { ["op"] = "replace", ["path"] = $"/5/{ConvertPropertyName(stringProperty.Name)}", ["value"] = "New value" });
+
+        operations.Add(new JsonObject { ["op"] = "add", ["path"] = "/-", ["value"] = CreateExample(create) });
+
+        return operations;
+    }
+
+    private string ConvertPropertyName(string propertyName)
+        => _propertyNamingPolicy?.ConvertName(propertyName) ?? propertyName;
 
     private JsonNode? CreateExample(Type type)
     {

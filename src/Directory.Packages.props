@@ -4,9 +4,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Asp.Versioning.OData.ApiExplorer" Version="10.2.1" />
-    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.5.4" />
-    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="13.5.4" />
-    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="13.6.0" />
+    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.6.0" />
     <PackageVersion Include="AutoFixture" Version="4.18.1" />
     <PackageVersion Include="AutoMapper" Version="14.0.0" />
     <PackageVersion Include="AutoMapper.AspNetCore.OData.EFCore" Version="7.0.4" />
@@ -15,16 +14,18 @@
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <PackageVersion Include="CsvHelper" Version="33.1.0" />
     <PackageVersion Include="EntityFrameworkCore.Parallel" Version="6.0.7" />
-    <PackageVersion Include="HAL.AspNetCore.OData" Version="22.0.0" />
+    <PackageVersion Include="HAL.AspNetCore.OData" Version="22.0.1" />
     <PackageVersion Include="HAL.Client.Net" Version="11.0.13" />
     <PackageVersion Include="HAL.Common" Version="9.0.9" />
     <PackageVersion Include="HealthChecks.Kubernetes.Aspire" Version="2.0.5" />
     <PackageVersion Include="HealthChecks.Kubernetes.Aspire.Hosting" Version="2.3.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.AspNetCore.JsonPatch.SystemTextJson" Version="10.0.12" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Proxies" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.10.0" />
