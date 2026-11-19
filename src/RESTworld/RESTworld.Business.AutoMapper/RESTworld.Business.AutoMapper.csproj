@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <OutputType>Library</OutputType>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <EnableNETAnalyzers>true</EnableNETAnalyzers>
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+        <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+        <PackageLicenseExpression>Unlicense</PackageLicenseExpression>
+        <Authors>wertzui</Authors>
+        <PackageProjectUrl>https://github.com/wertzui/RESTworld</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/wertzui/RESTworld</RepositoryUrl>
+        <VersionPrefix>1.0.0</VersionPrefix>
+        <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <Nullable>enable</Nullable>
+        <PackageIcon>RESTworld-256.png</PackageIcon>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="../../../README.md" Pack="true" PackagePath="/" />
+        <None Include="../../../logo/RESTworld-256.png" Pack="true" Visible="false" PackagePath="" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AutoMapper" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\RESTworld.Business\RESTworld.Business.csproj" />
+    </ItemGroup>
+
+</Project>

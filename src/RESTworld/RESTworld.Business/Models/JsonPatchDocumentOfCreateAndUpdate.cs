@@ -461,7 +461,7 @@ internal sealed class JsonPatchDocumentOfCreateAndUpdateConverterFactory : JsonC
                 writer.WriteString("op", operation.op);
                 writer.WriteString("path", operation.path);
 
-                if (operation.ShouldSerializeFrom())
+                if (operation.OperationType is OperationType.Move or OperationType.Copy)
                     writer.WriteString("from", operation.from);
 
                 if (operation.OperationType is OperationType.Add or OperationType.Replace or OperationType.Test)

@@ -26,11 +26,11 @@ internal class SwaggerFormsResourceOperationFilter : IOperationFilter
 
             foreach (var (mediaType, responseSchema) in response.Content)
             {
-                if (mediaType is Constants.MediaTypes.HalForms or Constants.MediaTypes.HalFormsPrs)
+                if (mediaType is Constants.MediaTypes.HalForms or Constants.MediaTypes.HalFormsPrs && responseSchema is OpenApiMediaType type)
                 {
                     var responseTypeFromApiDescription = context.ApiDescription.SupportedResponseTypes.FirstOrDefault(t => t.StatusCode == statusCodeInt);
 
-                    if (!responseTypeFromApiDescription.Type.IsGenericType || responseTypeFromApiDescription.Type.GetGenericTypeDefinition() != typeof(Resource<>))
+                    if (responseTypeFromApiDescription?.Type is null || !responseTypeFromApiDescription.Type.IsGenericType || responseTypeFromApiDescription.Type.GetGenericTypeDefinition() != typeof(Resource<>))
                         continue;
 
                     var stateType = responseTypeFromApiDescription.Type.GetGenericArguments()[0];
@@ -41,7 +41,7 @@ internal class SwaggerFormsResourceOperationFilter : IOperationFilter
                     if (!context.SchemaRepository.Schemas.TryGetValue(schemaId, out var schemaReference))
                         continue;
 
-                    responseSchema.Schema = schemaReference;
+                    type.Schema = schemaReference;
                 }
             }
         }

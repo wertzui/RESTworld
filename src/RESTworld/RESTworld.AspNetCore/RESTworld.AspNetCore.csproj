@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFramework>net11.0</TargetFramework>
         <OutputType>Library</OutputType>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <EnableNETAnalyzers>true</EnableNETAnalyzers>
@@ -11,7 +11,7 @@
         <Authors>wertzui</Authors>
         <PackageProjectUrl>https://github.com/wertzui/RESTworld</PackageProjectUrl>
         <RepositoryUrl>https://github.com/wertzui/RESTworld</RepositoryUrl>
-        <VersionPrefix>39.0.0</VersionPrefix>
+        <VersionPrefix>40.0.0</VersionPrefix>
         <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -32,7 +32,6 @@
     <ItemGroup>
         <PackageReference Include="Asp.Versioning.OData.ApiExplorer" />
         <PackageReference Include="AutoFixture" />
-        <PackageReference Include="AutoMapper.AspNetCore.OData.EFCore" />
         <PackageReference Include="CsvHelper" />
         <PackageReference Include="HAL.AspNetCore.OData" />
         <PackageReference Include="HealthChecks.Kubernetes.Aspire" />

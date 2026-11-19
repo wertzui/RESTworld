@@ -296,7 +296,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
     {
         if (operation.RequestBody?.Content is not null)
         {
-            foreach (var type in operation.RequestBody.Content.Values)
+            foreach (var type in operation.RequestBody.Content.Values.OfType<OpenApiMediaType>())
             {
                 if (type.Example is null)
                 {
@@ -306,7 +306,8 @@ public class SwaggerExampleOperationFilter : IOperationFilter
 
                     if (bodyParameterType.IsGenericType && bodyParameterType.GetGenericTypeDefinition() == typeof(RESTworld.Business.Models.JsonPatchDocument<,>))
                     {
-                        type.Example = CreateJsonPatchExample(bodyParameterType);
+                        type.Examples ??= new Dictionary<string, IOpenApiExample>();
+                        type.Examples.Add("Patch", new OpenApiExample { Value = CreateJsonPatchExample(bodyParameterType) });
                         continue;
                     }
 
@@ -342,7 +343,8 @@ public class SwaggerExampleOperationFilter : IOperationFilter
                     }
                     else
                     {
-                        type.Example = CreateExample(bodyParameterType);
+                        type.Examples ??= new Dictionary<string, IOpenApiExample>();
+                        type.Examples.Add("Default", new OpenApiExample { Value = CreateExample(bodyParameterType) });
                     }
                 }
             }
@@ -432,7 +434,7 @@ public class SwaggerExampleOperationFilter : IOperationFilter
             if (response.Content is null)
                 continue;
 
-            foreach (var type in response.Content.Values)
+            foreach (var type in response.Content.Values.OfType<OpenApiMediaType>())
             {
                 if (type.Example is null && type.Schema is OpenApiSchemaReference reference)
                 {

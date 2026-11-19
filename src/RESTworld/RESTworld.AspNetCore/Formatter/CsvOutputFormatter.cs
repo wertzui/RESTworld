@@ -1,5 +1,4 @@
 ﻿using CsvHelper;
-using CsvHelper.Configuration;
 using HAL.Common;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc.Formatters;
@@ -92,12 +91,12 @@ public class CsvOutputFormatter : TextOutputFormatter
         var states = list.Select(r => ((dynamic)r).State);
 
         var culture = context.HttpContext.Features.Get<IRequestCultureFeature>()?.RequestCulture.Culture ?? CultureInfo.InvariantCulture;
-        var configuration = new CsvConfiguration(culture)
+        var configuration = new CsvWriterOptions
         {
-            Encoding = selectedEncoding
+            FormatProvider = culture,
         };
         await using var writer = context.WriterFactory(context.HttpContext.Response.Body, selectedEncoding);
-        await using var csv = new CsvWriter(writer, configuration, true);
+        await using var csv = CsvWriter.Create(writer, configuration, true);
 
         await csv.WriteRecordsAsync(states, context.HttpContext.RequestAborted);
     }

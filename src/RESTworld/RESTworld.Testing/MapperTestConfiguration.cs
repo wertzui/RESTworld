@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using RESTworld.Business.Mapping;
-using RESTworld.Business.Mapping.AutoMapper;
 using System;
 
 namespace RESTworld.Testing;
@@ -32,26 +31,6 @@ public static class MapperTestConfigurationExtensions
         where TMapper : class, IReadMapper<TEntity, TQueryDto, TGetListDto, TGetFullDto>
     {
         return builder.With(new ReadMapperTestConfiguration<TEntity, TQueryDto, TGetListDto, TGetFullDto, TMapper>(mapperInstance));
-    }
-
-    /// <summary>
-    /// Adds a Mapper based on AutoMapper to the <paramref name="builder"/>.
-    /// </summary>
-    /// <param name="builder">The builder to add the configuration to.</param>
-    /// <returns>The <paramref name="builder"/>.</returns>
-    public static ITestBuilder WithCrudAutoMapper<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>(this ITestBuilder builder)
-    {
-        return builder.WithCrudMapper<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto, CrudAutoMapper<TEntity, TCreateDto, TQueryDto, TGetListDto, TGetFullDto, TUpdateDto>>();
-    }
-
-    /// <summary>
-    /// Adds a Mapper based on AutoMapper to the <paramref name="builder"/>.
-    /// </summary>
-    /// <param name="builder">The builder to add the configuration to.</param>
-    /// <returns>The <paramref name="builder"/>.</returns>
-    public static ITestBuilder WithReadAutoMapper<TEntity, TQueryDto, TGetListDto, TGetFullDto>(this ITestBuilder builder)
-    {
-        return builder.WithReadMapper<TEntity, TQueryDto, TGetListDto, TGetFullDto, ReadAutoMapper<TEntity, TQueryDto, TGetListDto, TGetFullDto>>();
     }
 }
 
@@ -92,7 +71,7 @@ public class CrudMapperTestConfiguration<TEntity, TCreateDto, TQueryDto, TGetLis
 }
 
 /// <summary>
-/// This test configuration can add a Crud Mapper to your tests.
+/// This test configuration can add a Read Mapper to your tests.
 /// </summary>
 public class ReadMapperTestConfiguration<TEntity, TQueryDto, TGetListDto, TGetFullDto, TMapper> : ITestConfiguration
     where TMapper : class, IReadMapper<TEntity, TQueryDto, TGetListDto, TGetFullDto>

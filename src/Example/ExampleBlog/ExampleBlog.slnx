@@ -1,5 +1,7 @@
 <Solution>
+  <Project Path="../../RESTworld/RESTworld.AspNetCore.AutoMapper/RESTworld.AspNetCore.AutoMapper.csproj" />
   <Project Path="../../RESTworld/RESTworld.AspNetCore/RESTworld.AspNetCore.csproj" />
+  <Project Path="../../RESTworld/RESTworld.Business.AutoMapper/RESTworld.Business.AutoMapper.csproj" />
   <Project Path="../../RESTworld/RESTworld.Business/RESTworld.Business.csproj" />
   <Project Path="../../RESTworld/RESTworld.Client.Angular/RESTworld.Client.Angular.esproj">
     <Build />

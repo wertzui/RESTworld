@@ -1,5 +1,4 @@
 ﻿using Asp.Versioning;
-using AutoMapper.Extensions.ExpressionMapping;
 using HAL.AspNetCore.Abstractions;
 using HAL.AspNetCore.ContentNegotiation;
 using Microsoft.AspNetCore.Hosting;
@@ -217,8 +216,6 @@ public static class RestWorldBuilderExtensions
             // Turn on service discovery by default
             http.AddServiceDiscovery();
         });
-
-        builder.Services.AddAutoMapper(cfg => cfg.AddExpressionMapping());
 
         return builder;
     }

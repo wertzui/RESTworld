@@ -1,5 +1,7 @@
 <Solution>
+  <Project Path="RESTworld.AspNetCore.AutoMapper/RESTworld.AspNetCore.AutoMapper.csproj" Id="6560b5dd-c4e4-4037-b7be-e57c11634ed2" />
   <Project Path="RESTworld.AspNetCore/RESTworld.AspNetCore.csproj" />
+  <Project Path="RESTworld.Business.AutoMapper/RESTworld.Business.AutoMapper.csproj" Id="be98d8e0-ce14-4732-aa6a-f511b71a9b97" />
   <Project Path="RESTworld.Business/RESTworld.Business.csproj" />
   <Project Path="RESTworld.Client.Angular/RESTworld.Client.Angular.esproj">
     <Build />
@@ -9,6 +11,7 @@
   <Project Path="RESTworld.Client.Net/RESTworld.Client.Net.csproj" />
   <Project Path="RESTworld.Common/RESTworld.Common.csproj" />
   <Project Path="RESTworld.EntityFrameworkCore/RESTworld.EntityFrameworkCore.csproj" />
+  <Project Path="RESTworld.Testing.AutoMapper/RESTworld.Testing.AutoMapper.csproj" Id="fc27b089-5489-4d97-9e6e-ca1fdb0ab7ec" />
   <Project Path="RESTworld.Testing/RESTworld.Testing.csproj" />
   <Project Path="RESTworld.Tests/RESTworld.Tests.csproj" />
 </Solution>
